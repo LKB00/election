@@ -42,9 +42,19 @@ const g = globalThis as unknown as { __db?: Promise<Db> };
 
 async function connect(): Promise<Db> {
   const url = process.env.DATABASE_URL;
+  if (!url && process.env.NODE_ENV === 'production') {
+    // Hosting has no permanent disk, so a local database would lose every poll.
+    throw new Error('DATABASE_URL is not set. Add it in your hosting settings.');
+  }
   if (url) {
-    const client = postgres(url, { max: 10 });
-    await client.unsafe(SCHEMA_SQL);
+    // Few connections per server (many servers run at once on Vercel).
+    // prepare:false keeps it working with hosted connection poolers (Neon, Supabase).
+    const client = postgres(url, { max: Number(process.env.DB_POOL_MAX ?? 3), prepare: false });
+    // The lock stops two servers starting together from creating tables at the same time.
+    await client.begin(async (tx) => {
+      await tx`select pg_advisory_xact_lock(727274)`;
+      await tx.unsafe(SCHEMA_SQL);
+    });
     return drizzlePostgres(client, { schema }) as unknown as Db;
   }
   // No database set up: use a local file database so the app "just runs".
