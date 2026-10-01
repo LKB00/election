@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { castVote, createPoll, getDeck, getFeaturedId, getPoll, getVoterStats, listPolls, setReason, toggleReaction } from '@/lib/polls';
+import { castVote, createPoll, getDeck, getFeaturedId, getPoll, getVoterStats, listPolls, setReason, toggleReaction, undoVote } from '@/lib/polls';
 import { createPollSchema } from '@/lib/validation';
 import { rateLimit } from '@/lib/rate-limit';
 import type { Db } from '@/db';
@@ -169,6 +169,26 @@ describe('voter stats and deck', () => {
     const deck = await getDeck(db, null);
     expect(deck[0].id).toBe('modi-vs-rahul');
     expect(deck.length).toBeGreaterThan(1);
+  });
+});
+
+describe('undo', () => {
+  it('takes back a fresh vote, but not an old one', async () => {
+    const id = await make({ title: 'Undo check' });
+    const p = (await getPoll(db, id, null))!;
+    await castVote(db, id, p.options[0].id, 'u-fresh');
+    await toggleReaction(db, id, 'u-fresh', '🔥');
+    expect(await undoVote(db, id, 'u-fresh')).toBe(true);
+    const after = (await getPoll(db, id, 'u-fresh'))!;
+    expect(after.myVote).toBeNull();
+    expect(after.reactions.find((r) => r.emoji === '🔥')!.n).toBe(0);
+    expect(await castVote(db, id, p.options[1].id, 'u-fresh')).toBe('ok'); // can vote again
+
+    await castVote(db, id, p.options[0].id, 'u-old');
+    const { schema } = await import('@/db');
+    const { eq } = await import('drizzle-orm');
+    await db.update(schema.votes).set({ createdAt: new Date(Date.now() - 120_000) }).where(eq(schema.votes.voterKey, 'u-old'));
+    expect(await undoVote(db, id, 'u-old')).toBe(false);
   });
 });
 

@@ -65,26 +65,34 @@ function Face({ o, tone }: { o: PollOption; tone: string }) {
 }
 
 // The duel question is the page title (P1), so it is rendered as the page's h1. See docs/DESIGN.md.
-export default function DuelGame({ deck: initialDeck, start = 0 }: { deck: PollView[]; start?: number }) {
+const isOpen = (p: PollView) => p.myVote === null && !p.closed;
+
+// start: given for a shared link (always open that duel, even if it ended or you voted).
+// Not given (Home): the first live duel you have not voted in, or "all caught up".
+export default function DuelGame({ deck: initialDeck, start }: { deck: PollView[]; start?: number }) {
   const [deck, setDeck] = useState(initialDeck);
-  const [i, setI] = useState(() => {
-    const firstOpen = initialDeck.findIndex((p, n) => n >= start && p.myVote === null && !p.closed);
-    return firstOpen === -1 ? start : firstOpen;
-  });
+  const firstOpen = initialDeck.findIndex(isOpen);
+  const [i, setI] = useState(start ?? Math.max(firstOpen, 0));
   const [busy, setBusy] = useState<string | null>(null);
   const [justVoted, setJustVoted] = useState<string | null>(null);
   const [msg, setMsg] = useState('');
   const [copied, setCopied] = useState(false);
-  const [over, setOver] = useState(false);
+  const [over, setOver] = useState(start === undefined && firstOpen === -1);
+  const [undoUntil, setUndoUntil] = useState(0);
+  const [reasonSaved, setReasonSaved] = useState(false);
   const nextRef = useRef<HTMLButtonElement>(null);
+  const topRef = useRef<HTMLDivElement>(null);
   const { streak } = useStats();
 
   const poll = deck[i];
   const voted = poll?.myVote != null;
-  const revealed = !!poll && voted && poll.resultsVisible;
+  const revealed = !!poll && poll.resultsVisible && (voted || poll.closed);
   const votedCount = deck.filter((p) => p.myVote !== null).length;
   const pcts = useMemo(() => (poll ? rounded(poll.options, poll.totalVotes) : []), [poll]);
   const mine = poll?.options.find((o) => o.id === poll.myVote) ?? null;
+  // "Leading" / "won" only when one choice is clearly ahead (a tie has no leader).
+  const top = pcts.length ? Math.max(...pcts) : 0;
+  const leaderIdx = revealed && poll && poll.totalVotes > 0 && pcts.filter((v) => v === top).length === 1 ? pcts.indexOf(top) : -1;
 
   const replace = (p: PollView) => setDeck((d) => d.map((x) => (x.id === p.id ? p : x)));
 
@@ -113,6 +121,8 @@ export default function DuelGame({ deck: initialDeck, start = 0 }: { deck: PollV
     if (res?.ok) {
       replace(data.poll);
       setJustVoted(optionId);
+      setReasonSaved(false);
+      setUndoUntil(Date.now() + 25_000); // a little under the server's 30 s
       announceVote(poll.id);
       setTimeout(() => nextRef.current?.focus({ preventScroll: true }), 50);
     } else {
@@ -122,8 +132,28 @@ export default function DuelGame({ deck: initialDeck, start = 0 }: { deck: PollV
     setBusy(null);
   }
 
+  async function undo() {
+    if (!poll) return;
+    setUndoUntil(0);
+    const res = await fetch(`/api/polls/${poll.id}/vote`, { method: 'DELETE' }).catch(() => null);
+    const data = await res?.json().catch(() => null);
+    if (res?.ok) {
+      replace(data.poll);
+      setJustVoted(null);
+      announceVote(poll.id);
+    } else setMsg(data?.error ?? 'Too late to undo this vote.');
+  }
+
+  // The undo link hides itself when its time is up.
+  useEffect(() => {
+    if (!undoUntil) return;
+    const t = setTimeout(() => setUndoUntil(0), Math.max(0, undoUntil - Date.now()));
+    return () => clearTimeout(t);
+  }, [undoUntil]);
+
   async function post(path: string, body: object) {
     if (!poll) return;
+    if (path === 'reason') setReasonSaved(true);
     const res = await fetch(`/api/polls/${poll.id}/${path}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -133,13 +163,33 @@ export default function DuelGame({ deck: initialDeck, start = 0 }: { deck: PollV
     if (res?.ok) replace(data.poll);
   }
 
+  // Next: the next live duel you have not voted in (wraps around), else "all caught up".
+  // Always brings the top of the game into view, so the new question is the first thing you see.
   function next() {
     setJustVoted(null);
     setMsg('');
-    const after = deck.findIndex((p, n) => n > i && p.myVote === null && !p.closed);
-    if (after !== -1) setI(after);
+    setUndoUntil(0);
+    const order = [...deck.keys()].map((k) => (i + 1 + k) % deck.length);
+    const after = order.find((n) => isOpen(deck[n]));
+    if (after !== undefined) setI(after);
     else setOver(true);
+    requestAnimationFrame(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   }
+
+  // Keyboard, like patricka's games: A/B/C… or 1/2/3… to vote, Enter for Next.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      if (t.closest('input, textarea, select, [contenteditable]') || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+      if (!poll || over) return;
+      const k = e.key.toLowerCase();
+      const n = /^[1-9]$/.test(k) ? Number(k) - 1 : LETTERS.toLowerCase().indexOf(k);
+      if (!revealed && n >= 0 && n < poll.options.length) vote(poll.options[n].id);
+      if (e.key === 'Enter' && revealed && !t.closest('button, a')) next();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
 
   const link = () => `${window.location.origin}/p/${poll?.id}`;
   const shareText = () => (mine ? `I picked ${mine.label}. Who would you pick?` : `${poll?.title} Who would you pick?`);
@@ -169,17 +219,17 @@ export default function DuelGame({ deck: initialDeck, start = 0 }: { deck: PollV
 
   if (over) {
     return (
-      <div className="tot tot-over">
+      <div className="tot tot-over" ref={topRef}>
         <Burst count={24} />
         <Trophy size={28} strokeWidth={1.5} aria-hidden />
-        <p className="tot-big">{votedCount}<span>/{deck.length}</span></p>
-        <p className="tot-verdict">All caught up! You voted in every duel.</p>
+        <h1 className="display duel-q">All caught up!</h1>
+        <p className="tot-verdict">You voted in every live duel{votedCount > 1 ? ` (${votedCount} so far)` : ''}. New ones come from people like you.</p>
         <div className="tot-stats">
           <span><Flame size={14} strokeWidth={1.75} aria-hidden /> Day streak: <strong>{streak}</strong></span>
         </div>
         <div className="row wrap center">
           <Link href="/create" className="btn btn-primary btn-lg"><Plus size={15} strokeWidth={1.75} aria-hidden /> Start your own duel</Link>
-          <button type="button" className="btn btn-ghost btn-lg" onClick={() => { setOver(false); setI(0); }}>See results again</button>
+          <button type="button" className="btn btn-ghost btn-lg" onClick={() => { setOver(false); setI(0); }}>See the results</button>
         </div>
       </div>
     );
@@ -188,7 +238,7 @@ export default function DuelGame({ deck: initialDeck, start = 0 }: { deck: PollV
   const [vTitle, vLine] = mine && revealed ? verdict(poll, mine) : ['', ''];
 
   return (
-    <div className="tot duel">
+    <div className={'tot duel' + (revealed ? ' is-revealed' : '')} ref={topRef}>
       {/* P3 progress: only once you have voted. For a new visitor "0" and "0" read like a quiz score. */}
       {(votedCount > 0 || streak > 0) && (
       <div className="tot-bar">
@@ -208,14 +258,15 @@ export default function DuelGame({ deck: initialDeck, start = 0 }: { deck: PollV
         <h1 key={poll.id} className="display duel-q">{poll.title}</h1>
         <p className="small muted">
           {poll.closed ? 'Ended' : 'Live'} · {poll.participants.toLocaleString()} {poll.participants === 1 ? 'vote' : 'votes'}
-          {!revealed && poll.pulse.lastHour > 0 && ` · ${poll.pulse.lastHour} in the last hour`}
+          {!revealed && poll.pulse.lastHour > 0 && poll.pulse.lastHour < poll.participants && ` · ${poll.pulse.lastHour} in the last hour`}
+          {poll.participants === 0 && !poll.closed && ' · be the first'}
         </p>
       </div>
 
       <div className={'tot-options duel-options n-' + poll.options.length}>
         {poll.options.map((o, n) => {
           const isMine = poll.myVote === o.id;
-          const lead = revealed && poll.totalVotes > 0 && pcts[n] === Math.max(...pcts);
+          const lead = n === leaderIdx;
           return (
             <button
               key={o.id}
@@ -254,16 +305,52 @@ export default function DuelGame({ deck: initialDeck, start = 0 }: { deck: PollV
 
       {msg && <p className="duel-error" role="alert">{msg}</p>}
 
+      {/* The one next step, pinned at thumb height on phones. */}
+      <div className={'tot-result' + (revealed ? ' is-shown' : '')} aria-live="polite">
+        {revealed && (
+          <>
+            <p>
+              {mine ? (
+                <>
+                  <strong className="txt-good">{vTitle}</strong> {vLine}
+                  {poll.myVoterNumber && <span className="small muted"> You’re voter #{poll.myVoterNumber.toLocaleString()}.</span>}
+                  {undoUntil > 0 && !poll.closed && (
+                    <> <button type="button" className="link-like duel-undo" onClick={undo}>Undo</button></>
+                  )}
+                </>
+              ) : (
+<><strong>This duel has ended.</strong> {leaderIdx >= 0 ? `${poll.options[leaderIdx].label} won.` : poll.totalVotes ? 'It ended in a tie.' : 'Nobody voted.'}</>
+              )}
+            </p>
+            <span className="row">
+              <button type="button" className="btn btn-ghost" onClick={share}>
+                <Share2 size={14} strokeWidth={1.75} aria-hidden /> {copied ? 'Link copied' : poll.closed ? 'Share result' : 'Dare a friend'}
+              </button>
+              <button type="button" className="btn btn-primary" onClick={next} ref={nextRef}>
+                Next <ArrowRight size={14} strokeWidth={1.75} aria-hidden />
+              </button>
+            </span>
+          </>
+        )}
+      </div>
+
+      {/* P3, optional: after the pinned bar, so the bar never covers it. */}
       {revealed && mine && (
         <div className="duel-after">
-          {poll.reasons.length > 0 && !poll.myReason && (
+          {poll.reasons.length > 0 && (
             <div className="duel-group">
-              <p className="label">Why {splitName(mine.label).last}? · optional</p>
-              <div className="row wrap">
-                {poll.reasons.map((r) => (
-                  <button key={r} type="button" className="chip" onClick={() => post('reason', { reason: r })}>{r}</button>
-                ))}
-              </div>
+              {poll.myReason || reasonSaved ? (
+                <p className="small muted">Thanks. Your reason is counted{poll.myReason ? `: ${poll.myReason}` : ''}.</p>
+              ) : (
+                <>
+                  <p className="label">Why {splitName(mine.label).last}? · optional</p>
+                  <div className="row wrap">
+                    {poll.reasons.map((r) => (
+                      <button key={r} type="button" className="chip" onClick={() => post('reason', { reason: r })}>{r}</button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           )}
           <div className="duel-group">
@@ -281,29 +368,6 @@ export default function DuelGame({ deck: initialDeck, start = 0 }: { deck: PollV
           </div>
         </div>
       )}
-
-      <div className={'tot-result' + (revealed ? ' is-shown' : '')} aria-live="polite">
-        {revealed && mine ? (
-          <>
-            <p>
-              <strong className="txt-good">{vTitle}</strong> {vLine}
-              {poll.myVoterNumber && <span className="small muted"> You’re voter #{poll.myVoterNumber.toLocaleString()}.</span>}
-            </p>
-            <span className="row">
-              <button type="button" className="btn btn-ghost" onClick={share}>
-                <Share2 size={14} strokeWidth={1.75} aria-hidden /> {copied ? 'Link copied' : 'Dare a friend'}
-              </button>
-              <button type="button" className="btn btn-primary" onClick={next} ref={nextRef}>
-                Next <ArrowRight size={14} strokeWidth={1.75} aria-hidden />
-              </button>
-            </span>
-          </>
-        ) : (
-          <p className="tot-keys">
-            {poll.closed ? 'This duel has ended.' : `Tap a card to vote · anonymous · one vote each${poll.pulse.lastVoteAt ? ` · last vote ${timeAgo(poll.pulse.lastVoteAt)}` : ''}`}
-          </p>
-        )}
-      </div>
     </div>
   );
 }

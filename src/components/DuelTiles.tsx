@@ -1,22 +1,48 @@
+'use client';
 import Link from 'next/link';
 import { Check, Plus, Users } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import type { PollSummary } from '@/lib/polls';
 
-// One pastel tile per duel, like patricka's game tiles.
+// One pastel tile per duel (patricka game tiles).
+// Order = what you can still do first: live and not voted → voted → ended. Updates the moment you vote.
 const TONES = ['game-e', 'game-f', 'game-b', 'game-d', 'game-a'];
 
 export default function DuelTiles({ polls, votedIds = [] }: { polls: PollSummary[]; votedIds?: string[] }) {
+  const [voted, setVoted] = useState<string[]>(votedIds);
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  useEffect(() => {
+    const on = (e: Event) => {
+      const id = (e as CustomEvent).detail as string | undefined;
+      if (!id) return;
+      setVoted((v) => (v.includes(id) ? v : [...v, id]));
+      setCounts((c) => ({ ...c, [id]: (c[id] ?? 0) + 1 }));
+    };
+    window.addEventListener('voted', on);
+    return () => window.removeEventListener('voted', on);
+  }, []);
+
+  const rank = (p: PollSummary) => (p.closed ? 2 : voted.includes(p.id) ? 1 : 0);
+  const sorted = [...polls].sort((a, b) => rank(a) - rank(b));
+
   return (
     <div className="games">
-      {polls.map((p, n) => {
-        const done = votedIds.includes(p.id);
+      {sorted.map((p, n) => {
+        const done = voted.includes(p.id);
+        const total = p.totalVotes + (counts[p.id] ?? 0);
         return (
           <Link key={p.id} href={`/p/${p.id}`} className={`game ${TONES[n % TONES.length]}`}>
             <Users size={22} strokeWidth={1.75} aria-hidden />
             <strong>{p.title}</strong>
             <span>{p.options.join(' vs ')}</span>
             <span className="game-meta">
-              {done ? <><Check size={13} strokeWidth={2} aria-hidden /> You voted</> : <>{p.totalVotes} {p.totalVotes === 1 ? 'vote' : 'votes'} · {p.closed ? 'ended' : 'live'}</>}
+              {done ? (
+                <><Check size={13} strokeWidth={2} aria-hidden /> You voted · {total} {total === 1 ? 'vote' : 'votes'}</>
+              ) : p.closed ? (
+                <>Ended · see who won</>
+              ) : (
+                <>{total === 0 ? 'Be the first to vote' : `${total} ${total === 1 ? 'vote' : 'votes'} · live`}</>
+              )}
             </span>
           </Link>
         );
