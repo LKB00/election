@@ -4,53 +4,62 @@ import { getPoll } from '@/lib/polls';
 
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
-export const alt = 'Election poll';
+export const alt = 'Election duel';
 export const dynamic = 'force-dynamic';
 
-const COLORS = ['#6d5ef0', '#0fa38f'];
-const initials = (n: string) => n.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('');
+const SIDES = ['#6e5bff', '#ff4f7b'];
+
+function splitName(label: string) {
+  const parts = label.trim().split(/\s+/);
+  return parts.length === 1 ? { first: '', last: parts[0] } : { first: parts.slice(0, -1).join(' '), last: parts[parts.length - 1] };
+}
 
 // The share card shown when the link is pasted in WhatsApp, X, Slack, etc.
+// It never shows the split: friends have to vote to see it.
 export default async function Image({ params }: { params: Promise<{ id: string }> }) {
   const poll = await getPoll(await getDb(), (await params).id, null);
   const duo = poll && poll.options.length === 2 ? poll.options : null;
-  const show = !!poll?.resultsVisible && poll.totalVotes > 0;
 
   return new ImageResponse(
     (
-      <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', padding: 56, background: '#fbfbf7', color: '#24282c', fontFamily: 'sans-serif' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 28, fontWeight: 700 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}><div style={{ display: 'flex', width: 28, height: 28, borderRadius: 14, background: '#24282c', border: '7px solid #c2ef72' }} />Election</div>
-          <div style={{ display: 'flex', color: '#707377', fontSize: 24 }}>Just for fun</div>
+      <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', padding: 40, background: '#0e0e13', color: '#fff', fontFamily: 'sans-serif' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 26, fontWeight: 800 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ display: 'flex', width: 26, height: 26, borderRadius: 13, background: 'linear-gradient(90deg, #6e5bff 50%, #ff4f7b 50%)' }} />
+            election
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 22, color: 'rgba(255,255,255,.7)' }}>
+            <div style={{ display: 'flex', width: 12, height: 12, borderRadius: 6, background: '#ff3b4e' }} />
+            LIVE DUEL{poll && poll.participants > 0 ? ` · ${poll.participants.toLocaleString()} votes` : ''}
+          </div>
         </div>
 
         {duo ? (
-          <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', gap: 40, position: 'relative' }}>
-            {duo.map((o, i) => (
-              <div key={o.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, padding: '36px 20px', borderRadius: 40, background: '#fff', border: `4px solid ${COLORS[i]}` }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 150, height: 150, borderRadius: 75, background: COLORS[i], color: '#fff', fontSize: 56, fontWeight: 800 }}>{initials(o.label)}</div>
-                <div style={{ display: 'flex', marginTop: 22, fontSize: 40, fontWeight: 800, textAlign: 'center' }}>{o.label.slice(0, 22)}</div>
-                {show && <div style={{ display: 'flex', marginTop: 6, fontSize: 64, fontWeight: 800, color: COLORS[i] }}>{Math.round(o.percent)}%</div>}
-              </div>
-            ))}
-            <div style={{ position: 'absolute', left: 540, top: 150, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 100, height: 100, borderRadius: 50, background: '#24282c', color: '#fbfbf7', fontSize: 34, fontWeight: 800, border: '8px solid #fbfbf7' }}>VS</div>
+          <div style={{ display: 'flex', flex: 1, gap: 20, marginTop: 28, position: 'relative' }}>
+            {duo.map((o, i) => {
+              const { first, last } = splitName(o.label);
+              return (
+                <div key={o.id} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', flex: 1, padding: 36, borderRadius: 32, background: `linear-gradient(180deg, ${SIDES[i]} 0%, ${SIDES[i]}55 60%, #17171f 100%)` }}>
+                  {o.subtitle && <div style={{ display: 'flex', fontSize: 20, fontWeight: 700, letterSpacing: 3, color: 'rgba(255,255,255,.7)' }}>{o.subtitle.toUpperCase()}</div>}
+                  {first && <div style={{ display: 'flex', fontSize: 34, fontWeight: 700, marginTop: 8 }}>{first.slice(0, 20)}</div>}
+                  <div style={{ display: 'flex', fontSize: last.length > 7 ? 92 : 120, fontWeight: 900, lineHeight: 0.95, letterSpacing: -4 }}>{last.toUpperCase().slice(0, 12)}</div>
+                </div>
+              );
+            })}
+            <div style={{ position: 'absolute', left: 540, top: 150, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 100, height: 72, borderRadius: 16, background: '#fff', color: '#0e0e13', fontSize: 40, fontWeight: 900, transform: 'rotate(-8deg)', border: '8px solid #0e0e13' }}>VS</div>
           </div>
         ) : (
           <div style={{ display: 'flex', flex: 1, flexDirection: 'column', justifyContent: 'center', gap: 24 }}>
-            <div style={{ display: 'flex', fontSize: 70, fontWeight: 800, lineHeight: 1.1 }}>{(poll?.title ?? 'Election').slice(0, 90)}</div>
+            <div style={{ display: 'flex', fontSize: 84, fontWeight: 900, lineHeight: 1, letterSpacing: -3 }}>{(poll?.title ?? 'Election').slice(0, 80)}</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14 }}>
-              {(poll?.options ?? []).slice(0, 5).map((o) => (
-                <div key={o.id} style={{ display: 'flex', padding: '10px 22px', borderRadius: 999, background: '#f0eee3', fontSize: 30, fontWeight: 700 }}>
-                  {o.label.slice(0, 24)}{show ? ` · ${Math.round(o.percent)}%` : ''}
-                </div>
+              {(poll?.options ?? []).slice(0, 5).map((o, i) => (
+                <div key={o.id} style={{ display: 'flex', padding: '12px 24px', borderRadius: 999, background: i % 2 ? '#ff4f7b' : '#6e5bff', fontSize: 30, fontWeight: 800 }}>{o.label.slice(0, 24)}</div>
               ))}
             </div>
           </div>
         )}
 
-        <div style={{ display: 'flex', justifyContent: 'center', fontSize: 30, fontWeight: 700 }}>
-          {duo ? 'Who would you pick? Tap to vote' : 'Tap to vote'}
-        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 24, fontSize: 30, fontWeight: 800 }}>Who would you pick? Tap to vote →</div>
       </div>
     ),
     size,

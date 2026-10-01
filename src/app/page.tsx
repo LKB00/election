@@ -16,38 +16,28 @@ export default async function Home() {
       {featured && featured.options.length === 2 ? (
         <Duel initial={featured} headingLevel="h1" />
       ) : (
-        <section className="hero-home">
-          <span className="label">Fun polls · not official results</span>
-          <h1>Who wins? You decide.</h1>
-        </section>
+        <header className="hero">
+          <p className="eyebrow">Fun polls · not official results</p>
+          <h1 className="hero-title">Who wins? You decide.</h1>
+        </header>
       )}
 
       <div className="section-head">
-        <h2>Next duels</h2>
-        <Link href="/create" className="small">Create yours →</Link>
+        <h2>Up next</h2>
+        <Link href="/create">Start a duel →</Link>
       </div>
       <div className="next-row">
+        <Link href="/create" className="next-card next-create">
+          <h3>Your own duel</h3>
+          <p>Virat or Rohit? Pizza or biryani? Make it in 30 seconds.</p>
+        </Link>
         {polls.map((p) => (
           <Link key={p.id} href={`/p/${p.id}`} className="next-card">
-            <div className="poll-meta">
-              <span className="chip">{p.category}</span>
-              <span className={'chip ' + (p.closed ? 'chip-closed' : 'chip-live')}>{p.closed ? 'Ended' : 'Live'}</span>
-            </div>
             <h3>{p.title}</h3>
-            <div className="next-vs">{p.options.slice(0, 4).map((o) => <span key={o}>{o}</span>)}</div>
-            <p className="small">{p.totalVotes} {p.totalVotes === 1 ? 'vote' : 'votes'}</p>
+            <div className="next-vs">{p.options.slice(0, 3).map((o) => <span key={o}>{o}</span>)}</div>
+            <span className="next-meta">{p.closed ? 'Ended' : 'Live'} · {p.totalVotes} {p.totalVotes === 1 ? 'vote' : 'votes'}</span>
           </Link>
         ))}
-        <Link href="/create" className="next-card next-create">
-          <h3>+ New duel</h3>
-          <p className="small">Make your own poll in 30 seconds</p>
-        </Link>
-      </div>
-
-      <div className="cta-card">
-        <h2>Got your own debate?</h2>
-        <p>Virat or Rohit? Pizza or biryani? Make a poll in 30 seconds.</p>
-        <Link href="/create" className="btn btn-primary btn-lg">Create a poll</Link>
       </div>
     </>
   );

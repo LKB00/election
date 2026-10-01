@@ -1,31 +1,43 @@
-/* Colours and fonts. The whole app is one dark, cinematic theme. */
+/* Design tokens. Light editorial page, with one dark "stage" as the focal point. */
 :root {
-  --paper: #0a0a0f;
-  --sand: #111118;
-  --sand-dark: #1b1b25;
-  --card: #14141c;
-  --ink: #f4f3ee;
-  --ink-hover: #ffffff;
-  --ink-2: #b4b4bd;
-  --ink-3: #7d7d88;
-  --line: #262633;
-  --divider: #1f1f2b;
-  --on-ink: #0a0a0f;
+  /* Surfaces */
+  --paper: #f4f2ed;
+  --sand: #ebe8e1;
+  --sand-dark: #e2ded5;
+  --card: #ffffff;
+  --stage: #0e0e13;
+  --stage-2: #17171f;
 
-  --positive: #b2d27a;
-  --positive-soft: #1c2614;
-  --negative: #f0948a;
-  --negative-soft: #2e1916;
+  /* Text */
+  --ink: #111114;
+  --ink-hover: #000000;
+  --ink-2: #4a4a52;
+  --ink-3: #82828b;
+  --on-ink: #ffffff;
+  --on-stage: #ffffff;
+  --on-stage-2: rgba(255, 255, 255, 0.62);
+
+  --line: #dedad1;
+  --divider: #e7e3db;
+  --stage-line: rgba(255, 255, 255, 0.1);
+
+  /* Candidate colours: deliberately not any party's colours */
+  --side-a: #6e5bff;
+  --side-b: #ff4f7b;
+
+  --positive: #3f7d20;
+  --positive-soft: #e3f0d6;
+  --negative: #c1443a;
+  --negative-soft: #f9e2df;
   --lime: #c2ef72;
-  --lime-badge: rgba(194, 239, 114, 0.16);
 
-  --side-a: #7c6cff;
-  --side-b: #14c8ac;
-
-  --sans: 'Lato', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --display: 'Bricolage Grotesque', 'Lato', ui-sans-serif, system-ui, sans-serif;
+  /* Type */
+  --display: 'Bricolage Grotesque Variable', ui-sans-serif, system-ui, sans-serif;
+  --sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --mono: ui-monospace, 'SFMono-Regular', Menlo, monospace;
 
-  --hair: 0.5px;
-  color-scheme: dark;
+  --hair: 1px;
+  --radius-lg: 32px;
+  --radius-md: 20px;
+  color-scheme: light;
 }

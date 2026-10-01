@@ -12,21 +12,24 @@ export async function seedFlagship(db: Db) {
     .insert(schema.polls)
     .values({
       id: FLAGSHIP_ID,
-      title: 'Who would you pick?',
-      description: 'A fun head-to-head. Not an official or scientific poll.',
+      title: 'Modi or Rahul?',
+      description: 'Pick one. See where everyone stands.',
       category: 'politics',
       hideUntilVoted: true,
       allowChange: false,
       reasons: JSON.stringify(FLAGSHIP_REASONS),
       featured: true,
     })
-    .onConflictDoNothing();
+    .onConflictDoUpdate({ target: schema.polls.id, set: { title: 'Modi or Rahul?', description: 'Pick one. See where everyone stands.' } });
   await db
     .insert(schema.options)
     .values([
       // Photos live in public/candidates/. If a file is missing the screen shows the initials instead.
-      { id: 'modi', pollId: FLAGSHIP_ID, label: 'Narendra Modi', imageUrl: '/candidates/modi.jpg', position: 0 },
-      { id: 'rahul', pollId: FLAGSHIP_ID, label: 'Rahul Gandhi', imageUrl: '/candidates/rahul.jpg', position: 1 },
+      { id: 'modi', pollId: FLAGSHIP_ID, label: 'Narendra Modi', subtitle: 'Prime Minister', imageUrl: '/candidates/modi.jpg', position: 0 },
+      { id: 'rahul', pollId: FLAGSHIP_ID, label: 'Rahul Gandhi', subtitle: 'Leader of Opposition', imageUrl: '/candidates/rahul.jpg', position: 1 },
     ])
-    .onConflictDoUpdate({ target: schema.options.id, set: { imageUrl: sql`coalesce(${schema.options.imageUrl}, excluded.image_url)` } });
+    .onConflictDoUpdate({ target: schema.options.id, set: {
+        imageUrl: sql`coalesce(${schema.options.imageUrl}, excluded.image_url)`,
+        subtitle: sql`coalesce(${schema.options.subtitle}, excluded.subtitle)`,
+      } });
 }
