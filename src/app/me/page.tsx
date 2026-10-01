@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Check, ChevronRight } from 'lucide-react';
-import TodayCard from '@/components/Today';
 import { getDb } from '@/db';
 import { getMyVotes, getVoterStats } from '@/lib/polls';
 import { readVoterId } from '@/lib/voter';
@@ -47,15 +46,11 @@ export default async function Me() {
         <p className="small muted">{next ? `${next[0] - stats.votes} more ${next[0] - stats.votes === 1 ? 'vote' : 'votes'} to ${next[1]}` : 'Top level. Legendary.'}</p>
         <ul className="level-stats">
           <li><strong>{stats.votes}</strong> duels voted</li>
-          <li><strong>{stats.today}</strong> today</li>
-          <li><strong>{stats.streak}</strong> day streak</li>
-          <li><strong>{stats.best}</strong> best streak</li>
+          <li><strong>{stats.correct}/{stats.guesses}</strong> right guesses</li>
+          <li><strong>{stats.guesses ? Math.round((stats.correct / stats.guesses) * 100) : 0}%</strong> crowd reading</li>
+          <li><strong>{stats.friends}</strong> {stats.friends === 1 ? 'friend' : 'friends'} answered your dares</li>
         </ul>
       </div>
-
-      <section className="block block-tight">
-        <TodayCard initial={stats} />
-      </section>
 
       <section className="block">
         <h2>Your votes</h2>

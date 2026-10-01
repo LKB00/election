@@ -1,12 +1,12 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Check, ChevronLeft, Flame } from 'lucide-react';
+import { Check, ChevronLeft, Target } from 'lucide-react';
 import { useStats } from '@/lib/useStats';
 
 export default function TopBar() {
   const path = usePathname();
-  const { votes, streak, today } = useStats();
+  const { votes, correct } = useStats();
   const back = path.startsWith('/p/') || path === '/create' ? { to: '/', name: 'Home' } : null;
   return (
     <header className="topnav">
@@ -25,9 +25,10 @@ export default function TopBar() {
           <Link href="/create" className={path === '/create' ? 'active' : ''}>Create</Link>
         </nav>
         <div className="topnav-right">
-          <Link href="/me" className={'streak-pill' + (today > 0 ? ' is-lit' : '')} aria-label={`${streak} day streak`}>
-            <Flame size={14} strokeWidth={2} aria-hidden />
-            <span key={streak} className="xp-num">{streak}</span>
+          {/* Your guess score (right "who's winning?" guesses). Greyed until your first right guess. */}
+          <Link href="/me" className={'streak-pill' + (correct > 0 ? ' is-lit' : '')} aria-label={`${correct} right guesses`}>
+            <Target size={14} strokeWidth={2} aria-hidden />
+            <span key={correct} className="xp-num">{correct}</span>
           </Link>
           <Link href="/me" className="xp-pill" aria-label={`${votes} votes cast`}>
             <Check size={14} strokeWidth={2.5} aria-hidden />

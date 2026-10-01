@@ -11,7 +11,7 @@ export default function CreateForm() {
   const [category, setCategory] = useState<string>('general');
   const [choices, setChoices] = useState(['', '']);
   const [endsAt, setEndsAt] = useState('');
-  const [hideUntilVoted, setHide] = useState(false);
+  const [hideUntilVoted, setHide] = useState(true); // on by default: guess first, then see (the guess game)
   const [allowChange, setChange] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');

@@ -29,6 +29,8 @@ export const options = pgTable(
     imageUrl: text('image_url'),
     // Short line under the name, e.g. a role.
     subtitle: text('subtitle'),
+    // Who took the photo and under which licence, shown next to it.
+    imageCredit: text('image_credit'),
     position: integer('position').notNull(),
   },
   (t) => [index('options_poll_idx').on(t.pollId)],
@@ -43,6 +45,12 @@ export const votes = pgTable(
     // Who voted. Today: a signed cookie id. Later: a user id after sign-in.
     voterKey: text('voter_key').notNull(),
     reason: text('reason'),
+    // "Who's winning right now?" guess: an option id, 'skip', or null = not asked yet.
+    prediction: text('prediction'),
+    predictionCorrect: boolean('prediction_correct'),
+    // Private code in this voter's share link (never the voter id), and the code they arrived with.
+    shareCode: text('share_code'),
+    via: text('via'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

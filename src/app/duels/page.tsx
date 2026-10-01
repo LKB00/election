@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import DuelBanner from '@/components/DuelBanner';
 import DuelTiles from '@/components/DuelTiles';
-import TodayCard from '@/components/Today';
 import { getDb } from '@/db';
 import { getFeaturedId, getMyVotes, getPoll, getVoterStats, listPolls } from '@/lib/polls';
 import { readVoterId } from '@/lib/voter';
@@ -41,7 +40,6 @@ export default async function Duels() {
           <DuelBanner poll={featured} />
         </section>
       )}
-      <TodayCard initial={stats} hideUntilVoted />
     </div>
   );
 }

@@ -14,7 +14,7 @@ Rule: if an element has no clear job on that screen, it is removed.
 
 Colour roles (from patricka, never mixed):
 - **Ink button** = the main action. One per view.
-- **Lime** = "this is you / your progress" (your streak pill, your count, active tab, your-pick badge). Not used for decoration.
+- **Lime** = "this is you / your progress" (your votes pill, your guess score, active tab, your-pick badge). Not used for decoration.
 - **Pastel tint** = which side/choice something belongs to (A, B, C...).
 - **Soft red/green tints** = feedback only (error, success). Never as decoration.
 
@@ -38,11 +38,11 @@ Why: most people arrive from a WhatsApp link with zero context. Every extra word
 | **The duel question** ("Modi or Rahul?") as the page title | **P1** | The question *is* the content. A generic title ("Who would you pick?") was biggest before and the real question was small: that was upside down. |
 | Social proof line "69 votes · 5 in the last hour" | P3 | "Other people are doing this" makes the first tap feel safe. Small, under the title. |
 | **Two candidate cards** (A / B), side by side | **P1** | The tap target. Side by side = a duel, the eye compares in one look. Large face circle + name: you recognise before you read. |
+| **Candidate photo** (full card width, 4:5) | **P1** | People recognise a face before they read a name. Full width so it is the first thing seen. Licensed photos only, credit shown under the cards (`public/candidates/CREDITS.md`). No photo: a soft initials circle. |
 | Role line on the card (label, caps 10px) | P3 | Context for people who do not know the person. Tiny so the name wins. |
 | Name on the card (20px bold) | P2 | Second thing you read on the card, after the face. |
 | "Tap a card to vote · anonymous · one vote each · results unlock after" | P3 | Answers the 3 fears (how? who sees? can I cheat?) without a paragraph. Sits right under the cards, where the thumb already is (patricka hides its own hint on phones; ours must stay). |
 | Progress pips + ✓ and 🔥 pills inside the game | hidden for new people | For someone with 0 votes, "0" and "0" are noise and look like a quiz score. Shown once you have voted (then they mean "keep going"). |
-| Today card (goal ring, week) | hidden until first vote | A streak means nothing before you have played. After the first vote it becomes the reason to come back. |
 | "Duel of the day" dark banner | removed on Home | It repeated the duel that is already the first card on the page. Lives on the Duels page instead. |
 | "More duels" tiles | P3 | The next thing to do after you finished. Below the fold on purpose. No "New" chips: a dark chip on the least important section pulled the eye away from the duel. |
 | "Start your own duel" tile | P3, last tile | Creating is a later step than voting. It was first and competed with voting. |
@@ -79,9 +79,9 @@ Promise: **30 seconds**. So:
 
 | Element | Level | Job / why |
 |---|---|---|
-| 🔥 streak + ✓ votes pills in the top bar | P3 | Always-visible progress, the patricka habit loop. Lime only on the votes pill = "yours". |
+| 🎯 right guesses + ✓ votes pills in the top bar | P3 | Always-visible progress you earn by playing well, not by showing up. Lime only on the votes pill = "yours". |
 | Level card (Me) | P1 on Me | The one summary of "how am I doing". |
-| Today card | P2 | Today's small goal (3 duels), the reason to come back tomorrow. |
+| Level card stats: votes, right guesses, crowd-reading %, friends who answered your dares | P2 | What you are good at, and how many friends you brought in. |
 | Your votes list | P3 | Memory and a way back into old duels. |
 
 ## Duels page (`/duels`)
@@ -90,7 +90,6 @@ Promise: **30 seconds**. So:
 |---|---|---|
 | Duel of the day (dark banner) | P1, then P3 | The one duel we want everyone in. Dark = the strongest card on the page. After you voted in it, it moves below the list: the duels you have not done matter more. |
 | Duel tiles | P2 | Browse more. Pastel tiles from patricka; voted ones say "You voted" so you skip them. |
-| Today card | P3 | Progress, below the content. |
 
 ---
 
@@ -128,10 +127,27 @@ no surprise, always one obvious next step, and mistakes can be undone.
 | Step | What happens | Why |
 |---|---|---|
 | Open Home | Starts at the first duel you have not voted in. If none: "All caught up!". | Never shows you something you already did as if it were new. |
-| Top bar 🔥 / ✓ | Your streak and votes, update right after each vote. | The habit loop. |
-| Today card | Appears only after your first vote ever. | A streak means nothing before you play. |
+| Top bar 🎯 / ✓ | Your right guesses and votes, update right after each vote or guess. | Progress you can feel without a streak. |
 
 ### Ties and empty states (everywhere)
 - Tie: no card says "Leading"; ended tie says "It ended in a tie."
 - 0 votes: "be the first" instead of a cold "0 votes".
 - Same number twice ("41 votes · 41 in the last hour"): the second part is hidden.
+
+---
+
+## Batch 1: guess the crowd, friends vs everyone, share image (no streaks)
+
+**No streaks.** The owner decided streaks are not worth it here. Research agrees they can backfire (anxiety, people drop out after one missed day). Removed: Today card, 🔥 pill, streak stats. What you collect instead: right guesses and friends who answered your dares.
+
+| Element | Level | Job / why |
+|---|---|---|
+| **"Who's winning right now?"** step after you vote (hidden-results duels) | **P1 at that moment** | A second, instant game inside every duel: you guess the crowd, then the reveal tells you if you were right. Makes the reveal a moment, not just numbers. Checked on the server at the moment you answer (a tie counts for either leader). "Skip, just show me" is always there, so it never blocks. |
+| "You read the crowd! +1" / "Not this time. X is ahead." | P1 in the result bar | The win (or the near miss) is the first line you read after the reveal. Confetti only for a right guess. |
+| 🎯 pill (top bar, score bar) | P3 | Your running score of right guesses. Replaces the streak. |
+| "A friend dared you" label + "A friend already picked. Vote to see if you agree." | P2 | You came because a friend asked: that is the strongest reason to vote. Their pick stays a surprise until you vote and guess. |
+| "Your friend picked Modi: you agree / disagree!" | P2 | Agreeing or disagreeing with a friend is what people talk about and share back. |
+| "N friends answered your dare: X agree, Y disagree" | P2 (for the sharer) | The reason to come back to your own duel after sharing. Counted through a private share code in your link (never your identity). |
+| Share link `/p/…?f=code` | — | Carries your private code so friends are counted for you and the preview shows your pick. |
+| Share image (WhatsApp/X preview) | — | Both photos, your pick marked, "I picked Modi. Who would you pick?". Never the split, so friends still have to vote. |
+| New duels hide results until people vote (default on) | — | So every duel gets the guess step. The creator can turn it off under More options. |

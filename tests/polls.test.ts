@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { castVote, createPoll, getDeck, getFeaturedId, getPoll, getVoterStats, listPolls, setReason, toggleReaction, undoVote } from '@/lib/polls';
+import { castVote, createPoll, getDeck, getFeaturedId, getPoll, getVoterStats, guessLeader, listPolls, setReason, toggleReaction, undoVote } from '@/lib/polls';
 import { createPollSchema } from '@/lib/validation';
 import { rateLimit } from '@/lib/rate-limit';
 import type { Db } from '@/db';
@@ -13,8 +13,9 @@ beforeAll(async () => {
   db = await (await import('@/db')).getDb();
 });
 
+// Results open by default in these tests; the guess game is tested on its own below.
 const make = (extra = {}) =>
-  createPoll(db, createPollSchema.parse({ title: 'Best finisher?', options: ['Virat', 'Rohit', 'Dhoni'], ...extra }));
+  createPoll(db, createPollSchema.parse({ title: 'Best finisher?', options: ['Virat', 'Rohit', 'Dhoni'], hideUntilVoted: false, ...extra }));
 
 describe('voting', () => {
   it('counts one vote per voter, even with many tries', async () => {
@@ -57,6 +58,9 @@ describe('voting', () => {
     expect(stranger.resultsVisible).toBe(false);
     expect(stranger.totalVotes).toBe(0);
     expect(stranger.options.every((o) => o.votes === 0)).toBe(true);
+    expect((await getPoll(db, id, 'a'))!.resultsVisible).toBe(false); // voted, not guessed yet
+    expect((await getPoll(db, id, 'a'))!.needsGuess).toBe(true);
+    expect(await guessLeader(db, id, 'a', 'skip')).toBe('ok');
     expect((await getPoll(db, id, 'a'))!.resultsVisible).toBe(true);
   });
 
@@ -100,6 +104,7 @@ describe('flagship poll and reasons', () => {
     const id = 'modi-vs-rahul';
     expect(await setReason(db, id, 'nobody', 'Leadership')).toBe(false); // has not voted
     await castVote(db, id, 'modi', 'r1');
+    await guessLeader(db, id, 'r1', 'skip');
     expect(await setReason(db, id, 'r1', 'Made up reason')).toBe(false);
     expect(await setReason(db, id, 'r1', 'Leadership')).toBe(true);
     const mine = (await getPoll(db, id, 'r1'))!;
@@ -130,6 +135,7 @@ describe('engagement', () => {
     const p = (await getPoll(db, id, null))!;
     await castVote(db, id, p.options[0].id, 'h1');
     await castVote(db, id, p.options[1].id, 'h2');
+    await guessLeader(db, id, 'h1', 'skip');
     expect((await getPoll(db, id, 'nobody'))!.trend).toEqual([]);
     const seen = (await getPoll(db, id, 'h1'))!.trend;
     expect(seen.length).toBeGreaterThan(0);
@@ -154,15 +160,15 @@ describe('engagement', () => {
 });
 
 describe('voter stats and deck', () => {
-  it('counts votes, today and the day streak', async () => {
+  it('counts votes and today', async () => {
     const empty = await getVoterStats(db, 'nobody-at-all');
-    expect(empty).toMatchObject({ votes: 0, today: 0, streak: 0 });
+    expect(empty).toMatchObject({ votes: 0, today: 0, guesses: 0, correct: 0, friends: 0 });
     const a = await make({ title: 'Stats one' });
     const b = await make({ title: 'Stats two' });
     await castVote(db, a, (await getPoll(db, a, null))!.options[0].id, 'st1');
     await castVote(db, b, (await getPoll(db, b, null))!.options[1].id, 'st1');
     const s = await getVoterStats(db, 'st1');
-    expect(s).toMatchObject({ votes: 2, today: 2, streak: 1, best: 1 });
+    expect(s).toMatchObject({ votes: 2, today: 2 });
   });
 
   it('puts the featured duel first', async () => {
@@ -189,6 +195,52 @@ describe('undo', () => {
     const { eq } = await import('drizzle-orm');
     await db.update(schema.votes).set({ createdAt: new Date(Date.now() - 120_000) }).where(eq(schema.votes.voterKey, 'u-old'));
     expect(await undoVote(db, id, 'u-old')).toBe(false);
+  });
+});
+
+describe('guess the crowd', () => {
+  it('asks once, checks against the live count, and opens the results', async () => {
+    const id = await make({ title: 'Guess check', options: ['A', 'B'], hideUntilVoted: true });
+    const [a, b] = (await getPoll(db, id, null))!.options;
+    await castVote(db, id, a.id, 'g1');
+    await castVote(db, id, a.id, 'g2');
+    await castVote(db, id, b.id, 'g3');
+    expect(await guessLeader(db, id, 'nobody', a.id)).toBe('not_allowed');
+    expect(await guessLeader(db, id, 'g3', 'not-an-option')).toBe('bad_option');
+    expect(await guessLeader(db, id, 'g3', a.id)).toBe('ok');
+    expect(await guessLeader(db, id, 'g3', b.id)).toBe('not_allowed');
+    expect((await getPoll(db, id, 'g3'))!.myGuess).toEqual({ optionId: a.id, correct: true });
+    expect(await guessLeader(db, id, 'g2', b.id)).toBe('ok');
+    expect((await getPoll(db, id, 'g2'))!.myGuess).toEqual({ optionId: b.id, correct: false });
+    expect(await getVoterStats(db, 'g3')).toMatchObject({ guesses: 1, correct: 1 });
+  });
+
+  it('counts a tie as right for either leader', async () => {
+    const id = await make({ title: 'Tie guess', options: ['A', 'B'], hideUntilVoted: true });
+    const [a, b] = (await getPoll(db, id, null))!.options;
+    await castVote(db, id, a.id, 't1');
+    await castVote(db, id, b.id, 't2');
+    await guessLeader(db, id, 't1', b.id);
+    expect((await getPoll(db, id, 't1'))!.myGuess?.correct).toBe(true);
+  });
+});
+
+describe('friends', () => {
+  it('links a friend through a share code and counts agree / disagree', async () => {
+    const id = await make({ title: 'Friend check', options: ['A', 'B'] });
+    const [a, b] = (await getPoll(db, id, null))!.options;
+    await castVote(db, id, a.id, 'sharer');
+    const code = (await getPoll(db, id, 'sharer'))!.myShareCode!;
+    expect(code).toBeTruthy();
+    const before = (await getPoll(db, id, 'f1', code))!;
+    expect(before.friend).toEqual({ known: true, optionId: null });
+    await castVote(db, id, a.id, 'f1', code);
+    await castVote(db, id, b.id, 'f2', code);
+    await castVote(db, id, b.id, 'f3', 'made-up-code');
+    expect((await getPoll(db, id, 'f1', code))!.friend).toEqual({ known: true, optionId: a.id });
+    expect((await getPoll(db, id, 'sharer'))!.friends).toEqual({ agree: 1, disagree: 1 });
+    expect((await getVoterStats(db, 'sharer')).friends).toBe(2);
+    expect((await getPoll(db, id, 'sharer', code))!.friend.known).toBe(false);
   });
 });
 

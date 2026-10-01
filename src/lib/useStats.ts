@@ -2,10 +2,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { VoterStats } from './polls';
 
-export const DAILY_GOAL = 3;
-const EMPTY: VoterStats = { votes: 0, today: 0, streak: 0, best: 0, days: [] };
+const EMPTY: VoterStats = { votes: 0, today: 0, guesses: 0, correct: 0, friends: 0 };
 
-/** Your votes and streak. Refreshes after every vote (the 'voted' event). */
+/** Your votes, guess score and friends. Refreshes after every vote or guess (the 'voted' event). */
 export function useStats(initial?: VoterStats) {
   const [stats, setStats] = useState<VoterStats>(initial ?? EMPTY);
   const load = useCallback(async () => {
