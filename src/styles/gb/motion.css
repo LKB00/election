@@ -1,0 +1,92 @@
+/* Motion: how the site moves. One file, so the feel is easy to tune.
+   Rules of thumb:
+   - Things ease OUT (fast start, soft landing) with --ease-out; playful things use --ease-spring.
+   - Short: 150-250 ms for taps, 350-500 ms for pages and scenes.
+   - Everything here is wrapped in "no-preference", so people who ask their device
+     for less motion get none of it.
+   - Generic rules use :where() (zero weight), so a component's own animation always wins.
+   Hooks in the code: .route (keyed per page in App.jsx), keys on game steps (Lab, Story,
+   Power) replay the scene animation, and <CountUp> rolls numbers. */
+
+:root {
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.2, 0.9, 0.3, 1.3);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+  @keyframes scene-in { from { opacity: 0; transform: translateX(18px); } }
+  @keyframes route-in { from { opacity: 0; transform: translateY(10px); } }
+  @keyframes option-in { from { opacity: 0; transform: translateY(8px) scale(0.98); } }
+  @keyframes pop-good { 0% { transform: scale(1); } 40% { transform: scale(1.035); } 100% { transform: scale(1); } }
+  @keyframes nav-pop { from { transform: scale(0.7); } }
+  @keyframes meter-grow { from { transform: scaleX(0); } }
+  @keyframes ring-draw { from { stroke-dashoffset: 164; } }
+  @keyframes reveal { from { opacity: 0; transform: translateY(26px); } }
+  @keyframes shine { from { background-position: -120% 0; } to { background-position: 220% 0; } }
+
+  /* ---- Pages: each page fades and rises in ---- */
+  .route { animation: route-in 0.38s var(--ease-out) backwards; }
+
+  /* ---- Lists and grids: children arrive one after another ---- */
+  :where(.games, .badges, .play-grid, .index-list, .story-picks, .ladder, .tools, .card-grid, .power-opts, .level-stats, .daily-grid) > * {
+    animation: rise 0.5s var(--ease-out) backwards;
+    animation-delay: calc(var(--i, 0) * 55ms + 60ms);
+  }
+  :where(.games, .badges, .play-grid, .index-list, .story-picks, .ladder, .tools, .card-grid, .power-opts, .level-stats, .daily-grid) > :nth-child(2) { --i: 1; }
+  :where(.games, .badges, .play-grid, .index-list, .story-picks, .ladder, .tools, .card-grid, .power-opts, .level-stats, .daily-grid) > :nth-child(3) { --i: 2; }
+  :where(.games, .badges, .play-grid, .index-list, .story-picks, .ladder, .tools, .card-grid, .power-opts, .level-stats, .daily-grid) > :nth-child(4) { --i: 3; }
+  :where(.games, .badges, .play-grid, .index-list, .story-picks, .ladder, .tools, .card-grid, .power-opts, .level-stats, .daily-grid) > :nth-child(5) { --i: 4; }
+  :where(.games, .badges, .play-grid, .index-list, .story-picks, .ladder, .tools, .card-grid, .power-opts, .level-stats, .daily-grid) > :nth-child(6) { --i: 5; }
+  :where(.games, .badges, .play-grid, .index-list, .story-picks, .ladder, .tools, .card-grid, .power-opts, .level-stats, .daily-grid) > :nth-child(7) { --i: 6; }
+  :where(.games, .badges, .play-grid, .index-list, .story-picks, .ladder, .tools, .card-grid, .power-opts, .level-stats, .daily-grid) > :nth-child(8) { --i: 7; }
+  :where(.games, .badges, .play-grid, .index-list, .story-picks, .ladder, .tools, .card-grid, .power-opts, .level-stats, .daily-grid) > :nth-child(n + 9) { --i: 8; }
+
+  /* ---- Game steps: a new question or scene slides in ---- */
+  .story-panel, .story-screen, .lab-q-step, .lab-options { animation: scene-in 0.42s var(--ease-out) backwards; }
+  .story-screen { animation-delay: 0.08s; }
+  .tot-option:not(.is-good):not(.is-bad):not(.is-mine) { animation: option-in 0.35s var(--ease-out) backwards; }
+  .tot-option:nth-child(2):not(.is-good):not(.is-bad):not(.is-mine) { animation-delay: 0.07s; }
+
+  /* ---- Answers: right = a little pop, wrong = a shake ---- */
+  .tot-option.is-good:not(.is-mine), .lab-opt-good, .story-choice.is-picked.is-up { animation: pop-good 0.45s var(--ease-spring); }
+  .tot-option.is-bad, .lab-opt-bad, .story-choice.is-picked.is-down { animation: shake 0.4s ease; }
+
+  /* ---- Results and explanations ---- */
+  .tot-over, .build-result, .power-why, .lab-why { animation: rise 0.45s var(--ease-out) backwards; }
+
+  /* ---- Bars and rings fill up when they appear ---- */
+  .meter > span { transform-origin: left center; animation: meter-grow 0.9s var(--ease-out) 0.15s backwards; }
+  .ring-goal { animation: ring-draw 1s var(--ease-out) 0.15s backwards; }
+
+  /* ---- Taps and presses ---- */
+  .chip, .tab, .icon-btn, .finder-opt, .build-piece, .lab-opt, .story-choice, .tot-option {
+    transition: transform 0.18s var(--ease-spring), background-color 0.15s, color 0.15s, border-color 0.2s, box-shadow 0.2s, opacity 0.2s;
+  }
+  .chip:active, .icon-btn:active, .finder-opt:active { transform: scale(0.95); }
+  .btn-primary:active:not(:disabled) { transform: scale(0.96); }
+  .bottomnav-tab.is-on .bottomnav-icon { animation: nav-pop 0.42s var(--ease-spring); }
+  .game { transition: transform 0.2s var(--ease-spring), box-shadow 0.25s; }
+
+  /* Hover effects only where there is a real mouse */
+  @media (hover: hover) {
+    .btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(36, 40, 44, 0.16); }
+    .btn-primary:active:not(:disabled) { transform: scale(0.96); box-shadow: none; }
+    .game:hover { box-shadow: 0 12px 28px rgba(36, 40, 44, 0.12); }
+    .chip:hover:not(.chip-on), .finder-opt:hover:not(.is-on) { transform: translateY(-1px); }
+  }
+
+  /* ---- Long pages: sections fade in as you scroll to them (where the browser supports it) ---- */
+  @supports (animation-timeline: view()) {
+    .block {
+      animation: reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0px entry 180px;
+    }
+  }
+
+  /* ---- Switching light / dark: colours cross-fade instead of snapping ---- */
+  html.theme-fade, html.theme-fade *, html.theme-fade *::before, html.theme-fade *::after {
+    transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease, fill 0.35s ease, stroke 0.35s ease, box-shadow 0.35s ease !important;
+  }
+}

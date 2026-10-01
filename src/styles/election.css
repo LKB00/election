@@ -1,0 +1,102 @@
+/* Election-only pieces, written in the patricka design language.
+   Everything else comes from gb/ unchanged. Only uses gb tokens. */
+
+.block-tight { margin-top: 24px; }
+
+/* ---- Duel cards (inside patricka's .tot / .tot-option) ---- */
+.duel .tot-q .row { gap: 6px; }
+.duel-tag { text-transform: capitalize; --pc: var(--card); }
+.duel-live { --pc: var(--card); display: inline-flex; align-items: center; gap: 6px; }
+.duel-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--negative); box-shadow: 0 0 0 3px var(--negative-soft); }
+
+.duel-options.n-2 { grid-template-columns: 1fr 1fr; }
+@media (max-width: 380px) { .duel-options.n-2 { gap: 10px; } }
+
+.duel-option { padding: 40px 14px 16px; gap: 12px; overflow: hidden; }
+.duel-option.is-mine { box-shadow: 0 0 0 2px var(--ink); }
+.duel-option.is-other { opacity: 0.88; }
+.duel-option.is-busy { animation: pulse-soft 0.9s ease-in-out infinite; }
+@keyframes pulse-soft { 50% { opacity: 0.6; } }
+.duel-option .tot-letter { background: var(--pc); }
+.duel-option.is-mine .tot-letter { background: var(--ink); color: var(--on-ink); }
+.duel-option .tot-caption { color: var(--ink-2); }
+
+.duel-body { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.duel-options:not(.n-2) .duel-body { flex-direction: row; align-items: center; }
+
+.duel-face {
+  width: 72px; height: 72px; flex: none; border-radius: 50%; overflow: hidden;
+  display: grid; place-items: center; background: var(--pc);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dc) 40%, transparent);
+  font-family: var(--display); font-weight: 800; font-size: 26px; letter-spacing: -0.02em; color: var(--ink);
+}
+.duel-face img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 20%; }
+.duel-options:not(.n-2) .duel-face { width: 48px; height: 48px; font-size: 18px; }
+@media (min-width: 720px) { .duel-options.n-2 .duel-face { width: 96px; height: 96px; font-size: 34px; } }
+
+.duel-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.duel-role { font-size: 11px; line-height: 16px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-3); }
+.duel-name { font-family: var(--display); font-weight: 800; letter-spacing: -0.02em; color: var(--ink); }
+.duel-first { display: block; font-size: 15px; line-height: 20px; font-weight: 700; color: var(--ink-2); }
+.duel-last { display: block; font-size: 26px; line-height: 30px; }
+@media (min-width: 720px) { .duel-last { font-size: 32px; line-height: 36px; } }
+.duel-options:not(.n-2) .duel-first { display: inline; font-size: 18px; color: var(--ink); }
+.duel-options:not(.n-2) .duel-last { display: inline; font-size: 18px; line-height: 24px; }
+
+.duel-pct { font-family: var(--display); font-weight: 800; font-size: 40px; line-height: 40px; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; animation: pop 0.4s ease; }
+.duel-pct small { font-size: 18px; color: var(--ink-3); margin-left: 1px; }
+.duel-options:not(.n-2) .duel-pct { font-size: 28px; line-height: 28px; margin-left: auto; }
+
+.duel-meter { display: block; height: 8px; border-radius: 9999px; background: var(--sand); overflow: hidden; }
+.duel-meter i { display: block; height: 100%; border-radius: 9999px; background: var(--dc); transform-origin: left center; animation: meter-grow 0.9s var(--ease-out, cubic-bezier(0.2, 0.8, 0.2, 1)) backwards; transition: width 0.6s; }
+.duel-option.is-mine .duel-meter i { background: var(--ink); }
+.duel-votes { font-size: 12px; line-height: 16px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+@keyframes meter-grow { from { transform: scaleX(0); } }
+
+/* ---- After you vote ---- */
+.duel-after { display: flex; flex-direction: column; gap: 14px; padding: 16px; border-radius: 16px; background: var(--card); animation: pop 0.35s ease; }
+.duel-no { align-self: flex-start; }
+.duel-why { display: flex; flex-direction: column; gap: 8px; }
+.duel-why .row { gap: 6px; }
+.duel-react { display: flex; flex-wrap: wrap; gap: 6px; }
+.duel-emoji { gap: 6px; }
+.duel-emoji span { font-size: 16px; line-height: 1; }
+.duel-emoji strong { font-size: 12px; font-weight: 700; }
+.duel-emoji.is-on { background: var(--lime); border-color: var(--lime); color: #24282c; }
+.duel-share { display: flex; flex-wrap: wrap; gap: 8px; }
+.duel-wa { background: #1fa855; color: #fff; }
+.duel-wa:hover:not(:disabled) { background: #1a9449; }
+.duel-error { padding: 10px 14px; border-radius: 12px; background: var(--negative-soft); color: var(--negative); font-size: 14px; line-height: 20px; }
+
+.duel-page-game { margin-top: 12px; }
+
+/* ---- Tiles: the "start your own" tile is dark like patricka's Daily ---- */
+.game-create { background: var(--ink); color: var(--on-ink); }
+.game-create > span:not(.game-meta) { color: color-mix(in srgb, var(--on-ink) 75%, transparent) !important; }
+.game-create .game-meta { color: var(--lime); }
+.game-create svg { color: var(--lime); }
+
+/* ---- Me ---- */
+.my-votes { list-style: none; margin: 16px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.my-vote { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-radius: 16px; background: var(--sand); text-decoration: none; color: var(--ink); transition: transform 0.15s; }
+.my-vote:hover { transform: translateY(-2px); }
+.my-vote > span { display: flex; flex-direction: column; gap: 2px; }
+.me-note { margin-top: 16px; }
+
+/* ---- Create form ---- */
+.create-form { display: flex; flex-direction: column; gap: 20px; padding: 20px; border-radius: 20px; background: var(--sand); max-width: 640px; }
+.create-form .field { display: flex; flex-direction: column; gap: 8px; }
+.create-form .row { display: flex; gap: 8px; align-items: center; }
+.create-form .input {
+  width: 100%; min-height: 48px; padding: 12px 16px; border: var(--hair) solid var(--line); border-radius: 12px;
+  background: var(--card); color: var(--ink); font: inherit; font-size: 16px;
+}
+.create-form textarea.input { min-height: 72px; resize: vertical; }
+.create-form .input:focus { outline: 1.5px solid var(--ink); outline-offset: 1px; }
+.create-form .toggle { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; font-size: 15px; line-height: 22px; }
+.create-form .toggle input { width: 18px; height: 18px; margin-top: 3px; accent-color: var(--ink); }
+.create-form .btn-lg { align-self: flex-start; }
+
+/* patricka fades long mock screens on phones; duel cards are short, so show them whole. */
+.tot:not(.tot-over) .duel-option:not(:disabled) { max-height: none; -webkit-mask-image: none; mask-image: none; }
+.games .game { position: relative; }

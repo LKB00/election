@@ -1,0 +1,118 @@
+/* Progress bar, Home page, old practice tabs. */
+
+/* ---------- Progress (learning by doing) ---------- */
+.index-check-on {
+  color: var(--positive);
+}
+.index-check-off {
+  color: var(--ink-3);
+}
+.index-count {
+  margin-left: auto;
+}
+.do-it {
+  padding: 24px;
+  border-radius: 14px;
+  background: var(--sand);
+}
+.do-it .label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.do-it .index-list li:last-child {
+  border-bottom: none;
+}
+.index-row-icon > svg.index-check-on {
+  color: var(--positive);
+}
+.index-row-icon > svg.index-check-off {
+  color: var(--ink-3);
+}
+.meter {
+  display: block;
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--sand-dark);
+  overflow: hidden;
+}
+.meter span {
+  display: block;
+  height: 100%;
+  border-radius: 9999px;
+  background: var(--positive);
+  transition: width 0.4s ease;
+}
+/* Library pages share one width so the tabs never jump; text stays readable. */
+.page-lib-read > :not(.lib-head) {
+  max-width: 712px;
+}
+
+/* ---------- Home: one main action, then three places ---------- */
+.home-hero {
+  padding-top: 24px;
+}
+.btn-lg {
+  height: auto;
+  min-height: 44px;
+  padding: 12px 20px;
+  font-size: 14px;
+  white-space: normal;
+  text-align: left;
+}
+.places {
+  margin-top: 48px;
+  display: grid;
+  gap: 12px;
+}
+@media (min-width: 640px) {
+  .places {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+.place {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px;
+  border-radius: 14px;
+  background: var(--sand);
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 22px;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.place:hover {
+  background: var(--sand-dark);
+}
+.place svg {
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.place strong {
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 24px;
+}
+.place-meta {
+  margin-top: auto;
+  padding-top: 12px;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+/* ---------- Practice: two modes as tabs ---------- */
+.practice-tabs {
+  margin-top: 32px;
+}
+.view {
+  gap: 16px;
+}
+.view > .section-sub:first-child {
+  margin-top: 0;
+}
+.view > .next-step {
+  margin-top: 8px;
+}
+.lab-q-step { margin-top: 0; }

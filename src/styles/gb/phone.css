@@ -1,0 +1,328 @@
+/* Phone layout (≤720px) and touch screens. Kept near the end so it wins over desktop rules. */
+
+/* =========================================================
+   Phone experience (≤ 720px)
+   Why: on a phone people hold it in one hand and use their thumb.
+   Main places move to a bottom tab bar, inner pages get a back
+   button, games go edge to edge and fit on one screen, and the
+   main action (Next, Check) stays pinned near the thumb.
+   ========================================================= */
+.bottomnav { display: none; }
+.topnav-back { display: none; }
+.switch {
+  position: relative;
+  flex: none;
+  width: 40px;
+  height: 24px;
+  border-radius: 9999px;
+  background: var(--sand-dark);
+  transition: background 0.2s;
+}
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--card);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s;
+}
+.switch.is-on { background: var(--positive); }
+.switch.is-on::after { transform: translateX(16px); }
+.me-stack { display: flex; flex-direction: column; gap: 12px; }
+.me-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 64px;
+  padding: 14px 18px;
+  border: none;
+  border-radius: 18px;
+  background: var(--sand);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.me-row > span:nth-child(2) { flex: 1; display: flex; flex-direction: column; }
+.me-row strong { font-size: 15px; }
+.me-credits { margin-top: 48px; }
+.speed-quit {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+@media (max-width: 720px) {
+  :root { --bottomnav-h: 64px; }
+
+  /* Bars */
+  .topnav-links,
+  .hide-phone { display: none !important; }
+  .topnav-inner { height: 52px; }
+  .topnav-inner.has-back .logo { display: none; }
+  .topnav-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    margin-left: -6px;
+    padding: 6px 8px 6px 2px;
+    border-radius: 10px;
+    color: var(--ink);
+    font-size: 15px;
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .topnav-back:active { background: var(--sand-dark); }
+  .logo-text { display: inline !important; }
+  /* The name is the part that gives way when streak and XP are big: it shortens with "…". */
+  .logo { flex: 0 1 auto; min-width: 0; }
+  .logo-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .topnav-right { flex: none; }
+  .bottomnav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    height: calc(var(--bottomnav-h) + env(safe-area-inset-bottom, 0px));
+    padding: 6px 4px env(safe-area-inset-bottom, 0px);
+    background: color-mix(in srgb, var(--paper) 92%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: var(--hair) solid var(--line);
+  }
+  .bottomnav-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    color: var(--ink-3);
+    font-size: 11px;
+    font-weight: 700;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .bottomnav-icon {
+    width: 52px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border-radius: 9999px;
+    transition: background 0.2s;
+  }
+  .bottomnav-tab.is-on { color: var(--ink); }
+  .bottomnav-tab.is-on .bottomnav-icon { background: var(--lime); color: #24282c; }
+  .bottomnav-tab:active .bottomnav-icon { transform: scale(0.92); }
+  .main { padding-bottom: calc(var(--bottomnav-h) + env(safe-area-inset-bottom, 0px)); }
+  .site-footer { display: none; }
+  .crumbs { display: none; }
+  .goal-toast { bottom: calc(var(--bottomnav-h) + 16px + env(safe-area-inset-bottom, 0px)); }
+
+  /* Focus mode (Speed round): nothing but the game */
+  .focus-mode .topnav,
+  .focus-mode .bottomnav { display: none; }
+  .focus-mode .main { padding-bottom: 0; }
+
+  /* Type and spacing: tighter, so more fits on one screen */
+  .page { padding: 20px 16px 24px; }
+  .page-head { gap: 8px; }
+  .display { font-size: 28px; line-height: 34px; }
+  .display-xl { font-size: 34px; line-height: 38px; }
+  .lead { font-size: 15px; line-height: 23px; }
+  .block { margin-top: 40px; }
+  .home-hero { padding-top: 0; }
+  .home-game { margin-top: 20px; }
+  .eyebrow { font-size: 11px; }
+
+  /* Games go edge to edge: no box inside a box */
+  .tot,
+  .lab,
+  .story,
+  .build,
+  .speed {
+    margin-left: -16px;
+    margin-right: -16px;
+    padding: 16px;
+    border-radius: 0;
+  }
+  .tot-over { padding: 32px 16px; }
+  .tot-q h3,
+  .story-q,
+  .lab-q { font-size: 20px; line-height: 26px; }
+  .tot-q p { font-size: 14px; line-height: 20px; }
+  .lab-goal { font-size: 17px; line-height: 24px; }
+  .tot-option,
+  .speed-option { padding: 32px 8px 8px; border-radius: 14px; }
+  .tot-option .m-frame,
+  .speed-option .m-frame { zoom: 0.88; }
+
+  /* This or That: see both screens without scrolling (before you answer) */
+  .tot-options { gap: 10px; }
+  .tot:not(.tot-over) .tot-option:not(:disabled) {
+    max-height: 30vh;
+    max-height: 30dvh;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(#000 78%, transparent);
+    mask-image: linear-gradient(#000 78%, transparent);
+  }
+
+  /* The main action stays pinned near the thumb */
+  .tot-result.is-shown,
+  .story-nav,
+  .lab-panel .lab-nav:has(.btn-primary),
+  .build-screen .lab-nav {
+    position: sticky;
+    bottom: calc(var(--bottomnav-h) + env(safe-area-inset-bottom, 0px) + 8px);
+    z-index: 5;
+    margin: 0 -8px;
+    padding: 10px 12px;
+    border-radius: 18px;
+    background: var(--card);
+    box-shadow: 0 8px 28px rgba(36, 40, 44, 0.18);
+  }
+  .tot-result.is-shown { flex-wrap: nowrap; font-size: 14px; line-height: 20px; }
+  .tot-result.is-shown .btn { flex: none; }
+  .tot-result .disagree { display: none; }
+  .lab-panel .lab-nav .lab-skip { margin-left: auto; }
+
+  /* Fix it: preview stays small so the question is close */
+  .lab-preview .m-frame { zoom: 0.9; }
+  .lab { gap: 16px; }
+  .lab-steps { margin-top: 8px; }
+  .lab-opt { min-height: 52px; font-size: 15px; }
+
+  /* Speed round: both screens fit on one screen, no scrolling */
+  .speed { min-height: 100vh; min-height: 100dvh; margin-top: -20px; padding-top: calc(12px + env(safe-area-inset-top, 0px)); gap: 10px; }
+  .speed-brief { font-size: 15px; line-height: 21px; }
+  .speed-options { gap: 10px; }
+  .speed-option {
+    max-height: calc((100dvh - 150px) / 2);
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(#000 80%, transparent);
+    mask-image: linear-gradient(#000 80%, transparent);
+  }
+  .speed-count, .speed-intro { margin-left: -16px; margin-right: -16px; border-radius: 0; }
+
+  /* Story + build: screen first so you see what you change */
+  .story-screen { order: -1; }
+  .story-head { gap: 10px; }
+  .trust { flex: 1 1 100%; }
+  .build-pieces { gap: 6px; }
+  .build-piece { min-height: 48px; }
+
+  /* Lists and cards */
+  .card-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .pattern-card .thumb { height: 96px; padding: 8px 10px 0; }
+  .pattern-card .thumb .m-frame { width: 200%; transform: scale(0.5); }
+  .pattern-card-body { padding: 10px 12px 12px; gap: 6px; }
+  .pattern-card-body h3 { font-size: 14px; line-height: 19px; }
+  .pattern-card-body p { display: none; }
+  .card-lock { font-size: 0; gap: 0; }
+  .card-lock svg { width: 14px; height: 14px; }
+  .games { gap: 10px; }
+  .game { padding: 16px; border-radius: 18px; }
+  .game strong { font-size: 19px; line-height: 24px; }
+  .game svg { margin-bottom: 6px; }
+  .game-meta { padding-top: 10px; }
+  .level-stats { grid-template-columns: 1fr 1fr; }
+  .daily-banner { padding: 14px 16px; }
+  .daily-banner .btn { width: 100%; }
+}
+
+/* Touch screens: no hover lifts, a quick press feedback instead */
+@media (hover: none) {
+  .game:hover, .tot-option:not(:disabled):hover, a.pattern-card:hover, .story-pick:hover,
+  .story-choice:not(:disabled):hover, .build-piece:hover, .daily-banner:hover, .badge a:hover, .pc-card:hover {
+    transform: none;
+  }
+  .game:active, .story-pick:active, a.pattern-card:active, .daily-banner:active, .me-row:active,
+  .story-choice:not(:disabled):active, .build-piece:active, .lab-opt:active, .tot-option:not(:disabled):active {
+    transform: scale(0.98);
+  }
+  button, a { -webkit-tap-highlight-color: transparent; }
+}
+@media (max-width: 720px) {
+  /* This or That: smaller header so both screens fit */
+  .tot-q { gap: 2px; }
+  .tot-q .tag:not(.tag-hard) { display: none; }
+  .tot-q .row:not(:has(.tag-hard)) { display: none; }
+  .tot-q h3 { font-size: 18px; line-height: 24px; margin-top: 0; }
+  .tot { gap: 12px; }
+  .tot-modes .tab-count { display: none; }
+  .tot-keys { display: none; }
+  .tot-result:not(.is-shown) { min-height: 0; }
+  .tot:not(.tot-over) .tot-option:not(:disabled) { max-height: 27vh; max-height: 27dvh; }
+
+  /* Home: get to the game faster */
+  .home-hero .lead { display: none; }
+
+  /* Cards: compact header, one row of filters that scrolls sideways */
+  .cards-head .lead { display: none; }
+  .collect-bar .btn { width: 100%; }
+  .filters .chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin: 0 -16px;
+    padding: 0 16px 2px;
+    scrollbar-width: none;
+  }
+  .filters .chips::-webkit-scrollbar { height: 0; }
+  .filters .chip { flex: none; }
+}
+@media (max-width: 720px) {
+  /* On phones, level and badges live on the Me tab; Play is just games */
+  .play-grid > .level-card { display: none; }
+}
+.levelup-toast { bottom: auto; top: calc(72px + env(safe-area-inset-top, 0px)); animation-name: toast-down; }
+@keyframes toast-down { from { transform: translate(-50%, -20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+.levelup-toast svg { color: var(--lime); }
+.sound-hint { gap: 10px; padding: 8px 8px 8px 16px; font-size: 13px; }
+.sound-hint-off {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 9999px;
+  background: var(--lime);
+  color: #24282c;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.goal-toast { line-height: 20px; white-space: nowrap; max-width: calc(100vw - 24px); }
+.goal-toast > span { overflow: hidden; text-overflow: ellipsis; }
+.sound-hint { bottom: auto; top: calc(64px + env(safe-area-inset-top, 0px)); animation-name: toast-down; }
+.sound-hint-off { flex: none; white-space: nowrap; }
+@media (max-width: 720px) {
+  .levelup-toast { top: calc(60px + env(safe-area-inset-top, 0px)); }
+  .sound-hint { top: calc(60px + env(safe-area-inset-top, 0px)); }
+}
+
+/* Phone held sideways: very little height, so the bottom bar shrinks to icons only. */
+@media (max-width: 900px) and (max-height: 480px) {
+  :root { --bottomnav-h: 44px; }
+  .bottomnav { padding-top: 2px; padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .bottomnav-tab { font-size: 0; gap: 0; }
+  .bottomnav-icon { height: 28px; }
+}
+
+/* Very narrow phones: the short name GB3 (Good Bot, Bad Bot = G + B three times) replaces the full name. */
+.logo-short { display: none; }
+@media (max-width: 340px) {
+  .logo-full { display: none; }
+  .logo-short { display: inline; }
+}

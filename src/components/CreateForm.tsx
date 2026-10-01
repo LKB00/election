@@ -42,9 +42,9 @@ export default function CreateForm() {
   }
 
   return (
-    <form className="stack" onSubmit={submit}>
+    <form className="create-form" onSubmit={submit}>
       <div className="field">
-        <label className="label" htmlFor="title">Question</label>
+        <label className="label" htmlFor="title">Your question</label>
         <input id="title" className="input" value={title} maxLength={120} placeholder="Who is the best finisher?" onChange={(e) => setTitle(e.target.value)} required />
       </div>
 
@@ -86,11 +86,11 @@ export default function CreateForm() {
       </label>
       <label className="toggle">
         <input type="checkbox" checked={allowChange} onChange={(e) => setChange(e.target.checked)} />
-        <span><strong>Let people change their vote</strong><br /><span className="small">Until the poll ends.</span></span>
+        <span><strong>Let people change their vote</strong><br /><span className="small">Until the duel ends.</span></span>
       </label>
 
-      {error && <p className="error" role="alert">{error}</p>}
-      <button className="btn btn-primary btn-lg" disabled={busy} style={{ alignSelf: 'flex-start' }}>{busy ? 'Creating…' : 'Create poll'}</button>
+      {error && <p className="duel-error" role="alert">{error}</p>}
+      <button className="btn btn-primary btn-lg" disabled={busy} style={{ alignSelf: 'flex-start' }}>{busy ? 'Creating…' : 'Create duel'}</button>
     </form>
   );
 }

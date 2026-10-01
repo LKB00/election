@@ -1,4 +1,4 @@
-import { boolean, index, integer, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import { boolean, index, integer, pgTable, primaryKey, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 
 export const polls = pgTable(
   'polls',
@@ -50,4 +50,16 @@ export const votes = pgTable(
     uniqueIndex('votes_one_per_voter').on(t.pollId, t.voterKey),
     index('votes_option_idx').on(t.optionId),
   ],
+);
+
+export const reactions = pgTable(
+  'reactions',
+  {
+    pollId: text('poll_id').notNull().references(() => polls.id, { onDelete: 'cascade' }),
+    voterKey: text('voter_key').notNull(),
+    emoji: text('emoji').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  // One of each emoji per person per poll: tapping again removes it.
+  (t) => [primaryKey({ columns: [t.pollId, t.voterKey, t.emoji] })],
 );
