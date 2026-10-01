@@ -1,0 +1,109 @@
+/* Colours, fonts and dark mode. Taken from the patricka project. */
+:root {
+  --paper: #fbfbf7;
+  --sand: #f7f6f0;
+  --sand-dark: #f0eee3;
+  --card: #ffffff;
+  --ink: #24282c;
+  --ink-hover: #14171a;
+  --ink-2: #5b5e61;
+  --ink-3: #707377;
+  --line: #deddd8;
+  --divider: #e8e4d8;
+  --on-ink: #fbfbf7;
+
+  --positive: #5a7a1f;
+  --positive-soft: #eef3dc;
+  --negative: #c1443a;
+  --negative-soft: #f9e8e5;
+  --attention: #b8693a;
+  --attention-soft: #f7ece3;
+  --caution: #6b6b7d;
+  --caution-soft: #eeedf5;
+  --lime: #c2ef72;
+  --lime-badge: rgba(132, 204, 22, 0.15);
+
+  /* pastel group fills + slightly stronger dots */
+  --p-input: #e5eef7;
+  --p-output: #eeedf5;
+  --p-control: #eef3dc;
+  --p-trust: #f7ece3;
+  --p-feedback: #f6e8ec;
+  --p-agents: #f5efd8;
+  --d-input: #8fb3d9;
+  --d-output: #a9a3d6;
+  --d-control: #9fbf6a;
+  --d-trust: #e0a77e;
+  --d-feedback: #d99aab;
+  --d-agents: #d2b850;
+
+  --sans: 'Lato', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --serif: 'Libre Baskerville', ui-serif, Georgia, serif;
+  --display: 'Bricolage Grotesque', 'Lato', ui-sans-serif, system-ui, sans-serif;
+  --mono: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  --hair: 0.5px;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --paper: #161819;
+    --sand: #1c1f21;
+    --sand-dark: #272a2d;
+    --card: #202326;
+    --ink: #ecebe4;
+    --ink-hover: #ffffff;
+    --ink-2: #b1b2ae;
+    --ink-3: #85878a;
+    --line: #3a3d40;
+    --divider: #2e3134;
+    --on-ink: #161819;
+    --positive: #b2d27a;
+    --positive-soft: #263019;
+    --negative: #f0948a;
+    --negative-soft: #3a211e;
+    --attention: #e8aa82;
+    --attention-soft: #3a2b20;
+    --caution: #b9b9cc;
+    --caution-soft: #2a2a35;
+    --lime-badge: rgba(194, 239, 114, 0.16);
+    --p-input: #1f2a35;
+    --p-output: #292936;
+    --p-control: #26301b;
+    --p-trust: #382a20;
+    --p-feedback: #36242b;
+    --p-agents: #33301d;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme='dark'] {
+  --paper: #161819;
+  --sand: #1c1f21;
+  --sand-dark: #272a2d;
+  --card: #202326;
+  --ink: #ecebe4;
+  --ink-hover: #ffffff;
+  --ink-2: #b1b2ae;
+  --ink-3: #85878a;
+  --line: #3a3d40;
+  --divider: #2e3134;
+  --on-ink: #161819;
+  --positive: #b2d27a;
+  --positive-soft: #263019;
+  --negative: #f0948a;
+  --negative-soft: #3a211e;
+  --attention: #e8aa82;
+  --attention-soft: #3a2b20;
+  --caution: #b9b9cc;
+  --caution-soft: #2a2a35;
+  --lime-badge: rgba(194, 239, 114, 0.16);
+  --p-input: #1f2a35;
+  --p-output: #292936;
+  --p-control: #26301b;
+  --p-trust: #382a20;
+  --p-feedback: #36242b;
+  --p-agents: #33301d;
+  color-scheme: dark;
+}
