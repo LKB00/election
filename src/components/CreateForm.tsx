@@ -1,6 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { Clock, EyeOff, Plus, Repeat, X } from 'lucide-react';
+import { ChevronDown, Clock, EyeOff, Plus, Repeat, X } from 'lucide-react';
 import { useState } from 'react';
 import { CATEGORIES } from '@/lib/validation';
 
@@ -15,6 +15,8 @@ export default function CreateForm() {
   const [allowChange, setChange] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  // P3 settings stay folded: the promise is "30 seconds" (docs/DESIGN.md, Flow 3).
+  const [more, setMore] = useState(false);
 
   const setChoice = (i: number, v: string) => setChoices((c) => c.map((x, j) => (j === i ? v : x)));
 
@@ -72,6 +74,12 @@ export default function CreateForm() {
         )}
       </div>
 
+      <button type="button" className="chip duel-add" aria-expanded={more} onClick={() => setMore((m) => !m)}>
+        <ChevronDown size={14} strokeWidth={1.75} aria-hidden style={{ transform: more ? 'rotate(180deg)' : undefined }} /> More options
+      </button>
+
+      {more && (
+      <>
       <div className="duel-group">
         <label className="label" htmlFor="desc">Details · optional</label>
         <span className="search">
@@ -110,6 +118,8 @@ export default function CreateForm() {
           <span className={'switch' + (allowChange ? ' is-on' : '')} aria-hidden />
         </button>
       </div>
+      </>
+      )}
 
       {error && <p className="duel-error" role="alert">{error}</p>}
       <div className="row">

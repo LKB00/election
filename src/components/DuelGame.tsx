@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { ArrowRight, Check, Flame, Link2, MessageCircle, Plus, Share2, Trophy } from 'lucide-react';
+import { ArrowRight, Check, Flame, Plus, Share2, Trophy } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PollOption, PollView } from '@/lib/polls';
 import { announceVote, useStats } from '@/lib/useStats';
@@ -64,6 +64,7 @@ function Face({ o, tone }: { o: PollOption; tone: string }) {
   );
 }
 
+// The duel question is the page title (P1), so it is rendered as the page's h1. See docs/DESIGN.md.
 export default function DuelGame({ deck: initialDeck, start = 0 }: { deck: PollView[]; start?: number }) {
   const [deck, setDeck] = useState(initialDeck);
   const [i, setI] = useState(() => {
@@ -142,6 +143,7 @@ export default function DuelGame({ deck: initialDeck, start = 0 }: { deck: PollV
 
   const link = () => `${window.location.origin}/p/${poll?.id}`;
   const shareText = () => (mine ? `I picked ${mine.label}. Who would you pick?` : `${poll?.title} Who would you pick?`);
+  // Phones: the share sheet (WhatsApp is in it). Computers: copy the link, then say so.
   async function share() {
     if (navigator.share) {
       try {
@@ -187,6 +189,8 @@ export default function DuelGame({ deck: initialDeck, start = 0 }: { deck: PollV
 
   return (
     <div className="tot duel">
+      {/* P3 progress: only once you have voted. For a new visitor "0" and "0" read like a quiz score. */}
+      {(votedCount > 0 || streak > 0) && (
       <div className="tot-bar">
         <span className="tot-round" aria-label={`Duel ${i + 1} of ${deck.length}`}>
           {deck.map((p, n) => (
@@ -198,19 +202,13 @@ export default function DuelGame({ deck: initialDeck, start = 0 }: { deck: PollV
           <Flame size={14} strokeWidth={1.75} aria-hidden /> {streak}
         </span>
       </div>
+      )}
 
       <div className="tot-q">
-        <div className="row wrap">
-          <span className="tag duel-tag">{poll.category}</span>
-          <span className="tag duel-tag">{poll.closed ? 'Ended' : 'Live'} · {poll.participants.toLocaleString()} {poll.participants === 1 ? 'vote' : 'votes'}</span>
-        </div>
-        <h3 aria-level={2}>{poll.title}</h3>
-        <p>
-          {revealed
-            ? 'Here is where everyone stands.'
-            : poll.pulse.lastHour > 0
-              ? `${poll.pulse.lastHour} ${poll.pulse.lastHour === 1 ? 'person' : 'people'} voted in the last hour. Tap your pick.`
-              : poll.description || 'Tap your pick. Results unlock after you vote.'}
+        <h1 key={poll.id} className="display duel-q">{poll.title}</h1>
+        <p className="small muted">
+          {poll.closed ? 'Ended' : 'Live'} · {poll.participants.toLocaleString()} {poll.participants === 1 ? 'vote' : 'votes'}
+          {!revealed && poll.pulse.lastHour > 0 && ` · ${poll.pulse.lastHour} in the last hour`}
         </p>
       </div>
 
@@ -250,15 +248,17 @@ export default function DuelGame({ deck: initialDeck, start = 0 }: { deck: PollV
         })}
       </div>
 
+      {!voted && !poll.closed && (
+        <p className="small muted duel-hint">Tap a card to vote · anonymous · one vote each · results unlock after</p>
+      )}
+
       {msg && <p className="duel-error" role="alert">{msg}</p>}
 
       {revealed && mine && (
         <div className="duel-after">
-          {poll.myVoterNumber && <span className="pill-new">You’re voter #{poll.myVoterNumber.toLocaleString()}</span>}
-
           {poll.reasons.length > 0 && !poll.myReason && (
             <div className="duel-group">
-              <p className="label">Why {splitName(mine.label).last}? One tap, optional</p>
+              <p className="label">Why {splitName(mine.label).last}? · optional</p>
               <div className="row wrap">
                 {poll.reasons.map((r) => (
                   <button key={r} type="button" className="chip" onClick={() => post('reason', { reason: r })}>{r}</button>
@@ -266,24 +266,18 @@ export default function DuelGame({ deck: initialDeck, start = 0 }: { deck: PollV
               </div>
             </div>
           )}
-
-          <div className="row wrap" role="group" aria-label="React">
-            {poll.reactions.map((r) => {
-              const on = poll.myReactions.includes(r.emoji);
-              return (
-                <button key={r.emoji} type="button" className={'chip' + (on ? ' chip-on' : '')} aria-pressed={on} onClick={() => post('react', { emoji: r.emoji })}>
-                  {r.emoji}{r.n > 0 && ` ${r.n}`}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="row wrap">
-            <a className="btn btn-primary" href={`https://wa.me/?text=${encodeURIComponent(`${shareText()} ${typeof window !== 'undefined' ? link() : ''}`)}`} target="_blank" rel="noopener noreferrer">
-              <MessageCircle size={14} strokeWidth={1.75} aria-hidden /> Dare a friend on WhatsApp
-            </a>
-            <button type="button" className="btn btn-ghost" onClick={share}><Share2 size={14} strokeWidth={1.75} aria-hidden /> Share</button>
-            <button type="button" className="btn btn-ghost" onClick={copy}><Link2 size={14} strokeWidth={1.75} aria-hidden /> {copied ? 'Copied' : 'Copy link'}</button>
+          <div className="duel-group">
+            <p className="label">React</p>
+            <div className="row wrap" role="group" aria-label="React">
+              {poll.reactions.map((r) => {
+                const on = poll.myReactions.includes(r.emoji);
+                return (
+                  <button key={r.emoji} type="button" className={'chip' + (on ? ' chip-on' : '')} aria-pressed={on} onClick={() => post('react', { emoji: r.emoji })}>
+                    {r.emoji}{r.n > 0 && ` ${r.n}`}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
@@ -291,10 +285,18 @@ export default function DuelGame({ deck: initialDeck, start = 0 }: { deck: PollV
       <div className={'tot-result' + (revealed ? ' is-shown' : '')} aria-live="polite">
         {revealed && mine ? (
           <>
-            <p><strong className="txt-good">{vTitle}</strong> {vLine}</p>
-            <button type="button" className="btn btn-primary" onClick={next} ref={nextRef}>
-              Next duel <ArrowRight size={14} strokeWidth={1.75} aria-hidden />
-            </button>
+            <p>
+              <strong className="txt-good">{vTitle}</strong> {vLine}
+              {poll.myVoterNumber && <span className="small muted"> You’re voter #{poll.myVoterNumber.toLocaleString()}.</span>}
+            </p>
+            <span className="row">
+              <button type="button" className="btn btn-ghost" onClick={share}>
+                <Share2 size={14} strokeWidth={1.75} aria-hidden /> {copied ? 'Link copied' : 'Dare a friend'}
+              </button>
+              <button type="button" className="btn btn-primary" onClick={next} ref={nextRef}>
+                Next <ArrowRight size={14} strokeWidth={1.75} aria-hidden />
+              </button>
+            </span>
           </>
         ) : (
           <p className="tot-keys">

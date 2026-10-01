@@ -33,7 +33,7 @@
 .duel-option:not(.is-mine) .meter span { background: var(--ink-3); }
 
 /* After you vote: patricka pieces stacked on a card */
-.duel-after { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; padding: 16px; border-radius: 16px; background: var(--card); }
+.duel-after { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; padding: 0 4px; }   /* P3: no card, so it never competes with the result */
 .duel-error { padding: 12px 16px; border-radius: 12px; background: var(--negative-soft); color: var(--negative); font-size: 14px; line-height: 20px; }
 .duel-page-game { margin-top: 12px; }
 .games .game { position: relative; }
@@ -42,3 +42,13 @@
 .me-stack .search { max-width: 480px; }
 .me-stack .row .search { flex: 1; }
 .duel-add { align-self: flex-start; }
+
+/* Hierarchy (docs/DESIGN.md): the duel question is the page title, the game starts right under the label */
+.duel-first { margin-top: 16px; }
+.duel-q { margin: 0; }
+.duel .tot-q { gap: 8px; }
+.duel .tot-result .row { gap: 8px; flex-wrap: nowrap; }
+/* After voting: the verdict gets its own line, the two buttons sit under it (Next = ink, the main step). */
+.duel .tot-result.is-shown { flex-direction: column; align-items: stretch; }
+.duel .tot-result.is-shown .row { justify-content: flex-end; }
+.duel-hint { margin: 0; padding: 0 4px; }

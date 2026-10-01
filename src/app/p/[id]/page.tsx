@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-// A shared link: this duel first, then the others.
+// A shared link: the friend's duel first. Docs: docs/DESIGN.md (Flow 2).
 export default async function DuelPage({ params }: Props) {
   const { id } = await params;
   const db = await getDb();
@@ -32,15 +32,11 @@ export default async function DuelPage({ params }: Props) {
   const deck = [poll, ...rest.filter((p) => p.id !== poll.id)];
   return (
     <div className="page page-wide">
-      <header className="home-hero">
-        <p className="eyebrow">Someone wants your pick</p>
-      </header>
-      <section className="home-game duel-page-game" aria-label="Duel">
+      <p className="eyebrow">Someone wants your pick</p>
+      <section className="home-game duel-first" aria-label="Duel">
         <DuelGame deck={deck} start={0} />
       </section>
-      <section className="block">
-        <TodayCard initial={stats} />
-      </section>
+      <TodayCard initial={stats} hideUntilVoted />
     </div>
   );
 }

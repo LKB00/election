@@ -6,8 +6,9 @@ import { DAILY_GOAL, useStats } from '@/lib/useStats';
 const WEEK = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 // Today: goal ring, day streak and the last 7 days (same card as patricka).
-export default function TodayCard({ initial }: { initial?: VoterStats }) {
-  const { today, streak, days } = useStats(initial);
+// hideUntilVoted: a goal ring and a 0-day streak mean nothing before your first vote (docs/DESIGN.md).
+export default function TodayCard({ initial, hideUntilVoted = false }: { initial?: VoterStats; hideUntilVoted?: boolean }) {
+  const { votes, today, streak, days } = useStats(initial);
   const pct = Math.min(1, today / DAILY_GOAL);
   const r = 26;
   const c = 2 * Math.PI * r;
@@ -17,7 +18,8 @@ export default function TodayCard({ initial }: { initial?: VoterStats }) {
     const k = d.toISOString().slice(0, 10);
     return { k, label: WEEK[d.getUTCDay()], played: played.has(k), today: i === 6 };
   });
-  return (
+  if (hideUntilVoted && votes === 0) return null;
+  const card = (
     <div className="today-card">
       <div className="today-goal">
         <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden>
@@ -45,4 +47,5 @@ export default function TodayCard({ initial }: { initial?: VoterStats }) {
       </ol>
     </div>
   );
+  return hideUntilVoted ? <section className="block">{card}</section> : card;
 }
