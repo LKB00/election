@@ -13,6 +13,7 @@ export type PollOption = {
   label: string;
   imageUrl: string | null;
   subtitle: string | null;
+  imageCredit: string | null;
   votes: number;
   percent: number;
   /** Why this option's voters picked it (only when results are visible). */
@@ -164,6 +165,7 @@ export async function getPoll(db: Db, id: string, voterId: string | null): Promi
         label: o.label,
         imageUrl: o.imageUrl,
         subtitle: o.subtitle,
+        imageCredit: o.imageCredit,
         votes: n,
         percent: resultsVisible && total ? (n / total) * 100 : 0,
         reasons: resultsVisible

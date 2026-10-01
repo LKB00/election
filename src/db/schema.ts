@@ -29,6 +29,8 @@ export const options = pgTable(
     imageUrl: text('image_url'),
     // Short line under the name, e.g. a role.
     subtitle: text('subtitle'),
+    // Who took the photo and under which licence, shown next to it.
+    imageCredit: text('image_credit'),
     position: integer('position').notNull(),
   },
   (t) => [index('options_poll_idx').on(t.pollId)],

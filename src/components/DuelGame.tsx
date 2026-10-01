@@ -47,6 +47,8 @@ function timeAgo(iso: string | null) {
   return `${Math.floor(s / 86400)} d ago`;
 }
 
+// The face is how people recognise a candidate (P1), so a real photo gets the full card width.
+// No photo, or it fails to load: a soft initials circle instead (never a broken image).
 function Face({ o, tone }: { o: PollOption; tone: string }) {
   const [ok, setOk] = useState<boolean | null>(null);
   useEffect(() => {
@@ -56,15 +58,21 @@ function Face({ o, tone }: { o: PollOption; tone: string }) {
     img.onerror = () => setOk(false);
     img.src = o.imageUrl;
   }, [o.imageUrl]);
+  if (o.imageUrl && ok !== false) {
+    return (
+      <span className={`duel-photo tone-${tone}`} aria-hidden>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {ok && <img src={o.imageUrl} alt="" />}
+      </span>
+    );
+  }
   return (
     <span className={`duel-face tone-${tone}`} aria-hidden>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      {o.imageUrl && ok ? <img src={o.imageUrl} alt="" /> : <span>{initials(o.label)}</span>}
+      <span>{initials(o.label)}</span>
     </span>
   );
 }
 
-// The duel question is the page title (P1), so it is rendered as the page's h1. See docs/DESIGN.md.
 const isOpen = (p: PollView) => p.myVote === null && !p.closed;
 
 // start: given for a shared link (always open that duel, even if it ended or you voted).
@@ -301,6 +309,10 @@ export default function DuelGame({ deck: initialDeck, start }: { deck: PollView[
 
       {!voted && !poll.closed && (
         <p className="small muted duel-hint">Tap a card to vote · anonymous · one vote each · results unlock after</p>
+      )}
+
+      {poll.options.some((o) => o.imageCredit) && (
+        <p className="duel-credit">Photos: {poll.options.filter((o) => o.imageCredit).map((o) => o.imageCredit).join(' · ')}</p>
       )}
 
       {msg && <p className="duel-error" role="alert">{msg}</p>}
