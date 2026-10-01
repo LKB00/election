@@ -25,6 +25,8 @@ export type PollView = {
   endsAt: string | null;
   closed: boolean;
   totalVotes: number;
+  /** How many people voted. Safe to show before voting: it does not reveal the split. */
+  participants: number;
   /** The option this voter picked, if any. */
   myVote: string | null;
   /** False when the organiser hides numbers and this voter may not see them yet. */
@@ -101,6 +103,7 @@ export async function getPoll(db: Db, id: string, voterId: string | null): Promi
     endsAt: poll.endsAt?.toISOString() ?? null,
     closed,
     totalVotes: resultsVisible ? total : 0,
+    participants: total,
     myVote,
     resultsVisible,
     featured: poll.featured,

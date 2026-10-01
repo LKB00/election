@@ -1,4 +1,5 @@
 import type { Db } from '.';
+import { sql } from 'drizzle-orm';
 import * as schema from './schema';
 
 export const FLAGSHIP_ID = 'modi-vs-rahul';
@@ -23,8 +24,9 @@ export async function seedFlagship(db: Db) {
   await db
     .insert(schema.options)
     .values([
-      { id: 'modi', pollId: FLAGSHIP_ID, label: 'Narendra Modi', position: 0 },
-      { id: 'rahul', pollId: FLAGSHIP_ID, label: 'Rahul Gandhi', position: 1 },
+      // Photos live in public/candidates/. If a file is missing the screen shows the initials instead.
+      { id: 'modi', pollId: FLAGSHIP_ID, label: 'Narendra Modi', imageUrl: '/candidates/modi.jpg', position: 0 },
+      { id: 'rahul', pollId: FLAGSHIP_ID, label: 'Rahul Gandhi', imageUrl: '/candidates/rahul.jpg', position: 1 },
     ])
-    .onConflictDoNothing();
+    .onConflictDoUpdate({ target: schema.options.id, set: { imageUrl: sql`coalesce(${schema.options.imageUrl}, excluded.image_url)` } });
 }
