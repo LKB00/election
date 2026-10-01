@@ -23,26 +23,26 @@ export default async function Home() {
       )}
 
       <div className="section-head">
-        <h2>More polls</h2>
-        <span className="small">Latest first</span>
+        <h2>Next duels</h2>
+        <Link href="/create" className="small">Create yours →</Link>
       </div>
-      {polls.length === 0 ? (
-        <div className="card empty">No other polls yet. Start one and send it to your friends.</div>
-      ) : (
-        <div className="poll-list">
-          {polls.map((p) => (
-            <Link key={p.id} href={`/p/${p.id}`} className="card poll-item">
-              <div className="poll-meta">
-                <span className="chip">{p.category}</span>
-                <span className={'chip ' + (p.closed ? 'chip-closed' : 'chip-live')}>{p.closed ? 'Ended' : 'Live'}</span>
-                <span className="small">{p.totalVotes} {p.totalVotes === 1 ? 'vote' : 'votes'}</span>
-              </div>
-              <h3>{p.title}</h3>
-              <p className="small">{p.options.join(' · ')}</p>
-            </Link>
-          ))}
-        </div>
-      )}
+      <div className="next-row">
+        {polls.map((p) => (
+          <Link key={p.id} href={`/p/${p.id}`} className="next-card">
+            <div className="poll-meta">
+              <span className="chip">{p.category}</span>
+              <span className={'chip ' + (p.closed ? 'chip-closed' : 'chip-live')}>{p.closed ? 'Ended' : 'Live'}</span>
+            </div>
+            <h3>{p.title}</h3>
+            <div className="next-vs">{p.options.slice(0, 4).map((o) => <span key={o}>{o}</span>)}</div>
+            <p className="small">{p.totalVotes} {p.totalVotes === 1 ? 'vote' : 'votes'}</p>
+          </Link>
+        ))}
+        <Link href="/create" className="next-card next-create">
+          <h3>+ New duel</h3>
+          <p className="small">Make your own poll in 30 seconds</p>
+        </Link>
+      </div>
 
       <div className="cta-card">
         <h2>Got your own debate?</h2>

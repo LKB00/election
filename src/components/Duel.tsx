@@ -4,66 +4,89 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PollView } from '@/lib/polls';
 import { confetti, useCountUp } from '@/lib/motion';
 
-const SIDE_COLORS = ['#6d5ef0', '#0fa38f'];
+const SIDE = ['var(--side-a)', 'var(--side-b)'];
+const SIDE_HEX = ['#7c6cff', '#14c8ac'];
 
-const initials = (name: string) =>
-  name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('');
+const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('');
+const firstName = (name: string) => name.split(/\s+/)[0] ?? name;
 
 function Pct({ value }: { value: number }) {
-  const v = useCountUp(value);
-  return <>{Math.round(v)}<span className="duel-pct-sign">%</span></>;
+  return <>{Math.round(useCountUp(value, 1100))}</>;
 }
-
 function Num({ value }: { value: number }) {
-  return <>{Math.round(useCountUp(value, 700)).toLocaleString()}</>;
+  return <>{Math.round(useCountUp(value, 800)).toLocaleString()}</>;
 }
 
 export default function Duel({ initial, headingLevel = 'h1' }: { initial: PollView; headingLevel?: 'h1' | 'h2' }) {
   const [poll, setPoll] = useState(initial);
-  const [busy, setBusy] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [copied, setCopied] = useState(false);
-  const [justVoted, setJustVoted] = useState(false);
-  const cardRefs = useRef<Record<string, HTMLButtonElement | null>>({});
-
-  const [a, b] = poll.options;
-  const voted = poll.myVote !== null;
-  const canVote = !poll.closed && (!voted || poll.allowChange);
+  const [photoOk, setPhotoOk] = useState<Record<string, boolean>>({});
+  const panelRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const Heading = headingLevel;
 
-  // Live updates: refresh the numbers every few seconds while the tab is open.
+  // Show a photo only once it has really loaded. Otherwise the initials stay (no broken-image icon).
+  useEffect(() => {
+    for (const o of poll.options) {
+      if (!o.imageUrl || photoOk[o.id] !== undefined) continue;
+      const img = new Image();
+      img.onload = () => setPhotoOk((p) => ({ ...p, [o.id]: true }));
+      img.onerror = () => setPhotoOk((p) => ({ ...p, [o.id]: false }));
+      img.src = o.imageUrl;
+    }
+  }, [poll.options, photoOk]);
+
+  const voted = poll.myVote !== null;
+  const canVote = !poll.closed && (!voted || poll.allowChange);
+  const revealed = poll.resultsVisible && voted;
+  const pickedId = selected ?? poll.myVote;
+
+  // Live updates every few seconds while the tab is visible.
   const refresh = useCallback(async () => {
     const res = await fetch(`/api/polls/${poll.id}`, { cache: 'no-store' }).catch(() => null);
     if (res?.ok) setPoll(await res.json());
   }, [poll.id]);
   useEffect(() => {
-    const timer = setInterval(() => document.visibilityState === 'visible' && refresh(), 6000);
-    return () => clearInterval(timer);
-  }, [refresh]);
+    const t = setInterval(() => document.visibilityState === 'visible' && !busy && refresh(), 6000);
+    return () => clearInterval(t);
+  }, [refresh, busy]);
 
-  async function vote(optionId: string, index: number) {
-    if (!canVote || busy || optionId === poll.myVote) return;
-    setBusy(optionId);
+  function select(id: string) {
+    if (!canVote || busy || id === poll.myVote) return;
+    navigator.vibrate?.(8);
+    setSelected(id);
     setMsg('');
-    navigator.vibrate?.(12);
+  }
+
+  async function confirm() {
+    if (!selected || busy) return;
+    setBusy(true);
+    setMsg('');
+    navigator.vibrate?.([12, 40, 18]);
+    const idx = poll.options.findIndex((o) => o.id === selected);
+    const firstVote = !voted;
     const res = await fetch(`/api/polls/${poll.id}/vote`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ optionId }),
+      body: JSON.stringify({ optionId: selected }),
     }).catch(() => null);
     const data = await res?.json().catch(() => null);
     if (res?.ok) {
       setPoll(data.poll);
-      if (!voted) {
-        setJustVoted(true);
-        const r = cardRefs.current[optionId]?.getBoundingClientRect();
-        if (r) confetti(r.left + r.width / 2, r.top + r.height / 2, [SIDE_COLORS[index] ?? '#6d5ef0', '#c2ef72', '#ffffff', '#f5b942']);
+      setSelected(null);
+      if (firstVote) {
+        requestAnimationFrame(() => {
+          const r = panelRefs.current[selected]?.getBoundingClientRect();
+          if (r) confetti(r.left + r.width / 2, r.top + Math.min(r.height / 2, 220), [SIDE_HEX[idx] ?? '#7c6cff', '#c2ef72', '#ffffff', '#ffd166']);
+        });
       }
     } else {
       setMsg(data?.error ?? 'Could not save your vote. Please try again.');
-      if (res?.status === 409) refresh();
+      if (res?.status === 409) { setSelected(null); refresh(); }
     }
-    setBusy(null);
+    setBusy(false);
   }
 
   async function pickReason(reason: string) {
@@ -78,116 +101,140 @@ export default function Duel({ initial, headingLevel = 'h1' }: { initial: PollVi
   }
 
   const myOption = poll.options.find((o) => o.id === poll.myVote);
-  const shareText = myOption ? `I picked ${myOption.label}. Who would you pick?` : poll.title;
-
+  const url = () => `${window.location.origin}/p/${poll.id}`;
+  const shareText = myOption ? `I picked ${myOption.label}. Who would you pick?` : `${poll.options.map((o) => o.label).join(' vs ')}: who would you pick?`;
+  const whatsapp = () => `https://wa.me/?text=${encodeURIComponent(`${shareText} ${url()}`)}`;
   async function share() {
-    const url = window.location.origin + `/p/${poll.id}`;
     if (navigator.share) {
-      try { await navigator.share({ title: poll.title, text: shareText, url }); return; } catch { /* closed */ }
+      try { await navigator.share({ title: poll.title, text: shareText, url: url() }); return; } catch { /* closed */ }
     }
     copy();
   }
   async function copy() {
-    const url = window.location.origin + `/p/${poll.id}`;
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(url());
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      window.prompt('Copy this link', url);
+      window.prompt('Copy this link', url());
     }
   }
-  const whatsapp = () =>
-    `https://wa.me/?text=${encodeURIComponent(`${shareText} ${typeof window !== 'undefined' ? window.location.origin : ''}/p/${poll.id}`)}`;
 
-  const lead = poll.resultsVisible && poll.totalVotes > 0 ? (a.votes === b.votes ? -1 : a.votes > b.votes ? 0 : 1) : -1;
-  const showReasonStep = voted && poll.reasons.length > 0 && !poll.myReason;
+  const sel = poll.options.find((o) => o.id === selected);
+  const selIdx = poll.options.findIndex((o) => o.id === selected);
+  const lead = revealed && poll.totalVotes > 0 ? poll.options.reduce((b, o) => (o.votes > b.votes ? o : b)).id : null;
+  const tied = revealed && poll.options[0].votes === poll.options[1].votes;
+  const showReasonStep = revealed && poll.reasons.length > 0 && !poll.myReason;
+  const anyReasons = poll.options.slice(0, 2).some((o) => o.reasons.length > 0);
 
   return (
-    <section className={'duel' + (poll.resultsVisible ? ' is-revealed' : '')} aria-labelledby={`duel-title-${poll.id}`}>
+    <section className="duel" aria-labelledby={`t-${poll.id}`}>
       <header className="duel-head">
         <div className="duel-meta">
           <span className={'live-dot' + (poll.closed ? ' is-closed' : '')} aria-hidden />
-          <span className="label">{poll.closed ? 'Poll ended' : 'Live poll'}</span>
-          {poll.resultsVisible && <span className="small">· <Num value={poll.totalVotes} /> {poll.totalVotes === 1 ? 'vote' : 'votes'}</span>}
+          <span className="label">{poll.closed ? 'Poll ended' : 'Live now'}</span>
+          <span className="small">
+            · {poll.participants > 0 ? <><Num value={poll.participants} /> {poll.participants === 1 ? 'person has' : 'people have'} voted</> : 'Be the first to vote'}
+          </span>
         </div>
-        <Heading id={`duel-title-${poll.id}`} className="duel-title">{poll.title}</Heading>
-        {poll.description && <p className="duel-sub">{poll.description}</p>}
+        <Heading id={`t-${poll.id}`} className="duel-title">{poll.title}</Heading>
+        {!voted && <p className="duel-sub">{poll.hideUntilVoted ? 'Pick one. The results unlock after you vote.' : 'Pick one to vote.'}</p>}
       </header>
 
-      <div className="duel-arena" role="group" aria-label="Choose one">
+      <div className={'arena' + (revealed ? ' is-revealed' : '')} role="group" aria-label="Choose one">
         {poll.options.slice(0, 2).map((o, i) => {
-          const picked = poll.myVote === o.id;
-          const dim = voted && !picked;
+          const isSel = selected === o.id;
+          const mine = poll.myVote === o.id && !selected;
+          const dim = pickedId !== null && pickedId !== o.id;
+          const grow = revealed ? Math.max(o.percent, 30) : 1;
           return (
             <button
               key={o.id}
-              ref={(el) => { cardRefs.current[o.id] = el; }}
-              className={'duel-card' + (picked ? ' is-picked' : '') + (dim ? ' is-dim' : '') + (lead === i ? ' is-leading' : '')}
-              style={{ '--side': SIDE_COLORS[i] } as React.CSSProperties}
-              disabled={!canVote || busy !== null}
-              aria-pressed={picked}
-              onClick={() => vote(o.id, i)}
+              ref={(el) => { panelRefs.current[o.id] = el; }}
+              className={'panel' + (isSel ? ' is-selected' : '') + (mine ? ' is-mine' : '') + (dim ? ' is-dim' : '') + (lead === o.id ? ' is-lead' : '')}
+              style={{ '--side': SIDE[i], flexGrow: grow } as React.CSSProperties}
+              disabled={!canVote || busy}
+              aria-pressed={isSel || mine}
+              onClick={() => select(o.id)}
             >
-              {poll.resultsVisible && <span className="duel-fill" style={{ height: `${o.percent}%`, '--p': o.percent } as React.CSSProperties} aria-hidden />}
-              <span className="duel-avatar" aria-hidden>{initials(o.label)}</span>
-              <span className="duel-who">
-                <span className="duel-name">{o.label}</span>
-                {picked && <span className="duel-tag"><Check size={12} strokeWidth={3} /> Your pick</span>}
+              <span className="panel-bg" aria-hidden />
+              {o.imageUrl && photoOk[o.id] ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img className="panel-photo" src={o.imageUrl} alt="" />
+              ) : <span className="panel-mono" aria-hidden>{initials(o.label)}</span>}
+              <span className="panel-shade" aria-hidden />
+              <span className="panel-tags">
+                {mine && <span className="tag tag-mine"><Check size={12} strokeWidth={3} /> Your vote</span>}
+                {isSel && <span className="tag tag-mine"><Check size={12} strokeWidth={3} /> Selected</span>}
+                {lead === o.id && !tied && <span className="tag tag-lead">Leading</span>}
               </span>
-              {poll.resultsVisible ? (
-                <span className="duel-result">
-                  <span className="duel-pct"><Pct value={o.percent} /></span>
-                  <span className="duel-votes"><Num value={o.votes} /> {o.votes === 1 ? 'vote' : 'votes'}</span>
+              <span className="panel-body">
+                <span className="panel-text">
+                  <span className="panel-name">{o.label}</span>
+                  {revealed ? (
+                    <span className="panel-sub"><Num value={o.votes} /> {o.votes === 1 ? 'vote' : 'votes'}</span>
+                  ) : (
+                    <span className="panel-sub">{canVote ? (isSel ? 'Selected' : 'Tap to select') : ''}</span>
+                  )}
                 </span>
-              ) : (
-                <span className="duel-cta">{busy === o.id ? 'Saving…' : canVote ? 'Tap to vote' : ''}</span>
-              )}
+                {revealed && (
+                  <span className="panel-pct" aria-label={`${Math.round(o.percent)} percent`}>
+                    <Pct value={o.percent} /><small>%</small>
+                  </span>
+                )}
+              </span>
             </button>
           );
         })}
-        <span className="duel-vs" aria-hidden>VS</span>
+        <span className="vs" aria-hidden>VS</span>
       </div>
-
-      {poll.resultsVisible && (
-        <div className="tug" aria-label={`${a.label} ${Math.round(a.percent)} percent, ${b.label} ${Math.round(b.percent)} percent`}>
-          <div className="tug-bar">
-            <span className="tug-a" style={{ width: `${poll.totalVotes ? a.percent : 50}%`, background: SIDE_COLORS[0] }} />
-            <span className="tug-b" style={{ width: `${poll.totalVotes ? b.percent : 50}%`, background: SIDE_COLORS[1] }} />
-          </div>
-        </div>
-      )}
 
       {msg && <p className="error" role="alert">{msg}</p>}
 
-      {!voted && !poll.closed && (
-        <p className="duel-hint">{poll.hideUntilVoted ? 'Results are hidden until you vote. No peeking!' : 'Tap a card to vote.'}</p>
+      {/* Step 1: confirm. Sticks to the bottom of the screen so the next action is always obvious. */}
+      {sel && canVote && (
+        <div className="confirm" role="region" aria-label="Confirm your vote">
+          <button className="confirm-btn" style={{ '--side': SIDE[selIdx] } as React.CSSProperties} onClick={confirm} disabled={busy}>
+            {busy ? 'Casting your vote…' : voted ? `Change my vote to ${firstName(sel.label)}` : `Vote for ${firstName(sel.label)}`}
+          </button>
+          <button className="confirm-x" onClick={() => setSelected(null)} disabled={busy}>Cancel</button>
+        </div>
       )}
 
+      {/* Step 2: the reveal summary */}
+      {revealed && myOption && (
+        <div className="summary">
+          <p className="summary-big">
+            You&apos;re with <b style={{ color: SIDE[poll.options.indexOf(myOption)] }}><Pct value={myOption.percent} />%</b> of voters
+          </p>
+          <p className="small">You voted for {myOption.label}. {poll.allowChange && !poll.closed ? 'You can still change your vote.' : 'Vote counted.'}</p>
+        </div>
+      )}
+
+      {/* Step 3: why */}
       {showReasonStep && (
-        <div className="reasons">
-          <h3>{justVoted ? 'Vote counted! ' : ''}What made you pick {myOption?.label}?</h3>
-          <p className="small">One tap, optional.</p>
+        <div className="block">
+          <h3>What made you pick {myOption?.label}?</h3>
+          <p className="small">One tap. Optional.</p>
           <div className="chips">
             {poll.reasons.map((r) => <button key={r} className="chip-btn" onClick={() => pickReason(r)}>{r}</button>)}
           </div>
         </div>
       )}
-
-      {voted && poll.resultsVisible && poll.reasons.length > 0 && poll.options.slice(0, 2).some((o) => o.reasons.length > 0) && (
-        <div className="why">
+      {revealed && anyReasons && (
+        <div className="block">
           <h3>Why people pick them</h3>
           <div className="why-grid">
             {poll.options.slice(0, 2).map((o, i) => {
               const total = o.reasons.reduce((s, r) => s + r.n, 0);
               return (
                 <div key={o.id}>
-                  <p className="why-name" style={{ color: SIDE_COLORS[i] }}>{o.label}</p>
+                  <p className="why-name" style={{ color: SIDE[i] }}>{o.label}</p>
                   {o.reasons.length === 0 && <p className="small">No answers yet</p>}
                   {o.reasons.slice(0, 4).map((r) => (
                     <div className="why-row" key={r.reason}>
                       <span>{r.reason}</span>
-                      <span className="why-bar"><i style={{ width: `${(r.n / total) * 100}%`, background: SIDE_COLORS[i] }} /></span>
+                      <span className="why-bar"><i style={{ width: `${(r.n / total) * 100}%`, background: SIDE[i] }} /></span>
                     </div>
                   ))}
                 </div>
@@ -197,18 +244,20 @@ export default function Duel({ initial, headingLevel = 'h1' }: { initial: PollVi
         </div>
       )}
 
+      {/* Step 4: share */}
       {voted && (
-        <div className="share-panel">
-          <p className="share-title">Now challenge your friends. Who would they pick?</p>
+        <div className="block share-block">
+          <h3>Challenge a friend</h3>
+          <p className="small">Who would they pick? Send them the duel.</p>
           <div className="share">
-            <a className="btn btn-primary btn-lg" href={whatsapp()} target="_blank" rel="noopener noreferrer"><MessageCircle size={16} />Share on WhatsApp</a>
+            <a className="btn btn-primary btn-lg" href={whatsapp()} target="_blank" rel="noopener noreferrer"><MessageCircle size={16} />WhatsApp</a>
             <button className="btn btn-ghost btn-lg" onClick={share}><Share2 size={16} />Share</button>
-            <button className="btn btn-ghost btn-lg" onClick={copy}><Link2 size={16} />{copied ? 'Copied!' : 'Copy link'}</button>
+            <button className="btn btn-ghost btn-lg" onClick={copy}><Link2 size={16} />{copied ? 'Copied' : 'Copy link'}</button>
           </div>
         </div>
       )}
 
-      <p className="small fineprint">Just for fun. Not an official or scientific result.</p>
+      <p className="small fineprint">Just for fun. Not an official or scientific poll.</p>
     </section>
   );
 }
