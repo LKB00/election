@@ -1,6 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { Plus, X } from 'lucide-react';
+import { Clock, EyeOff, Plus, Repeat, X } from 'lucide-react';
 import { useState } from 'react';
 import { CATEGORIES } from '@/lib/validation';
 
@@ -41,56 +41,80 @@ export default function CreateForm() {
     setBusy(false);
   }
 
+  // Built only from patricka parts: .search fields, .chip choices, .me-row + .switch settings.
   return (
-    <form className="create-form" onSubmit={submit}>
-      <div className="field">
+    <form className="me-stack" onSubmit={submit}>
+      <div className="duel-group">
         <label className="label" htmlFor="title">Your question</label>
-        <input id="title" className="input" value={title} maxLength={120} placeholder="Who is the best finisher?" onChange={(e) => setTitle(e.target.value)} required />
+        <span className="search">
+          <input id="title" value={title} maxLength={120} placeholder="Virat, Rohit or Dhoni?" onChange={(e) => setTitle(e.target.value)} required />
+        </span>
       </div>
 
-      <div className="field">
-        <span className="label">Choices (2 to 10)</span>
+      <div className="duel-group">
+        <span className="label">Choices · 2 to 10</span>
         {choices.map((c, i) => (
           <div className="row" key={i}>
-            <input className="input" value={c} maxLength={60} aria-label={`Choice ${i + 1}`} placeholder={`Choice ${i + 1}`} onChange={(e) => setChoice(i, e.target.value)} />
+            <span className="search">
+              <input value={c} maxLength={60} aria-label={`Choice ${i + 1}`} placeholder={`Choice ${i + 1}`} onChange={(e) => setChoice(i, e.target.value)} />
+            </span>
             {choices.length > 2 && (
-              <button type="button" className="btn btn-ghost" aria-label={`Remove choice ${i + 1}`} onClick={() => setChoices((x) => x.filter((_, j) => j !== i))}><X size={16} /></button>
+              <button type="button" className="icon-btn" aria-label={`Remove choice ${i + 1}`} onClick={() => setChoices((x) => x.filter((_, j) => j !== i))}>
+                <X size={16} strokeWidth={1.75} aria-hidden />
+              </button>
             )}
           </div>
         ))}
         {choices.length < 10 && (
-          <button type="button" className="btn btn-ghost" style={{ alignSelf: 'flex-start' }} onClick={() => setChoices((x) => [...x, ''])}><Plus size={16} />Add choice</button>
+          <button type="button" className="chip duel-add" onClick={() => setChoices((x) => [...x, ''])}>
+            <Plus size={14} strokeWidth={1.75} aria-hidden /> Add a choice
+          </button>
         )}
       </div>
 
-      <div className="field">
-        <label className="label" htmlFor="desc">Details (optional)</label>
-        <textarea id="desc" className="input" rows={2} maxLength={300} value={description} onChange={(e) => setDescription(e.target.value)} />
+      <div className="duel-group">
+        <label className="label" htmlFor="desc">Details · optional</label>
+        <span className="search">
+          <input id="desc" value={description} maxLength={300} placeholder="One line of context" onChange={(e) => setDescription(e.target.value)} />
+        </span>
       </div>
 
-      <div className="field">
-        <label className="label" htmlFor="cat">Category</label>
-        <select id="cat" className="input" value={category} onChange={(e) => setCategory(e.target.value)}>
-          {CATEGORIES.map((c) => <option key={c} value={c}>{c[0].toUpperCase() + c.slice(1)}</option>)}
-        </select>
+      <div className="duel-group">
+        <span className="label">Category</span>
+        <div className="row wrap" role="radiogroup" aria-label="Category">
+          {CATEGORIES.map((c) => (
+            <button key={c} type="button" role="radio" aria-checked={category === c} className={'chip' + (category === c ? ' chip-on' : '')} onClick={() => setCategory(c)}>
+              {c[0].toUpperCase() + c.slice(1)}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="field">
-        <label className="label" htmlFor="end">Ends at (optional)</label>
-        <input id="end" type="datetime-local" className="input" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} />
+      <div className="duel-group">
+        <label className="label" htmlFor="end">Ends · optional</label>
+        <span className="search">
+          <Clock size={14} strokeWidth={1.75} aria-hidden />
+          <input id="end" type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} />
+        </span>
       </div>
 
-      <label className="toggle">
-        <input type="checkbox" checked={hideUntilVoted} onChange={(e) => setHide(e.target.checked)} />
-        <span><strong>Hide results until people vote</strong><br /><span className="small">Stops people copying the crowd.</span></span>
-      </label>
-      <label className="toggle">
-        <input type="checkbox" checked={allowChange} onChange={(e) => setChange(e.target.checked)} />
-        <span><strong>Let people change their vote</strong><br /><span className="small">Until the duel ends.</span></span>
-      </label>
+      <div className="me-stack">
+        <button type="button" className="me-row" onClick={() => setHide((v) => !v)} aria-pressed={hideUntilVoted}>
+          <EyeOff size={20} strokeWidth={1.75} aria-hidden />
+          <span><strong>Hide results until people vote</strong><span className="small muted">Stops people copying the crowd</span></span>
+          <span className={'switch' + (hideUntilVoted ? ' is-on' : '')} aria-hidden />
+        </button>
+        <button type="button" className="me-row" onClick={() => setChange((v) => !v)} aria-pressed={allowChange}>
+          <Repeat size={20} strokeWidth={1.75} aria-hidden />
+          <span><strong>Let people change their vote</strong><span className="small muted">Until the duel ends</span></span>
+          <span className={'switch' + (allowChange ? ' is-on' : '')} aria-hidden />
+        </button>
+      </div>
 
       {error && <p className="duel-error" role="alert">{error}</p>}
-      <button className="btn btn-primary btn-lg" disabled={busy} style={{ alignSelf: 'flex-start' }}>{busy ? 'Creating…' : 'Create duel'}</button>
+      <div className="row">
+        <button className="btn btn-primary btn-lg" disabled={busy}>{busy ? 'Creating…' : 'Create duel'}</button>
+      </div>
     </form>
   );
 }

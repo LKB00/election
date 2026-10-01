@@ -202,7 +202,7 @@ export default function DuelGame({ deck: initialDeck, start = 0 }: { deck: PollV
       <div className="tot-q">
         <div className="row wrap">
           <span className="tag duel-tag">{poll.category}</span>
-          <span className="tag duel-live"><span className="duel-dot" aria-hidden /> {poll.closed ? 'Ended' : 'Live'} · {poll.participants.toLocaleString()} {poll.participants === 1 ? 'vote' : 'votes'}</span>
+          <span className="tag duel-tag">{poll.closed ? 'Ended' : 'Live'} · {poll.participants.toLocaleString()} {poll.participants === 1 ? 'vote' : 'votes'}</span>
         </div>
         <h3 aria-level={2}>{poll.title}</h3>
         <p>
@@ -218,7 +218,6 @@ export default function DuelGame({ deck: initialDeck, start = 0 }: { deck: PollV
         {poll.options.map((o, n) => {
           const isMine = poll.myVote === o.id;
           const lead = revealed && poll.totalVotes > 0 && pcts[n] === Math.max(...pcts);
-          const { first, last } = splitName(o.label);
           return (
             <button
               key={o.id}
@@ -234,20 +233,17 @@ export default function DuelGame({ deck: initialDeck, start = 0 }: { deck: PollV
               <span className="duel-body">
                 <Face o={o} tone={TONES[n % TONES.length]} />
                 <span className="duel-text">
-                  {o.subtitle && <span className="duel-role">{o.subtitle}</span>}
-                  <span className="duel-name">
-                    {first && <span className="duel-first">{first} </span>}
-                    <span className="duel-last">{last}</span>
-                  </span>
+                  {o.subtitle && <span className="label">{o.subtitle}</span>}
+                  <span className="duel-name">{o.label}</span>
                 </span>
-                {revealed && <span className="duel-pct">{pcts[n]}<small>%</small></span>}
               </span>
               {revealed && (
-                <span className="duel-meter" aria-hidden>
-                  <i style={{ width: `${pcts[n]}%` }} />
+                <span className="duel-result">
+                  <span className="duel-pct">{pcts[n]}%</span>
+                  <span className="meter" aria-hidden><span style={{ width: `${pcts[n]}%` }} /></span>
+                  <span className="small muted">{o.votes.toLocaleString()} {o.votes === 1 ? 'vote' : 'votes'}</span>
                 </span>
               )}
-              {revealed && <span className="duel-votes">{o.votes.toLocaleString()} {o.votes === 1 ? 'vote' : 'votes'}</span>}
               {justVoted === o.id && <Burst />}
             </button>
           );
@@ -258,10 +254,10 @@ export default function DuelGame({ deck: initialDeck, start = 0 }: { deck: PollV
 
       {revealed && mine && (
         <div className="duel-after">
-          {poll.myVoterNumber && <span className="pill-new duel-no">You’re voter #{poll.myVoterNumber.toLocaleString()}</span>}
+          {poll.myVoterNumber && <span className="pill-new">You’re voter #{poll.myVoterNumber.toLocaleString()}</span>}
 
           {poll.reasons.length > 0 && !poll.myReason && (
-            <div className="duel-why">
+            <div className="duel-group">
               <p className="label">Why {splitName(mine.label).last}? One tap, optional</p>
               <div className="row wrap">
                 {poll.reasons.map((r) => (
@@ -271,23 +267,23 @@ export default function DuelGame({ deck: initialDeck, start = 0 }: { deck: PollV
             </div>
           )}
 
-          <div className="duel-react" role="group" aria-label="React">
+          <div className="row wrap" role="group" aria-label="React">
             {poll.reactions.map((r) => {
               const on = poll.myReactions.includes(r.emoji);
               return (
-                <button key={r.emoji} type="button" className={'chip duel-emoji' + (on ? ' is-on' : '')} aria-pressed={on} onClick={() => post('react', { emoji: r.emoji })}>
-                  <span>{r.emoji}</span>{r.n > 0 && <strong>{r.n}</strong>}
+                <button key={r.emoji} type="button" className={'chip' + (on ? ' chip-on' : '')} aria-pressed={on} onClick={() => post('react', { emoji: r.emoji })}>
+                  {r.emoji}{r.n > 0 && ` ${r.n}`}
                 </button>
               );
             })}
           </div>
 
-          <div className="duel-share">
-            <a className="btn btn-primary duel-wa" href={`https://wa.me/?text=${encodeURIComponent(`${shareText()} ${typeof window !== 'undefined' ? link() : ''}`)}`} target="_blank" rel="noopener noreferrer">
-              <MessageCircle size={15} strokeWidth={1.75} aria-hidden /> Dare a friend on WhatsApp
+          <div className="row wrap">
+            <a className="btn btn-primary" href={`https://wa.me/?text=${encodeURIComponent(`${shareText()} ${typeof window !== 'undefined' ? link() : ''}`)}`} target="_blank" rel="noopener noreferrer">
+              <MessageCircle size={14} strokeWidth={1.75} aria-hidden /> Dare a friend on WhatsApp
             </a>
-            <button type="button" className="btn btn-ghost" onClick={share}><Share2 size={15} strokeWidth={1.75} aria-hidden /> Share</button>
-            <button type="button" className="btn btn-ghost" onClick={copy}><Link2 size={15} strokeWidth={1.75} aria-hidden /> {copied ? 'Copied' : 'Copy link'}</button>
+            <button type="button" className="btn btn-ghost" onClick={share}><Share2 size={14} strokeWidth={1.75} aria-hidden /> Share</button>
+            <button type="button" className="btn btn-ghost" onClick={copy}><Link2 size={14} strokeWidth={1.75} aria-hidden /> {copied ? 'Copied' : 'Copy link'}</button>
           </div>
         </div>
       )}

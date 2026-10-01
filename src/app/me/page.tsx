@@ -62,21 +62,19 @@ export default async function Me() {
         {mine.length === 0 ? (
           <p className="muted">No votes yet. <Link href="/" className="text-link">Start with today’s duel</Link></p>
         ) : (
-          <ul className="my-votes">
+          <ul className="index-list block-tight">
             {mine.map((v) => (
               <li key={v.pollId}>
-                <Link href={`/p/${v.pollId}`} className="my-vote">
-                  <span>
-                    <strong>{v.title}</strong>
-                    <span className="small muted">You picked {v.pick}</span>
-                  </span>
-                  <ChevronRight size={18} strokeWidth={1.75} aria-hidden />
+                <Link href={`/p/${v.pollId}`} className="index-row">
+                  <span className="index-title">{v.title}</span>
+                  <span className="index-sum">You picked {v.pick}</span>
+                  <ChevronRight size={16} strokeWidth={1.75} className="index-chev" aria-hidden />
                 </Link>
               </li>
             ))}
           </ul>
         )}
-        <p className="small muted me-note">Your votes are saved on this device only (no account). Just for fun, not an official poll.</p>
+        <p className="small muted block-tight">Your votes are saved on this device only (no account). Just for fun, not an official poll.</p>
       </section>
     </div>
   );

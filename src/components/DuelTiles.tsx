@@ -3,12 +3,12 @@ import { Check, Plus, Users } from 'lucide-react';
 import type { PollSummary } from '@/lib/polls';
 
 // One pastel tile per duel, like patricka's game tiles.
-const TONES = ['game-e', 'game-f', 'game-b', 'game-d', 'game-a', 'game-c'];
+const TONES = ['game-e', 'game-f', 'game-b', 'game-d', 'game-a'];
 
 export default function DuelTiles({ polls, votedIds = [] }: { polls: PollSummary[]; votedIds?: string[] }) {
   return (
     <div className="games">
-      <Link href="/create" className="game game-create">
+      <Link href="/create" className="game game-c">
         <Plus size={22} strokeWidth={1.75} aria-hidden />
         <strong>Start your own duel</strong>
         <span>Virat or Rohit? Pizza or biryani? Make one in 30 seconds.</span>
