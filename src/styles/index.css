@@ -1,0 +1,15 @@
+/* The Good Bot, Bad Bot (patricka) design system, copied as-is into gb/.
+   Order matters, same as in patricka. Election-only parts live in election.css (last). */
+@import './gb/tokens.css';
+@import './gb/base.css';
+@import './gb/shell.css';
+@import './gb/controls.css';
+@import './gb/home.css';
+@import './gb/game-core.css';
+@import './gb/play.css';
+@import './gb/daily-story.css';
+@import './gb/card-speed.css';
+@import './gb/phone.css';
+@import './gb/autonomy.css';
+@import './gb/motion.css';
+@import './election.css';

@@ -1,13 +1,15 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { castVote, createPoll, getFeaturedId, getPoll, listPolls, setReason } from '@/lib/polls';
+import { castVote, createPoll, getDeck, getFeaturedId, getPoll, getVoterStats, listPolls, setReason, toggleReaction } from '@/lib/polls';
 import { createPollSchema } from '@/lib/validation';
 import { rateLimit } from '@/lib/rate-limit';
 import type { Db } from '@/db';
 
 let db: Db;
 beforeAll(async () => {
+  // Set TEST_DATABASE_URL to an empty Postgres database to run against the real driver.
   process.env.PGLITE_DIR = 'memory://';
-  delete process.env.DATABASE_URL;
+  if (process.env.TEST_DATABASE_URL) process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
+  else delete process.env.DATABASE_URL;
   db = await (await import('@/db')).getDb();
 });
 
@@ -88,7 +90,7 @@ describe('flagship poll and reasons', () => {
     const poll = (await getPoll(db, id!, null))!;
     expect(poll.options.map((o) => o.label)).toEqual(['Narendra Modi', 'Rahul Gandhi']);
     expect(poll.hideUntilVoted).toBe(true);
-    expect(poll.options.map((o) => o.subtitle)).toEqual(['Prime Minister', 'Leader of Opposition']);
+    expect(poll.options.map((o) => o.subtitle)).toEqual(['BJP · Prime Minister', 'INC · Leader of Opposition']);
     expect((await listPolls(db, 100)).some((p) => p.id === id)).toBe(false);
     await (await import('@/db/seed')).seedFlagship(db); // running again changes nothing
     expect((await getPoll(db, id!, null))!.options).toHaveLength(2);
@@ -105,6 +107,68 @@ describe('flagship poll and reasons', () => {
     expect(mine.options[0].reasons).toEqual([{ reason: 'Leadership', n: 1 }]);
     const stranger = (await getPoll(db, id, 'zzz'))!; // has not voted, results hidden
     expect(stranger.options[0].reasons).toEqual([]);
+  });
+});
+
+describe('engagement', () => {
+  it('numbers voters in order and shows live activity', async () => {
+    const id = await make({ title: 'Engagement check' });
+    const p = (await getPoll(db, id, null))!;
+    await castVote(db, id, p.options[0].id, 'e1');
+    await castVote(db, id, p.options[1].id, 'e2');
+    await castVote(db, id, p.options[0].id, 'e3');
+    expect((await getPoll(db, id, 'e1'))!.myVoterNumber).toBe(1);
+    expect((await getPoll(db, id, 'e3'))!.myVoterNumber).toBe(3);
+    const stranger = (await getPoll(db, id, 'nobody'))!;
+    expect(stranger.myVoterNumber).toBeNull();
+    expect(stranger.pulse.lastHour).toBe(3);
+    expect(stranger.pulse.lastVoteAt).not.toBeNull();
+  });
+
+  it('never leaks the trend while results are hidden', async () => {
+    const id = await make({ title: 'Hidden trend', options: ['A', 'B'], hideUntilVoted: true });
+    const p = (await getPoll(db, id, null))!;
+    await castVote(db, id, p.options[0].id, 'h1');
+    await castVote(db, id, p.options[1].id, 'h2');
+    expect((await getPoll(db, id, 'nobody'))!.trend).toEqual([]);
+    const seen = (await getPoll(db, id, 'h1'))!.trend;
+    expect(seen.length).toBeGreaterThan(0);
+    expect(seen[seen.length - 1].a).toBe(50);
+  });
+
+  it('toggles reactions, only for voters and only allowed emoji', async () => {
+    const id = await make({ title: 'Reactions' });
+    const p = (await getPoll(db, id, null))!;
+    expect(await toggleReaction(db, id, 'x1', '🔥')).toBe(false); // has not voted
+    await castVote(db, id, p.options[0].id, 'x1');
+    expect(await toggleReaction(db, id, 'x1', '💩')).toBe(false);
+    expect(await toggleReaction(db, id, 'x1', '🔥')).toBe(true);
+    let v = (await getPoll(db, id, 'x1'))!;
+    expect(v.reactions.find((r) => r.emoji === '🔥')!.n).toBe(1);
+    expect(v.myReactions).toEqual(['🔥']);
+    await toggleReaction(db, id, 'x1', '🔥'); // tap again removes it
+    v = (await getPoll(db, id, 'x1'))!;
+    expect(v.reactions.find((r) => r.emoji === '🔥')!.n).toBe(0);
+    expect(v.myReactions).toEqual([]);
+  });
+});
+
+describe('voter stats and deck', () => {
+  it('counts votes, today and the day streak', async () => {
+    const empty = await getVoterStats(db, 'nobody-at-all');
+    expect(empty).toMatchObject({ votes: 0, today: 0, streak: 0 });
+    const a = await make({ title: 'Stats one' });
+    const b = await make({ title: 'Stats two' });
+    await castVote(db, a, (await getPoll(db, a, null))!.options[0].id, 'st1');
+    await castVote(db, b, (await getPoll(db, b, null))!.options[1].id, 'st1');
+    const s = await getVoterStats(db, 'st1');
+    expect(s).toMatchObject({ votes: 2, today: 2, streak: 1, best: 1 });
+  });
+
+  it('puts the featured duel first', async () => {
+    const deck = await getDeck(db, null);
+    expect(deck[0].id).toBe('modi-vs-rahul');
+    expect(deck.length).toBeGreaterThan(1);
   });
 });
 

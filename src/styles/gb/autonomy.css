@@ -1,0 +1,270 @@
+/* Autonomy ladder page and the How much power? game (with their own phone rules). */
+
+/* ---- Autonomy ladder + How much power? ---- */
+.page-lib-read > .ladder-block { max-width: 1040px; }
+.ladder {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: end;
+  gap: 8px;
+}
+.ladder-step,
+.power-opt {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 16px;
+  background: var(--step-bg, var(--card));
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  line-height: 18px;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.2, 0.9, 0.3, 1.3), box-shadow 0.15s, opacity 0.2s;
+}
+.ladder li:nth-child(1) .ladder-step, .power-opt:nth-child(1) { --step-bg: var(--p-input); }
+.ladder li:nth-child(2) .ladder-step, .power-opt:nth-child(2) { --step-bg: var(--p-output); }
+.ladder li:nth-child(3) .ladder-step, .power-opt:nth-child(3) { --step-bg: var(--p-control); }
+.ladder li:nth-child(4) .ladder-step, .power-opt:nth-child(4) { --step-bg: var(--p-trust); }
+.ladder li:nth-child(5) .ladder-step, .power-opt:nth-child(5) { --step-bg: var(--p-feedback); }
+.ladder-step {
+  flex-direction: column;
+  min-height: calc(76px + var(--step) * 22px);
+  justify-content: flex-end;
+}
+.ladder-step:hover { transform: translateY(-3px); }
+.ladder-step.is-on { box-shadow: inset 0 0 0 2px var(--ink); }
+.ladder-step.is-hint:not(.is-on) { box-shadow: inset 0 0 0 2px var(--ink-3); }
+.ladder-n {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--display);
+  font-size: 14px;
+  font-weight: 800;
+}
+.ladder-text { display: flex; flex-direction: column; gap: 2px; }
+.ladder-text strong {
+  font-family: var(--display);
+  font-size: 17px;
+  line-height: 22px;
+  font-weight: 800;
+}
+.ladder-text > span { color: var(--ink-2); }
+.ladder-detail {
+  display: grid;
+  gap: 24px;
+  margin-top: 16px;
+  padding: 24px;
+  border-radius: 20px;
+  background: var(--card);
+  animation: ladder-in 0.25s ease-out;
+}
+@keyframes ladder-in { from { opacity: 0; transform: translateY(6px); } }
+@media (min-width: 880px) {
+  .ladder-detail { grid-template-columns: 1.1fr 1fr; align-items: start; }
+}
+.ladder-detail-text { display: flex; flex-direction: column; gap: 8px; }
+.ladder-detail-text .label { margin-top: 8px; }
+.ladder-title {
+  font-family: var(--display);
+  font-size: 32px;
+  line-height: 36px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.ladder-who {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.ladder-who span { display: inline-flex; align-items: center; gap: 6px; }
+.ladder-who strong { color: var(--ink); }
+.ladder-list { margin: 0; padding-left: 18px; font-size: 14px; line-height: 22px; }
+.ladder-risk { font-size: 14px; line-height: 22px; color: var(--ink-2); }
+.ladder-rules {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 24px;
+  padding: 0;
+  list-style: none;
+  font-size: 15px;
+  line-height: 23px;
+}
+@media (min-width: 880px) { .ladder-rules { grid-template-columns: repeat(3, 1fr); } }
+.ladder-rules li { padding: 16px; border-radius: 16px; background: var(--card); }
+.ladder-rules strong { display: block; font-family: var(--display); font-size: 17px; margin-bottom: 4px; }
+.ladder-cta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: 20px;
+  background: var(--p-agents);
+  color: var(--ink);
+  text-decoration: none;
+  transition: transform 0.18s cubic-bezier(0.2, 0.9, 0.3, 1.3);
+}
+.ladder-cta:hover { transform: translateY(-2px); }
+.ladder-cta > span { display: flex; flex-direction: column; flex: 1; font-size: 14px; color: var(--ink-2); }
+.ladder-cta strong { font-family: var(--display); font-size: 19px; line-height: 25px; color: var(--ink); }
+.ladder-cta-sm { padding: 14px 16px; margin-bottom: 8px; }
+.ladder-cta-sm strong { font-size: 16px; line-height: 22px; }
+
+/* Level finder */
+.finder { display: grid; gap: 16px; }
+.finder-q { margin: 0; padding: 0; border: none; }
+.finder-q legend { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-weight: 700; font-size: 15px; }
+.finder-n {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--sand-dark);
+  font-size: 12px;
+}
+.finder-opts { display: flex; flex-wrap: wrap; gap: 8px; }
+.finder-opt {
+  min-height: 40px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.finder-opt.is-on { background: var(--ink); color: var(--paper); box-shadow: none; font-weight: 700; }
+.finder-result {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--card);
+  font-size: 15px;
+  line-height: 22px;
+}
+.finder-result.is-ready { background: var(--p-control); animation: ladder-in 0.25s ease-out; }
+.finder-result .small { display: block; }
+
+/* How much power? */
+.power { display: flex; flex-direction: column; gap: 16px; max-width: 720px; }
+.power-top { display: flex; align-items: center; gap: 12px; }
+.power-dots { display: flex; gap: 4px; flex: 1; }
+.power-dots span { flex: 1; max-width: 28px; height: 6px; border-radius: 3px; background: var(--line); }
+.power-dots .is-now { background: var(--ink-3); }
+.power-dots .is-good { background: var(--positive); }
+.power-dots .is-close { background: #e0b23a; }
+.power-dots .is-bad { background: var(--negative); }
+.power-points { font-family: var(--display); font-weight: 800; font-size: 18px; animation: ladder-in 0.25s ease-out; }
+.power-task {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 24px;
+  border-radius: 20px;
+  background: var(--p-agents);
+  animation: power-deal 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+@keyframes power-deal { from { opacity: 0; transform: translateY(12px) rotate(-1deg) scale(0.97); } }
+.power-where { font-size: 13px; color: var(--ink-2); }
+.power-text { font-family: var(--display); font-size: 26px; line-height: 32px; font-weight: 800; letter-spacing: -0.01em; }
+.power-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.power-tag {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--card);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+.power-tag.tag-money, .power-tag.tag-hard, .power-tag.tag-people { color: var(--negative); }
+.power-tag.tag-easy, .power-tag.tag-often { color: var(--positive); }
+.power-opts { display: flex; flex-direction: column; gap: 8px; }
+.power-opt { align-items: center; padding: 12px 14px; margin-left: calc((var(--step) - 1) * 12px); width: auto; }
+.power-opt:not(:disabled):hover { transform: translateX(3px); }
+.power-opt:disabled { cursor: default; }
+.power-opt.is-good { box-shadow: inset 0 0 0 2px var(--positive); }
+.power-opt.is-good .ladder-n { background: var(--positive); }
+.power-opt.is-close { box-shadow: inset 0 0 0 2px #e0b23a; }
+.power-opt.is-bad { box-shadow: inset 0 0 0 2px var(--negative); animation: power-shake 0.35s; }
+.power-opt.is-bad .ladder-n { background: var(--negative); }
+.power-opt.is-dim { opacity: 0.45; }
+@keyframes power-shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+.power-opt .ladder-text { flex-direction: row; align-items: baseline; flex-wrap: wrap; gap: 0 8px; }
+.power-why-close strong { color: #b38716; }
+.power-needs { font-size: 13px; color: var(--ink-2); }
+.power-needs a { font-weight: 700; }
+.power-recap { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 6px; width: 100%; max-width: 560px; text-align: left; }
+.power-recap li { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 12px; background: var(--card); font-size: 14px; line-height: 20px; }
+.power-recap li span { flex: 1; }
+.power-recap li strong { font-size: 13px; white-space: nowrap; }
+.power-recap .is-good svg { color: var(--positive); }
+.power-recap .is-close svg { color: #b38716; }
+.power-recap .is-bad svg { color: var(--negative); }
+
+/* New game tile */
+.game-g { background: var(--p-voice); position: relative; }
+.games .game-wide { grid-column: 1 / -1; }
+.game-new {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper) !important;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 720px) {
+  .ladder { grid-template-columns: 1fr; gap: 6px; }
+  /* width:auto so the staircase indent shrinks the step instead of pushing it off screen */
+  .ladder-step { flex-direction: row; align-items: center; min-height: 0; width: auto; margin-left: calc((var(--step) - 1) * 10px); }
+  .ladder-step:hover { transform: none; }
+  .ladder-detail { padding: 18px; border-radius: 16px; }
+  .ladder-title { font-size: 26px; line-height: 30px; }
+  .power-task { padding: 18px; }
+  .power-text { font-size: 21px; line-height: 27px; }
+  .power-opt { min-height: 52px; margin-left: calc((var(--step) - 1) * 8px); }
+  .power-opt .ladder-text strong { font-size: 16px; }
+  .power-nav {
+    position: sticky;
+    bottom: calc(var(--bottomnav-h) + env(safe-area-inset-bottom, 0px) + 8px);
+    z-index: 5;
+    margin: 0 -8px;
+    padding: 10px 12px;
+    border-radius: 18px;
+    background: var(--card);
+    box-shadow: 0 8px 28px rgba(36, 40, 44, 0.18);
+  }
+  .power-nav .btn-primary { flex: 1; justify-content: center; }
+}
+@media (hover: none) {
+  .power-opt:not(:disabled):active, .ladder-step:active, .finder-opt:active { transform: scale(0.98); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .power-task, .ladder-detail, .power-opt.is-bad, .finder-result.is-ready { animation: none; }
+}

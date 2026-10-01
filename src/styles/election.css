@@ -1,0 +1,44 @@
+/* Election-only glue, written with patricka's defined scales only:
+   type 10/12/13/14/16/18/20/30/40 px, spacing 4/8/12/16/24/32/48/64 px,
+   light tints instead of outlines, gb tokens only. Everything else is gb/ unchanged. */
+
+.block-tight { margin-top: 24px; }
+.duel-group { display: flex; flex-direction: column; gap: 8px; }
+.duel-tag { --pc: var(--card); text-transform: capitalize; }
+
+/* Duel cards inside patricka's .tot-option */
+.duel-options.n-2 { grid-template-columns: 1fr 1fr; }
+.duel-option .tot-letter { background: var(--pc); }
+.duel-option.is-mine { background: var(--pc); }                 /* light tint, no outline */
+.duel-option.is-mine .tot-letter { background: var(--ink); color: var(--on-ink); }
+.duel-option.is-other { opacity: 0.85; }
+.duel-option.is-busy { opacity: 0.6; }
+.tot:not(.tot-over) .duel-option:not(:disabled) { max-height: none; -webkit-mask-image: none; mask-image: none; }
+
+.duel-body { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 0 8px 8px; }
+.duel-options:not(.n-2) .duel-body { flex-direction: row; align-items: center; }
+.duel-face {
+  width: 64px; height: 64px; flex: none; border-radius: 50%; overflow: hidden;
+  display: grid; place-items: center; background: var(--pc);
+  font-family: var(--display); font-weight: 800; font-size: 20px; line-height: 28px; color: var(--ink);
+}
+.duel-option.is-mine .duel-face { background: var(--card); }
+.duel-face img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 20%; }
+.duel-options:not(.n-2) .duel-face { width: 48px; height: 48px; font-size: 16px; }
+.duel-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.duel-name { font-family: var(--display); font-weight: 800; font-size: 20px; line-height: 28px; color: var(--ink); }
+
+.duel-result { display: flex; flex-direction: column; gap: 8px; padding: 0 8px 8px; }
+.duel-pct { font-family: var(--display); font-weight: 800; font-size: 30px; line-height: 38px; font-variant-numeric: tabular-nums; }
+.duel-option:not(.is-mine) .meter span { background: var(--ink-3); }
+
+/* After you vote: patricka pieces stacked on a card */
+.duel-after { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; padding: 16px; border-radius: 16px; background: var(--card); }
+.duel-error { padding: 12px 16px; border-radius: 12px; background: var(--negative-soft); color: var(--negative); font-size: 14px; line-height: 20px; }
+.duel-page-game { margin-top: 12px; }
+.games .game { position: relative; }
+
+/* Create form: .search fields full width, the "add" chip sits on its own line */
+.me-stack .search { max-width: 480px; }
+.me-stack .row .search { flex: 1; }
+.duel-add { align-self: flex-start; }

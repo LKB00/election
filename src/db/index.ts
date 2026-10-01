@@ -41,6 +41,14 @@ CREATE TABLE IF NOT EXISTS votes (
 ALTER TABLE votes ADD COLUMN IF NOT EXISTS reason text;
 CREATE UNIQUE INDEX IF NOT EXISTS votes_one_per_voter ON votes (poll_id, voter_key);
 CREATE INDEX IF NOT EXISTS votes_option_idx ON votes (option_id);
+CREATE INDEX IF NOT EXISTS votes_poll_time_idx ON votes (poll_id, created_at);
+CREATE TABLE IF NOT EXISTS reactions (
+  poll_id text NOT NULL REFERENCES polls(id) ON DELETE CASCADE,
+  voter_key text NOT NULL,
+  emoji text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (poll_id, voter_key, emoji)
+);
 `;
 
 const g = globalThis as unknown as { __db?: Promise<Db> };

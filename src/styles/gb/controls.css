@@ -1,0 +1,320 @@
+/* Buttons, chips, index lists, pattern cards. */
+
+/* ---------- Buttons & controls ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 16px;
+  border: var(--hair) solid transparent;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 16px;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.btn:disabled {
+  cursor: not-allowed;
+  background: var(--sand-dark);
+  border-color: var(--sand-dark);
+  color: var(--ink-3);
+}
+.btn-primary {
+  background: var(--ink);
+  color: var(--on-ink);
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--ink-hover);
+}
+.btn-ghost {
+  background: var(--card);
+  border-color: var(--line);
+  color: var(--ink);
+}
+.btn-ghost:hover:not(:disabled) {
+  background: var(--sand);
+}
+.btn-danger {
+  background: var(--negative-soft);
+  color: var(--negative);
+}
+.btn-sm {
+  height: 28px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: var(--hair) solid var(--line);
+  border-radius: 9999px;
+  background: var(--card);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.icon-btn:hover,
+.icon-on {
+  background: var(--sand-dark);
+  color: var(--ink);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 12px;
+  border: var(--hair) solid var(--line);
+  border-radius: 9999px;
+  background: var(--card);
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 16px;
+  text-decoration: none;
+  cursor: pointer;
+}
+.chip:hover:not(:disabled) {
+  background: var(--sand);
+}
+.chip:disabled {
+  cursor: default;
+  color: var(--ink-3);
+}
+.chip-on,
+.chip-on:hover:not(:disabled),
+.chip-on:disabled {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--on-ink);
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 9999px;
+  background: var(--pc, var(--sand-dark));
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 20px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.tag-input, .thumb-input { --pc: var(--p-input); }
+.tag-output, .thumb-output { --pc: var(--p-output); }
+.tag-control, .thumb-control { --pc: var(--p-control); }
+.tag-trust, .thumb-trust { --pc: var(--p-trust); }
+.tag-feedback, .thumb-feedback { --pc: var(--p-feedback); }
+.tag-agents, .thumb-agents { --pc: var(--p-agents); }
+.tag-done {
+  --pc: var(--positive-soft);
+  color: var(--positive);
+}
+
+/* ---------- Index lists (home, learn, practice) ---------- */
+.index-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+.index-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 20px;
+}
+.index-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.index-list li {
+  border-top: var(--hair) solid var(--divider);
+}
+.index-list li:last-child {
+  border-bottom: var(--hair) solid var(--divider);
+}
+.index-row {
+  display: grid;
+  grid-template-columns: minmax(0, 220px) minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 8px;
+  color: var(--ink);
+  text-decoration: none;
+  border-radius: 8px;
+}
+.index-row:hover {
+  background: var(--sand);
+}
+.index-row-icon {
+  grid-template-columns: 18px minmax(0, 200px) minmax(0, 1fr) 16px;
+}
+.index-row-num {
+  grid-template-columns: 22px minmax(0, 220px) minmax(0, 1fr) auto 16px;
+}
+.index-title {
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 700;
+}
+.index-sum {
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--ink-2);
+}
+.index-meta {
+  font-size: 12px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.index-num {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--sand-dark);
+  font-size: 12px;
+  font-weight: 700;
+}
+.index-chev {
+  color: var(--ink-3);
+}
+.index-row-icon > svg:first-child {
+  color: var(--ink-2);
+}
+@media (max-width: 720px) {
+  .index-row,
+  .index-row-icon,
+  .index-row-num {
+    grid-template-columns: minmax(0, 1fr) 16px;
+    gap: 2px 12px;
+  }
+  .index-row > :not(.index-chev) {
+    grid-column: 1;
+  }
+  .index-chev {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+  }
+  .index-row-icon > svg:first-child,
+  .index-num,
+  .index-meta {
+    display: none;
+  }
+}
+
+/* ---------- Pattern cards ---------- */
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 32px;
+}
+.search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 360px;
+  height: 36px;
+  padding: 0 12px;
+  border: var(--hair) solid var(--line);
+  border-radius: 9999px;
+  background: var(--card);
+  color: var(--ink-3);
+}
+.search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: none;
+  color: var(--ink);
+  font-size: 14px;
+}
+.search:focus-within {
+  border-color: var(--ink-3);
+}
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+}
+.card {
+  display: block;
+  background: var(--card);
+  border: var(--hair) solid var(--line);
+  border-radius: 12px;
+  color: var(--ink);
+  text-decoration: none;
+  transition: border-color 0.15s;
+}
+a.card:hover {
+  border-color: var(--ink-3);
+}
+.pattern-card {
+  overflow: hidden;
+}
+.thumb {
+  position: relative;
+  height: 140px;
+  overflow: hidden;
+  padding: 12px 16px 0;
+  background: var(--pc, var(--sand));
+  pointer-events: none;
+}
+.thumb .m-frame {
+  width: 161.3%;
+  transform: scale(0.62);
+  transform-origin: 0 0;
+}
+.pattern-card-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 16px 16px;
+}
+.pattern-card-body p {
+  font-size: 14px;
+  line-height: 21px;
+  color: var(--ink-2);
+}
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 32px;
+  color: var(--ink-2);
+}
+
+/* Fingers need bigger targets than mouse pointers (at least 24px, we use 32px). */
+@media (pointer: coarse) {
+  a.tag { height: auto; min-height: 32px; padding: 0 12px; }
+}

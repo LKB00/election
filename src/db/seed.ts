@@ -25,11 +25,11 @@ export async function seedFlagship(db: Db) {
     .insert(schema.options)
     .values([
       // Photos live in public/candidates/. If a file is missing the screen shows the initials instead.
-      { id: 'modi', pollId: FLAGSHIP_ID, label: 'Narendra Modi', subtitle: 'Prime Minister', imageUrl: '/candidates/modi.jpg', position: 0 },
-      { id: 'rahul', pollId: FLAGSHIP_ID, label: 'Rahul Gandhi', subtitle: 'Leader of Opposition', imageUrl: '/candidates/rahul.jpg', position: 1 },
+      { id: 'modi', pollId: FLAGSHIP_ID, label: 'Narendra Modi', subtitle: 'BJP · Prime Minister', imageUrl: '/candidates/modi.jpg', position: 0 },
+      { id: 'rahul', pollId: FLAGSHIP_ID, label: 'Rahul Gandhi', subtitle: 'INC · Leader of Opposition', imageUrl: '/candidates/rahul.jpg', position: 1 },
     ])
     .onConflictDoUpdate({ target: schema.options.id, set: {
         imageUrl: sql`coalesce(${schema.options.imageUrl}, excluded.image_url)`,
-        subtitle: sql`coalesce(${schema.options.subtitle}, excluded.subtitle)`,
+        subtitle: sql`excluded.subtitle`,
       } });
 }
