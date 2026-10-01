@@ -2,7 +2,13 @@ import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { cookies } from 'next/headers';
 
 const COOKIE = 'voter';
-const secret = () => process.env.VOTER_SECRET || 'dev-only-secret';
+const secret = () => {
+  const s = process.env.VOTER_SECRET;
+  if (s && s.length >= 16) return s;
+  // A weak secret would let people forge voter ids and vote many times.
+  if (process.env.NODE_ENV === 'production') throw new Error('VOTER_SECRET must be set (16+ characters).');
+  return 'dev-only-secret';
+};
 const sign = (id: string) => createHmac('sha256', secret()).update(id).digest('base64url').slice(0, 22);
 
 function verify(raw: string | undefined): string | null {

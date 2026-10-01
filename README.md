@@ -39,7 +39,7 @@ Files to know: `src/db/schema.ts` (tables), `src/lib/polls.ts` (all poll and vot
 
 ## When it gets heavy (growth plan)
 
-1. **First deploy**: Vercel + a hosted Postgres (Neon or Supabase). Set `DATABASE_URL` and `VOTER_SECRET`.
+1. **First deploy**: Vercel + a hosted Postgres (Neon or Supabase). Set `DATABASE_URL`, `VOTER_SECRET` (16+ characters) and `NEXT_PUBLIC_SITE_URL`. The app refuses to start in production without the first two. After deploying, open `/api/health`: `{"ok":true}` means the database is connected.
 2. **Viral poll**: add Redis (Upstash) for vote counters and rate limits, so the database is not hit for every refresh.
 3. **Cheating**: add Google sign-in and a CAPTCHA (Cloudflare Turnstile) as an option for "verified" polls.
 4. **Later**: discovery and trending, comments, report and moderation tools, languages, accounts, paid plans.
