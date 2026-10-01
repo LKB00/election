@@ -6,7 +6,15 @@ import type { CreatePollInput } from './validation';
 const { polls, options, votes } = schema;
 const pollId = customAlphabet('23456789abcdefghijkmnpqrstuvwxyz', 8);
 
-export type PollOption = { id: string; label: string; imageUrl: string | null; votes: number; percent: number };
+export type PollOption = {
+  id: string;
+  label: string;
+  imageUrl: string | null;
+  votes: number;
+  percent: number;
+  /** Why this option's voters picked it (only when results are visible). */
+  reasons: { reason: string; n: number }[];
+};
 export type PollView = {
   id: string;
   title: string;
@@ -21,8 +29,21 @@ export type PollView = {
   myVote: string | null;
   /** False when the organiser hides numbers and this voter may not see them yet. */
   resultsVisible: boolean;
+  featured: boolean;
+  /** Choices for the one-tap "why?" question. Empty means the poll does not ask. */
+  reasons: string[];
+  myReason: string | null;
   options: PollOption[];
 };
+
+function parseReasons(raw: string): string[] {
+  try {
+    const v = JSON.parse(raw);
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string').slice(0, 8) : [];
+  } catch {
+    return [];
+  }
+}
 
 export async function createPoll(db: Db, input: CreatePollInput): Promise<string> {
   const id = pollId();
@@ -43,7 +64,7 @@ export async function getPoll(db: Db, id: string, voterId: string | null): Promi
   const [poll] = await db.select().from(polls).where(eq(polls.id, id)).limit(1);
   if (!poll) return null;
 
-  const [opts, counts, mine] = await Promise.all([
+  const [opts, counts, mine, reasonRows] = await Promise.all([
     db.select().from(options).where(eq(options.pollId, id)).orderBy(options.position),
     db
       .select({ optionId: votes.optionId, n: sql<number>`count(*)::int` })
@@ -51,8 +72,17 @@ export async function getPoll(db: Db, id: string, voterId: string | null): Promi
       .where(eq(votes.pollId, id))
       .groupBy(votes.optionId),
     voterId
-      ? db.select({ optionId: votes.optionId }).from(votes).where(and(eq(votes.pollId, id), eq(votes.voterKey, voterId))).limit(1)
-      : Promise.resolve([] as { optionId: string }[]),
+      ? db
+          .select({ optionId: votes.optionId, reason: votes.reason })
+          .from(votes)
+          .where(and(eq(votes.pollId, id), eq(votes.voterKey, voterId)))
+          .limit(1)
+      : Promise.resolve([] as { optionId: string; reason: string | null }[]),
+    db
+      .select({ optionId: votes.optionId, reason: votes.reason, n: sql<number>`count(*)::int` })
+      .from(votes)
+      .where(and(eq(votes.pollId, id), sql`${votes.reason} is not null`))
+      .groupBy(votes.optionId, votes.reason),
   ]);
 
   const byOption = new Map(counts.map((c) => [c.optionId, c.n]));
@@ -73,9 +103,21 @@ export async function getPoll(db: Db, id: string, voterId: string | null): Promi
     totalVotes: resultsVisible ? total : 0,
     myVote,
     resultsVisible,
+    featured: poll.featured,
+    reasons: parseReasons(poll.reasons),
+    myReason: mine[0]?.reason ?? null,
     options: opts.map((o) => {
       const n = resultsVisible ? (byOption.get(o.id) ?? 0) : 0;
-      return { id: o.id, label: o.label, imageUrl: o.imageUrl, votes: n, percent: resultsVisible && total ? (n / total) * 100 : 0 };
+      return {
+        id: o.id,
+        label: o.label,
+        imageUrl: o.imageUrl,
+        votes: n,
+        percent: resultsVisible && total ? (n / total) * 100 : 0,
+        reasons: resultsVisible
+          ? reasonRows.filter((r) => r.optionId === o.id && r.reason).map((r) => ({ reason: r.reason as string, n: r.n })).sort((a, b) => b.n - a.n)
+          : [],
+      };
     }),
   };
 }
@@ -120,6 +162,7 @@ export async function listPolls(db: Db, limit = 20): Promise<PollSummary[]> {
     })
     .from(polls)
     .leftJoin(votes, eq(votes.pollId, polls.id))
+    .where(eq(polls.featured, false))
     .groupBy(polls.id)
     .orderBy(desc(polls.createdAt))
     .limit(limit);
@@ -137,4 +180,22 @@ export async function listPolls(db: Db, limit = 20): Promise<PollSummary[]> {
     closed: !!r.endsAt && r.endsAt.getTime() <= Date.now(),
     options: opts.filter((o) => o.pollId === r.id).map((o) => o.label),
   }));
+}
+
+/** Id of the flagship poll, if there is one. */
+export async function getFeaturedId(db: Db): Promise<string | null> {
+  const [row] = await db.select({ id: polls.id }).from(polls).where(eq(polls.featured, true)).orderBy(desc(polls.createdAt)).limit(1);
+  return row?.id ?? null;
+}
+
+/** Saves the voter's one-tap "why". Only allowed answers, only for a vote they already cast. */
+export async function setReason(db: Db, id: string, voterId: string, reason: string): Promise<boolean> {
+  const [poll] = await db.select({ reasons: polls.reasons }).from(polls).where(eq(polls.id, id)).limit(1);
+  if (!poll || !parseReasons(poll.reasons).includes(reason)) return false;
+  const updated = await db
+    .update(votes)
+    .set({ reason })
+    .where(and(eq(votes.pollId, id), eq(votes.voterKey, voterId)))
+    .returning({ id: votes.id });
+  return updated.length > 0;
 }

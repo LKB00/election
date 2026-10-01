@@ -1,23 +1,33 @@
 import Link from 'next/link';
+import Duel from '@/components/Duel';
 import { getDb } from '@/db';
-import { listPolls } from '@/lib/polls';
+import { getFeaturedId, getPoll, listPolls } from '@/lib/polls';
+import { readVoterId } from '@/lib/voter';
 
 export const dynamic = 'force-dynamic';
 
 export default async function Home() {
-  const polls = await listPolls(await getDb());
+  const db = await getDb();
+  const [featuredId, polls, voterId] = await Promise.all([getFeaturedId(db), listPolls(db), readVoterId()]);
+  const featured = featuredId ? await getPoll(db, featuredId, voterId) : null;
+
   return (
     <>
-      <section className="hero">
-        <span className="label">Fun polls · not official results</span>
-        <h1>Who wins? You decide.</h1>
-        <p className="lead">Pick two or more choices, share the link, and watch the votes come in. Virat, Rohit or Dhoni? Pizza or biryani?</p>
-        <Link href="/create" className="btn btn-primary btn-lg">Create a poll</Link>
-      </section>
+      {featured && featured.options.length === 2 ? (
+        <Duel initial={featured} headingLevel="h1" />
+      ) : (
+        <section className="hero-home">
+          <span className="label">Fun polls · not official results</span>
+          <h1>Who wins? You decide.</h1>
+        </section>
+      )}
 
-      <h2 style={{ marginTop: 32 }}>Latest polls</h2>
+      <div className="section-head">
+        <h2>More polls</h2>
+        <span className="small">Latest first</span>
+      </div>
       {polls.length === 0 ? (
-        <div className="card empty">No polls yet. Be the first to make one.</div>
+        <div className="card empty">No other polls yet. Start one and send it to your friends.</div>
       ) : (
         <div className="poll-list">
           {polls.map((p) => (
@@ -33,6 +43,12 @@ export default async function Home() {
           ))}
         </div>
       )}
+
+      <div className="cta-card">
+        <h2>Got your own debate?</h2>
+        <p>Virat or Rohit? Pizza or biryani? Make a poll in 30 seconds.</p>
+        <Link href="/create" className="btn btn-primary btn-lg">Create a poll</Link>
+      </div>
     </>
   );
 }

@@ -4,6 +4,7 @@ import type { PgDatabase, PgQueryResultHKT } from 'drizzle-orm/pg-core';
 import { mkdirSync } from 'node:fs';
 import postgres from 'postgres';
 import * as schema from './schema';
+import { seedFlagship } from './seed';
 
 export type Db = PgDatabase<PgQueryResultHKT, typeof schema>;
 
@@ -18,6 +19,8 @@ CREATE TABLE IF NOT EXISTS polls (
   ends_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE polls ADD COLUMN IF NOT EXISTS reasons text NOT NULL DEFAULT '[]';
+ALTER TABLE polls ADD COLUMN IF NOT EXISTS featured boolean NOT NULL DEFAULT false;
 CREATE INDEX IF NOT EXISTS polls_created_idx ON polls (created_at);
 CREATE TABLE IF NOT EXISTS options (
   id text PRIMARY KEY,
@@ -34,6 +37,7 @@ CREATE TABLE IF NOT EXISTS votes (
   voter_key text NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE votes ADD COLUMN IF NOT EXISTS reason text;
 CREATE UNIQUE INDEX IF NOT EXISTS votes_one_per_voter ON votes (poll_id, voter_key);
 CREATE INDEX IF NOT EXISTS votes_option_idx ON votes (option_id);
 `;
@@ -55,7 +59,9 @@ async function connect(): Promise<Db> {
       await tx`select pg_advisory_xact_lock(727274)`;
       await tx.unsafe(SCHEMA_SQL);
     });
-    return drizzlePostgres(client, { schema }) as unknown as Db;
+    const db = drizzlePostgres(client, { schema }) as unknown as Db;
+    await seedFlagship(db);
+    return db;
   }
   // No database set up: use a local file database so the app "just runs".
   const { PGlite } = await import('@electric-sql/pglite');
@@ -63,7 +69,9 @@ async function connect(): Promise<Db> {
   if (!dir.startsWith('memory://')) mkdirSync('.data', { recursive: true });
   const client = new PGlite(dir);
   await client.exec(SCHEMA_SQL);
-  return drizzlePglite(client, { schema }) as unknown as Db;
+  const db = drizzlePglite(client, { schema }) as unknown as Db;
+  await seedFlagship(db);
+  return db;
 }
 
 /** One shared database connection per server process. */

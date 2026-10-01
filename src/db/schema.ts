@@ -10,6 +10,10 @@ export const polls = pgTable(
     // Hide the numbers from people who have not voted yet (avoids copying the crowd).
     hideUntilVoted: boolean('hide_until_voted').notNull().default(false),
     allowChange: boolean('allow_change').notNull().default(false),
+    // Optional one-tap "why did you pick them?" answers, stored as a JSON list of short texts.
+    reasons: text('reasons').notNull().default('[]'),
+    // The flagship poll shown big on the home page.
+    featured: boolean('featured').notNull().default(false),
     endsAt: timestamp('ends_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -36,6 +40,7 @@ export const votes = pgTable(
     optionId: text('option_id').notNull().references(() => options.id, { onDelete: 'cascade' }),
     // Who voted. Today: a signed cookie id. Later: a user id after sign-in.
     voterKey: text('voter_key').notNull(),
+    reason: text('reason'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

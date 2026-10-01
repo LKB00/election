@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { castVote, createPoll, getPoll, listPolls } from '@/lib/polls';
+import { castVote, createPoll, getFeaturedId, getPoll, listPolls, setReason } from '@/lib/polls';
 import { createPollSchema } from '@/lib/validation';
 import { rateLimit } from '@/lib/rate-limit';
 import type { Db } from '@/db';
@@ -78,6 +78,32 @@ describe('listing', () => {
     const item = (await listPolls(db, 100)).find((x) => x.id === id)!;
     expect(item.totalVotes).toBe(2);
     expect(item.options).toEqual(['Virat', 'Rohit', 'Dhoni']);
+  });
+});
+
+describe('flagship poll and reasons', () => {
+  it('is seeded once and kept out of the normal list', async () => {
+    const id = await getFeaturedId(db);
+    expect(id).toBe('modi-vs-rahul');
+    const poll = (await getPoll(db, id!, null))!;
+    expect(poll.options.map((o) => o.label)).toEqual(['Narendra Modi', 'Rahul Gandhi']);
+    expect(poll.hideUntilVoted).toBe(true);
+    expect((await listPolls(db, 100)).some((p) => p.id === id)).toBe(false);
+    await (await import('@/db/seed')).seedFlagship(db); // running again changes nothing
+    expect((await getPoll(db, id!, null))!.options).toHaveLength(2);
+  });
+
+  it('saves a reason only for allowed answers and only after voting', async () => {
+    const id = 'modi-vs-rahul';
+    expect(await setReason(db, id, 'nobody', 'Leadership')).toBe(false); // has not voted
+    await castVote(db, id, 'modi', 'r1');
+    expect(await setReason(db, id, 'r1', 'Made up reason')).toBe(false);
+    expect(await setReason(db, id, 'r1', 'Leadership')).toBe(true);
+    const mine = (await getPoll(db, id, 'r1'))!;
+    expect(mine.myReason).toBe('Leadership');
+    expect(mine.options[0].reasons).toEqual([{ reason: 'Leadership', n: 1 }]);
+    const stranger = (await getPoll(db, id, 'zzz'))!; // has not voted, results hidden
+    expect(stranger.options[0].reasons).toEqual([]);
   });
 });
 
