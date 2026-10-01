@@ -27,6 +27,8 @@ export const options = pgTable(
     pollId: text('poll_id').notNull().references(() => polls.id, { onDelete: 'cascade' }),
     label: text('label').notNull(),
     imageUrl: text('image_url'),
+    // Short line under the name, e.g. a role.
+    subtitle: text('subtitle'),
     position: integer('position').notNull(),
   },
   (t) => [index('options_poll_idx').on(t.pollId)],

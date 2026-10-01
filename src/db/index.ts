@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS options (
   image_url text,
   position integer NOT NULL
 );
+ALTER TABLE options ADD COLUMN IF NOT EXISTS subtitle text;
 CREATE INDEX IF NOT EXISTS options_poll_idx ON options (poll_id);
 CREATE TABLE IF NOT EXISTS votes (
   id text PRIMARY KEY,
