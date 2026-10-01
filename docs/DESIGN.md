@@ -151,3 +151,39 @@ no surprise, always one obvious next step, and mistakes can be undone.
 | Share link `/p/…?f=code` | — | Carries your private code so friends are counted for you and the preview shows your pick. |
 | Share image (WhatsApp/X preview) | — | Both photos, your pick marked, "I picked Modi. Who would you pick?". Never the split, so friends still have to vote. |
 | New duels hide results until people vote (default on) | — | So every duel gets the guess step. The creator can turn it off under More options. |
+
+---
+
+## Batch 2: it should feel like a real election (human behaviour first)
+
+It is not an official election, but the *ritual* of one is what people know, trust and share in India.
+Every element below borrows a real voting moment.
+
+### What triggers people (and where we use it)
+| Trigger | Why it works | In the app |
+|---|---|---|
+| **Ritual / taking part** | Voting is a proud, shared ritual; people want proof they did it | EVM-style **Vote** button with a red light and a long **beep**, the **VVPAT slip** (your choice behind glass for ~2.5 s, then it drops), "Vote cast. Your finger is inked · Voter ID EL-000041" |
+| **Curiosity gap** | "Guess who I voted for?" makes people click more than an answer does | Share is a **secret ballot by default**; the preview and story say "Guess who I picked?" |
+| **Tribe / identity** | Which side you are on, and is your friend on it? | "Your friend voted. Your turn", then "Your friend picked X: you agree / disagree" |
+| **Being right** | Small, instant wins | **Exit poll**: "Who's winning right now?" before the results open; 🎯 score |
+| **Reciprocity** | A dare asks for an answer | The friend lands on the dare, votes in one tap, then gets their own "Show your ink" |
+| **Urgency** | Polls close; results are declared | "Polling open · closes in 2 d 4 h" when a duel has an end time; "Polling closed · X won" |
+
+### Sharing: less drop-off at every step
+1. **When**: right after the result (the emotional peak), from "Show your ink" in the result bar.
+2. **Where people actually share in India**: WhatsApp chats first (one tap, message already written), WhatsApp Status / Instagram Story second.
+3. **What the message says** (short, ends with the link):
+   - secret: “I just voted in “Modi or Rahul?” 🗳️☝️ Guess who I picked? Vote and find out: link”
+   - open: “I voted for Modi in “Modi or Rahul?” 🗳️☝️ Who would you pick? link”
+4. **Link preview** (WhatsApp/X, 1200×630): inked finger, "I VOTED", both photos, my pick or "Guess who I picked?". **No QR**: the link is already tappable in a chat.
+5. **Story image** (1080×1920, for Status/Instagram where links cannot be tapped): big inked finger, "I voted", both photos, pick or "Guess who I picked?", and a **small QR code in the bottom corner** with "Scan to vote". Small, so it never competes with the message.
+6. **The friend's landing**: label "Your friend voted. Your turn", the ballot right away, no sign-up, one tap. Their friend's pick stays hidden until they vote (that is the hook).
+7. **Never the split** on any shared image: friends have to vote to see it.
+
+| Element | Level | Job / why |
+|---|---|---|
+| EVM row on each card (red light + blue **Vote**) | P1 | Everyone in India knows this button. It tells you *how* to vote without words. |
+| Beep + VVPAT slip after voting | P1 at that moment | The trust moment of a real booth: you see your choice recorded. 2.6 s, then it moves on by itself. |
+| "Vote cast. Your finger is inked · Voter ID" | P2 | The proof you took part; the voter ID makes it feel personal. |
+| Exit poll (the guess) | P1 at that moment | See Batch 1; the election name makes it feel natural. |
+| **Show your ink** (share sheet) | P2 | WhatsApp first, secret switch (on), Status/Story image, copy link. |

@@ -5,6 +5,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PollOption, PollView } from '@/lib/polls';
 import { announceVote, useStats } from '@/lib/useStats';
 import Burst from './Burst';
+import InkFinger from './InkFinger';
+import ShareSheet from './ShareSheet';
+import { evmBeep } from '@/lib/sound';
 
 // Duels, played like patricka's "This or That": tap a card, see the result on the
 // cards, then "Next duel". Results stay hidden until you vote.
@@ -73,6 +76,13 @@ function Face({ o, tone }: { o: PollOption; tone: string }) {
   );
 }
 
+function closesIn(iso: string) {
+  const s = Math.max(0, (new Date(iso).getTime() - Date.now()) / 1000);
+  if (s < 3600) return `in ${Math.max(1, Math.floor(s / 60))} min`;
+  if (s < 86400) return `in ${Math.floor(s / 3600)} h`;
+  return `in ${Math.floor(s / 86400)} d ${Math.floor((s % 86400) / 3600)} h`;
+}
+
 const isOpen = (p: PollView) => p.myVote === null && !p.closed;
 
 // start: given for a shared link (always open that duel, even if it ended or you voted).
@@ -88,6 +98,9 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
   const [over, setOver] = useState(start === undefined && firstOpen === -1);
   const [undoUntil, setUndoUntil] = useState(0);
   const [reasonSaved, setReasonSaved] = useState(false);
+  // The VVPAT moment: right after the beep your choice shows on a slip for a few seconds, like in a real booth.
+  const [slipFor, setSlipFor] = useState<string | null>(null);
+  const [sharing, setSharing] = useState(false);
   const nextRef = useRef<HTMLButtonElement>(null);
   const topRef = useRef<HTMLDivElement>(null);
   const { correct } = useStats();
@@ -130,6 +143,9 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
     }).catch(() => null);
     const data = await res?.json().catch(() => null);
     if (res?.ok) {
+      evmBeep();
+      setSlipFor(optionId);
+      setTimeout(() => setSlipFor(null), 2600);
       replace(data.poll);
       setJustVoted(data.poll.needsGuess ? null : optionId);
       setReasonSaved(false);
@@ -202,6 +218,8 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
   // Next: the next live duel you have not voted in (wraps around), else "all caught up".
   // Always brings the top of the game into view, so the new question is the first thing you see.
   function next() {
+    setSlipFor(null);
+    setSharing(false);
     setJustVoted(null);
     setJustGuessed(false);
     setMsg('');
@@ -294,7 +312,8 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
       <div className="tot-q">
         <h1 key={poll.id} className="display duel-q">{poll.title}</h1>
         <p className="small muted">
-          {poll.closed ? 'Ended' : 'Live'} · {poll.participants.toLocaleString()} {poll.participants === 1 ? 'vote' : 'votes'}
+          {poll.closed ? 'Polling closed' : 'Polling open'} · {poll.participants.toLocaleString()} {poll.participants === 1 ? 'vote' : 'votes'} cast
+          {!poll.closed && poll.endsAt && ` · closes ${closesIn(poll.endsAt)}`}
           {!revealed && poll.pulse.lastHour > 0 && poll.pulse.lastHour < poll.participants && ` · ${poll.pulse.lastHour} in the last hour`}
           {poll.participants === 0 && !poll.closed && ' · be the first'}
         </p>
@@ -334,6 +353,12 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
                   <span className="small muted">{o.votes.toLocaleString()} {o.votes === 1 ? 'vote' : 'votes'}</span>
                 </span>
               )}
+              {!revealed && !poll.closed && (
+                <span className="evm-row" aria-hidden>
+                  <span className={'evm-led' + (isMine ? ' is-on' : '')} />
+                  <span className="evm-btn">{isMine ? 'Voted' : 'Vote'}</span>
+                </span>
+              )}
               {justVoted === o.id && <Burst />}
             </button>
           );
@@ -341,12 +366,32 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
       </div>
 
       {!voted && !poll.closed && (
-        <p className="small muted duel-hint" data-hint>Tap a card to vote · anonymous · one vote each · results unlock after</p>
+        <p className="small muted duel-hint" data-hint>Press a candidate to vote · secret ballot · one vote each · results after you vote</p>
       )}
 
-      {voted && poll.needsGuess && (
+      {slipFor && (
+        <div className="vvpat" role="status" aria-live="polite">
+          <p className="label">VVPAT · your slip</p>
+          <div className="vvpat-window">
+            <div className="vvpat-slip">
+              <span className="vvpat-no">{poll.options.findIndex((o) => o.id === slipFor) + 1}</span>
+              <span className="vvpat-name">{poll.options.find((o) => o.id === slipFor)?.label}</span>
+              <span className="vvpat-party">{poll.options.find((o) => o.id === slipFor)?.subtitle?.split(' · ')[0] ?? ''}</span>
+            </div>
+          </div>
+          <p className="small muted">Your vote is recorded. Only you see this slip.</p>
+        </div>
+      )}
+
+      {!slipFor && voted && mine && !poll.closed && (
+        <p className="small duel-inked">
+          <InkFinger size={20} /> Vote cast. Your finger is inked{poll.myVoterNumber ? ` · Voter ID EL-${String(poll.myVoterNumber).padStart(6, '0')}` : ''}.
+        </p>
+      )}
+
+      {!slipFor && voted && poll.needsGuess && (
         <div className="duel-guess" aria-live="polite">
-          <p className="label">Vote saved · now guess</p>
+          <p className="label">Exit poll</p>
           <h2>Who’s winning right now?</h2>
           <p className="small muted">Guess right to score <Target size={12} strokeWidth={2} aria-hidden /> Then the results open.</p>
           <div className="duel-guess-options">
@@ -400,7 +445,7 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
                     </span>
                   )}
                   {/* The voter number is a small extra: only when there is no guess or friend news to tell. */}
-                  {poll.myVoterNumber && !poll.myGuess && !poll.friend.optionId && <span className="small muted"> You’re voter #{poll.myVoterNumber.toLocaleString()}.</span>}
+
                   {undoUntil > 0 && !poll.closed && (
                     <> <button type="button" className="link-like duel-undo" onClick={undo}>Undo</button></>
                   )}
@@ -410,8 +455,8 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
               )}
             </p>
             <span className="row">
-              <button type="button" className="btn btn-ghost" onClick={share}>
-                <Share2 size={14} strokeWidth={1.75} aria-hidden /> {copied ? 'Link copied' : poll.closed ? 'Share result' : 'Dare a friend'}
+              <button type="button" className="btn btn-ghost" onClick={() => (mine && poll.myShareCode ? setSharing(true) : share())}>
+                <Share2 size={14} strokeWidth={1.75} aria-hidden /> {copied ? 'Link copied' : poll.closed ? 'Share result' : 'Show your ink'}
               </button>
               <button type="button" className="btn btn-primary" onClick={next} ref={nextRef}>
                 Next <ArrowRight size={14} strokeWidth={1.75} aria-hidden />
@@ -420,6 +465,10 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
           </>
         )}
       </div>
+
+      {sharing && mine && poll.myShareCode && (
+        <ShareSheet poll={poll} pick={mine} shareCode={poll.myShareCode} onClose={() => setSharing(false)} />
+      )}
 
       {/* P3, optional: after the pinned bar, so the bar never covers it. */}
       {revealed && mine && (
