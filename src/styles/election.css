@@ -66,3 +66,13 @@
 .duel-options:not(.n-2) .duel-photo { width: 64px; height: 64px; aspect-ratio: auto; border-radius: 50%; flex: none; }
 .duel-option.is-other .duel-photo img { filter: saturate(0.6); }
 .duel-credit { margin: 0; padding: 0 4px; font-size: 12px; line-height: 16px; color: var(--ink-3); }
+
+/* Guess the crowd: the one step between voting and the results (P1 at that moment) */
+.duel-guess { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 16px; border-radius: 16px; background: var(--card); animation: pop 0.35s ease; }
+.duel-guess h2 { margin: 0; }
+.duel-guess-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; margin-top: 8px; }
+.duel-guess-options .btn { justify-content: flex-start; }
+.duel-guess-letter { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--sand-dark); font-size: 12px; font-weight: 800; }
+.duel-guessed.is-new strong { animation: pop 0.4s ease; display: inline-flex; align-items: center; gap: 4px; }
+.duel-friend { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--ink-2); }
+.duel-friend-line svg { vertical-align: -2px; }

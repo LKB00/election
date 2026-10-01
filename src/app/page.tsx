@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import DuelGame from '@/components/DuelGame';
 import DuelTiles from '@/components/DuelTiles';
-import TodayCard from '@/components/Today';
 import { getDb } from '@/db';
 import { getDeck, getVoterStats, listPolls } from '@/lib/polls';
 import { readVoterId } from '@/lib/voter';
@@ -27,8 +26,6 @@ export default async function Home() {
         </section>
       )}
 
-      {/* The streak only means something once you have voted. */}
-      <TodayCard initial={stats} hideUntilVoted />
 
       <section className="block">
         <div className="row space-between">

@@ -43,6 +43,14 @@ ALTER TABLE votes ADD COLUMN IF NOT EXISTS reason text;
 CREATE UNIQUE INDEX IF NOT EXISTS votes_one_per_voter ON votes (poll_id, voter_key);
 CREATE INDEX IF NOT EXISTS votes_option_idx ON votes (option_id);
 CREATE INDEX IF NOT EXISTS votes_poll_time_idx ON votes (poll_id, created_at);
+-- Votes from before the guess game count as "already answered" ('skip'); new votes start at null.
+ALTER TABLE votes ADD COLUMN IF NOT EXISTS prediction text DEFAULT 'skip';
+ALTER TABLE votes ALTER COLUMN prediction DROP DEFAULT;
+ALTER TABLE votes ADD COLUMN IF NOT EXISTS prediction_correct boolean;
+ALTER TABLE votes ADD COLUMN IF NOT EXISTS share_code text;
+ALTER TABLE votes ADD COLUMN IF NOT EXISTS via text;
+CREATE UNIQUE INDEX IF NOT EXISTS votes_share_code ON votes (share_code);
+CREATE INDEX IF NOT EXISTS votes_via_idx ON votes (poll_id, via);
 CREATE TABLE IF NOT EXISTS reactions (
   poll_id text NOT NULL REFERENCES polls(id) ON DELETE CASCADE,
   voter_key text NOT NULL,

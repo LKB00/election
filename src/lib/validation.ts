@@ -12,7 +12,7 @@ export const createPollSchema = z.object({
     .min(2, 'Add at least 2 choices.')
     .max(10, 'At most 10 choices.')
     .refine((a) => new Set(a.map((x) => x.toLowerCase())).size === a.length, 'Two choices are the same. Make each one different.'),
-  hideUntilVoted: z.boolean().default(false),
+  hideUntilVoted: z.boolean().default(true),
   allowChange: z.boolean().default(false),
   endsAt: z
     .string()
@@ -22,4 +22,5 @@ export const createPollSchema = z.object({
 });
 export type CreatePollInput = z.infer<typeof createPollSchema>;
 
-export const voteSchema = z.object({ optionId: z.string().min(1).max(40) });
+export const voteSchema = z.object({ optionId: z.string().min(1).max(40), via: z.string().max(20).nullish() });
+export const guessSchema = z.object({ choice: z.string().min(1).max(40) });

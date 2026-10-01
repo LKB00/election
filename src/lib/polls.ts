@@ -7,6 +7,7 @@ const { polls, options, votes, reactions } = schema;
 
 export const REACTIONS = ['🔥', '😂', '😮', '👏', '🤔'] as const;
 const pollId = customAlphabet('23456789abcdefghijkmnpqrstuvwxyz', 8);
+const shareCodeId = customAlphabet('23456789abcdefghijkmnpqrstuvwxyz', 10);
 
 export type PollOption = {
   id: string;
@@ -47,6 +48,15 @@ export type PollView = {
   trend: { t: string; a: number }[];
   reactions: { emoji: string; n: number }[];
   myReactions: string[];
+  /** You voted, but have not answered "who's winning right now?" yet. Results stay hidden until you do. */
+  needsGuess: boolean;
+  /** Your guess and whether it was right (null = skipped or not asked). */
+  myGuess: { optionId: string; correct: boolean } | null;
+  /** Code for your share link, and how the friends who used it voted. */
+  myShareCode: string | null;
+  friends: { agree: number; disagree: number };
+  /** Opened from a friend's link: whether that friend exists, and their pick once you can see results. */
+  friend: { known: boolean; optionId: string | null };
   options: PollOption[];
 };
 
@@ -74,7 +84,7 @@ export async function createPoll(db: Db, input: CreatePollInput): Promise<string
   return id;
 }
 
-export async function getPoll(db: Db, id: string, voterId: string | null): Promise<PollView | null> {
+export async function getPoll(db: Db, id: string, voterId: string | null, via?: string | null): Promise<PollView | null> {
   const [poll] = await db.select().from(polls).where(eq(polls.id, id)).limit(1);
   if (!poll) return null;
 
@@ -87,11 +97,20 @@ export async function getPoll(db: Db, id: string, voterId: string | null): Promi
       .groupBy(votes.optionId),
     voterId
       ? db
-          .select({ optionId: votes.optionId, reason: votes.reason, createdAt: votes.createdAt })
+          .select({
+            optionId: votes.optionId,
+            reason: votes.reason,
+            createdAt: votes.createdAt,
+            prediction: votes.prediction,
+            predictionCorrect: votes.predictionCorrect,
+            shareCode: votes.shareCode,
+          })
           .from(votes)
           .where(and(eq(votes.pollId, id), eq(votes.voterKey, voterId)))
           .limit(1)
-      : Promise.resolve([] as { optionId: string; reason: string | null; createdAt: Date }[]),
+      : Promise.resolve(
+          [] as { optionId: string; reason: string | null; createdAt: Date; prediction: string | null; predictionCorrect: boolean | null; shareCode: string | null }[],
+        ),
     db
       .select({ optionId: votes.optionId, reason: votes.reason, n: sql<number>`count(*)::int` })
       .from(votes)
@@ -118,7 +137,26 @@ export async function getPoll(db: Db, id: string, voterId: string | null): Promi
   const total = counts.reduce((s, c) => s + c.n, 0);
   const closed = !!poll.endsAt && poll.endsAt.getTime() <= Date.now();
   const myVote = mine[0]?.optionId ?? null;
-  const resultsVisible = !poll.hideUntilVoted || closed || myVote !== null;
+  // Guess first, then see: on hidden-results duels you answer "who's winning?" before the numbers show.
+  const needsGuess = poll.hideUntilVoted && !closed && myVote !== null && mine[0]?.prediction == null && opts.length >= 2;
+  const resultsVisible = !poll.hideUntilVoted || closed || (myVote !== null && !needsGuess);
+
+  // Your share code (made on first need, also for votes from before share codes existed).
+  let myShareCode = mine[0]?.shareCode ?? null;
+  if (mine[0] && !myShareCode && voterId) {
+    myShareCode = shareCodeId();
+    await db.update(votes).set({ shareCode: myShareCode }).where(and(eq(votes.pollId, id), eq(votes.voterKey, voterId)));
+  }
+  const friendRows = myShareCode
+    ? await db
+        .select({ agree: sql<number>`count(*) filter (where ${votes.optionId} = ${myVote})::int`, all: sql<number>`count(*)::int` })
+        .from(votes)
+        .where(and(eq(votes.pollId, id), eq(votes.via, myShareCode)))
+    : [];
+  const friendVote = via
+    ? (await db.select({ optionId: votes.optionId, voterKey: votes.voterKey }).from(votes).where(and(eq(votes.pollId, id), eq(votes.shareCode, via))).limit(1))[0]
+    : undefined;
+  const friendKnown = !!friendVote && friendVote.voterKey !== voterId;
 
   const myVoterNumber = mine[0]
     ? (
@@ -158,6 +196,13 @@ export async function getPoll(db: Db, id: string, voterId: string | null): Promi
     trend,
     reactions: REACTIONS.map((e) => ({ emoji: e, n: reactionRows.find((r) => r.emoji === e)?.n ?? 0 })),
     myReactions: myReactionRows.map((r) => r.emoji),
+    needsGuess,
+    myGuess:
+      mine[0]?.prediction && mine[0].prediction !== 'skip' ? { optionId: mine[0].prediction, correct: !!mine[0].predictionCorrect } : null,
+    myShareCode,
+    friends: { agree: friendRows[0]?.agree ?? 0, disagree: (friendRows[0]?.all ?? 0) - (friendRows[0]?.agree ?? 0) },
+    // The friend's pick stays a surprise until you have voted (and guessed).
+    friend: { known: friendKnown, optionId: friendKnown && myVote !== null && resultsVisible ? friendVote!.optionId : null },
     options: opts.map((o) => {
       const n = resultsVisible ? (byOption.get(o.id) ?? 0) : 0;
       return {
@@ -205,18 +250,26 @@ async function shareOverTime(db: Db, id: string, createdAt: Date, firstOptionId:
 
 export type VoteResult = 'ok' | 'changed' | 'already_voted' | 'closed' | 'not_found' | 'bad_option';
 
-export async function castVote(db: Db, id: string, optionId: string, voterId: string): Promise<VoteResult> {
+export async function castVote(db: Db, id: string, optionId: string, voterId: string, via?: string | null): Promise<VoteResult> {
   const [poll] = await db.select().from(polls).where(eq(polls.id, id)).limit(1);
   if (!poll) return 'not_found';
   if (poll.endsAt && poll.endsAt.getTime() <= Date.now()) return 'closed';
   const [opt] = await db.select({ id: options.id }).from(options).where(and(eq(options.id, optionId), eq(options.pollId, id))).limit(1);
   if (!opt) return 'bad_option';
 
+  // Only keep "via" when it is a real share code for this duel from someone else.
+  let viaCode: string | null = null;
+  if (via) {
+    const [ref] = await db.select({ voterKey: votes.voterKey }).from(votes).where(and(eq(votes.pollId, id), eq(votes.shareCode, via))).limit(1);
+    if (ref && ref.voterKey !== voterId) viaCode = via;
+  }
+  const newVote = { id: nanoid(12), pollId: id, optionId, voterKey: voterId, prediction: null, shareCode: shareCodeId(), via: viaCode };
+
   if (poll.allowChange) {
     // One atomic statement: first vote inserts, a later vote moves it.
     const [row] = await db
       .insert(votes)
-      .values({ id: nanoid(12), pollId: id, optionId, voterKey: voterId })
+      .values(newVote)
       .onConflictDoUpdate({ target: [votes.pollId, votes.voterKey], set: { optionId } })
       .returning({ created: sql<boolean>`(xmax = 0)` });
     return row?.created ? 'ok' : 'changed';
@@ -224,10 +277,38 @@ export async function castVote(db: Db, id: string, optionId: string, voterId: st
   // Unique index decides, so two fast taps can never count twice.
   const inserted = await db
     .insert(votes)
-    .values({ id: nanoid(12), pollId: id, optionId, voterKey: voterId })
+    .values(newVote)
     .onConflictDoNothing()
     .returning({ id: votes.id });
   return inserted.length ? 'ok' : 'already_voted';
+}
+
+/** "Who's winning right now?": checked against the live count (your vote included) at the moment you answer. */
+export async function guessLeader(db: Db, id: string, voterId: string, choice: string): Promise<'ok' | 'not_allowed' | 'bad_option'> {
+  const [v] = await db
+    .select({ prediction: votes.prediction })
+    .from(votes)
+    .where(and(eq(votes.pollId, id), eq(votes.voterKey, voterId)))
+    .limit(1);
+  if (!v || v.prediction != null) return 'not_allowed';
+  if (choice === 'skip') {
+    await db.update(votes).set({ prediction: 'skip' }).where(and(eq(votes.pollId, id), eq(votes.voterKey, voterId)));
+    return 'ok';
+  }
+  const counts = await db
+    .select({ optionId: options.id, n: sql<number>`count(${votes.id})::int` })
+    .from(options)
+    .leftJoin(votes, eq(votes.optionId, options.id))
+    .where(eq(options.pollId, id))
+    .groupBy(options.id);
+  if (!counts.some((c) => c.optionId === choice)) return 'bad_option';
+  const top = Math.max(...counts.map((c) => c.n));
+  const correct = counts.some((c) => c.optionId === choice && c.n === top); // a tie: any leader counts
+  await db
+    .update(votes)
+    .set({ prediction: choice, predictionCorrect: correct })
+    .where(and(eq(votes.pollId, id), eq(votes.voterKey, voterId), sql`${votes.prediction} is null`));
+  return 'ok';
 }
 
 export type PollSummary = { id: string; title: string; category: string; totalVotes: number; options: string[]; closed: boolean };
@@ -294,45 +375,27 @@ export async function toggleReaction(db: Db, id: string, voterId: string, emoji:
   return true;
 }
 
-export type VoterStats = { votes: number; today: number; streak: number; best: number; days: string[] };
+export type VoterStats = { votes: number; today: number; guesses: number; correct: number; friends: number };
 
-const dayKey = (d: Date) => d.toISOString().slice(0, 10);
+const EMPTY_STATS: VoterStats = { votes: 0, today: 0, guesses: 0, correct: 0, friends: 0 };
 
-/** Votes, today's count and the day streak for one voter. Days are UTC. */
+/** Your totals: votes, today's votes, "who's winning" guesses (and how many were right), friends who answered your dares. */
 export async function getVoterStats(db: Db, voterId: string | null): Promise<VoterStats> {
-  if (!voterId) return { votes: 0, today: 0, streak: 0, best: 0, days: [] };
-  const rows = await db
-    .select({ day: sql<string>`to_char(${votes.createdAt} at time zone 'UTC', 'YYYY-MM-DD')`, n: sql<number>`count(*)::int` })
+  if (!voterId) return EMPTY_STATS;
+  const [mineRow] = await db
+    .select({
+      votes: sql<number>`count(*)::int`,
+      today: sql<number>`count(*) filter (where ${votes.createdAt} >= date_trunc('day', now()))::int`,
+      guesses: sql<number>`count(*) filter (where ${votes.predictionCorrect} is not null)::int`,
+      correct: sql<number>`count(*) filter (where ${votes.predictionCorrect})::int`,
+    })
     .from(votes)
-    .where(eq(votes.voterKey, voterId))
-    .groupBy(sql`1`)
-    .orderBy(sql`1 desc`)
-    .limit(400);
-  const have = new Set(rows.map((r) => r.day));
-  const today = dayKey(new Date());
-  const step = (k: string) => dayKey(new Date(new Date(k + 'T00:00:00Z').getTime() - 86400_000));
-  // Streak counts back from today, or from yesterday if you have not voted yet today.
-  let cursor = have.has(today) ? today : step(today);
-  let streak = 0;
-  while (have.has(cursor)) {
-    streak++;
-    cursor = step(cursor);
-  }
-  let best = 0;
-  let run = 0;
-  let prev: string | null = null;
-  for (const d of [...have].sort()) {
-    run = prev && step(d) === prev ? run + 1 : 1;
-    best = Math.max(best, run);
-    prev = d;
-  }
-  return {
-    votes: rows.reduce((s, r) => s + r.n, 0),
-    today: rows.find((r) => r.day === today)?.n ?? 0,
-    streak,
-    best,
-    days: rows.map((r) => r.day).slice(0, 14),
-  };
+    .where(eq(votes.voterKey, voterId));
+  const [friendRow] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(votes)
+    .where(sql`${votes.via} in (select v2.share_code from votes v2 where v2.voter_key = ${voterId} and v2.share_code is not null)`);
+  return { ...EMPTY_STATS, ...mineRow, friends: friendRow?.n ?? 0 };
 }
 
 /** The duels to play through: the featured one first, then the newest. */

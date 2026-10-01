@@ -22,13 +22,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const db = await getDb();
   const voterId = await getOrCreateVoterId();
-  const result = await castVote(db, id, parsed.data.optionId, voterId);
+  const result = await castVote(db, id, parsed.data.optionId, voterId, parsed.data.via);
 
   if (result !== 'ok' && result !== 'changed') {
     const status = result === 'not_found' ? 404 : result === 'already_voted' ? 409 : 400;
     return NextResponse.json({ error: MESSAGES[result], result }, { status });
   }
-  return NextResponse.json({ result, poll: await getPoll(db, id, voterId) });
+  return NextResponse.json({ result, poll: await getPoll(db, id, voterId, parsed.data.via) });
 }
 
 // Undo: only within a few seconds of voting (for an accidental tap).
