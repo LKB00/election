@@ -91,3 +91,47 @@ Promise: **30 seconds**. So:
 | Duel of the day (dark banner) | P1, then P3 | The one duel we want everyone in. Dark = the strongest card on the page. After you voted in it, it moves below the list: the duels you have not done matter more. |
 | Duel tiles | P2 | Browse more. Pastel tiles from patricka; voted ones say "You voted" so you skip them. |
 | Today card | P3 | Progress, below the content. |
+
+---
+
+## Journey map: every path, every edge case
+
+Each row was walked in a real browser (phone size) before shipping. "Smooth" means: no dead end,
+no surprise, always one obvious next step, and mistakes can be undone.
+
+### J1. First visit from Home
+| Step | What happens | Why |
+|---|---|---|
+| Open Home | The first live duel you have not voted in. Question = page title, two cards, a one-line hint. | Vote in one tap, no reading. |
+| Tap a card (or press A / B / 1 / 2) | Saved, confetti, the cards become the result. | Instant reward. Keyboard works like patricka's games. |
+| Tapped the wrong card | **Undo** link in the result bar for about 25 seconds (server allows 30). Removes the vote and its reactions. | A big tap target makes slips likely; forgiving beats asking "are you sure?" every time. |
+| Press **Next** | Next live duel you have not voted in, **wrapping around** the list. The page scrolls so the new question is at the top. | Before, the page stayed scrolled down and the new question was off-screen. |
+| No duels left | "All caught up!" screen with "Start your own duel" and "See the results". | A clear end, not a silent stop. No fake "2/3" score. |
+| Scroll down | "More duels" tiles: live and not voted first, then voted, then ended. Updates the moment you vote ("You voted · 41 votes"). | Before, tiles stayed stale until reload and ended duels were listed first. |
+
+### J2. Opening a shared link `/p/…`
+| Case | What happens | Why |
+|---|---|---|
+| Friend sent it, not voted | Label "Someone wants your pick", that duel first. | The friend is the reason you came. |
+| You already voted | Label "You already voted here", your result shows. | No confusing second vote attempt. |
+| The duel has ended | Label "This duel has ended", the final result, "X won." or "It ended in a tie." Button "Share result". | Before, an ended link silently opened a *different* duel. |
+| Bad link | "Duel not found" + "Go to today's duel". | Never a dead end. |
+
+### J3. Creating a duel
+| Step | What happens | Why |
+|---|---|---|
+| Open Create | Question + 2 choices + one button. Extras under "More options". | The 30-second promise. |
+| Mistake (too short, empty, same choice twice) | Plain-English message **under that field**, focus moves there; nothing is sent. | Before: "Title is too short" at the bottom of the form. |
+| Press Create duel | You land on your duel with **"Your duel is live. Send it to friends."** and a **Share the duel** button first; you can vote below. | Before, the creator saw "Someone wants your pick", as if a stranger sent it, and no share prompt. Sharing is the creator's job at this moment. |
+
+### J4. Coming back another day
+| Step | What happens | Why |
+|---|---|---|
+| Open Home | Starts at the first duel you have not voted in. If none: "All caught up!". | Never shows you something you already did as if it were new. |
+| Top bar 🔥 / ✓ | Your streak and votes, update right after each vote. | The habit loop. |
+| Today card | Appears only after your first vote ever. | A streak means nothing before you play. |
+
+### Ties and empty states (everywhere)
+- Tie: no card says "Leading"; ended tie says "It ended in a tie."
+- 0 votes: "be the first" instead of a cold "0 votes".
+- Same number twice ("41 votes · 41 in the last hour"): the second part is hidden.

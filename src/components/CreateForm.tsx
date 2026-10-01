@@ -15,13 +15,28 @@ export default function CreateForm() {
   const [allowChange, setChange] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  // Errors show under the field they belong to, and focus moves there.
+  const [fieldError, setFieldError] = useState<{ title?: string; choices?: string }>({});
   // P3 settings stay folded: the promise is "30 seconds" (docs/DESIGN.md, Flow 3).
   const [more, setMore] = useState(false);
 
   const setChoice = (i: number, v: string) => setChoices((c) => c.map((x, j) => (j === i ? v : x)));
 
+  function check() {
+    const filled = choices.map((c) => c.trim()).filter(Boolean);
+    const errs: { title?: string; choices?: string } = {};
+    if (title.trim().length < 3) errs.title = 'Your question needs at least 3 letters.';
+    if (filled.length < 2) errs.choices = 'Add at least 2 choices.';
+    else if (new Set(filled.map((c) => c.toLowerCase())).size !== filled.length) errs.choices = 'Two choices are the same. Make each one different.';
+    setFieldError(errs);
+    if (errs.title) document.getElementById('title')?.focus();
+    else if (errs.choices) document.querySelector<HTMLInputElement>('input[aria-label^="Choice"]')?.focus();
+    return !errs.title && !errs.choices;
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (busy || !check()) return;
     setBusy(true);
     setError('');
     const res = await fetch('/api/polls', {
@@ -38,7 +53,7 @@ export default function CreateForm() {
       }),
     }).catch(() => null);
     const data = await res?.json().catch(() => null);
-    if (res?.ok && data?.id) return router.push(`/p/${data.id}`);
+    if (res?.ok && data?.id) return router.push(`/p/${data.id}?new=1`);
     setError(data?.error ?? 'Something went wrong. Please try again.');
     setBusy(false);
   }
@@ -49,8 +64,9 @@ export default function CreateForm() {
       <div className="duel-group">
         <label className="label" htmlFor="title">Your question</label>
         <span className="search">
-          <input id="title" value={title} maxLength={120} placeholder="Virat, Rohit or Dhoni?" onChange={(e) => setTitle(e.target.value)} required />
+          <input id="title" value={title} maxLength={120} placeholder="Virat, Rohit or Dhoni?" aria-invalid={!!fieldError.title} onChange={(e) => { setTitle(e.target.value); setFieldError((f) => ({ ...f, title: undefined })); }} />
         </span>
+        {fieldError.title && <p className="field-error" role="alert">{fieldError.title}</p>}
       </div>
 
       <div className="duel-group">
@@ -58,7 +74,7 @@ export default function CreateForm() {
         {choices.map((c, i) => (
           <div className="row" key={i}>
             <span className="search">
-              <input value={c} maxLength={60} aria-label={`Choice ${i + 1}`} placeholder={`Choice ${i + 1}`} onChange={(e) => setChoice(i, e.target.value)} />
+              <input value={c} maxLength={60} aria-label={`Choice ${i + 1}`} placeholder={`Choice ${i + 1}`} aria-invalid={!!fieldError.choices} onChange={(e) => { setChoice(i, e.target.value); setFieldError((f) => ({ ...f, choices: undefined })); }} />
             </span>
             {choices.length > 2 && (
               <button type="button" className="icon-btn" aria-label={`Remove choice ${i + 1}`} onClick={() => setChoices((x) => x.filter((_, j) => j !== i))}>
@@ -67,6 +83,7 @@ export default function CreateForm() {
             )}
           </div>
         ))}
+        {fieldError.choices && <p className="field-error" role="alert">{fieldError.choices}</p>}
         {choices.length < 10 && (
           <button type="button" className="chip duel-add" onClick={() => setChoices((x) => [...x, ''])}>
             <Plus size={14} strokeWidth={1.75} aria-hidden /> Add a choice

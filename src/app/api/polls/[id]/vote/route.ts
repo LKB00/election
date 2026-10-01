@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/db';
-import { castVote, getPoll } from '@/lib/polls';
+import { castVote, getPoll, undoVote } from '@/lib/polls';
 import { clientIp, rateLimit } from '@/lib/rate-limit';
 import { voteSchema } from '@/lib/validation';
-import { getOrCreateVoterId } from '@/lib/voter';
+import { getOrCreateVoterId, readVoterId } from '@/lib/voter';
 
 const MESSAGES = {
   already_voted: 'You already voted in this poll.',
@@ -29,4 +29,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: MESSAGES[result], result }, { status });
   }
   return NextResponse.json({ result, poll: await getPoll(db, id, voterId) });
+}
+
+// Undo: only within a few seconds of voting (for an accidental tap).
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  if (!rateLimit(`undo:${clientIp(req)}`, 20, 60_000)) {
+    return NextResponse.json({ error: 'Slow down a little.' }, { status: 429 });
+  }
+  const { id } = await params;
+  const voterId = await readVoterId();
+  const db = await getDb();
+  if (!voterId || !(await undoVote(db, id, voterId))) {
+    return NextResponse.json({ error: 'Too late to undo this vote.' }, { status: 409 });
+  }
+  return NextResponse.json({ poll: await getPoll(db, id, voterId) });
 }

@@ -356,3 +356,23 @@ export async function getMyVotes(db: Db, voterId: string | null, limit = 50): Pr
     .limit(limit);
   return rows.map((r) => ({ ...r, at: r.at.toISOString() }));
 }
+
+/** How long after voting you can still take it back (an accidental tap). */
+export const UNDO_SECONDS = 30;
+
+/** Removes your vote (and its reactions) if you cast it in the last few seconds. */
+export async function undoVote(db: Db, id: string, voterId: string): Promise<boolean> {
+  const removed = await db
+    .delete(votes)
+    .where(
+      and(
+        eq(votes.pollId, id),
+        eq(votes.voterKey, voterId),
+        sql`${votes.createdAt} > now() - make_interval(secs => ${UNDO_SECONDS})`,
+      ),
+    )
+    .returning({ id: votes.id });
+  if (!removed.length) return false;
+  await db.delete(reactions).where(and(eq(reactions.pollId, id), eq(reactions.voterKey, voterId)));
+  return true;
+}
