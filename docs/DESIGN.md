@@ -310,3 +310,8 @@ Verdicts: **Keep**, **Changed** or **Removed**.
 | Inked finger, redrawn | P2 | Looks like a real hand: shaded skin, a nail with a shine, folded fingers, a thumb in front, and the deep purple indelible-ink line from the top of the nail down onto the skin (where the polling officer draws it). One drawing for the app, the story card and the link preview. |
 | Ink animation, right after the VVPAT slip | P2 at that moment | The hand rises (0.5 s), the ink is brushed down the nail (0.7 s), then it soaks in and shines. Then "Vote cast. Your finger is inked." and "Voter ID EL-000035" fade in. Only for a vote made just now; off for reduce motion. |
 | Share panel | P2 | The story card is bigger, tilted like a printed slip, and floats in when it has loaded (grey placeholder before). Your message is shown as a chat bubble. |
+
+### Real ink photo (owner: "should look real, currently cartoonish")
+- The drawn finger is replaced by a **real photo** of an inked finger: Wikimedia Commons, GaneshBhakt, CC BY-SA 3.0, cropped (`public/ink/`, credits in `public/ink/CREDITS.md`). The credit shows in the app's photo line after you vote, and in small text on the story card and link preview (the licence asks for it).
+- **Animation:** the photo tile rises in, then the **real ink is wiped on from the nail downward** over the same finger with the ink digitally removed (`finger-clean`, used only during the 0.9 s wipe), then a wet shine passes over it. Reduce motion: the final photo at once.
+- Share images use the untouched photo.
