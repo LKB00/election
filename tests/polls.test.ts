@@ -94,7 +94,7 @@ describe('flagship poll and reasons', () => {
     const poll = (await getPoll(db, id!, null))!;
     expect(poll.options.map((o) => o.label)).toEqual(['Narendra Modi', 'Rahul Gandhi']);
     expect(poll.hideUntilVoted).toBe(true);
-    expect(poll.options.map((o) => o.subtitle)).toEqual(['BJP · Prime Minister', 'INC · Leader of Opposition']);
+    expect(poll.options.map((o) => o.subtitle)).toEqual(['BJP', 'INC']);
     expect((await listPolls(db, 100)).some((p) => p.id === id)).toBe(false);
     await (await import('@/db/seed')).seedFlagship(db); // running again changes nothing
     expect((await getPoll(db, id!, null))!.options).toHaveLength(2);

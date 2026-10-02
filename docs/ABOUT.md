@@ -118,13 +118,12 @@ We decided **not to have streaks, levels, points or score bubbles**: they belong
 3. When the owner says **"Make live"**, a pull request goes to `main` and is squash-merged.
 4. Vercel deploys, and the live site is checked.
 
-## 10. Open questions for the owner
+## 10. Owner decisions (answered)
 
-- Confirm the text that was written for the launch:
-  - the role lines "BJP · Prime Minister" and "INC · Leader of Opposition"
-  - the reasons list
-  - the categories
-- When to start making money (ads, sponsored duels, paid creator tools). This is not decided yet.
+- **Line above each name:** party only ("BJP", "INC"), no job titles.
+- **Reasons list:** keep Leadership, Vision, Honesty, Experience, Connects with people, Fresh ideas.
+- **Categories:** keep all 9 (general, politics, cricket, movies, music, food, tech, sports, friends).
+- **Money:** later. Grow users first, with no ads or payments for now.
 
 ## 11. Ideas for later (only when asked)
 
