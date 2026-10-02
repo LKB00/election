@@ -1,5 +1,5 @@
 import { ImageResponse } from 'next/og';
-import InkFinger from '@/components/InkFinger';
+import { INK_CREDIT, INK_PHOTO } from '@/components/InkFinger';
 import { getDb } from '@/db';
 import { CARD, cardFonts, initialsOf, pickFromCode } from '@/lib/cards';
 import { getPoll } from '@/lib/polls';
@@ -38,7 +38,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
           <div style={{ display: 'flex', padding: '6px 16px', borderRadius: 999, background: CARD.lime, fontSize: 22 }}>{t.cardFun}</div>
         </div>
         <div style={{ display: 'flex', flex: 1, alignItems: 'center', gap: 32, marginTop: 16 }}>
-          {voted && <div style={{ display: 'flex' }}><InkFinger size={150} /></div>}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {voted && <img src={abs(INK_PHOTO)} width={150} height={188} style={{ borderRadius: 20, objectFit: 'cover', boxShadow: '0 8px 24px rgba(36,40,44,0.18)' }} alt="" />}
           <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
             {voted && <div style={{ display: 'flex', fontSize: 30, fontWeight: 700, color: CARD.green, letterSpacing: 2 }}>{t.ogVoted}</div>}
             <div style={{ display: 'flex', fontSize: 58, fontWeight: 700, letterSpacing: -1, lineHeight: 1.1 }}>{poll.title.slice(0, 50)}</div>
@@ -64,6 +65,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
           </div>
         </div>
         <div style={{ display: 'flex', justifyContent: 'center', fontSize: 34, fontWeight: 700 }}>{headline}</div>
+        {voted && <div style={{ display: 'flex', position: 'absolute', right: 24, bottom: 12, fontSize: 14, color: CARD.muted }}>Ink photo: {INK_CREDIT}</div>}
       </div>
     ),
     { width: 1200, height: 630, fonts: await cardFonts(), headers: { 'Cache-Control': 'public, max-age=300' } },
