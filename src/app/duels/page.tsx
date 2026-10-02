@@ -32,7 +32,8 @@ export default async function Duels() {
         </section>
       )}
       <section className="block">
-        <h2>All duels</h2>
+        {/* A heading only when the banner sits above; otherwise it would just repeat the page title. */}
+        {featured && featured.myVote === null && <h2>All duels</h2>}
         <DuelTiles polls={polls} votedIds={mine.map((v) => v.pollId)} />
       </section>
       {featured && featured.myVote !== null && (

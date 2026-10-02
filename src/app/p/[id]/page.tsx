@@ -38,18 +38,20 @@ export default async function DuelPage({ params, searchParams }: Props) {
   const rest = await getDeck(db, voterId);
   const deck = [poll, ...rest.filter((p) => p.id !== poll.id)];
   // The label says why you are here: you made it, a friend dared you, you already voted, or it is over.
+  // Just created: no label, the panel below already says it.
   const label = justCreated
-    ? 'Your duel is ready'
+    ? null
     : poll.closed
       ? 'This duel has ended'
       : poll.myVote
         ? 'You already voted here'
         : poll.friend.known
-          ? 'Your friend voted. Your turn'
+          ? 'A friend dared you'
           : 'Someone wants your pick';
+  // (Friend: the label says why you are here; the line in the game holds the hook, "their pick is sealed".)
   return (
     <div className="page page-wide">
-      <p className="eyebrow">{label}</p>
+      {label && <p className="eyebrow">{label}</p>}
       {justCreated && <CreatedPanel id={poll.id} title={poll.title} />}
       <section className="home-game duel-first" aria-label="Duel">
         <DuelGame deck={deck} start={0} via={f ?? null} />

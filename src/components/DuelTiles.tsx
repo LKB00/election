@@ -1,12 +1,14 @@
 'use client';
 import Link from 'next/link';
-import { Check, Plus, Users } from 'lucide-react';
+import { Check, Cpu, Film, Landmark, Medal, Music, Plus, Swords, Trophy, Users, UtensilsCrossed } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { PollSummary } from '@/lib/polls';
 
 // One pastel tile per duel (patricka game tiles).
 // Order = what you can still do first: live and not voted → voted → ended. Updates the moment you vote.
 const TONES = ['game-e', 'game-f', 'game-b', 'game-d', 'game-a'];
+// The tile icon says the topic at a glance (it was the same people icon on every tile, which said nothing).
+const ICONS: Record<string, typeof Swords> = { politics: Landmark, cricket: Trophy, sports: Medal, movies: Film, music: Music, food: UtensilsCrossed, tech: Cpu, friends: Users };
 
 export default function DuelTiles({ polls, votedIds = [] }: { polls: PollSummary[]; votedIds?: string[] }) {
   const [voted, setVoted] = useState<string[]>(votedIds);
@@ -30,9 +32,10 @@ export default function DuelTiles({ polls, votedIds = [] }: { polls: PollSummary
       {sorted.map((p, n) => {
         const done = voted.includes(p.id);
         const total = p.totalVotes + (counts[p.id] ?? 0);
+        const Icon = ICONS[p.category] ?? Swords;
         return (
           <Link key={p.id} href={`/p/${p.id}`} className={`game ${TONES[n % TONES.length]}`}>
-            <Users size={22} strokeWidth={1.75} aria-hidden />
+            <Icon size={22} strokeWidth={1.75} aria-hidden />
             <strong>{p.title}</strong>
             <span>{p.options.join(' vs ')}</span>
             <span className="game-meta">

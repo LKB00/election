@@ -15,10 +15,10 @@ export default function ShareSheet({ poll, pick, shareCode, onClose }: { poll: P
   const last = pick.label.trim().split(/\s+/).pop();
   const link = () => `${window.location.origin}/p/${poll.id}?f=${shareCode}${secret ? '&s=1' : ''}`;
   const card = `/api/card/${poll.id}?f=${shareCode}${secret ? '&s=1' : ''}`;
-  const text = () =>
-    secret
-      ? `I just voted in “${poll.title}” 🗳️☝️ Guess who I picked? Vote and find out: ${link()}`
-      : `I voted for ${last} in “${poll.title}” 🗳️☝️ Who would you pick? ${link()}`;
+  const message = secret
+    ? `I just voted in “${poll.title}” 🗳️☝️ Guess who I picked? Vote and find out:`
+    : `I voted for ${last} in “${poll.title}” 🗳️☝️ Who would you pick?`;
+  const text = () => `${message} ${link()}`;
 
   // Close with Escape, like any sheet.
   useEffect(() => {
@@ -65,18 +65,20 @@ export default function ShareSheet({ poll, pick, shareCode, onClose }: { poll: P
         <p className="label">Show your ink</p>
         <h2>Tell friends you voted</h2>
 
+        {/* What friends get: the image, and the exact message (so there are no surprises before sending). */}
         <div className="sheet-body">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img className="sheet-preview" src={card} alt="Your I voted card" />
           <div className="sheet-side">
-            <button type="button" className="me-row" onClick={() => setSecret((v) => !v)} aria-pressed={secret}>
-              <EyeOff size={20} strokeWidth={1.75} aria-hidden />
-              <span><strong>Keep my vote secret</strong><span className="small muted">{secret ? 'Friends vote to find out your pick' : `Card says you picked ${last}`}</span></span>
-              <span className={'switch' + (secret ? ' is-on' : '')} aria-hidden />
-            </button>
-            <p className="small muted">{secret ? '“Guess who I picked?” gets more friends to vote.' : 'Showing your pick starts a debate.'}</p>
+            <p className="label">Your message</p>
+            <p className="sheet-message">{message} <span className="muted">link</span></p>
           </div>
         </div>
+        <button type="button" className="me-row" onClick={() => setSecret((v) => !v)} aria-pressed={secret}>
+          <EyeOff size={20} strokeWidth={1.75} aria-hidden />
+          <span><strong>Keep my vote secret</strong><span className="small muted">{secret ? 'Friends must vote to see your pick. More of them vote.' : `Shows you picked ${last}. Good to start a debate.`}</span></span>
+          <span className={'switch' + (secret ? ' is-on' : '')} aria-hidden />
+        </button>
 
         <a className="btn btn-primary btn-lg sheet-main" href={`https://wa.me/?text=${encodeURIComponent(text())}`} target="_blank" rel="noopener noreferrer">
           <MessageCircle size={16} strokeWidth={1.75} aria-hidden /> Send on WhatsApp

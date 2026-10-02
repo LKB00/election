@@ -3,6 +3,8 @@
 Make a fun poll between two or more choices (Virat · Rohit · Dhoni, pizza · biryani), share the link, and watch the votes.
 **Just for fun. Not official or legal elections.**
 
+Full project reference (what, who, journey, sharing, design rules, open questions): [docs/ABOUT.md](docs/ABOUT.md).
+
 ## Run it on your computer
 
 ```bash

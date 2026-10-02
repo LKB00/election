@@ -45,10 +45,9 @@ export default async function Me() {
         <span className="meter meter-xp" aria-hidden><span style={{ width: `${pct}%` }} /></span>
         <p className="small muted">{next ? `${next[0] - stats.votes} more ${next[0] - stats.votes === 1 ? 'vote' : 'votes'} to ${next[1]}` : 'Top level. Legendary.'}</p>
         <ul className="level-stats">
-          <li><strong>{stats.votes}</strong> duels voted</li>
-          <li><strong>{stats.correct}/{stats.guesses}</strong> right guesses</li>
-          <li><strong>{stats.guesses ? Math.round((stats.correct / stats.guesses) * 100) : 0}%</strong> crowd reading</li>
-          <li><strong>{stats.friends}</strong> {stats.friends === 1 ? 'friend' : 'friends'} answered your dares</li>
+          {/* Votes are already in the header; "crowd reading %" repeated the guesses. Two numbers, each said once. */}
+          <li><strong>{stats.correct} of {stats.guesses}</strong> exit polls right</li>
+          <li><strong>{stats.friends}</strong> {stats.friends === 1 ? 'friend' : 'friends'} took your dare</li>
         </ul>
       </div>
 

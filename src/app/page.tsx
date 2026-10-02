@@ -8,7 +8,7 @@ import { readVoterId } from '@/lib/voter';
 
 export const dynamic = 'force-dynamic';
 
-// Home = vote in one tap. Nothing sits above the duel except a 4-word label.
+// Home = vote in one tap. Nothing sits above the duel: the question is the first thing you read.
 // The why for every element is in docs/DESIGN.md (Flow 1).
 export default async function Home() {
   const db = await getDb();
@@ -18,14 +18,11 @@ export default async function Home() {
 
   return (
     <div className="page page-wide">
-      <p className="eyebrow">Fun duels · not official results</p>
-
       {deck.length > 0 && (
         <section className="home-game duel-first" aria-label="Duel">
           <DuelGame deck={deck} />
         </section>
       )}
-
 
       <section className="block">
         <div className="row space-between">
