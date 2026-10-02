@@ -85,7 +85,7 @@ We decided **not to have streaks**: the owner felt they add pressure without fun
   - **Me:** level, right guesses, history.
   - Top bar with the right-guesses and votes counts; bottom nav with Home, Duels, Create and Me.
 - **Levels:** Newcomer (0 votes), Voter (3), Regular (10), Opinion maker (25), Duel master (50), Legend (100).
-- **Categories:** general, cricket, movies, music, food, tech, sports, friends.
+- **Categories:** general, politics, cricket, movies, music, food, tech, sports, friends.
 
 ## 8. How it is built
 

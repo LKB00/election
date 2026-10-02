@@ -187,3 +187,65 @@ Every element below borrows a real voting moment.
 | "Vote cast. Your finger is inked · Voter ID" | P2 | The proof you took part; the voter ID makes it feel personal. |
 | Exit poll (the guess) | P1 at that moment | See Batch 1; the election name makes it feel natural. |
 | **Show your ink** (share sheet) | P2 | WhatsApp first, secret switch (on), Status/Story image, copy link. |
+
+## Element audit (every element: job, place, copy, icon, colour)
+
+Each element was checked against these questions:
+- Why is it there?
+- Is it in the right place?
+- Is there a better way to do the same job?
+- Is the copy, icon and colour right?
+
+Verdicts: **Keep**, **Changed** or **Removed**.
+
+### Top bar
+| Element | Job | Verdict |
+|---|---|---|
+| Logo "Election" | Brand, link to Home | Keep |
+| 🎯 right-guesses pill and ✓ votes pill (lime = your progress) | Your score, at a glance, on every page | **Changed:** hidden until your first vote. "0 · 0" read like a failed quiz to a new visitor, and the shared-link visitor is always new. |
+| "‹ Home" back link | Way out of a shared link that came from outside the app | Keep on `/p/`. **Removed** on Create: Create is a tab, so there is nothing to go back to. |
+
+### Home and the duel
+| Element | Job | Verdict |
+|---|---|---|
+| Label "Fun duels · not official results" (lime, above the question) | Disclaimer | **Removed** from here. It was the loudest thing above the P1, and lime means "you". The disclaimer now ends the ballot line, so it is still read before voting. |
+| Question (display type) | P1 headline | Keep |
+| "Polling open · N votes cast · closes in…" | Election feel, social proof, urgency | Keep |
+| Progress pips | Where you are in the deck | Keep (P3, only after a vote, only with 2+ duels) |
+| ✓ and 🎯 counters inside the game | (same numbers as the top bar) | **Removed:** shown twice. |
+| Ballot number on each card | Real ballots number candidates, and the VVPAT slip shows the number | **Changed:** A/B to **1/2**, so the card and the slip match. Keys A/B and 1/2 both still work. |
+| Photo (4:5) | You recognise faces before names | Keep. **Changed:** capped at 320 px on desktop, where it pushed the Vote buttons below the fold. |
+| Party · role line | Context for people who don't follow politics | Keep (owner to confirm the text) |
+| Red light + blue **Vote** (EVM) | Everyone in India knows this button | Keep. It is blue, not ink, because it copies the real EVM. The whole card is the button. |
+| Ballot line under the cards | The rules in one line | **Changed:** "Press a candidate to vote" removed (the Vote button already says it, and "candidate" is wrong for tea vs coffee). It now reads "Secret ballot · one vote each · results open after you vote · a fun poll, not official". |
+| Photo credits | Licence requirement | Keep (P3, smallest text) |
+| VVPAT slip, inked finger, voter ID | Trust and pride moment | Keep |
+| Exit poll subtitle | Explains the reward | **Changed:** "Guess right to score ◎ Then…" became "Guess right for +1 on your score. Then the results open." There is no icon in the middle of the sentence now. |
+| Guess result line (green right / red wrong) | Instant win or loss | Keep. Green and red mean right and wrong only. |
+| Verdict "You're with the crowd." | Where you stand | **Changed:** no longer green. It is information, not a win, and two greens made both weaker. |
+| "Undo" | Fix a mis-tap (30 s) | **Changed:** now "Undo my vote", small and muted, so it says what it undoes. |
+| Show your ink / Next (ink) | Share at the emotional peak / the one main step | Keep |
+| Why chips and React chips | Optional, after the bar | Keep (P3) |
+| More duels tiles | Choose a duel yourself | Keep. **Changed:** the tile icon is now the topic (Landmark politics, Trophy cricket, Film, Music, Utensils, Cpu, Medal sports, Users friends, Swords general). Every tile used to show the same people icon, which said nothing. |
+
+### Shared link (`/p/…`)
+| Element | Job | Verdict |
+|---|---|---|
+| Label | Why you are here | **Changed:** "Your friend voted. Your turn" became **"A friend dared you"**. The line in the game holds the hook: "Your friend's pick is sealed. Vote to see if you agree." Before, both lines said the same thing. |
+| Label after creating | (repeated the panel heading) | **Removed:** the panel "Your duel is live. Send it to friends." already says it. |
+
+### Share sheet
+| Element | Job | Verdict |
+|---|---|---|
+| Story image preview | What friends will see | Keep |
+| **Your message** (new) | The exact WhatsApp text before you send it, so there are no surprises | Added. It uses the space where a hint repeated the switch's subtitle. |
+| Keep my vote secret (full width) | Curiosity, on by default | **Changed:** now full width (the title had wrapped onto two lines), and one clear subtitle per state. |
+| Send on WhatsApp (ink) / Story image / Copy link | Main way to share / Status and Instagram / anywhere else | Keep |
+
+### Duels, Me, Create
+| Element | Job | Verdict |
+|---|---|---|
+| Duels: "All duels" heading | Separates the tiles from the banner | **Changed:** only shown when the banner is above. Without the banner it just repeated the page title. |
+| Duels banner icon | The flagship duel | **Changed:** Swords became Landmark (politics). |
+| Me: 4 stat boxes | Your record | **Changed:** now 2 boxes. "Duels voted" repeated the header's ✓ votes, and "crowd reading %" repeated the right guesses. Now: "1 of 1 exit polls right" and "friends took your dare". |
+| Create: categories | Sort and decorate the tiles | **Changed:** added **Politics**, because the flagship duel is politics and creators had no way to pick it. |

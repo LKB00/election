@@ -7,7 +7,7 @@ import { useStats } from '@/lib/useStats';
 export default function TopBar() {
   const path = usePathname();
   const { votes, correct } = useStats();
-  const back = path.startsWith('/p/') || path === '/create' ? { to: '/', name: 'Home' } : null;
+  const back = path.startsWith('/p/') ? { to: '/', name: 'Home' } : null;
   return (
     <header className="topnav">
       <div className={'topnav-inner' + (back ? ' has-back' : '')}>
@@ -24,6 +24,8 @@ export default function TopBar() {
           <Link href="/duels" className={path.startsWith('/duels') ? 'active' : ''}>Duels</Link>
           <Link href="/create" className={path === '/create' ? 'active' : ''}>Create</Link>
         </nav>
+        {/* Your scores. Hidden until your first vote: "0" and "0" read like a failed quiz to a new visitor. */}
+        {votes > 0 && (
         <div className="topnav-right">
           {/* Your guess score (right "who's winning?" guesses). Greyed until your first right guess. */}
           <Link href="/me" className={'streak-pill' + (correct > 0 ? ' is-lit' : '')} aria-label={`${correct} right guesses`}>
@@ -36,6 +38,7 @@ export default function TopBar() {
             <span className="xp-unit">votes</span>
           </Link>
         </div>
+        )}
       </div>
     </header>
   );

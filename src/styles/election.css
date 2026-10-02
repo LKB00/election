@@ -114,3 +114,9 @@
 .duel-option { justify-content: flex-start; }
 .evm-row { margin-top: auto; }
 .sheet .me-row { width: 100%; }
+
+/* ---- UI audit (docs/DESIGN.md, "Element audit") ---- */
+.sheet-message { margin: 0; padding: 12px 16px; border-radius: 12px; background: var(--card); font-size: 14px; line-height: 20px; }
+/* Desktop: a 4:5 photo across a wide card pushes the Vote buttons below the fold. Cap it; the face stays in view. */
+@media (min-width: 720px) { .duel-photo { max-height: 320px; } }
+.page > .duel-first:first-child { margin-top: 0; }   /* Home: no label above, so no gap above the question */

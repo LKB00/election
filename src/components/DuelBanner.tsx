@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { ArrowRight, Swords } from 'lucide-react';
+import { ArrowRight, Landmark } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { PollView } from '@/lib/polls';
 
@@ -20,7 +20,7 @@ export default function DuelBanner({ poll }: { poll: PollView }) {
   }, [poll.id, done]);
   return (
     <Link href={`/p/${poll.id}`} className={'daily-banner' + (done ? ' is-done' : '')}>
-      <Swords size={22} strokeWidth={1.75} aria-hidden />
+      <Landmark size={22} strokeWidth={1.75} aria-hidden />
       <span className="daily-banner-text">
         <strong>Duel of the day</strong>
         <span>{done ? `You voted. ${count.toLocaleString()} votes so far. Dare a friend.` : `${poll.options.map((o) => o.label).join(' vs ')}. ${count.toLocaleString()} votes so far.`}</span>

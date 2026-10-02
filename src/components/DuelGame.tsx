@@ -11,7 +11,9 @@ import { evmBeep } from '@/lib/sound';
 
 // Duels, played like patricka's "This or That": tap a card, see the result on the
 // cards, then "Next duel". Results stay hidden until you vote.
+// Ballot serial numbers, like the EVM and the VVPAT slip (1, 2, 3…). Keys A/B… still work too.
 const LETTERS = 'ABCDEFGHIJ';
+const serial = (n: number) => String(n + 1);
 const TONES = ['input', 'feedback', 'control', 'agents', 'output', 'trust'];
 
 function splitName(label: string) {
@@ -294,17 +296,13 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
 
   return (
     <div className={'tot duel' + (revealed ? ' is-revealed' : '')} ref={topRef}>
-      {/* P3 progress: only once you have voted. For a new visitor "0" and "0" read like a quiz score. */}
-      {votedCount > 0 && (
+      {/* P3 progress: where you are in the deck, only once you have voted. Your scores live in the top bar only (no copies here). */}
+      {votedCount > 0 && deck.length > 1 && (
       <div className="tot-bar">
         <span className="tot-round" aria-label={`Duel ${i + 1} of ${deck.length}`}>
           {deck.map((p, n) => (
             <span key={p.id} className={'tot-pip' + (p.myVote !== null ? ' is-right' : '') + (n === i ? ' is-now' : '')} />
           ))}
-        </span>
-        <span className="tot-score" title="Duels you voted in"><Check size={14} strokeWidth={2.25} aria-hidden /> {votedCount}</span>
-        <span className={'tot-streak' + (correct >= 3 ? ' is-hot' : '')} key={correct} title="Right guesses">
-          <Target size={14} strokeWidth={1.75} aria-hidden /> {correct}
         </span>
       </div>
       )}
@@ -320,7 +318,7 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
       </div>
 
       {poll.friend.known && !voted && (
-        <p className="small duel-friend"><Users size={14} strokeWidth={1.75} aria-hidden /> A friend already picked. Vote to see if you agree.</p>
+        <p className="small duel-friend"><Users size={14} strokeWidth={1.75} aria-hidden /> Your friend’s pick is sealed. Vote to see if you agree.</p>
       )}
 
       <div className={'tot-options duel-options n-' + poll.options.length}>
@@ -337,7 +335,7 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
               disabled={voted || !!busy || poll.closed}
               aria-label={`${o.label}${revealed ? `, ${pcts[n]} percent` : ''}`}
             >
-              <span className="tot-letter">{isMine ? <Check size={13} strokeWidth={2.5} aria-hidden /> : LETTERS[n]}</span>
+              <span className="tot-letter">{isMine ? <Check size={13} strokeWidth={2.5} aria-hidden /> : serial(n)}</span>
               {revealed && (lead || isMine) && <span className="tot-caption">{isMine ? 'Your pick' : 'Leading'}{isMine && lead ? ' · leading' : ''}</span>}
               <span className="duel-body">
                 <Face o={o} tone={TONES[n % TONES.length]} />
@@ -366,7 +364,7 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
       </div>
 
       {!voted && !poll.closed && (
-        <p className="small muted duel-hint" data-hint>Press a candidate to vote · secret ballot · one vote each · results after you vote</p>
+        <p className="small muted duel-hint" data-hint>Secret ballot · one vote each · results open after you vote · a fun poll, not official</p>
       )}
 
       {slipFor && (
@@ -393,11 +391,11 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
         <div className="duel-guess" aria-live="polite">
           <p className="label">Exit poll</p>
           <h2>Who’s winning right now?</h2>
-          <p className="small muted">Guess right to score <Target size={12} strokeWidth={2} aria-hidden /> Then the results open.</p>
+          <p className="small muted">Guess right for +1 on your score. Then the results open.</p>
           <div className="duel-guess-options">
             {poll.options.map((o, n) => (
               <button key={o.id} type="button" className="btn btn-ghost btn-lg" disabled={guessBusy} onClick={() => guess(o.id)}>
-                <span className="duel-guess-letter">{LETTERS[n]}</span> {splitName(o.label).last}
+                <span className="duel-guess-letter">{serial(n)}</span> {splitName(o.label).last}
               </button>
             ))}
           </div>
@@ -432,7 +430,7 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
                       <br />
                     </span>
                   )}
-                  <strong className="txt-good">{vTitle}</strong> {vLine}
+                  <strong>{vTitle}</strong> {vLine}
                   {poll.friend.optionId && (
                     <span className="duel-friend-line">
                       {' '}<Users size={13} strokeWidth={1.75} aria-hidden /> Your friend picked {splitName(poll.options.find((o) => o.id === poll.friend.optionId)?.label ?? '').last}
@@ -444,10 +442,8 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
                       {' '}{poll.friends.agree + poll.friends.disagree} {poll.friends.agree + poll.friends.disagree === 1 ? 'friend' : 'friends'} answered your dare: {poll.friends.agree} agree, {poll.friends.disagree} {poll.friends.disagree === 1 ? 'disagrees' : 'disagree'}.
                     </span>
                   )}
-                  {/* The voter number is a small extra: only when there is no guess or friend news to tell. */}
-
                   {undoUntil > 0 && !poll.closed && (
-                    <> <button type="button" className="link-like duel-undo" onClick={undo}>Undo</button></>
+                    <> <button type="button" className="link-like duel-undo small muted" onClick={undo}>Undo my vote</button></>
                   )}
                 </>
               ) : (

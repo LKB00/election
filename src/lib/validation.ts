@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const CATEGORIES = ['general', 'cricket', 'movies', 'music', 'food', 'tech', 'sports', 'friends'] as const;
+export const CATEGORIES = ['general', 'politics', 'cricket', 'movies', 'music', 'food', 'tech', 'sports', 'friends'] as const;
 export type Category = (typeof CATEGORIES)[number];
 
 export const createPollSchema = z.object({
