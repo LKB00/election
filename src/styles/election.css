@@ -120,3 +120,53 @@
 /* Desktop: a 4:5 photo across a wide card pushes the Vote buttons below the fold. Cap it; the face stays in view. */
 @media (min-width: 720px) { .duel-photo { max-height: 320px; } }
 .page > .duel-first:first-child { margin-top: 0; }   /* Home: no label above, so no gap above the question */
+
+/* ---- Batch 3: counting day (docs/DESIGN.md) ---- */
+/* LIVE: a small pulsing red dot, like the "LIVE" bug on election-night TV. */
+.live-dot { display: inline-block; width: 8px; height: 8px; margin-right: 4px; border-radius: 50%; background: var(--negative); vertical-align: 1px; animation: live 1.6s ease-in-out infinite; }
+@keyframes live { 50% { opacity: 0.3; } }
+/* A new vote rolls the count up. */
+.tick { display: inline-block; animation: tick 0.4s ease; font-variant-numeric: tabular-nums; }
+@keyframes tick { from { transform: translateY(40%); opacity: 0; } }
+/* Majority mark at 50% on every result bar. */
+.duel-meter { position: relative; }
+.duel-meter::after { content: ''; position: absolute; left: calc(50% - 1px); top: -6px; bottom: -6px; width: 2px; border-radius: 1px; background: var(--ink); opacity: 0.75; }
+.duel-meter > span { transition: width 0.55s cubic-bezier(0.2, 0.9, 0.3, 1); }
+.duel-pct { transition: color 0.2s; }
+.duel-counting { margin: 0; display: flex; align-items: center; gap: 4px; }
+/* Swing and the race line */
+.duel-swing { display: flex; align-items: center; gap: 12px; padding: 0 4px; }
+.duel-swing p { margin: 0; }
+.duel-spark { flex: none; }
+.duel-spark-mid { stroke: var(--line); stroke-width: 1; stroke-dasharray: 2 3; }
+.duel-spark-line { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+@media (prefers-reduced-motion: reduce) {
+  .live-dot, .tick, .vvpat-slip, .duel-photo img, .duel-guess { animation: none; }
+  .duel-meter > span { transition: none; }
+}
+
+/* ---- Batch 4: feels like an app ---- */
+/* Next duel: the old ballot slides out to the left, the new one comes in from the right. */
+::view-transition-old(ballot) { animation: ballot-out 0.25s ease-in both; }
+::view-transition-new(ballot) { animation: ballot-in 0.3s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+@keyframes ballot-out { to { transform: translateX(-24px); opacity: 0; } }
+@keyframes ballot-in { from { transform: translateX(32px); opacity: 0; } }
+/* Offline bar and the loading placeholder */
+.offline-bar { position: sticky; top: 0; z-index: 70; padding: 8px 16px; background: var(--ink); color: var(--on-ink); font-size: 13px; line-height: 20px; text-align: center; }
+.skeleton { border-radius: 16px; background: var(--sand-dark); animation: skeleton 1.2s ease-in-out infinite; }
+@keyframes skeleton { 50% { opacity: 0.55; } }
+.skeleton-line { height: 16px; border-radius: 8px; }
+.skeleton-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.skeleton-card { aspect-ratio: 3 / 5; }
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(ballot), ::view-transition-new(ballot) { animation: none; }
+  .skeleton { animation: none; }
+}
+.duel-undo { padding: 8px 0; }   /* a bigger touch area for small text links */
+
+/* ---- Batch 5: Hindi. Devanagari letters fall back to Noto Sans Devanagari (bundled, downloaded only when Hindi is on screen). ---- */
+:root {
+  --sans: 'Lato', 'Noto Sans Devanagari', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', 'Noto Sans Devanagari', 'Lato', ui-sans-serif, system-ui, sans-serif;
+}
+.lang-btn { font-size: 13px; font-weight: 700; min-width: 36px; }

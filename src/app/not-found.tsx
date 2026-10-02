@@ -1,13 +1,15 @@
 import Link from 'next/link';
+import { getT } from '@/lib/lang-server';
 
-export default function NotFound() {
+export default async function NotFound() {
+  const t = await getT();
   return (
     <div className="page">
       <header className="page-head">
-        <h1 className="display">Duel not found</h1>
-        <p className="lead">The link may be wrong, or the duel was removed.</p>
+        <h1 className="display">{t.notFound}</h1>
+        <p className="lead">{t.notFoundLead}</p>
       </header>
-      <Link href="/" className="btn btn-primary btn-lg block-tight">Go to today’s duel</Link>
+      <Link href="/" className="btn btn-primary btn-lg block-tight">{t.goToday}</Link>
     </div>
   );
 }

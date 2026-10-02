@@ -46,6 +46,10 @@ export type PollView = {
   myVoterNumber: number | null;
   /** First option's share over time (0-100), only when results are visible and there are two options. */
   trend: { t: string; a: number }[];
+  /** Counting day: running totals per option after each of 3 counting rounds (votes in the order they were cast). Only when results are visible. */
+  rounds: Record<string, number>[];
+  /** Swing: how the current leader's share moved in the last 24 hours (percentage points). Null when there is too little history. */
+  swing: { optionId: string; points: number } | null;
   reactions: { emoji: string; n: number }[];
   myReactions: string[];
   /** You voted, but have not answered "who's winning right now?" yet. Results stay hidden until you do. */
@@ -173,6 +177,7 @@ export async function getPoll(db: Db, id: string, voterId: string | null, via?: 
       )[0]?.n ?? null
     : null;
   const trend = resultsVisible && opts.length === 2 && total > 1 ? await shareOverTime(db, id, poll.createdAt, opts[0].id) : [];
+  const [rounds, swing] = resultsVisible && total > 0 ? await Promise.all([countingRounds(db, id), swingSince(db, id, byOption, total)]) : [[], null];
   const lastVote = pulseRows[0]?.lastVoteAt;
 
   return {
@@ -194,6 +199,8 @@ export async function getPoll(db: Db, id: string, voterId: string | null, via?: 
     pulse: { lastHour: pulseRows[0]?.lastHour ?? 0, lastVoteAt: lastVote ? new Date(lastVote).toISOString() : null },
     myVoterNumber,
     trend,
+    rounds,
+    swing,
     reactions: REACTIONS.map((e) => ({ emoji: e, n: reactionRows.find((r) => r.emoji === e)?.n ?? 0 })),
     myReactions: myReactionRows.map((r) => r.emoji),
     needsGuess,
@@ -219,6 +226,39 @@ export async function getPoll(db: Db, id: string, voterId: string | null, via?: 
       };
     }),
   };
+}
+
+/** Counting day: split the votes into 3 rounds by the time they were cast, and give the running total per option after each round. Real data, so the lead can really swing. */
+async function countingRounds(db: Db, id: string): Promise<Record<string, number>[]> {
+  const sq = db
+    .select({ optionId: votes.optionId, r: sql<number>`ntile(3) over (order by ${votes.createdAt}, ${votes.id})`.as('r') })
+    .from(votes)
+    .where(eq(votes.pollId, id))
+    .as('sq');
+  const rows = await db.select({ optionId: sq.optionId, r: sq.r, n: sql<number>`count(*)::int` }).from(sq).groupBy(sq.optionId, sq.r);
+  const out: Record<string, number>[] = [];
+  const running: Record<string, number> = {};
+  for (const round of [1, 2, 3]) {
+    for (const row of rows) if (Number(row.r) === round) running[row.optionId] = (running[row.optionId] ?? 0) + row.n;
+    out.push({ ...running });
+  }
+  return out;
+}
+
+/** The leader's share now minus their share 24 hours ago. Needs at least 5 votes from before, and a change since. */
+async function swingSince(db: Db, id: string, now: Map<string, number>, total: number) {
+  const before = await db
+    .select({ optionId: votes.optionId, n: sql<number>`count(*)::int` })
+    .from(votes)
+    .where(and(eq(votes.pollId, id), sql`${votes.createdAt} <= now() - interval '24 hours'`))
+    .groupBy(votes.optionId);
+  const beforeTotal = before.reduce((s, r) => s + r.n, 0);
+  if (beforeTotal < 5 || beforeTotal === total) return null;
+  const leader = [...now.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+  if (!leader) return null;
+  const then = ((before.find((r) => r.optionId === leader)?.n ?? 0) / beforeTotal) * 100;
+  const points = Math.round(((now.get(leader) ?? 0) / total) * 100 - then);
+  return points === 0 ? null : { optionId: leader, points };
 }
 
 /** The first option's running share, bucketed by hour (or by day for older polls). At most 48 points. */

@@ -271,3 +271,35 @@ Verdicts: **Keep**, **Changed** or **Removed**.
 | "+1" and score wording in the exit poll | **Changed:** "Make your call, like the TV exit polls", then "Your exit poll was right / wrong". |
 | "All caught up!" with a trophy and "Right guesses" | **Changed:** inked finger + "You voted in every live duel". |
 | "Me" tab | **Renamed** "My votes" (Vote icon). On computers there is now a "My votes" link in the top bar. |
+
+## Batches 3–5 (from docs/UX-RESEARCH.md)
+
+### Batch 3: counting day
+| Element | Level | Job / why |
+|---|---|---|
+| **Counting in 3 rounds** when your results open: "● Counting votes · round 2 of 3", bars and numbers move, "Leading" can swing | P1 at that moment | Counting day on TV is the drama of an election. The rounds are **real**: votes in the order they were cast, split in 3 (so a lead can truly change). About 2 s. Skipped for "reduce motion". |
+| Majority mark (tick at 50% on every bar) + "Line on each bar = majority (50%)" | P2 | Every counting-day tally shows the majority mark. You can see "clearly ahead" without reading numbers. |
+| Swing in 24 h + race line | P3 | "Narendra Modi ▲ 11 pts". Election word, real data (needs at least 5 votes older than 24 h). The line follows the same person. Two-choice duels only. |
+| ● LIVE dot in "Polling open", vote count rolls up | P3 | Like the LIVE bug on TV. New votes are visible as they arrive (refresh every 8 s). |
+| **Result declared: X wins by N votes**, card caption "Won", one confetti the first time | P1 on an ended duel | The declared moment. The margin in votes is what news reports say. |
+
+### Batch 4: feels like an app
+| Element | Job / why |
+|---|---|
+| Beep on/off (speaker icon, top bar) | People vote in public. Remembered on the phone. |
+| Next duel slides in (View Transitions) | A fresh ballot, not a jump. Off for reduce motion and on browsers without it. |
+| Offline bar + vote retry | "No internet. Your votes will send when you are back online." A vote made offline is sent by itself when the internet returns. |
+| Loading outline | Grey shapes of the ballot instead of a blank page. |
+| Add to home screen | App name, colours and icon (the logo: ink disc, lime dot). Opens full screen. |
+| Lighter | Candidate photos as 400×500 WebP (18 KB and 10 KB, were 35 KB and 22 KB). The Create page no longer ships the form-rules library (131 KB → 107 KB). |
+| Accessibility | Reduce motion stops all motion (counting, slide, slip, live dot). Bigger tap areas on small text links. |
+| **Server near India (not done, needs the owner)** | The live server runs in Washington, USA (`iad1`). Move the Vercel functions to Mumbai (`bom1`) **together with** the database (a Neon project in Singapore or Mumbai). Moving only one makes it slower. |
+
+### Batch 5: speaks Bharat
+| Element | Job / why |
+|---|---|
+| **हिं / EN** button (top bar) | Switches all interface text to Hindi or back. Remembered on the phone. Phones set to Hindi start in Hindi. Shown in the other language's own script so people find it. |
+| All text lives in `src/lib/i18n.ts` | One place, English and Hindi side by side. People's own text (questions, names) is never translated. Reasons and categories have Hindi labels. Server messages are shown in Hindi too. |
+| Hindi font | Noto Sans Devanagari, bundled, downloaded only when Hindi is on screen. |
+| WhatsApp line (Wordle lesson) | "🗳️ “Modi or Rahul?” · I voted ☝️ · Exit poll ✅ · Guess who I picked?…". Short, spoiler-free, readable in any chat. In Hindi when Hindi is on, and so is the link title. |
+| Share **images** stay English | The image maker cannot join Hindi letters (मैंने वोट किया came out broken), so images are English only. Revisit if the image maker gains Hindi support. |

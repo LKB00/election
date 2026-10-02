@@ -5,19 +5,25 @@ import DuelGame from '@/components/DuelGame';
 import { getDb } from '@/db';
 import { getDeck, getPoll } from '@/lib/polls';
 import { readVoterId } from '@/lib/voter';
+import { getT } from '@/lib/lang-server';
 
 export const dynamic = 'force-dynamic';
-type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ new?: string; f?: string; s?: string }> };
+type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ new?: string; f?: string; s?: string; l?: string }> };
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { id } = await params;
-  const { f, s } = await searchParams;
+  const { f, s, l } = await searchParams;
+  const hi = l === 'hi';
   const poll = await getPoll(await getDb(), id, null);
   if (!poll) return { title: 'Duel not found' };
   const names = poll.options.map((o) => o.label).join(' vs ');
   // The preview image says what the sender picked (from their share code), never the split.
-  const image = `/api/og/${poll.id}${f ? `?f=${encodeURIComponent(f)}${s === '1' ? '&s=1' : ''}` : ''}`;
-  const title = f ? (s === '1' ? `I voted in “${poll.title}”. Guess who I picked?` : `I voted in “${poll.title}”. Who would you pick?`) : poll.title;
+  const image = `/api/og/${poll.id}${f ? `?f=${encodeURIComponent(f)}${s === '1' ? '&s=1' : ''}${hi ? '&l=hi' : ''}` : ''}`;
+  const title = f
+    ? hi
+      ? s === '1' ? `मैंने “${poll.title}” में वोट किया। बताओ किसे चुना?` : `मैंने “${poll.title}” में वोट किया। आप किसे चुनेंगे?`
+      : s === '1' ? `I voted in “${poll.title}”. Guess who I picked?` : `I voted in “${poll.title}”. Who would you pick?`
+    : poll.title;
   return {
     title: poll.title,
     description: `${names}. Who would you pick? Tap to vote.`,
@@ -32,6 +38,7 @@ export default async function DuelPage({ params, searchParams }: Props) {
   const { new: isNew, f } = await searchParams;
   const justCreated = isNew === '1';
   const db = await getDb();
+  const t = await getT();
   const voterId = await readVoterId();
   const poll = await getPoll(db, id, voterId, f);
   if (!poll) notFound();
@@ -42,12 +49,12 @@ export default async function DuelPage({ params, searchParams }: Props) {
   const label = justCreated
     ? null
     : poll.closed
-      ? 'This duel has ended'
+      ? t.labelEnded
       : poll.myVote
-        ? 'You already voted here'
+        ? t.labelVoted
         : poll.friend.known
-          ? 'A friend dared you'
-          : 'Someone wants your pick';
+          ? t.labelDared
+          : t.labelAsk;
   // (Friend: the label says why you are here; the line in the game holds the hook, "their pick is sealed".)
   return (
     <div className="page page-wide">

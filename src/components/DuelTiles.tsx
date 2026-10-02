@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Check, Cpu, Film, Landmark, Medal, Music, Plus, Swords, Trophy, Users, UtensilsCrossed } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { PollSummary } from '@/lib/polls';
+import { useT } from '@/lib/lang';
 
 // One pastel tile per duel (patricka game tiles).
 // Order = what you can still do first: live and not voted → voted → ended. Updates the moment you vote.
@@ -11,6 +12,7 @@ const TONES = ['game-e', 'game-f', 'game-b', 'game-d', 'game-a'];
 const ICONS: Record<string, typeof Swords> = { politics: Landmark, cricket: Trophy, sports: Medal, movies: Film, music: Music, food: UtensilsCrossed, tech: Cpu, friends: Users };
 
 export default function DuelTiles({ polls, votedIds = [] }: { polls: PollSummary[]; votedIds?: string[] }) {
+  const t = useT();
   const [voted, setVoted] = useState<string[]>(votedIds);
   const [counts, setCounts] = useState<Record<string, number>>({});
   useEffect(() => {
@@ -40,11 +42,11 @@ export default function DuelTiles({ polls, votedIds = [] }: { polls: PollSummary
             <span>{p.options.join(' vs ')}</span>
             <span className="game-meta">
               {done ? (
-                <><Check size={13} strokeWidth={2} aria-hidden /> You voted · {total} {total === 1 ? 'vote' : 'votes'}</>
+                <><Check size={13} strokeWidth={2} aria-hidden /> {t.youVotedN(total)}</>
               ) : p.closed ? (
-                <>Ended · see who won</>
+                <>{t.endedSee}</>
               ) : (
-                <>{total === 0 ? 'Be the first to vote' : `${total} ${total === 1 ? 'vote' : 'votes'} · live`}</>
+                <>{total === 0 ? t.beFirstVote : t.liveN(total)}</>
               )}
             </span>
           </Link>
@@ -53,9 +55,9 @@ export default function DuelTiles({ polls, votedIds = [] }: { polls: PollSummary
       {/* Creating comes after voting, so this tile is last (docs/DESIGN.md). */}
       <Link href="/create" className="game game-c">
         <Plus size={22} strokeWidth={1.75} aria-hidden />
-        <strong>Start your own duel</strong>
-        <span>Virat or Rohit? Pizza or biryani? Make one in 30 seconds.</span>
-        <span className="game-meta">Free · no sign-up</span>
+        <strong>{t.startOwn}</strong>
+        <span>{t.startOwnLine}</span>
+        <span className="game-meta">{t.freeNoSignup}</span>
       </Link>
     </div>
   );

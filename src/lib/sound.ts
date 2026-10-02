@@ -1,7 +1,23 @@
 'use client';
 // The EVM beep: one long tone after you press the button. Short and soft, synthesized (no audio file).
 let ctx: AudioContext | null = null;
+// People often vote in public: the beep can be switched off (top bar), and the choice is remembered on this phone.
+export function soundOn() {
+  try {
+    return localStorage.getItem('sound') !== 'off';
+  } catch {
+    return true;
+  }
+}
+export function setSound(on: boolean) {
+  try {
+    localStorage.setItem('sound', on ? 'on' : 'off');
+  } catch {
+    /* private mode */
+  }
+}
 export function evmBeep() {
+  if (!soundOn()) return;
   try {
     const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     if (!AC) return;

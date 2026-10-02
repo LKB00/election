@@ -134,9 +134,9 @@ Design, UX, UI and interaction are the selling points. The plan, with research a
 | 1 | Guess the crowd | Exit poll, friends vs everyone, share image with your pick | Live |
 | 2 | Feels like a real election | EVM button and beep, VVPAT slip, inked finger, "Show your ink" sharing, story card with QR | Live |
 | Audit | Every element checked | Repeats removed, election rule (no points, levels, steppers), party-only lines, full names | Live |
-| **3** | **Counting day** (recommended next) | Results counted in rounds, majority line, swing in the last 24 h, live ticker, "Result declared" moment | Planned |
-| 4 | Feels like an app | Server and database near India, instant feedback, sound on/off, smooth transitions, loading and offline states, add to home screen, lighter photos, accessibility pass | Planned (speed fix needs the owner's Vercel and Neon settings) |
-| 5 | Speaks Bharat | Hindi / Hinglish switch, Wordle-style spoiler-free WhatsApp line | Planned |
+| 3 | Counting day | Results counted in 3 real rounds, majority line, swing in 24 h with a race line, LIVE dot, "Result declared: X wins by N votes" | Built |
+| 4 | Feels like an app | Beep on/off, next duel slides in, offline bar and vote retry, loading outline, add to home screen, lighter photos and pages, reduce-motion support | Built. **Still to do: server and database near India** (needs the owner's Vercel and Neon settings) |
+| 5 | Speaks Bharat | Hindi switch (हिं / EN) for all interface text, spoiler-free WhatsApp line with your exit poll result | Built (share images stay English) |
 
 **We will not do:** swipe-to-vote, carousels, points, levels, streaks, badges, heavy 3D or video effects. We will also never show anyone's pick without their choice.
 

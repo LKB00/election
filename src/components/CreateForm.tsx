@@ -2,10 +2,14 @@
 import { useRouter } from 'next/navigation';
 import { ChevronDown, Clock, EyeOff, Plus, Repeat, X } from 'lucide-react';
 import { useState } from 'react';
-import { CATEGORIES } from '@/lib/validation';
+import { CATEGORIES } from '@/lib/categories';
+import { useLang, useT } from '@/lib/lang';
+import { apiMsg } from '@/lib/i18n';
 
 export default function CreateForm() {
   const router = useRouter();
+  const t = useT();
+  const lang = useLang();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<string>('general');
@@ -25,12 +29,12 @@ export default function CreateForm() {
   function check() {
     const filled = choices.map((c) => c.trim()).filter(Boolean);
     const errs: { title?: string; choices?: string } = {};
-    if (title.trim().length < 3) errs.title = 'Your question needs at least 3 letters.';
-    if (filled.length < 2) errs.choices = 'Add at least 2 choices.';
-    else if (new Set(filled.map((c) => c.toLowerCase())).size !== filled.length) errs.choices = 'Two choices are the same. Make each one different.';
+    if (title.trim().length < 3) errs.title = t.errTitle;
+    if (filled.length < 2) errs.choices = t.errChoices;
+    else if (new Set(filled.map((c) => c.toLowerCase())).size !== filled.length) errs.choices = t.errSame;
     setFieldError(errs);
     if (errs.title) document.getElementById('title')?.focus();
-    else if (errs.choices) document.querySelector<HTMLInputElement>('input[aria-label^="Choice"]')?.focus();
+    else if (errs.choices) document.querySelector<HTMLInputElement>('input[data-choice]')?.focus();
     return !errs.title && !errs.choices;
   }
 
@@ -54,7 +58,7 @@ export default function CreateForm() {
     }).catch(() => null);
     const data = await res?.json().catch(() => null);
     if (res?.ok && data?.id) return router.push(`/p/${data.id}?new=1`);
-    setError(data?.error ?? 'Something went wrong. Please try again.');
+    setError(data?.error ? apiMsg(lang, data.error) : t.errGeneric);
     setBusy(false);
   }
 
@@ -62,22 +66,22 @@ export default function CreateForm() {
   return (
     <form className="me-stack" onSubmit={submit}>
       <div className="duel-group">
-        <label className="label" htmlFor="title">Your question</label>
+        <label className="label" htmlFor="title">{t.yourQuestion}</label>
         <span className="search">
-          <input id="title" value={title} maxLength={120} placeholder="Virat, Rohit or Dhoni?" aria-invalid={!!fieldError.title} onChange={(e) => { setTitle(e.target.value); setFieldError((f) => ({ ...f, title: undefined })); }} />
+          <input id="title" value={title} maxLength={120} placeholder={t.questionPh} aria-invalid={!!fieldError.title} onChange={(e) => { setTitle(e.target.value); setFieldError((f) => ({ ...f, title: undefined })); }} />
         </span>
         {fieldError.title && <p className="field-error" role="alert">{fieldError.title}</p>}
       </div>
 
       <div className="duel-group">
-        <span className="label">Choices · 2 to 10</span>
+        <span className="label">{t.choicesLabel}</span>
         {choices.map((c, i) => (
           <div className="row" key={i}>
             <span className="search">
-              <input value={c} maxLength={60} aria-label={`Choice ${i + 1}`} placeholder={`Choice ${i + 1}`} aria-invalid={!!fieldError.choices} onChange={(e) => { setChoice(i, e.target.value); setFieldError((f) => ({ ...f, choices: undefined })); }} />
+              <input data-choice value={c} maxLength={60} aria-label={t.choiceN(i + 1)} placeholder={t.choiceN(i + 1)} aria-invalid={!!fieldError.choices} onChange={(e) => { setChoice(i, e.target.value); setFieldError((f) => ({ ...f, choices: undefined })); }} />
             </span>
             {choices.length > 2 && (
-              <button type="button" className="icon-btn" aria-label={`Remove choice ${i + 1}`} onClick={() => setChoices((x) => x.filter((_, j) => j !== i))}>
+              <button type="button" className="icon-btn" aria-label={t.removeChoice(i + 1)} onClick={() => setChoices((x) => x.filter((_, j) => j !== i))}>
                 <X size={16} strokeWidth={1.75} aria-hidden />
               </button>
             )}
@@ -86,37 +90,37 @@ export default function CreateForm() {
         {fieldError.choices && <p className="field-error" role="alert">{fieldError.choices}</p>}
         {choices.length < 10 && (
           <button type="button" className="chip duel-add" onClick={() => setChoices((x) => [...x, ''])}>
-            <Plus size={14} strokeWidth={1.75} aria-hidden /> Add a choice
+            <Plus size={14} strokeWidth={1.75} aria-hidden /> {t.addChoice}
           </button>
         )}
       </div>
 
       <button type="button" className="chip duel-add" aria-expanded={more} onClick={() => setMore((m) => !m)}>
-        <ChevronDown size={14} strokeWidth={1.75} aria-hidden style={{ transform: more ? 'rotate(180deg)' : undefined }} /> More options
+        <ChevronDown size={14} strokeWidth={1.75} aria-hidden style={{ transform: more ? 'rotate(180deg)' : undefined }} /> {t.moreOptions}
       </button>
 
       {more && (
       <>
       <div className="duel-group">
-        <label className="label" htmlFor="desc">Details · optional</label>
+        <label className="label" htmlFor="desc">{t.details}</label>
         <span className="search">
-          <input id="desc" value={description} maxLength={300} placeholder="One line of context" onChange={(e) => setDescription(e.target.value)} />
+          <input id="desc" value={description} maxLength={300} placeholder={t.detailsPh} onChange={(e) => setDescription(e.target.value)} />
         </span>
       </div>
 
       <div className="duel-group">
-        <span className="label">Category</span>
-        <div className="row wrap" role="radiogroup" aria-label="Category">
+        <span className="label">{t.category}</span>
+        <div className="row wrap" role="radiogroup" aria-label={t.category}>
           {CATEGORIES.map((c) => (
             <button key={c} type="button" role="radio" aria-checked={category === c} className={'chip' + (category === c ? ' chip-on' : '')} onClick={() => setCategory(c)}>
-              {c[0].toUpperCase() + c.slice(1)}
+              {t.categories[c] ?? c}
             </button>
           ))}
         </div>
       </div>
 
       <div className="duel-group">
-        <label className="label" htmlFor="end">Ends · optional</label>
+        <label className="label" htmlFor="end">{t.ends}</label>
         <span className="search">
           <Clock size={14} strokeWidth={1.75} aria-hidden />
           <input id="end" type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} />
@@ -126,12 +130,12 @@ export default function CreateForm() {
       <div className="me-stack">
         <button type="button" className="me-row" onClick={() => setHide((v) => !v)} aria-pressed={hideUntilVoted}>
           <EyeOff size={20} strokeWidth={1.75} aria-hidden />
-          <span><strong>Hide results until people vote</strong><span className="small muted">Stops people copying the crowd</span></span>
+          <span><strong>{t.hideResults}</strong><span className="small muted">{t.hideResultsNote}</span></span>
           <span className={'switch' + (hideUntilVoted ? ' is-on' : '')} aria-hidden />
         </button>
         <button type="button" className="me-row" onClick={() => setChange((v) => !v)} aria-pressed={allowChange}>
           <Repeat size={20} strokeWidth={1.75} aria-hidden />
-          <span><strong>Let people change their vote</strong><span className="small muted">Until the duel ends</span></span>
+          <span><strong>{t.allowChange}</strong><span className="small muted">{t.allowChangeNote}</span></span>
           <span className={'switch' + (allowChange ? ' is-on' : '')} aria-hidden />
         </button>
       </div>
@@ -140,7 +144,7 @@ export default function CreateForm() {
 
       {error && <p className="duel-error" role="alert">{error}</p>}
       <div className="row">
-        <button className="btn btn-primary btn-lg" disabled={busy}>{busy ? 'Creating…' : 'Create duel'}</button>
+        <button className="btn btn-primary btn-lg" disabled={busy}>{busy ? t.creating : t.createDuel}</button>
       </div>
     </form>
   );

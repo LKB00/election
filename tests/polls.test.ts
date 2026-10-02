@@ -2,7 +2,8 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { castVote, createPoll, getDeck, getFeaturedId, getPoll, getVoterStats, guessLeader, listPolls, setReason, toggleReaction, undoVote } from '@/lib/polls';
 import { createPollSchema } from '@/lib/validation';
 import { rateLimit } from '@/lib/rate-limit';
-import type { Db } from '@/db';
+import { schema, type Db } from '@/db';
+import { eq, sql } from 'drizzle-orm';
 
 let db: Db;
 beforeAll(async () => {
@@ -16,6 +17,38 @@ beforeAll(async () => {
 // Results open by default in these tests; the guess game is tested on its own below.
 const make = (extra = {}) =>
   createPoll(db, createPollSchema.parse({ title: 'Best finisher?', options: ['Virat', 'Rohit', 'Dhoni'], hideUntilVoted: false, ...extra }));
+
+describe('counting day', () => {
+  it('counts in 3 rounds that add up to the final result, and never before results are visible', async () => {
+    const id = await make();
+    const p = (await getPoll(db, id, null))!;
+    const picks = [0, 0, 1, 2, 1, 1, 0];
+    for (const [k, n] of picks.entries()) await castVote(db, id, p.options[n].id, `c${k}`);
+    const after = (await getPoll(db, id, 'c0'))!;
+    expect(after.rounds).toHaveLength(3);
+    const sum = (r: Record<string, number>) => Object.values(r).reduce((a, b) => a + b, 0);
+    expect(after.rounds.map(sum)).toEqual([3, 5, 7]); // ntile(3) of 7 votes: 3, 2, 2
+    expect(after.rounds[2]).toEqual(Object.fromEntries(after.options.map((o) => [o.id, o.votes])));
+    const hidden = await make({ hideUntilVoted: true });
+    const h = (await getPoll(db, hidden, null))!;
+    await castVote(db, hidden, h.options[0].id, 'x');
+    const viewer = (await getPoll(db, hidden, 'someone-else'))!;
+    expect(viewer.rounds).toEqual([]);
+    expect(viewer.swing).toBeNull();
+  });
+
+  it('shows the swing in the last 24 hours only with enough history', async () => {
+    const id = await make();
+    const p = (await getPoll(db, id, null))!;
+    for (let k = 0; k < 6; k++) await castVote(db, id, p.options[k < 3 ? 0 : 1].id, `old${k}`);
+    expect((await getPoll(db, id, 'old0'))!.swing).toBeNull(); // no votes older than 24 h yet
+    await db.update(schema.votes).set({ createdAt: sql`now() - interval '2 days'` }).where(eq(schema.votes.pollId, id));
+    for (let k = 0; k < 4; k++) await castVote(db, id, p.options[0].id, `new${k}`);
+    const after = (await getPoll(db, id, 'old0'))!;
+    // Then: Virat 3 of 6 = 50%. Now: 7 of 10 = 70%. Swing +20 for the leader.
+    expect(after.swing).toEqual({ optionId: p.options[0].id, points: 20 });
+  });
+});
 
 describe('voting', () => {
   it('counts one vote per voter, even with many tries', async () => {

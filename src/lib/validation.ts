@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
-export const CATEGORIES = ['general', 'politics', 'cricket', 'movies', 'music', 'food', 'tech', 'sports', 'friends'] as const;
-export type Category = (typeof CATEGORIES)[number];
+import { CATEGORIES } from './categories';
+export { CATEGORIES, type Category } from './categories';
 
 export const createPollSchema = z.object({
   title: z.string().trim().min(3, 'Your question needs at least 3 letters.').max(120, 'Your question is too long (120 letters max).'),

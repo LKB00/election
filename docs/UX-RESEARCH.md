@@ -29,6 +29,8 @@ Every idea below follows two rules:
 
 ## Recommendations, in batches (biggest impact first)
 
+**Status:** Batches 3, 4 and 5 are built (see DESIGN.md, "Batches 3–5"). Not done yet: moving the server and database near India (needs the owner), and Hindi in share images (the image renderer can't shape Hindi).
+
 ### Batch 3: "Counting day" (the selling point)
 
 1. **Counting animation on reveal.** After your exit poll, the result is counted, not shown.
