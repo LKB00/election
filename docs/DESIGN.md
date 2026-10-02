@@ -4,6 +4,19 @@ The look comes from patricka (Good Bot, Bad Bot): its tokens, type scale and com
 This file is about **what each element is for** and **how much attention it gets**.
 Rule: if an element has no clear job on that screen, it is removed.
 
+## The election rule (owner, most important)
+
+**Only things a real election has.** Every element must exist in a real Indian election or in news coverage of one: ballot numbers, the EVM button and beep, the VVPAT slip, the inked finger, the voter ID, "polling open/closed", turnout, exit polls, "leading / won", sharing that you voted.
+Quiz and game parts from patricka are **not used**:
+- no progress steppers or pips
+- no score bubbles (✓ 1, 🎯 0)
+- no points (+1)
+- no levels, XP bars or trophies
+- no streaks
+
+If an element can't be explained in election words, remove it.
+We still use patricka's **look** (type, spacing, colours, cards, buttons), but not its game mechanics.
+
 ## Priority levels (used on every screen)
 
 | Level | Meaning | How it looks (patricka parts) |
@@ -14,7 +27,7 @@ Rule: if an element has no clear job on that screen, it is removed.
 
 Colour roles (from patricka, never mixed):
 - **Ink button** = the main action. One per view.
-- **Lime** = "this is you / your progress" (your votes pill, your guess score, active tab, your-pick badge). Not used for decoration.
+- **Lime** = "this is you" (active tab, the green bar of your pick). Not used for decoration.
 - **Pastel tint** = which side/choice something belongs to (A, B, C...).
 - **Soft red/green tints** = feedback only (error, success). Never as decoration.
 
@@ -42,7 +55,7 @@ Why: most people arrive from a WhatsApp link with zero context. Every extra word
 | Role line on the card (label, caps 10px) | P3 | Context for people who do not know the person. Tiny so the name wins. |
 | Name on the card (20px bold) | P2 | Second thing you read on the card, after the face. |
 | "Tap a card to vote · anonymous · one vote each · results unlock after" | P3 | Answers the 3 fears (how? who sees? can I cheat?) without a paragraph. Sits right under the cards, where the thumb already is (patricka hides its own hint on phones; ours must stay). |
-| Progress pips + ✓ and 🔥 pills inside the game | hidden for new people | For someone with 0 votes, "0" and "0" are noise and look like a quiz score. Shown once you have voted (then they mean "keep going"). |
+| ~~Progress pips + ✓ and 🔥 pills inside the game~~ | removed | Quiz parts; see the election rule. |
 | "Duel of the day" dark banner | removed on Home | It repeated the duel that is already the first card on the page. Lives on the Duels page instead. |
 | "More duels" tiles | P3 | The next thing to do after you finished. Below the fold on purpose. No "New" chips: a dark chip on the least important section pulled the eye away from the duel. |
 | "Start your own duel" tile | P3, last tile | Creating is a later step than voting. It was first and competed with voting. |
@@ -75,14 +88,13 @@ Promise: **30 seconds**. So:
 | **Create duel** (ink button) | P1 action | One primary button. |
 | Details, category, end time, two switches | P3, folded under "More options" | Useful but optional. Showing them all made a 30-second job look like a form to fill. |
 
-## Flow 4: coming back (`/me`, top bar)
+## Flow 4: coming back (`/me` = My votes)
 
 | Element | Level | Job / why |
 |---|---|---|
-| 🎯 right guesses + ✓ votes pills in the top bar | P3 | Always-visible progress you earn by playing well, not by showing up. Lime only on the votes pill = "yours". |
-| Level card (Me) | P1 on Me | The one summary of "how am I doing". |
-| Level card stats: votes, right guesses, crowd-reading %, friends who answered your dares | P2 | What you are good at, and how many friends you brought in. |
-| Your votes list | P3 | Memory and a way back into old duels. |
+| "My votes" tab (Vote icon, was "Me") | Nav | Names what the page holds: your voting record. |
+| One plain sentence: "You voted in 3 duels. Your exit poll was right 2 of 3 times. 1 friend voted from your link." | P2 | Your record in election words. No level, no XP bar, no stat boxes. |
+| Your votes list | P1 on My votes | Memory and a way back into old duels. |
 
 ## Duels page (`/duels`)
 
@@ -105,7 +117,7 @@ no surprise, always one obvious next step, and mistakes can be undone.
 | Tap a card (or press A / B / 1 / 2) | Saved, confetti, the cards become the result. | Instant reward. Keyboard works like patricka's games. |
 | Tapped the wrong card | **Undo** link in the result bar for about 25 seconds (server allows 30). Removes the vote and its reactions. | A big tap target makes slips likely; forgiving beats asking "are you sure?" every time. |
 | Press **Next** | Next live duel you have not voted in, **wrapping around** the list. The page scrolls so the new question is at the top. | Before, the page stayed scrolled down and the new question was off-screen. |
-| No duels left | "All caught up!" screen with "Start your own duel" and "See the results". | A clear end, not a silent stop. No fake "2/3" score. |
+| No duels left | "You voted in every live duel" screen with "Start your own duel" and "See the results". | A clear end, not a silent stop. No fake "2/3" score. |
 | Scroll down | "More duels" tiles: live and not voted first, then voted, then ended. Updates the moment you vote ("You voted · 41 votes"). | Before, tiles stayed stale until reload and ended duels were listed first. |
 
 ### J2. Opening a shared link `/p/…`
@@ -126,8 +138,8 @@ no surprise, always one obvious next step, and mistakes can be undone.
 ### J4. Coming back another day
 | Step | What happens | Why |
 |---|---|---|
-| Open Home | Starts at the first duel you have not voted in. If none: "All caught up!". | Never shows you something you already did as if it were new. |
-| Top bar 🎯 / ✓ | Your right guesses and votes, update right after each vote or guess. | Progress you can feel without a streak. |
+| Open Home | Starts at the first duel you have not voted in. If none: "You voted in every live duel". | Never shows you something you already did as if it were new. |
+| Top bar | Only the logo (and on computers the links). No scores. | See the election rule. |
 
 ### Ties and empty states (everywhere)
 - Tie: no card says "Leading"; ended tie says "It ended in a tie."
@@ -143,8 +155,8 @@ no surprise, always one obvious next step, and mistakes can be undone.
 | Element | Level | Job / why |
 |---|---|---|
 | **"Who's winning right now?"** step after you vote (hidden-results duels) | **P1 at that moment** | A second, instant game inside every duel: you guess the crowd, then the reveal tells you if you were right. Makes the reveal a moment, not just numbers. Checked on the server at the moment you answer (a tie counts for either leader). "Skip, just show me" is always there, so it never blocks. |
-| "You read the crowd! +1" / "Not this time. X is ahead." | P1 in the result bar | The win (or the near miss) is the first line you read after the reveal. Confetti only for a right guess. |
-| 🎯 pill (top bar, score bar) | P3 | Your running score of right guesses. Replaces the streak. |
+| "Your exit poll was right!" / "Your exit poll was wrong. X is ahead." (was "+1") | P1 in the result bar | The win (or the near miss) is the first line you read after the reveal. Confetti only for a right guess. |
+| ~~🎯 pill~~ | removed | A score; see the election rule. Your exit poll record is one sentence on My votes. |
 | "A friend dared you" label + "A friend already picked. Vote to see if you agree." | P2 | You came because a friend asked: that is the strongest reason to vote. Their pick stays a surprise until you vote and guess. |
 | "Your friend picked Modi: you agree / disagree!" | P2 | Agreeing or disagreeing with a friend is what people talk about and share back. |
 | "N friends answered your dare: X agree, Y disagree" | P2 (for the sharer) | The reason to come back to your own duel after sharing. Counted through a private share code in your link (never your identity). |
@@ -249,3 +261,13 @@ Verdicts: **Keep**, **Changed** or **Removed**.
 | Duels banner icon | The flagship duel | **Changed:** Swords became Landmark (politics). |
 | Me: 4 stat boxes | Your record | **Changed:** now 2 boxes. "Duels voted" repeated the header's ✓ votes, and "crowd reading %" repeated the right guesses. Now: "1 of 1 exit polls right" and "friends took your dare". |
 | Create: categories | Sort and decorate the tiles | **Changed:** added **Politics**, because the flagship duel is politics and creators had no way to pick it. |
+
+### Follow-up: the election rule (owner: "what do these mean for an election?")
+| Element | Verdict |
+|---|---|
+| 4-line stepper (progress pips) | **Removed.** Elections have no "duel 2 of 4". |
+| ✓ 1 and 🎯 0 bubbles (top bar and game) | **Removed.** Unlabelled numbers. Your record is on My votes, in words. |
+| Levels (Newcomer → Legend), XP bar, stat boxes | **Removed.** Voters have no levels. My votes is now a plain record. |
+| "+1" and score wording in the exit poll | **Changed:** "Make your call, like the TV exit polls", then "Your exit poll was right / wrong". |
+| "All caught up!" with a trophy and "Right guesses" | **Changed:** inked finger + "You voted in every live duel". |
+| "Me" tab | **Renamed** "My votes" (Vote icon). On computers there is now a "My votes" link in the top bar. |

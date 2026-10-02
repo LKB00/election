@@ -5,6 +5,7 @@
 - All poll and vote rules live in `src/lib/polls.ts`. One vote per voter is enforced by a unique index; keep it that way.
 - Hidden results must never leak: `getPoll` zeroes the numbers when `resultsVisible` is false.
 - UI = the patricka (Good Bot, Bad Bot) design system, copied unchanged into `src/styles/gb/`. Do not edit gb/; put Election-only styles in `src/styles/election.css` using gb tokens. Reuse patricka markup/classes (tot, today-card, daily-banner, games, level-card). The owner rejected custom designs: stay with patricka.
+- Election rule: only things a real election has (ballot numbers, EVM, VVPAT, inked finger, exit poll, turnout). No quiz/game parts from patricka: no steppers, score bubbles, points, levels, trophies or streaks.
 - Every element needs a job and a priority (P1/P2/P3). Read and update `docs/DESIGN.md` before changing any screen. One P1 per screen; lime = "you / your progress"; ink button = the one main action.
 - Fonts are bundled (fontsource), not Google Fonts, so screenshots in the sandbox match real phones.
 - Tests run on PGlite; also run them on real Postgres with TEST_DATABASE_URL (it caught Date/precision bugs).

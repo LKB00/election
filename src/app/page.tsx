@@ -3,7 +3,7 @@ import { ArrowRight } from 'lucide-react';
 import DuelGame from '@/components/DuelGame';
 import DuelTiles from '@/components/DuelTiles';
 import { getDb } from '@/db';
-import { getDeck, getVoterStats, listPolls } from '@/lib/polls';
+import { getDeck, listPolls } from '@/lib/polls';
 import { readVoterId } from '@/lib/voter';
 
 export const dynamic = 'force-dynamic';
@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
 export default async function Home() {
   const db = await getDb();
   const voterId = await readVoterId();
-  const [deck, stats, polls] = await Promise.all([getDeck(db, voterId), getVoterStats(db, voterId), listPolls(db, 8)]);
+  const [deck, polls] = await Promise.all([getDeck(db, voterId), listPolls(db, 8)]);
   const voted = deck.filter((p) => p.myVote !== null).map((p) => p.id);
 
   return (

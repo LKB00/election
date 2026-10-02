@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 import InkFinger from '@/components/InkFinger';
 import { getDb } from '@/db';
-import { CARD, cardFonts, initialsOf, lastName, pickFromCode } from '@/lib/cards';
+import { CARD, cardFonts, initialsOf, pickFromCode } from '@/lib/cards';
 import { getPoll } from '@/lib/polls';
 
 export const dynamic = 'force-dynamic';
@@ -23,7 +23,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const pick = poll.options.find((o) => o.id === pickId);
   const abs = (src: string) => new URL(src, url.origin).toString();
   const shown = poll.options.slice(0, 2);
-  const headline = !voted ? 'Who would you pick? Tap to vote' : showPick && pick ? `I voted for ${lastName(pick.label)}. Who would you pick?` : 'I voted. Guess who I picked?';
+  const headline = !voted ? 'Who would you pick? Tap to vote' : showPick && pick ? `I voted for ${pick.label}. Who would you pick?` : 'I voted. Guess who I picked?';
 
   return new ImageResponse(
     (

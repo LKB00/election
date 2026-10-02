@@ -2,7 +2,7 @@ import { ImageResponse } from 'next/og';
 import QRCode from 'qrcode';
 import InkFinger from '@/components/InkFinger';
 import { getDb } from '@/db';
-import { CARD, cardFonts, initialsOf, lastName, pickFromCode } from '@/lib/cards';
+import { CARD, cardFonts, initialsOf, pickFromCode } from '@/lib/cards';
 import { getPoll } from '@/lib/polls';
 
 export const dynamic = 'force-dynamic';
@@ -59,7 +59,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
           })}
         </div>
         <div style={{ display: 'flex', marginTop: 40, fontSize: 60, fontWeight: 700 }}>
-          {showPick && pick ? `I picked ${lastName(pick.label)}. You?` : 'Guess who I picked?'}
+          {showPick && pick ? `I picked ${pick.label}. You?` : 'Guess who I picked?'}
         </div>
 
         <div style={{ display: 'flex', flex: 1, minHeight: 48 }} />

@@ -1,58 +1,34 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Check, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { getDb } from '@/db';
 import { getMyVotes, getVoterStats } from '@/lib/polls';
 import { readVoterId } from '@/lib/voter';
 
 export const dynamic = 'force-dynamic';
-export const metadata: Metadata = { title: 'Me' };
+export const metadata: Metadata = { title: 'My votes' };
 
-// Same shapes as patricka's Me page: level card, today card, list.
-const LEVELS = [
-  [0, 'Newcomer'],
-  [3, 'Voter'],
-  [10, 'Regular'],
-  [25, 'Opinion maker'],
-  [50, 'Duel master'],
-  [100, 'Legend'],
-] as const;
-
-export default async function Me() {
+// My votes = your voting record on this phone. No levels or points: nothing here that a real election does not have.
+export default async function MyVotes() {
   const db = await getDb();
   const voterId = await readVoterId();
   const [stats, mine] = await Promise.all([getVoterStats(db, voterId), getMyVotes(db, voterId)]);
-  const idx = [...LEVELS].reverse().findIndex(([min]) => stats.votes >= min);
-  const levelNum = LEVELS.length - idx;
-  const [floor, name] = LEVELS[levelNum - 1];
-  const next = LEVELS[levelNum];
-  const pct = next ? ((stats.votes - floor) / (next[0] - floor)) * 100 : 100;
+  const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
   return (
     <div className="page">
       <header className="page-head page-head-tight">
-        <h1 className="display">Me</h1>
+        <h1 className="display">My votes</h1>
+        {stats.votes > 0 && (
+          <p className="lead">
+            You voted in {plural(stats.votes, 'duel', 'duels')}
+            {stats.guesses > 0 && `. Your exit poll calls: ${stats.correct} of ${stats.guesses} right`}
+            {stats.friends > 0 && `. ${plural(stats.friends, 'friend', 'friends')} voted from your link`}.
+          </p>
+        )}
       </header>
-      <div className="level-card">
-        <div className="level-top">
-          <span className="level-badge">{levelNum}</span>
-          <div>
-            <p className="label">Level {levelNum}</p>
-            <p className="level-name">{name}</p>
-          </div>
-          <p className="level-xp"><Check size={16} strokeWidth={2.5} aria-hidden /> {stats.votes} {stats.votes === 1 ? 'vote' : 'votes'}</p>
-        </div>
-        <span className="meter meter-xp" aria-hidden><span style={{ width: `${pct}%` }} /></span>
-        <p className="small muted">{next ? `${next[0] - stats.votes} more ${next[0] - stats.votes === 1 ? 'vote' : 'votes'} to ${next[1]}` : 'Top level. Legendary.'}</p>
-        <ul className="level-stats">
-          {/* Votes are already in the header; "crowd reading %" repeated the guesses. Two numbers, each said once. */}
-          <li><strong>{stats.correct} of {stats.guesses}</strong> exit polls right</li>
-          <li><strong>{stats.friends}</strong> {stats.friends === 1 ? 'friend' : 'friends'} took your dare</li>
-        </ul>
-      </div>
 
       <section className="block">
-        <h2>Your votes</h2>
         {mine.length === 0 ? (
           <p className="muted">No votes yet. <Link href="/" className="text-link">Start with today’s duel</Link></p>
         ) : (

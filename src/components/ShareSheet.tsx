@@ -12,7 +12,8 @@ export default function ShareSheet({ poll, pick, shareCode, onClose }: { poll: P
   const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const last = pick.label.trim().split(/\s+/).pop();
+  // Full name: a last name alone can be ambiguous ("Gandhi").
+  const last = pick.label;
   const link = () => `${window.location.origin}/p/${poll.id}?f=${shareCode}${secret ? '&s=1' : ''}`;
   const card = `/api/card/${poll.id}?f=${shareCode}${secret ? '&s=1' : ''}`;
   const message = secret

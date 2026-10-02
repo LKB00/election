@@ -2,21 +2,20 @@ import type { Metadata } from 'next';
 import DuelBanner from '@/components/DuelBanner';
 import DuelTiles from '@/components/DuelTiles';
 import { getDb } from '@/db';
-import { getFeaturedId, getMyVotes, getPoll, getVoterStats, listPolls } from '@/lib/polls';
+import { getFeaturedId, getMyVotes, getPoll, listPolls } from '@/lib/polls';
 import { readVoterId } from '@/lib/voter';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Duels' };
 
-// P1: the duel of the day (dark banner). P2: browse the tiles. P3: your progress.
+// P1: the duel of the day (dark banner). P2: browse the tiles.
 export default async function Duels() {
   const db = await getDb();
   const voterId = await readVoterId();
   const featuredId = await getFeaturedId(db);
-  const [featured, polls, stats, mine] = await Promise.all([
+  const [featured, polls, mine] = await Promise.all([
     featuredId ? getPoll(db, featuredId, voterId) : Promise.resolve(null),
     listPolls(db, 60),
-    getVoterStats(db, voterId),
     getMyVotes(db, voterId, 200),
   ]);
   return (
