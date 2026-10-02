@@ -227,7 +227,7 @@ Verdicts: **Keep**, **Changed** or **Removed**.
 | ✓ and 🎯 counters inside the game | (same numbers as the top bar) | **Removed:** shown twice. |
 | Ballot number on each card | Real ballots number candidates, and the VVPAT slip shows the number | **Changed:** A/B to **1/2**, so the card and the slip match. Keys A/B and 1/2 both still work. |
 | Photo (4:5) | You recognise faces before names | Keep. **Changed:** capped at 320 px on desktop, where it pushed the Vote buttons below the fold. |
-| Party · role line | Context for people who don't follow politics | Keep (owner to confirm the text) |
+| Party line ("BJP", "INC") | Which side each person is on, the way a ballot shows the party | **Changed (owner):** party only, no job titles. Fits on one line, so both names line up. |
 | Red light + blue **Vote** (EVM) | Everyone in India knows this button | Keep. It is blue, not ink, because it copies the real EVM. The whole card is the button. |
 | Ballot line under the cards | The rules in one line | **Changed:** "Press a candidate to vote" removed (the Vote button already says it, and "candidate" is wrong for tea vs coffee). It now reads "Secret ballot · one vote each · results open after you vote · a fun poll, not official". |
 | Photo credits | Licence requirement | Keep (P3, smallest text) |
