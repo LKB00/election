@@ -15,6 +15,8 @@ export default function ShareSheet({ poll, pick, shareCode, onClose }: { poll: P
   const [secret, setSecret] = useState(true);
   const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState(false);
+  // The card image is made on the server; it floats in once it has loaded (grey placeholder until then).
+  const [loaded, setLoaded] = useState<string | null>(null);
 
   // Full name: a last name alone can be ambiguous ("Gandhi").
   const last = pick.label;
@@ -73,7 +75,7 @@ export default function ShareSheet({ poll, pick, shareCode, onClose }: { poll: P
         {/* What friends get: the image, and the exact message (so there are no surprises before sending). */}
         <div className="sheet-body">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="sheet-preview" src={card} alt={t.cardAlt} />
+          <img key={card} className={'sheet-preview' + (loaded === card ? ' is-loaded' : '')} src={card} alt={t.cardAlt} onLoad={() => setLoaded(card)} />
           <div className="sheet-side">
             <p className="label">{t.yourMessage}</p>
             <p className="sheet-message">{message} <span className="muted">{t.link}</span></p>
