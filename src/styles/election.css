@@ -170,3 +170,29 @@
   --display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', 'Noto Sans Devanagari', 'Lato', ui-sans-serif, system-ui, sans-serif;
 }
 .lang-btn { font-size: 13px; font-weight: 700; min-width: 36px; }
+
+/* ---- The ink moment (docs/DESIGN.md) ---- */
+.duel-inked { display: flex; align-items: center; gap: 12px; padding: 0 4px; }
+.duel-inked p { margin: 0; display: flex; flex-direction: column; color: var(--ink); }
+.duel-inked .muted { font-variant-numeric: tabular-nums; }
+/* The hand rises, then the polling officer's brush draws the ink down the nail, then it soaks and shines. */
+.ink-finger.is-animated { transform-origin: 50% 100%; animation: finger-up 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
+.ink-finger.is-animated .ink-line { stroke-dasharray: 1; stroke-dashoffset: 1; animation: ink-draw 0.7s 0.45s cubic-bezier(0.5, 0, 0.3, 1) forwards; }
+.ink-finger.is-animated .ink-bleed { animation: ink-fade 0.6s 1s backwards; }
+.ink-finger.is-animated .ink-shine { animation: ink-fade 0.4s 1.2s backwards; }
+.duel-inked.is-new p { animation: fade-in 0.4s 0.9s backwards; }
+@keyframes finger-up { from { transform: translateY(10px) scale(0.85); opacity: 0; } }
+@keyframes ink-draw { to { stroke-dashoffset: 0; } }
+@keyframes ink-fade { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .ink-finger.is-animated, .ink-finger.is-animated .ink-bleed, .ink-finger.is-animated .ink-shine, .duel-inked.is-new p { animation: none; }
+  .ink-finger.is-animated .ink-line { animation: none; stroke-dashoffset: 0; }
+}
+
+/* Share panel, premium pass: a bigger card that floats in with a slight tilt (like a printed slip), the message as a chat bubble. */
+.sheet-body { grid-template-columns: 124px 1fr; gap: 20px; align-items: center; }
+.sheet-preview { width: 124px; border-radius: 14px; background: var(--sand-dark); box-shadow: 0 2px 4px rgba(36, 40, 44, 0.08), 0 16px 32px rgba(36, 40, 44, 0.18); transform: rotate(-3deg); opacity: 0.4; transition: opacity 0.3s; }
+.sheet-preview.is-loaded { opacity: 1; animation: card-float 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.1) both; }
+@keyframes card-float { from { transform: translateY(16px) rotate(2deg) scale(0.94); } to { transform: rotate(-3deg); } }
+.sheet-message { position: relative; border-radius: 16px 16px 16px 4px; box-shadow: 0 1px 2px rgba(36, 40, 44, 0.08); }
+@media (prefers-reduced-motion: reduce) { .sheet-preview.is-loaded { animation: none; } }

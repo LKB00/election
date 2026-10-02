@@ -122,6 +122,8 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
   // The VVPAT moment: right after the beep your choice shows on a slip for a few seconds, like in a real booth.
   const [slipFor, setSlipFor] = useState<string | null>(null);
   const [sharing, setSharing] = useState(false);
+  // Which duel you just voted in (plays the ink animation once).
+  const [inkedFor, setInkedFor] = useState<string | null>(null);
   const nextRef = useRef<HTMLButtonElement>(null);
   const topRef = useRef<HTMLDivElement>(null);
 
@@ -203,6 +205,7 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
     if (res?.ok) {
       evmBeep();
       setSlipFor(optionId);
+      setInkedFor(poll.id);
       setTimeout(() => setSlipFor(null), 2600);
       replace(data.poll);
       setJustVoted(data.poll.needsGuess ? null : optionId);
@@ -344,7 +347,7 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
   if (over) {
     return (
       <div className="tot tot-over" ref={topRef}>
-        <InkFinger size={40} />
+        <InkFinger size={64} />
         <h1 className="display duel-q">{t.allDone}</h1>
         <p className="tot-verdict">{t.allDoneNote}</p>
         <div className="row wrap center">
@@ -441,9 +444,14 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
       )}
 
       {!slipFor && voted && mine && !poll.closed && (
-        <p className="small duel-inked">
-          <InkFinger size={20} /> {t.inked}{poll.myVoterNumber ? ` · ${t.voterId} EL-${String(poll.myVoterNumber).padStart(6, '0')}` : ''}.
-        </p>
+        // The ink moment: right after the slip, the hand rises and the ink is brushed onto the nail (only for a vote made just now).
+        <div className={'duel-inked' + (inkedFor === poll.id ? ' is-new' : '')}>
+          <InkFinger size={48} animate={inkedFor === poll.id} />
+          <p className="small">
+            <strong>{t.inked}.</strong>
+            {poll.myVoterNumber ? <span className="muted"> {t.voterId} EL-{String(poll.myVoterNumber).padStart(6, '0')}</span> : null}
+          </p>
+        </div>
       )}
 
       {!slipFor && voted && poll.needsGuess && (
