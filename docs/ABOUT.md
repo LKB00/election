@@ -33,7 +33,7 @@ Election lets anyone make a **duel** between 2 or more choices, such as *Modi or
 5. **Exit poll:** "Who's winning right now?" You make your guess, or skip it. You can undo your vote for 30 seconds.
 6. **Results open:** percentages, whether your guess was right, and, if a friend sent the link, "your friend agrees" or "your friend disagrees".
 7. **Show your ink:** share on WhatsApp, as a Status/Story image, or copy the link.
-8. **Next duel**, or come back later through **Me**, which shows your level, right guesses and the duels you voted in.
+8. **Next duel**, or come back later through **My votes**: the duels you voted in, and how often your exit poll was right.
 
 ## 4. Why people engage (human behaviour)
 
@@ -42,11 +42,11 @@ Election lets anyone make a **duel** between 2 or more choices, such as *Modi or
 | Ritual, taking part | EVM button, beep, VVPAT slip, inked finger, voter number |
 | Curiosity | Results stay hidden until you vote; shared links say "Guess who I picked?" |
 | Tribe | "Your friend voted. Your turn", then "you agree" or "you disagree" |
-| Being right | Exit poll guess and the 🎯 right-guesses count |
+| Being right | Exit poll guess: "Your exit poll was right!" |
 | Reciprocity | A friend's dare asks for an answer; after voting they get their own share |
 | Urgency | "Polling open · closes in…" and "Polling closed · X won" |
 
-We decided **not to have streaks**: the owner felt they add pressure without fun.
+We decided **not to have streaks, levels, points or score bubbles**: they belong to quiz games, not elections.
 
 ## 5. Sharing (built so fewer people drop off)
 
@@ -82,9 +82,9 @@ We decided **not to have streaks**: the owner felt they add pressure without fun
   - **Home:** the duel game, then "More duels".
   - **Duels:** all duels.
   - **Create:** 2 to 10 choices, category, end time, hide results, allow vote change.
-  - **Me:** level, right guesses, history.
-  - Top bar with the right-guesses and votes counts; bottom nav with Home, Duels, Create and Me.
-- **Levels:** Newcomer (0 votes), Voter (3), Regular (10), Opinion maker (25), Duel master (50), Legend (100).
+  - **My votes:** your record in one sentence, plus the list of your votes.
+  - Top bar with just the logo (no scores); bottom nav with Home, Duels, Create and My votes.
+- **No game parts:** no levels, points, score bubbles, steppers or streaks. Everything must exist in a real election (see the election rule in DESIGN.md).
 - **Categories:** general, politics, cricket, movies, music, food, tech, sports, friends.
 
 ## 8. How it is built
@@ -123,7 +123,6 @@ We decided **not to have streaks**: the owner felt they add pressure without fun
 - Confirm the text that was written for the launch:
   - the role lines "BJP · Prime Minister" and "INC · Leader of Opposition"
   - the reasons list
-  - the level names
   - the categories
 - When to start making money (ads, sponsored duels, paid creator tools). This is not decided yet.
 

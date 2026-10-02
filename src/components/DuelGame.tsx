@@ -1,9 +1,9 @@
 'use client';
 import Link from 'next/link';
-import { ArrowRight, Check, Plus, Share2, Target, Trophy, Users } from 'lucide-react';
+import { ArrowRight, Check, Plus, Share2, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PollOption, PollView } from '@/lib/polls';
-import { announceVote, useStats } from '@/lib/useStats';
+import { announceVote } from '@/lib/useStats';
 import Burst from './Burst';
 import InkFinger from './InkFinger';
 import ShareSheet from './ShareSheet';
@@ -16,10 +16,6 @@ const LETTERS = 'ABCDEFGHIJ';
 const serial = (n: number) => String(n + 1);
 const TONES = ['input', 'feedback', 'control', 'agents', 'output', 'trust'];
 
-function splitName(label: string) {
-  const parts = label.trim().split(/\s+/);
-  return parts.length === 1 ? { first: '', last: parts[0] } : { first: parts.slice(0, -1).join(' '), last: parts[parts.length - 1] };
-}
 const initials = (label: string) => label.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('');
 
 /** Whole-number percentages that always add up to 100. */
@@ -39,7 +35,7 @@ function verdict(poll: PollView, mine: PollOption) {
   const top = Math.max(...poll.options.map((o) => o.percent));
   const p = mine.percent;
   if (Math.abs(top - p) < 0.01 && poll.options.filter((o) => Math.abs(o.percent - top) < 3).length > 1) return ['Neck and neck.', 'Every vote counts here.'];
-  if (Math.abs(top - p) < 0.01) return ['You’re with the crowd.', `Most people picked ${splitName(mine.label).last} too.`];
+  if (Math.abs(top - p) < 0.01) return ['You’re with the crowd.', `Most people picked ${mine.label} too.`];
   return ['Bold pick.', 'You’re in the minority. Can your friends change that?'];
 }
 
@@ -105,7 +101,6 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
   const [sharing, setSharing] = useState(false);
   const nextRef = useRef<HTMLButtonElement>(null);
   const topRef = useRef<HTMLDivElement>(null);
-  const { correct } = useStats();
 
   const poll = deck[i];
   // The friend's code only belongs to the duel they shared (the first one on a shared link).
@@ -277,13 +272,9 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
   if (over) {
     return (
       <div className="tot tot-over" ref={topRef}>
-        <Burst count={24} />
-        <Trophy size={28} strokeWidth={1.5} aria-hidden />
-        <h1 className="display duel-q">All caught up!</h1>
-        <p className="tot-verdict">You voted in every live duel{votedCount > 1 ? ` (${votedCount} so far)` : ''}. New ones come from people like you.</p>
-        <div className="tot-stats">
-          <span><Target size={14} strokeWidth={1.75} aria-hidden /> Right guesses: <strong>{correct}</strong></span>
-        </div>
+        <InkFinger size={40} />
+        <h1 className="display duel-q">You voted in every live duel</h1>
+        <p className="tot-verdict">New duels come from people like you. Start one, or look at the results.</p>
         <div className="row wrap center">
           <Link href="/create" className="btn btn-primary btn-lg"><Plus size={15} strokeWidth={1.75} aria-hidden /> Start your own duel</Link>
           <button type="button" className="btn btn-ghost btn-lg" onClick={() => { setOver(false); setI(0); }}>See the results</button>
@@ -296,16 +287,6 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
 
   return (
     <div className={'tot duel' + (revealed ? ' is-revealed' : '')} ref={topRef}>
-      {/* P3 progress: where you are in the deck, only once you have voted. Your scores live in the top bar only (no copies here). */}
-      {votedCount > 0 && deck.length > 1 && (
-      <div className="tot-bar">
-        <span className="tot-round" aria-label={`Duel ${i + 1} of ${deck.length}`}>
-          {deck.map((p, n) => (
-            <span key={p.id} className={'tot-pip' + (p.myVote !== null ? ' is-right' : '') + (n === i ? ' is-now' : '')} />
-          ))}
-        </span>
-      </div>
-      )}
 
       <div className="tot-q">
         <h1 key={poll.id} className="display duel-q">{poll.title}</h1>
@@ -391,11 +372,11 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
         <div className="duel-guess" aria-live="polite">
           <p className="label">Exit poll</p>
           <h2>Who’s winning right now?</h2>
-          <p className="small muted">Guess right for +1 on your score. Then the results open.</p>
+          <p className="small muted">Make your call, like the TV exit polls. Then the results open.</p>
           <div className="duel-guess-options">
             {poll.options.map((o, n) => (
               <button key={o.id} type="button" className="btn btn-ghost btn-lg" disabled={guessBusy} onClick={() => guess(o.id)}>
-                <span className="duel-guess-letter">{serial(n)}</span> {splitName(o.label).last}
+                <span className="duel-guess-letter">{serial(n)}</span> {o.label}
               </button>
             ))}
           </div>
@@ -422,18 +403,18 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
                   {poll.myGuess && (
                     <span className={'duel-guessed' + (justGuessed ? ' is-new' : '')}>
                       {poll.myGuess.correct ? (
-                        <strong className="txt-good"><Target size={14} strokeWidth={2} aria-hidden /> You read the crowd! +1</strong>
+                        <strong className="txt-good">Your exit poll was right!</strong>
                       ) : (
-                        <strong className="txt-bad">Not this time.</strong>
+                        <strong className="txt-bad">Your exit poll was wrong.</strong>
                       )}
-                      {!poll.myGuess.correct && leaderIdx >= 0 && <> {splitName(poll.options[leaderIdx].label).last} is ahead.</>}
+                      {!poll.myGuess.correct && leaderIdx >= 0 && <> {poll.options[leaderIdx].label} is ahead.</>}
                       <br />
                     </span>
                   )}
                   <strong>{vTitle}</strong> {vLine}
                   {poll.friend.optionId && (
                     <span className="duel-friend-line">
-                      {' '}<Users size={13} strokeWidth={1.75} aria-hidden /> Your friend picked {splitName(poll.options.find((o) => o.id === poll.friend.optionId)?.label ?? '').last}
+                      {' '}<Users size={13} strokeWidth={1.75} aria-hidden /> Your friend picked {poll.options.find((o) => o.id === poll.friend.optionId)?.label}
                       {poll.friend.optionId === poll.myVote ? ': you agree!' : ': you disagree!'}
                     </span>
                   )}
@@ -475,7 +456,7 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
                 <p className="small muted">Thanks. Your reason is counted{poll.myReason ? `: ${poll.myReason}` : ''}.</p>
               ) : (
                 <>
-                  <p className="label">Why {splitName(mine.label).last}? · optional</p>
+                  <p className="label">Why {mine.label}? · optional</p>
                   <div className="row wrap">
                     {poll.reasons.map((r) => (
                       <button key={r} type="button" className="chip" onClick={() => post('reason', { reason: r })}>{r}</button>
