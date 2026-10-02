@@ -1,7 +1,7 @@
 # About Election
 
 This is the one-page reference for the project: what it is, who it is for, what is built, and why.
-For the reasons behind each screen and element, see [DESIGN.md](DESIGN.md). To run the app, see the [README](../README.md).
+For the reasons behind each screen and element, see [DESIGN.md](DESIGN.md). For research and the improvement plan, see [UX-RESEARCH.md](UX-RESEARCH.md). To run the app, see the [README](../README.md).
 
 - **Live site:** https://election-three-ruby.vercel.app
 - **Repo:** `LKB00/election` (work branch `claude/stoic-volta-r2mir5`, live branch `main`)
@@ -125,12 +125,28 @@ We decided **not to have streaks, levels, points or score bubbles**: they belong
 - **Categories:** keep all 9 (general, politics, cricket, movies, music, food, tech, sports, friends).
 - **Money:** later. Grow users first, with no ads or payments for now.
 
-## 11. Ideas for later (only when asked)
+## 11. Roadmap
 
-- A **daily duel**, and **topic packs** (cricket, movies…).
-- **Brackets / knockouts** (for example, the best captain ever).
-- **Badges**, live result moments, reminders before a duel closes.
-- **Sign-in and a CAPTCHA** for verified duels, Redis for very large traffic, and tools to moderate and report duels.
+Design, UX, UI and interaction are the selling points. The plan, with research and sources, is in [UX-RESEARCH.md](UX-RESEARCH.md).
+
+| Batch | Name | What it adds | Status |
+|---|---|---|---|
+| 1 | Guess the crowd | Exit poll, friends vs everyone, share image with your pick | Live |
+| 2 | Feels like a real election | EVM button and beep, VVPAT slip, inked finger, "Show your ink" sharing, story card with QR | Live |
+| Audit | Every element checked | Repeats removed, election rule (no points, levels, steppers), party-only lines, full names | Live |
+| **3** | **Counting day** (recommended next) | Results counted in rounds, majority line, swing in the last 24 h, live ticker, "Result declared" moment | Planned |
+| 4 | Feels like an app | Server and database near India, instant feedback, sound on/off, smooth transitions, loading and offline states, add to home screen, lighter photos, accessibility pass | Planned (speed fix needs the owner's Vercel and Neon settings) |
+| 5 | Speaks Bharat | Hindi / Hinglish switch, Wordle-style spoiler-free WhatsApp line | Planned |
+
+**We will not do:** swipe-to-vote, carousels, points, levels, streaks, badges, heavy 3D or video effects. We will also never show anyone's pick without their choice.
+
+**Later ideas (only when asked):**
+- daily duel and topic packs
+- brackets / knockouts
+- reminders before a duel closes
+- sign-in and CAPTCHA for verified duels
+- Redis for very large traffic
+- moderation and report tools
 
 ## 12. Known limits today
 
