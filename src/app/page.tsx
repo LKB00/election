@@ -5,6 +5,7 @@ import DuelTiles from '@/components/DuelTiles';
 import { getDb } from '@/db';
 import { getDeck, listPolls } from '@/lib/polls';
 import { readVoterId } from '@/lib/voter';
+import { getT } from '@/lib/lang-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +13,7 @@ export const dynamic = 'force-dynamic';
 // The why for every element is in docs/DESIGN.md (Flow 1).
 export default async function Home() {
   const db = await getDb();
+  const t = await getT();
   const voterId = await readVoterId();
   const [deck, polls] = await Promise.all([getDeck(db, voterId), listPolls(db, 8)]);
   const voted = deck.filter((p) => p.myVote !== null).map((p) => p.id);
@@ -26,8 +28,8 @@ export default async function Home() {
 
       <section className="block">
         <div className="row space-between">
-          <h2>More duels</h2>
-          <Link href="/duels" className="text-link">All duels <ArrowRight size={14} strokeWidth={1.75} aria-hidden /></Link>
+          <h2>{t.moreDuels}</h2>
+          <Link href="/duels" className="text-link">{t.allDuels} <ArrowRight size={14} strokeWidth={1.75} aria-hidden /></Link>
         </div>
         <DuelTiles polls={polls} votedIds={voted} />
       </section>

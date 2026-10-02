@@ -4,6 +4,7 @@ import InkFinger from '@/components/InkFinger';
 import { getDb } from '@/db';
 import { CARD, cardFonts, initialsOf, pickFromCode } from '@/lib/cards';
 import { getPoll } from '@/lib/polls';
+import { dict } from '@/lib/i18n';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,12 +16,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const url = new URL(req.url);
   const f = url.searchParams.get('f');
   const secret = url.searchParams.get('s') === '1';
+  // Images stay in English: the image renderer cannot join Hindi letters correctly (the message and link title are Hindi).
+  const lang = url.searchParams.get('l') === 'hi' ? 'hi' : 'en';
+  const t = dict.en;
   const db = await getDb();
   const poll = await getPoll(db, id, null);
   if (!poll) return new Response('Not found', { status: 404 });
   const pickId = await pickFromCode(db, id, f);
   const showPick = !!pickId && !secret;
-  const target = `${url.origin}/p/${id}${f ? `?f=${encodeURIComponent(f)}${secret ? '&s=1' : ''}` : ''}`;
+  const target = `${url.origin}/p/${id}${f ? `?f=${encodeURIComponent(f)}${secret ? '&s=1' : ''}${lang === 'hi' ? '&l=hi' : ''}` : ''}`;
   const qr = await QRCode.toDataURL(target, { margin: 1, width: 300, color: { dark: CARD.ink, light: '#ffffff' } });
   const abs = (src: string) => new URL(src, url.origin).toString();
   const shown = poll.options.slice(0, 2);
@@ -34,12 +38,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
             <div style={{ display: 'flex', width: 40, height: 40, borderRadius: 20, background: CARD.ink, border: `10px solid ${CARD.lime}` }} />
             Election
           </div>
-          <div style={{ display: 'flex', padding: '10px 24px', borderRadius: 999, background: CARD.lime, fontSize: 30 }}>Fun duel · not official</div>
+          <div style={{ display: 'flex', padding: '10px 24px', borderRadius: 999, background: CARD.lime, fontSize: 30 }}>{t.cardFun}</div>
         </div>
 
         <div style={{ display: 'flex', marginTop: 72 }}><InkFinger size={240} /></div>
-        <div style={{ display: 'flex', marginTop: 40, fontSize: 132, fontWeight: 700, letterSpacing: -3 }}>I voted</div>
-        <div style={{ display: 'flex', marginTop: 8, fontSize: 52, color: CARD.muted, textAlign: 'center' }}>in “{poll.title.slice(0, 40)}”</div>
+        <div style={{ display: 'flex', marginTop: 40, fontSize: 132, fontWeight: 700, letterSpacing: -3 }}>{t.cardVoted}</div>
+        <div style={{ display: 'flex', marginTop: 8, fontSize: 52, color: CARD.muted, textAlign: 'center' }}>{t.cardIn(poll.title.slice(0, 40))}</div>
 
         <div style={{ display: 'flex', gap: 32, marginTop: 56, padding: 32, borderRadius: 40, background: CARD.sand }}>
           {shown.map((o, n) => {
@@ -53,19 +57,19 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 300, height: 300, borderRadius: 150, background: CARD.tints[n], fontSize: 110, fontWeight: 700 }}>{initialsOf(o.label)}</div>
                 )}
                 <div style={{ display: 'flex', marginTop: 20, fontSize: 44, fontWeight: 700 }}>{o.label.slice(0, 18)}</div>
-                {mine && <div style={{ display: 'flex', marginTop: 8, fontSize: 32, fontWeight: 700, color: CARD.green, letterSpacing: 2 }}>MY VOTE</div>}
+                {mine && <div style={{ display: 'flex', marginTop: 8, fontSize: 32, fontWeight: 700, color: CARD.green, letterSpacing: 2 }}>{t.cardMyVote}</div>}
               </div>
             );
           })}
         </div>
         <div style={{ display: 'flex', marginTop: 40, fontSize: 60, fontWeight: 700 }}>
-          {showPick && pick ? `I picked ${pick.label}. You?` : 'Guess who I picked?'}
+          {showPick && pick ? t.cardPicked(pick.label) : t.cardGuess}
         </div>
 
         <div style={{ display: 'flex', flex: 1, minHeight: 48 }} />
         <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', fontSize: 44, fontWeight: 700 }}>Scan to vote</div>
+            <div style={{ display: 'flex', fontSize: 44, fontWeight: 700 }}>{t.cardScan}</div>
             <div style={{ display: 'flex', fontSize: 30, color: CARD.muted }}>{url.host}</div>
           </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}

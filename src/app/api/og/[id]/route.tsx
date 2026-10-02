@@ -3,6 +3,7 @@ import InkFinger from '@/components/InkFinger';
 import { getDb } from '@/db';
 import { CARD, cardFonts, initialsOf, pickFromCode } from '@/lib/cards';
 import { getPoll } from '@/lib/polls';
+import { dict } from '@/lib/i18n';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +15,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const url = new URL(req.url);
   const f = url.searchParams.get('f');
   const secret = url.searchParams.get('s') === '1';
+  const t = dict.en; // English only: the image renderer cannot join Hindi letters correctly.
   const db = await getDb();
   const poll = await getPoll(db, id, null);
   if (!poll) return new Response('Not found', { status: 404 });
@@ -23,7 +25,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const pick = poll.options.find((o) => o.id === pickId);
   const abs = (src: string) => new URL(src, url.origin).toString();
   const shown = poll.options.slice(0, 2);
-  const headline = !voted ? 'Who would you pick? Tap to vote' : showPick && pick ? `I voted for ${pick.label}. Who would you pick?` : 'I voted. Guess who I picked?';
+  const headline = !voted ? t.ogAsk : showPick && pick ? t.ogPicked(pick.label) : t.ogGuess;
 
   return new ImageResponse(
     (
@@ -33,12 +35,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
             <div style={{ display: 'flex', width: 26, height: 26, borderRadius: 13, background: CARD.ink, border: `7px solid ${CARD.lime}` }} />
             Election
           </div>
-          <div style={{ display: 'flex', padding: '6px 16px', borderRadius: 999, background: CARD.lime, fontSize: 22 }}>Fun duel · not official</div>
+          <div style={{ display: 'flex', padding: '6px 16px', borderRadius: 999, background: CARD.lime, fontSize: 22 }}>{t.cardFun}</div>
         </div>
         <div style={{ display: 'flex', flex: 1, alignItems: 'center', gap: 32, marginTop: 16 }}>
           {voted && <div style={{ display: 'flex' }}><InkFinger size={150} /></div>}
           <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-            {voted && <div style={{ display: 'flex', fontSize: 30, fontWeight: 700, color: CARD.green, letterSpacing: 2 }}>I VOTED</div>}
+            {voted && <div style={{ display: 'flex', fontSize: 30, fontWeight: 700, color: CARD.green, letterSpacing: 2 }}>{t.ogVoted}</div>}
             <div style={{ display: 'flex', fontSize: 58, fontWeight: 700, letterSpacing: -1, lineHeight: 1.1 }}>{poll.title.slice(0, 50)}</div>
             <div style={{ display: 'flex', gap: 16, marginTop: 24 }}>
               {shown.map((o, n) => {
@@ -52,7 +54,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 120, height: 120, borderRadius: 60, background: CARD.tints[n], fontSize: 44, fontWeight: 700 }}>{initialsOf(o.label)}</div>
                     )}
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      {mine && <div style={{ display: 'flex', fontSize: 20, fontWeight: 700, color: CARD.green, letterSpacing: 1 }}>MY VOTE</div>}
+                      {mine && <div style={{ display: 'flex', fontSize: 20, fontWeight: 700, color: CARD.green, letterSpacing: 1 }}>{t.cardMyVote}</div>}
                       <div style={{ display: 'flex', fontSize: 32, fontWeight: 700 }}>{o.label.slice(0, 16)}</div>
                     </div>
                   </div>
