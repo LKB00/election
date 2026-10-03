@@ -1,9 +1,11 @@
-import { and, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, ne, or, sql } from 'drizzle-orm';
 import { nanoid, customAlphabet } from 'nanoid';
 import { schema, type Db } from '@/db';
 import type { CreatePollInput } from './validation';
+import { namesPolitics } from './moderation';
+import { sealedUntil } from './silence';
 
-const { polls, options, votes, reactions } = schema;
+const { polls, options, votes, reactions, reports } = schema;
 
 export const REACTIONS = ['🔥', '😂', '😮', '👏', '🤔'] as const;
 const pollId = customAlphabet('23456789abcdefghijkmnpqrstuvwxyz', 8);
@@ -37,6 +39,10 @@ export type PollView = {
   /** False when the organiser hides numbers and this voter may not see them yet. */
   resultsVisible: boolean;
   featured: boolean;
+  /** Checked by the owner (only reviewed duels are offered to search engines). */
+  reviewed: boolean;
+  /** Election silence window: results of this politics duel stay sealed for everyone until this time. */
+  sealedUntil: string | null;
   /** Choices for the one-tap "why?" question. Empty means the poll does not ask. */
   reasons: string[];
   myReason: string | null;
@@ -79,7 +85,8 @@ export async function createPoll(db: Db, input: CreatePollInput): Promise<string
     id,
     title: input.title,
     description: input.description,
-    category: input.category,
+    // A duel that names a politician or party is politics, whatever was picked: silence windows and the review hold apply.
+    category: namesPolitics(input.title, input.description, ...input.options) ? 'politics' : input.category,
     hideUntilVoted: input.hideUntilVoted,
     allowChange: input.allowChange,
     endsAt: input.endsAt ? new Date(input.endsAt) : null,
@@ -88,9 +95,15 @@ export async function createPoll(db: Db, input: CreatePollInput): Promise<string
   return id;
 }
 
-export async function getPoll(db: Db, id: string, voterId: string | null, via?: string | null): Promise<PollView | null> {
+export async function getPoll(
+  db: Db,
+  id: string,
+  voterId: string | null,
+  via?: string | null,
+  flags: { includeHidden?: boolean } = {},
+): Promise<PollView | null> {
   const [poll] = await db.select().from(polls).where(eq(polls.id, id)).limit(1);
-  if (!poll) return null;
+  if (!poll || (poll.hidden && !flags.includeHidden)) return null;
 
   const [opts, counts, mine, reasonRows, pulseRows, reactionRows, myReactionRows] = await Promise.all([
     db.select().from(options).where(eq(options.pollId, id)).orderBy(options.position),
@@ -142,8 +155,10 @@ export async function getPoll(db: Db, id: string, voterId: string | null, via?: 
   const closed = !!poll.endsAt && poll.endsAt.getTime() <= Date.now();
   const myVote = mine[0]?.optionId ?? null;
   // Guess first, then see: on hidden-results duels you answer "who's winning?" before the numbers show.
-  const needsGuess = poll.hideUntilVoted && !closed && myVote !== null && mine[0]?.prediction == null && opts.length >= 2;
-  const resultsVisible = !poll.hideUntilVoted || closed || (myVote !== null && !needsGuess);
+  // During an election silence window, politics duels show no numbers and ask no exit poll, to anyone.
+  const sealed = sealedUntil(poll.category);
+  const needsGuess = !sealed && poll.hideUntilVoted && !closed && myVote !== null && mine[0]?.prediction == null && opts.length >= 2;
+  const resultsVisible = !sealed && (!poll.hideUntilVoted || closed || (myVote !== null && !needsGuess));
 
   // Your share code (made on first need, also for votes from before share codes existed).
   let myShareCode = mine[0]?.shareCode ?? null;
@@ -194,6 +209,8 @@ export async function getPoll(db: Db, id: string, voterId: string | null, via?: 
     myVote,
     resultsVisible,
     featured: poll.featured,
+    reviewed: poll.reviewed,
+    sealedUntil: sealed,
     reasons: parseReasons(poll.reasons),
     myReason: mine[0]?.reason ?? null,
     pulse: { lastHour: pulseRows[0]?.lastHour ?? 0, lastVoteAt: lastVote ? new Date(lastVote).toISOString() : null },
@@ -205,7 +222,8 @@ export async function getPoll(db: Db, id: string, voterId: string | null, via?: 
     myReactions: myReactionRows.map((r) => r.emoji),
     needsGuess,
     myGuess:
-      mine[0]?.prediction && mine[0].prediction !== 'skip' ? { optionId: mine[0].prediction, correct: !!mine[0].predictionCorrect } : null,
+      // Sealed: "your exit poll was right" would tell who leads.
+      !sealed && mine[0]?.prediction && mine[0].prediction !== 'skip' ? { optionId: mine[0].prediction, correct: !!mine[0].predictionCorrect } : null,
     myShareCode,
     friends: { agree: friendRows[0]?.agree ?? 0, disagree: (friendRows[0]?.all ?? 0) - (friendRows[0]?.agree ?? 0) },
     // The friend's pick stays a surprise until you have voted (and guessed).
@@ -292,7 +310,7 @@ export type VoteResult = 'ok' | 'changed' | 'already_voted' | 'closed' | 'not_fo
 
 export async function castVote(db: Db, id: string, optionId: string, voterId: string, via?: string | null): Promise<VoteResult> {
   const [poll] = await db.select().from(polls).where(eq(polls.id, id)).limit(1);
-  if (!poll) return 'not_found';
+  if (!poll || poll.hidden) return 'not_found';
   if (poll.endsAt && poll.endsAt.getTime() <= Date.now()) return 'closed';
   const [opt] = await db.select({ id: options.id }).from(options).where(and(eq(options.id, optionId), eq(options.pollId, id))).limit(1);
   if (!opt) return 'bad_option';
@@ -325,6 +343,8 @@ export async function castVote(db: Db, id: string, optionId: string, voterId: st
 
 /** "Who's winning right now?": checked against the live count (your vote included) at the moment you answer. */
 export async function guessLeader(db: Db, id: string, voterId: string, choice: string): Promise<'ok' | 'not_allowed' | 'bad_option'> {
+  const [poll] = await db.select({ category: polls.category }).from(polls).where(eq(polls.id, id)).limit(1);
+  if (!poll || sealedUntil(poll.category)) return 'not_allowed';
   const [v] = await db
     .select({ prediction: votes.prediction })
     .from(votes)
@@ -353,7 +373,8 @@ export async function guessLeader(db: Db, id: string, voterId: string, choice: s
 
 export type PollSummary = { id: string; title: string; category: string; totalVotes: number; options: string[]; closed: boolean };
 
-export async function listPolls(db: Db, limit = 20): Promise<PollSummary[]> {
+/** Public duels, newest first. Hidden duels never; unreviewed politics duels not until the owner checks them. */
+export async function listPolls(db: Db, limit = 20, filter: { category?: string; reviewedOnly?: boolean } = {}): Promise<PollSummary[]> {
   const rows = await db
     .select({
       id: polls.id,
@@ -364,7 +385,14 @@ export async function listPolls(db: Db, limit = 20): Promise<PollSummary[]> {
     })
     .from(polls)
     .leftJoin(votes, eq(votes.pollId, polls.id))
-    .where(eq(polls.featured, false))
+    .where(
+      and(
+        eq(polls.featured, false),
+        eq(polls.hidden, false),
+        filter.reviewedOnly ? eq(polls.reviewed, true) : or(eq(polls.reviewed, true), ne(polls.category, 'politics')),
+        filter.category ? eq(polls.category, filter.category) : undefined,
+      ),
+    )
     .groupBy(polls.id)
     .orderBy(desc(polls.createdAt))
     .limit(limit);
@@ -386,7 +414,7 @@ export async function listPolls(db: Db, limit = 20): Promise<PollSummary[]> {
 
 /** Id of the flagship poll, if there is one. */
 export async function getFeaturedId(db: Db): Promise<string | null> {
-  const [row] = await db.select({ id: polls.id }).from(polls).where(eq(polls.featured, true)).orderBy(desc(polls.createdAt)).limit(1);
+  const [row] = await db.select({ id: polls.id }).from(polls).where(and(eq(polls.featured, true), eq(polls.hidden, false))).orderBy(desc(polls.createdAt)).limit(1);
   return row?.id ?? null;
 }
 
@@ -456,7 +484,7 @@ export async function getMyVotes(db: Db, voterId: string | null, limit = 50): Pr
     .from(votes)
     .innerJoin(polls, eq(polls.id, votes.pollId))
     .innerJoin(options, eq(options.id, votes.optionId))
-    .where(eq(votes.voterKey, voterId))
+    .where(and(eq(votes.voterKey, voterId), eq(polls.hidden, false)))
     .orderBy(desc(votes.createdAt))
     .limit(limit);
   return rows.map((r) => ({ ...r, at: r.at.toISOString() }));
@@ -480,4 +508,70 @@ export async function undoVote(db: Db, id: string, voterId: string): Promise<boo
   if (!removed.length) return false;
   await db.delete(reactions).where(and(eq(reactions.pollId, id), eq(reactions.voterKey, voterId)));
   return true;
+}
+
+// ---- Reports and the owner's review (docs/DESIGN.md, "Safety") ----
+
+export const REPORT_REASONS = ['hate', 'false', 'private', 'spam', 'other'] as const;
+/** Distinct reports that take an unreviewed duel down at once, until the owner looks (the law asks for removal within hours). */
+export const AUTO_HIDE_REPORTS = 3;
+
+/** One report per person per duel. An unreviewed duel with enough reports is hidden at once. */
+export async function reportPoll(db: Db, id: string, voterId: string, reason: string): Promise<boolean> {
+  if (!(REPORT_REASONS as readonly string[]).includes(reason)) return false;
+  const [poll] = await db.select({ id: polls.id, reviewed: polls.reviewed }).from(polls).where(and(eq(polls.id, id), eq(polls.hidden, false))).limit(1);
+  if (!poll) return false;
+  await db.insert(reports).values({ pollId: id, voterKey: voterId, reason }).onConflictDoNothing();
+  if (!poll.reviewed) {
+    const [{ n }] = await db.select({ n: sql<number>`count(*)::int` }).from(reports).where(eq(reports.pollId, id));
+    if (n >= AUTO_HIDE_REPORTS) await db.update(polls).set({ hidden: true }).where(eq(polls.id, id));
+  }
+  return true;
+}
+
+export type ReviewItem = { id: string; title: string; options: string[]; category: string; hidden: boolean; reviewed: boolean; reports: number; reasons: string[]; createdAt: string };
+
+/** What the owner should look at: reported duels first, then unreviewed ones, newest first. */
+export async function getReviewQueue(db: Db, limit = 100): Promise<ReviewItem[]> {
+  const rows = await db
+    .select({
+      id: polls.id,
+      title: polls.title,
+      category: polls.category,
+      hidden: polls.hidden,
+      reviewed: polls.reviewed,
+      createdAt: polls.createdAt,
+      reports: sql<number>`count(${reports.voterKey})::int`,
+      reasons: sql<string | null>`string_agg(distinct ${reports.reason}, ',')`,
+    })
+    .from(polls)
+    .leftJoin(reports, eq(reports.pollId, polls.id))
+    .groupBy(polls.id)
+    .having(sql`count(${reports.voterKey}) > 0 or not ${polls.reviewed} or ${polls.hidden}`)
+    .orderBy(sql`count(${reports.voterKey}) desc`, desc(polls.createdAt))
+    .limit(limit);
+  const opts = rows.length
+    ? await db.select({ pollId: options.pollId, label: options.label }).from(options).where(inArray(options.pollId, rows.map((r) => r.id))).orderBy(options.position)
+    : [];
+  return rows.map((r) => ({
+    ...r,
+    options: opts.filter((o) => o.pollId === r.id).map((o) => o.label),
+    reasons: r.reasons ? r.reasons.split(',') : [],
+    createdAt: r.createdAt.toISOString(),
+  }));
+}
+
+/** The owner hides, shows or approves a duel. Approving also clears its reports. */
+export async function setPollFlags(db: Db, id: string, flags: { hidden?: boolean; reviewed?: boolean }): Promise<boolean> {
+  const updated = await db.update(polls).set(flags).where(eq(polls.id, id)).returning({ id: polls.id });
+  if (updated.length && flags.reviewed) await db.delete(reports).where(eq(reports.pollId, id));
+  return updated.length > 0;
+}
+
+/** "Delete my votes": everything stored for this voter (votes, reactions, reports). Friends' links to your share code stop counting. */
+export async function deleteVoterData(db: Db, voterId: string): Promise<number> {
+  await db.delete(reactions).where(eq(reactions.voterKey, voterId));
+  await db.delete(reports).where(eq(reports.voterKey, voterId));
+  const removed = await db.delete(votes).where(eq(votes.voterKey, voterId)).returning({ id: votes.id });
+  return removed.length;
 }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getDb } from '@/db';
 import { castVote, getPoll, undoVote } from '@/lib/polls';
 import { clientIp, rateLimit } from '@/lib/rate-limit';
+import { verifyHuman } from '@/lib/turnstile';
 import { voteSchema } from '@/lib/validation';
 import { getOrCreateVoterId, readVoterId } from '@/lib/voter';
 
@@ -13,12 +14,15 @@ const MESSAGES = {
 } as const;
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (!rateLimit(`vote:${clientIp(req)}`, 30, 60_000)) {
+  if (!(await rateLimit(`vote:${clientIp(req)}`, 30, 60_000))) {
     return NextResponse.json({ error: 'Slow down a little.' }, { status: 429 });
   }
   const { id } = await params;
   const parsed = voteSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: 'Pick a choice.' }, { status: 400 });
+  if (!(await verifyHuman(parsed.data.human, req))) {
+    return NextResponse.json({ error: 'Could not check that you are a person. Try again.' }, { status: 403 });
+  }
 
   const db = await getDb();
   const voterId = await getOrCreateVoterId();
@@ -33,7 +37,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
 // Undo: only within a few seconds of voting (for an accidental tap).
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (!rateLimit(`undo:${clientIp(req)}`, 20, 60_000)) {
+  if (!(await rateLimit(`undo:${clientIp(req)}`, 20, 60_000))) {
     return NextResponse.json({ error: 'Slow down a little.' }, { status: 429 });
   }
   const { id } = await params;

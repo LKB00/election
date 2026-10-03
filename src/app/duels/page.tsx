@@ -1,10 +1,12 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import DuelBanner from '@/components/DuelBanner';
 import DuelTiles from '@/components/DuelTiles';
 import { getDb } from '@/db';
 import { getFeaturedId, getMyVotes, getPoll, listPolls } from '@/lib/polls';
 import { readVoterId } from '@/lib/voter';
 import { getT } from '@/lib/lang-server';
+import { CATEGORIES } from '@/lib/categories';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Duels' };
@@ -42,6 +44,15 @@ export default async function Duels() {
           <DuelBanner poll={featured} />
         </section>
       )}
+      {/* P3: browse by topic (also how search engines find the topic pages). */}
+      <section className="block">
+        <h2>{t.topics}</h2>
+        <nav className="topic-chips block-tight" aria-label={t.topics}>
+          {CATEGORIES.map((c) => (
+            <Link key={c} href={`/topic/${c}`} className="chip">{t.categories[c] ?? c}</Link>
+          ))}
+        </nav>
+      </section>
     </div>
   );
 }

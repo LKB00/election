@@ -1,13 +1,25 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import DuelGame from '@/components/DuelGame';
 import DuelTiles from '@/components/DuelTiles';
 import { getDb } from '@/db';
-import { getDeck, listPolls } from '@/lib/polls';
+import { getDeck, getFeaturedId, listPolls } from '@/lib/polls';
 import { readVoterId } from '@/lib/voter';
 import { getT } from '@/lib/lang-server';
 
 export const dynamic = 'force-dynamic';
+
+// The bare site link is the one shared most, so it gets a preview card too: today's duel.
+export async function generateMetadata(): Promise<Metadata> {
+  const featured = await getFeaturedId(await getDb());
+  const images = featured ? [{ url: `/api/og/${featured}`, width: 1200, height: 630 }] : undefined;
+  return {
+    alternates: { canonical: '/' },
+    openGraph: { title: 'Election · Who would you pick?', description: 'Vote in one tap and see where everyone stands. Just for fun.', images },
+    twitter: { card: 'summary_large_image', images: images?.map((i) => i.url) },
+  };
+}
 
 // Home = vote in one tap. Nothing sits above the duel: the question is the first thing you read.
 // The why for every element is in docs/DESIGN.md (Flow 1).

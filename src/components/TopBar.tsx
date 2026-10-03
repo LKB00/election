@@ -1,10 +1,11 @@
 'use client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ChevronLeft, Volume2, VolumeX } from 'lucide-react';
+import { ChevronLeft, Languages, Volume2, VolumeX } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { setSound, soundOn } from '@/lib/sound';
 import { setLangCookie, useLang, useT } from '@/lib/lang';
+import { LANG_NAMES, LANGS, type Lang } from '@/lib/i18n';
 
 export default function TopBar() {
   const path = usePathname();
@@ -33,19 +34,22 @@ export default function TopBar() {
           <Link href="/me" className={path === '/me' ? 'active' : ''}>{t.myVotes}</Link>
         </nav>
         <div className="topnav-right">
-          {/* Hindi / English. Shown in the other language's own script, so people can find it. */}
-          <button
-            type="button"
-            className="icon-btn lang-btn"
-            aria-label={t.switchLang}
-            title={t.switchLang}
-            onClick={() => {
-              setLangCookie(lang === 'en' ? 'hi' : 'en');
-              router.refresh();
-            }}
-          >
-            {t.langShort}
-          </button>
+          {/* English / हिंदी / Hinglish: the phone's own menu, each name in its own script so people find theirs. */}
+          <label className="icon-btn lang-btn" title={t.language}>
+            <Languages size={15} strokeWidth={1.75} aria-hidden />
+            <select
+              aria-label={t.language}
+              value={lang}
+              onChange={(e) => {
+                setLangCookie(e.target.value as Lang);
+                router.refresh();
+              }}
+            >
+              {LANGS.map((l) => (
+                <option key={l} value={l} lang={l === 'hi' ? 'hi' : 'en'}>{LANG_NAMES[l]}</option>
+              ))}
+            </select>
+          </label>
           <button
             type="button"
             className="icon-btn"

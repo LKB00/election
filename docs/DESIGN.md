@@ -315,3 +315,23 @@ Verdicts: **Keep**, **Changed** or **Removed**.
 - The drawn finger is replaced by a **real photo** of an inked finger: Wikimedia Commons, GaneshBhakt, CC BY-SA 3.0, cropped (`public/ink/`, credits in `public/ink/CREDITS.md`). The credit shows in the app's photo line after you vote, and in small text on the story card and link preview (the licence asks for it).
 - **Animation:** the photo tile rises in, then the **real ink is wiped on from the nail downward** over the same finger with the ink digitally removed (`finger-clean`, used only during the 0.9 s wipe), then a wet shine passes over it. Reduce motion: the final photo at once.
 - Share images use the untouched photo.
+
+## Round 2: safety, silence, Hinglish, search (from UX-RESEARCH.md "Round 2")
+
+| Element | Level | Job / why |
+|---|---|---|
+| **Report this duel** (flag, small text link, last thing on the duel) | P3 | India's IT Rules expect a way to complain, and polls about politicians attract abuse. Last and quiet, so it never competes with voting. One tap opens 5 reasons as chips; one more sends it. |
+| Auto-hide after 3 reports | — | An unchecked user duel with 3 reports from different people is hidden at once, until the owner looks (the law asks for removal within hours). Reviewed duels, like the flagship, are never auto-hidden, so people cannot report them away. |
+| Owner's review page `/admin?key=…` | — | Reported duels first, then unchecked ones. Three buttons: Hide (ink, the main action), Show again, Approve. Off until `ADMIN_SECRET` is set; anyone else sees "not found". |
+| Word filter on Create | — | Slurs and strong abuse (English, Hindi, Hinglish) are refused with "Please remove the abusive words." under the form. Short list, whole words only, so normal words never trip it. |
+| Politics hold | — | A user duel that names a politician or party becomes a politics duel and stays off Home, Duels and topic lists until approved. Its link still works, so the creator can share it. |
+| **Results sealed** line (lock icon, under the cards) | P2 | Election law bans exit polls and opinion-poll results in the "silence" window around real voting. During a window, politics duels show no numbers and no exit poll, to anyone. Voting stays open, and the voter count (turnout) still shows. Plain ink, not red: it is information, not an error. The pinned bar keeps Show your ink and Next. |
+| Counting ticker: "round 2 of 3: Modi ahead by 412" | P1 at that moment | The TV counting-day line. Says who leads in the round being counted, or "level". |
+| Scroll to the exit poll | — | After the ink moment, the exit poll question was below the screen. It now scrolls into view by itself (no motion for reduce-motion). |
+| "Add result day to my calendar" (text link, after voting, only when the duel has an end time) | P3 | A reason to come back when the result is declared, with no sign-up and no notification permission. |
+| Language menu (top bar: English / हिंदी / Hinglish) | Nav | Three languages, so the button became a small menu (the phone's own picker). Each name is shown in its own script. Hinglish also shows on share images (Latin letters). |
+| Topics chips (bottom of Duels) and topic pages `/topic/cricket` | P3 | Browse by interest, and pages people can find from Google ("cricket duels"). Topic page: the duel of the day if it is in that topic (P1), then the tiles (P2). |
+| Long duels on tiles: "A vs B vs C +7" | P3 | IPL's 10 teams made a tall tile. |
+| My votes: **Keep your votes** (private link) and **Delete my votes** | P3 | A record kept only on one phone is lost with the phone. The private link brings it back; deleting is a privacy right. Copy is a ghost button, delete is a quiet text link with a confirm. |
+| Privacy and reports page `/privacy` (linked from My votes and Create) | P3 | What we keep, for how long, who sees your vote, and how to complain. The complaints contact comes from `NEXT_PUBLIC_GRIEVANCE_EMAIL`. |
+| Starter duels: Virat, Rohit or Dhoni? · Who wins IPL 2027? · UP 2027: who wins? · Chai or coffee? | — | Duels tied to what India talks about next, so Home never shows only one duel. |

@@ -1,5 +1,10 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { castVote, createPoll, getDeck, getFeaturedId, getPoll, getVoterStats, guessLeader, listPolls, setReason, toggleReaction, undoVote } from '@/lib/polls';
+import {
+  AUTO_HIDE_REPORTS, castVote, createPoll, deleteVoterData, getDeck, getFeaturedId, getMyVotes, getPoll, getReviewQueue, getVoterStats, guessLeader, listPolls,
+  reportPoll, setPollFlags, setReason, toggleReaction, undoVote,
+} from '@/lib/polls';
+import { hasBlockedWord, namesPolitics } from '@/lib/moderation';
+import { activeSilence } from '@/lib/silence';
 import { createPollSchema } from '@/lib/validation';
 import { rateLimit } from '@/lib/rate-limit';
 import { schema, type Db } from '@/db';
@@ -290,7 +295,113 @@ describe('validation', () => {
 });
 
 describe('rate limit', () => {
-  it('blocks after the limit', () => {
-    expect([1, 2, 3].map(() => rateLimit('t', 2, 1000))).toEqual([true, true, false]);
+  it('blocks after the limit', async () => {
+    expect([await rateLimit('t', 2, 1000), await rateLimit('t', 2, 1000), await rateLimit('t', 2, 1000)]).toEqual([true, true, false]);
+  });
+});
+
+describe('safety: word filter and politics hold', () => {
+  it('refuses abuse in any script, but not normal words that contain it', () => {
+    expect(hasBlockedWord('Who is the bigger chutiya?')).toBe(true);
+    expect(hasBlockedWord('कौन है मादरचोद')).toBe(true);
+    expect(hasBlockedWord('Scunthorpe or Class?', 'Bachchan')).toBe(false);
+    expect(createPollSchema.safeParse({ title: 'Randi or not', options: ['A', 'B'] }).success).toBe(false);
+  });
+
+  it('treats a duel naming a politician as politics, and keeps it off public lists until reviewed', async () => {
+    expect(namesPolitics('Modi or Kejriwal?')).toBe(true);
+    expect(namesPolitics('Aap kise chunoge?', 'Shahrukh')).toBe(false);
+    const id = await make({ title: 'Kejriwal or Yogi?', options: ['Kejriwal', 'Yogi'], category: 'food' });
+    expect((await getPoll(db, id, null))!.category).toBe('politics');
+    expect((await listPolls(db, 500)).some((p) => p.id === id)).toBe(false);
+    expect((await getPoll(db, id, null))!.reviewed).toBe(false); // the link still works
+    await setPollFlags(db, id, { reviewed: true });
+    expect((await listPolls(db, 500)).some((p) => p.id === id)).toBe(true);
+    expect((await listPolls(db, 500, { category: 'politics' })).some((p) => p.id === id)).toBe(true);
+  });
+
+  it('only offers reviewed duels to search engines', async () => {
+    const id = await make({ title: 'Unreviewed tea duel', options: ['Masala', 'Adrak'] });
+    expect((await listPolls(db, 500)).some((p) => p.id === id)).toBe(true);
+    expect((await listPolls(db, 500, { reviewedOnly: true })).some((p) => p.id === id)).toBe(false);
+  });
+});
+
+describe('safety: reports and hiding', () => {
+  it('hides an unreviewed duel after enough different people report it', async () => {
+    const id = await make({ title: 'Reported duel' });
+    const p = (await getPoll(db, id, null))!;
+    expect(await reportPoll(db, id, 'rep0', 'not-a-reason')).toBe(false);
+    for (let k = 0; k < AUTO_HIDE_REPORTS - 1; k++) await reportPoll(db, id, `rep${k}`, 'hate');
+    await reportPoll(db, id, 'rep0', 'hate'); // the same person again does not count twice
+    expect(await getPoll(db, id, null)).not.toBeNull();
+    expect((await getReviewQueue(db)).find((r) => r.id === id)).toMatchObject({ reports: AUTO_HIDE_REPORTS - 1, reasons: ['hate'], options: ['Virat', 'Rohit', 'Dhoni'] });
+    await reportPoll(db, id, 'rep-last', 'spam');
+    expect(await getPoll(db, id, null)).toBeNull();
+    expect(await castVote(db, id, p.options[0].id, 'late')).toBe('not_found');
+    expect((await listPolls(db, 500)).some((x) => x.id === id)).toBe(false);
+    expect(await getPoll(db, id, null, null, { includeHidden: true })).not.toBeNull();
+    await setPollFlags(db, id, { hidden: false, reviewed: true }); // the owner approves: back up, reports cleared
+    expect(await getPoll(db, id, null)).not.toBeNull();
+    expect((await getReviewQueue(db)).some((r) => r.id === id)).toBe(false);
+  });
+
+  it('never auto-hides a reviewed duel (people cannot report the flagship away)', async () => {
+    for (let k = 0; k < AUTO_HIDE_REPORTS + 2; k++) await reportPoll(db, 'modi-vs-rahul', `mass${k}`, 'false');
+    expect(await getPoll(db, 'modi-vs-rahul', null)).not.toBeNull();
+  });
+});
+
+describe('election silence window', () => {
+  it('seals politics results for everyone and skips the exit poll; other duels are not touched', async () => {
+    const pol = await make({ title: 'Silence check', options: ['BJP', 'INC'], category: 'politics', hideUntilVoted: true });
+    const fun = await make({ title: 'Silence fun check', options: ['Tea', 'Coffee'] });
+    const [a] = (await getPoll(db, pol, null))!.options;
+    const [x] = (await getPoll(db, fun, null))!.options;
+    process.env.SILENCE_WINDOWS = JSON.stringify([{ from: new Date(Date.now() - 3600_000).toISOString(), to: new Date(Date.now() + 3600_000).toISOString() }]);
+    try {
+      expect(activeSilence()).not.toBeNull();
+      expect(await castVote(db, pol, a.id, 's1')).toBe('ok'); // voting stays open
+      const mine = (await getPoll(db, pol, 's1'))!;
+      expect(mine.sealedUntil).not.toBeNull();
+      expect(mine.resultsVisible).toBe(false);
+      expect(mine.needsGuess).toBe(false);
+      expect(mine.totalVotes).toBe(0);
+      expect(mine.options.every((o) => o.votes === 0 && o.percent === 0)).toBe(true);
+      expect(mine.participants).toBe(1); // turnout is fine to show
+      expect(await guessLeader(db, pol, 's1', a.id)).toBe('not_allowed');
+      await castVote(db, fun, x.id, 's1');
+      expect((await getPoll(db, fun, 's1'))!.resultsVisible).toBe(true);
+    } finally {
+      delete process.env.SILENCE_WINDOWS;
+    }
+    expect(activeSilence()).toBeNull();
+    expect((await getPoll(db, pol, 's1'))!.needsGuess).toBe(true); // after the window: the normal flow again
+  });
+});
+
+describe('privacy: delete my votes', () => {
+  it('removes every vote, reaction and report of that voter only', async () => {
+    const id = await make({ title: 'Delete check' });
+    const p = (await getPoll(db, id, null))!;
+    await castVote(db, id, p.options[0].id, 'del-me');
+    await castVote(db, id, p.options[1].id, 'keep-me');
+    await toggleReaction(db, id, 'del-me', '🔥');
+    await reportPoll(db, id, 'del-me', 'spam');
+    expect(await deleteVoterData(db, 'del-me')).toBe(1);
+    expect(await getMyVotes(db, 'del-me')).toEqual([]);
+    const after = (await getPoll(db, id, 'keep-me'))!;
+    expect(after.totalVotes).toBe(1);
+    expect(after.reactions.find((r) => r.emoji === '🔥')!.n).toBe(0);
+  });
+});
+
+describe('starter duels', () => {
+  it('are seeded once, reviewed, and listed', async () => {
+    const list = await listPolls(db, 500, { reviewedOnly: true });
+    expect(list.map((p) => p.id)).toEqual(expect.arrayContaining(['virat-rohit-dhoni', 'ipl-2027-winner', 'up-2027', 'chai-or-coffee']));
+    expect(list.find((p) => p.id === 'ipl-2027-winner')!.options).toHaveLength(10);
+    await (await import('@/db/seed')).seedFlagship(db);
+    expect((await getPoll(db, 'chai-or-coffee', null))!.options).toHaveLength(2);
   });
 });

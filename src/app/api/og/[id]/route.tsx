@@ -3,7 +3,7 @@ import { INK_CREDIT, INK_PHOTO } from '@/components/InkFinger';
 import { getDb } from '@/db';
 import { CARD, cardFonts, initialsOf, pickFromCode } from '@/lib/cards';
 import { getPoll } from '@/lib/polls';
-import { dict } from '@/lib/i18n';
+import { cardDict } from '@/lib/i18n';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +15,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const url = new URL(req.url);
   const f = url.searchParams.get('f');
   const secret = url.searchParams.get('s') === '1';
-  const t = dict.en; // English only: the image renderer cannot join Hindi letters correctly.
+  const t = cardDict(url.searchParams.get('l')); // English or Hinglish: the image renderer cannot join Hindi letters correctly.
   const db = await getDb();
   const poll = await getPoll(db, id, null);
   if (!poll) return new Response('Not found', { status: 404 });
@@ -68,6 +68,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         {voted && <div style={{ display: 'flex', position: 'absolute', right: 24, bottom: 12, fontSize: 14, color: CARD.muted }}>Ink photo: {INK_CREDIT}</div>}
       </div>
     ),
-    { width: 1200, height: 630, fonts: await cardFonts(), headers: { 'Cache-Control': 'public, max-age=300' } },
+    { width: 1200, height: 630, fonts: await cardFonts(), // Cached by Vercel's network for an hour, so WhatsApp gets the preview fast (it gives up on slow ones).
+      headers: { 'Cache-Control': 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400' } },
   );
 }

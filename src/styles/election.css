@@ -169,7 +169,14 @@
   --sans: 'Lato', 'Noto Sans Devanagari', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', 'Noto Sans Devanagari', 'Lato', ui-sans-serif, system-ui, sans-serif;
 }
-.lang-btn { font-size: 13px; font-weight: 700; min-width: 36px; }
+/* Language menu: a pill like the other top-bar buttons, with the phone's own menu inside. */
+.icon-btn.lang-btn { width: auto; gap: 4px; padding: 0 4px 0 8px; font-size: 13px; font-weight: 700; position: relative; }
+.lang-btn select { appearance: none; -webkit-appearance: none; border: 0; background: transparent; color: inherit; font: inherit; padding: 0 4px; height: 100%; cursor: pointer; }
+.lang-btn select:focus { outline: none; }
+.lang-btn:focus-within { outline: 2px solid var(--ink); outline-offset: 2px; }
+/* The invisible "are you a person?" check: shows only if Cloudflare needs a tap. */
+.human-check { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 60; }
+.human-check:empty { display: none; }
 
 /* ---- The ink moment (docs/DESIGN.md) ---- */
 .duel-inked { display: flex; align-items: center; gap: 12px; padding: 0 4px; }
@@ -199,3 +206,20 @@
 @keyframes card-float { from { transform: translateY(16px) rotate(2deg) scale(0.94); } to { transform: rotate(-3deg); } }
 .sheet-message { position: relative; border-radius: 16px 16px 16px 4px; box-shadow: 0 1px 2px rgba(36, 40, 44, 0.08); }
 @media (prefers-reduced-motion: reduce) { .sheet-preview.is-loaded { animation: none; } }
+
+/* ---- Safety and silence (docs/DESIGN.md, "Round 2") ---- */
+/* Silence window: plain information, not an error, so no red. */
+.duel-sealed { display: flex; align-items: flex-start; gap: 8px; margin: 0; padding: 0 4px; color: var(--ink-2); }
+.duel-sealed svg { flex: none; margin-top: 3px; }
+/* Report: P3, the last and quietest thing on the duel. */
+.duel-report { margin: 0; padding: 0 4px; }
+/* Text-link buttons (report, cancel, delete my votes): no button box, a bigger touch area. */
+button.link-like { border: 0; background: none; padding: 8px 0; cursor: pointer; }
+.duel-after .text-link svg { vertical-align: -2px; }
+/* Topic chips on Duels, and the plain text pages (privacy, review). */
+.topic-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.prose-block h2 { margin: 24px 0 8px; }
+.prose-block p { margin: 0; max-width: 60ch; }
+.review-row { display: flex; flex-direction: column; gap: 8px; padding: 16px 0; border-top: var(--hair) solid var(--line); }
+.review-row .row { gap: 8px; }
+.keep-votes { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }

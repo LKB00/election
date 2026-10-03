@@ -19,6 +19,7 @@ export async function seedFlagship(db: Db) {
       allowChange: false,
       reasons: JSON.stringify(FLAGSHIP_REASONS),
       featured: true,
+      reviewed: true,
     })
     .onConflictDoUpdate({ target: schema.polls.id, set: { title: 'Modi or Rahul?', description: 'Pick one. See where everyone stands.' } });
   await db
@@ -33,4 +34,34 @@ export async function seedFlagship(db: Db) {
         subtitle: sql`excluded.subtitle`,
         imageCredit: sql`excluded.image_credit`,
       } });
+  await seedStarters(db);
+}
+
+// Duels timed to what India talks about next (the 2027 state elections, IPL), plus two easy ones.
+// Inserted once; after that the owner can hide or edit them like any duel.
+const STARTERS: { id: string; title: string; category: string; options: string[] }[] = [
+  { id: 'virat-rohit-dhoni', title: 'Virat, Rohit or Dhoni?', category: 'cricket', options: ['Virat Kohli', 'Rohit Sharma', 'MS Dhoni'] },
+  {
+    id: 'ipl-2027-winner',
+    title: 'Who wins IPL 2027?',
+    category: 'cricket',
+    options: ['Chennai Super Kings', 'Mumbai Indians', 'Royal Challengers Bengaluru', 'Kolkata Knight Riders', 'Sunrisers Hyderabad', 'Delhi Capitals', 'Rajasthan Royals', 'Punjab Kings', 'Gujarat Titans', 'Lucknow Super Giants'],
+  },
+  { id: 'up-2027', title: 'UP 2027: who wins?', category: 'politics', options: ['BJP', 'SP', 'BSP', 'INC'] },
+  { id: 'chai-or-coffee', title: 'Chai or coffee?', category: 'food', options: ['Chai', 'Coffee'] },
+];
+
+export async function seedStarters(db: Db) {
+  for (const s of STARTERS) {
+    const added = await db
+      .insert(schema.polls)
+      .values({ id: s.id, title: s.title, category: s.category, hideUntilVoted: true, reviewed: true })
+      .onConflictDoNothing()
+      .returning({ id: schema.polls.id });
+    if (!added.length) continue;
+    await db
+      .insert(schema.options)
+      .values(s.options.map((label, position) => ({ id: `${s.id}-${position + 1}`, pollId: s.id, label, position })))
+      .onConflictDoNothing();
+  }
 }

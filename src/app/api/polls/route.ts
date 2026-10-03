@@ -5,7 +5,7 @@ import { clientIp, rateLimit } from '@/lib/rate-limit';
 import { createPollSchema } from '@/lib/validation';
 
 export async function POST(req: Request) {
-  if (!rateLimit(`create:${clientIp(req)}`, 10, 60 * 60_000)) {
+  if (!(await rateLimit(`create:${clientIp(req)}`, 10, 60 * 60_000))) {
     return NextResponse.json({ error: 'Too many polls. Try again later.' }, { status: 429 });
   }
   const body = await req.json().catch(() => null);

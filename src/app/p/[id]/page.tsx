@@ -6,6 +6,7 @@ import { getDb } from '@/db';
 import { getDeck, getPoll } from '@/lib/polls';
 import { readVoterId } from '@/lib/voter';
 import { getT } from '@/lib/lang-server';
+import { dict, isLang } from '@/lib/i18n';
 
 export const dynamic = 'force-dynamic';
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ new?: string; f?: string; s?: string; l?: string }> };
@@ -13,19 +14,19 @@ type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ new?: st
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { id } = await params;
   const { f, s, l } = await searchParams;
-  const hi = l === 'hi';
+  // The sender's language (from their link), so the chat preview reads like their message.
+  const lang = isLang(l) ? l : 'en';
   const poll = await getPoll(await getDb(), id, null);
   if (!poll) return { title: 'Duel not found' };
   const names = poll.options.map((o) => o.label).join(' vs ');
   // The preview image says what the sender picked (from their share code), never the split.
-  const image = `/api/og/${poll.id}${f ? `?f=${encodeURIComponent(f)}${s === '1' ? '&s=1' : ''}${hi ? '&l=hi' : ''}` : ''}`;
-  const title = f
-    ? hi
-      ? s === '1' ? `मैंने “${poll.title}” में वोट किया। बताओ किसे चुना?` : `मैंने “${poll.title}” में वोट किया। आप किसे चुनेंगे?`
-      : s === '1' ? `I voted in “${poll.title}”. Guess who I picked?` : `I voted in “${poll.title}”. Who would you pick?`
-    : poll.title;
+  const image = `/api/og/${poll.id}${f ? `?f=${encodeURIComponent(f)}${s === '1' ? '&s=1' : ''}${lang !== 'en' ? `&l=${lang}` : ''}` : ''}`;
+  const title = f ? (s === '1' ? dict[lang].ogTitleSecret(poll.title) : dict[lang].ogTitleOpen(poll.title)) : poll.title;
   return {
     title: poll.title,
+    // Search engines only get duels the owner has checked (and never someone's personal share link).
+    robots: poll.reviewed && !f ? undefined : { index: false, follow: true },
+    alternates: { canonical: `/p/${poll.id}` },
     description: `${names}. Who would you pick? Tap to vote.`,
     openGraph: { title, description: `${names}. Vote in one tap and see where everyone stands.`, images: [{ url: image, width: 1200, height: 630 }] },
     twitter: { card: 'summary_large_image', images: [image] },

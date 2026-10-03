@@ -14,7 +14,7 @@ Election lets anyone make a **duel** between 2 or more choices, such as *Modi or
 
 - **Fun and fan polls, open worldwide.** These are not legal or official elections, and the app says so on every screen and share image ("Fun duel · not official").
 - **It feels like a real Indian election.** It uses the EVM button and beep, the VVPAT paper slip, a real photo of an inked finger, exit polls and counting day, because people already know, trust and share these moments.
-- **In English and Hindi** (हिं / EN switch in the top bar).
+- **In English, Hindi and Hinglish** (language menu in the top bar).
 - **Launch duel:** *Modi or Rahul?* It is the main duel on the Home page.
 
 ## 2. Who it is for
@@ -58,7 +58,7 @@ We decided **not to have streaks, levels, points or score bubbles**: they belong
 - **The WhatsApp message** carries a short, spoiler-free line (the Wordle idea): "🗳️ “Modi or Rahul?” · I voted ☝️ · Exit poll ✅ · Guess who I picked?…". In Hindi when Hindi is on.
 - **Link preview** (1200×630, in chats): the real inked-finger photo, "I VOTED", both photos, and either your pick or "Guess who I picked?". It has **no QR code**, because the link can already be tapped.
 - **Story image** (1080×1920): the same content plus a **small QR code in the corner** with "Scan to vote", because links in Stories can't be tapped.
-- **Share images are always English:** the image maker cannot join Hindi letters correctly.
+- **Share images are English or Hinglish:** the image maker cannot join Hindi letters correctly.
 - **Shared images never show the split.** Friends have to vote to see it.
 - **Link format:** `/p/<duel>?f=<your share code>`, plus `&s=1` when your pick is secret.
 
@@ -75,7 +75,7 @@ We decided **not to have streaks, levels, points or score bubbles**: they belong
   - Rahul Gandhi: Himanshu Arya Khowal, CC BY 4.0.
   - Inked finger: GaneshBhakt, CC BY-SA 3.0 (edited: cropped, and an ink-free copy made only for the animation). Credits in `public/ink/CREDITS.md`.
 - **The election rule:** only things a real election has. No quiz or game parts.
-- **All interface text** lives in one file, `src/lib/i18n.ts`, in English and Hindi.
+- **All interface text** lives in one file, `src/lib/i18n.ts`, in English, Hindi and Hinglish.
 
 ## 7. Features built
 
@@ -87,12 +87,19 @@ We decided **not to have streaks, levels, points or score bubbles**: they belong
 - **Why you picked it and emoji reactions** (🔥😂😮👏🤔). Both are optional.
 - **Counting day:** 3 real counting rounds, majority line, 24-hour swing with a race line, LIVE dot, "Result declared".
 - **Feels like an app:** beep on/off, the next duel slides in, a "no internet" bar (and offline votes send later), a loading outline, add to home screen, small photos, and no motion for phones set to "reduce motion".
-- **Hindi:** every screen and message, with a Hindi font bundled.
+- **Hindi and Hinglish:** every screen and message, with a Hindi font bundled. Hinglish also on share images.
+- **Safety:** "Report this duel" on every duel, auto-hide after 3 reports (unchecked duels only), the owner's review page `/admin`, a word filter on Create, and user duels about politicians held off public lists until approved.
+- **Election silence windows:** politics duels show no results and no exit poll while a real election is in its silence period.
+- **Privacy:** a Privacy and reports page, a private link to keep your votes on a new phone, and "Delete my votes". IP addresses are never stored.
+- **Search:** `robots.txt`, `sitemap.xml` (reviewed duels only) and topic pages (`/topic/cricket`).
 - **Pages**
   - **Home:** the duel game, then "More duels".
-  - **Duels:** all duels.
+  - **Duels:** all duels, then topic chips.
+  - **Topic pages:** `/topic/<topic>`, the duels of one topic.
+  - **Privacy and reports:** `/privacy`.
+  - **Review (owner only):** `/admin?key=<ADMIN_SECRET>`.
   - **Create:** 2 to 10 choices, category, end time, hide results, allow vote change.
-  - **My votes:** your record in one sentence, plus the list of your votes.
+  - **My votes:** your record in one sentence, the list of your votes, a private link to keep them, and Delete my votes.
   - Top bar with just the logo (no scores); bottom nav with Home, Duels, Create and My votes.
 - **No game parts:** no levels, points, score bubbles, steppers or streaks. Everything must exist in a real election (see the election rule in DESIGN.md).
 - **Categories:** general, politics, cricket, movies, music, food, tech, sports, friends.
@@ -110,15 +117,24 @@ We decided **not to have streaks, levels, points or score bubbles**: they belong
 
 **Settings on Vercel:** `DATABASE_URL`, `VOTER_SECRET` (16+ characters) and `NEXT_PUBLIC_SITE_URL`.
 
+Optional settings (each feature stays off until set):
+- `ADMIN_SECRET` (16+ characters): turns on the review page.
+- `NEXT_PUBLIC_GRIEVANCE_EMAIL`: the complaints contact shown on the Privacy page.
+- `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`: vote-rate limits shared by all servers (free Upstash account).
+- `NEXT_PUBLIC_TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY`: the invisible bot check on votes (free Cloudflare account).
+- `SILENCE_WINDOWS`: election silence windows, for example `[{"from":"2027-02-08T18:00:00+05:30","to":"2027-03-10T18:00:00+05:30"}]`.
+
 **Files to know**
 
 - `src/lib/polls.ts`: all voting rules.
 - `src/db/schema.ts`: the tables (polls, options, votes, reactions).
-- `src/db/seed.ts`: the Modi vs Rahul duel.
+- `src/db/seed.ts`: the Modi vs Rahul duel and the 4 starter duels.
+- `src/lib/moderation.ts`: the word filter and the politics hold.
+- `src/lib/silence.ts`: election silence windows.
 - `src/components/DuelGame.tsx`: the voting screen.
 - `src/components/ShareSheet.tsx`: the share panel.
 - `src/app/api/og` and `src/app/api/card`: the share images.
-- `src/lib/i18n.ts`: all interface text, English and Hindi.
+- `src/lib/i18n.ts`: all interface text, English, Hindi and Hinglish.
 - `src/components/InkFinger.tsx` and `public/ink/`: the inked-finger photo and its animation.
 
 **Before every push:** `npm run check` (types, tests and build).
@@ -149,9 +165,13 @@ Design, UX, UI and interaction are the selling points. The plan, with research a
 | 3 | Counting day | Results counted in 3 real rounds, majority line, swing in 24 h with a race line, LIVE dot, "Result declared: X wins by N votes" | Live |
 | 4 | Feels like an app | Beep on/off, next duel slides in, offline bar and vote retry, loading outline, add to home screen, lighter photos and pages, reduce-motion support | Live. **Still to do: server and database near India** (needs the owner's Vercel and Neon settings) |
 | 5 | Speaks Bharat | Hindi switch (हिं / EN) for all interface text, spoiler-free WhatsApp line with your exit poll result | Live (share images stay English) |
+| Round 2 | Safe and found | Report and review, silence windows, Hinglish, calendar reminder, counting ticker, keep or delete my votes, privacy page, search basics, topic pages, starter duels, shared limits and bot check (off until keys are set) | Built on the work branch |
 | Ink | Real inked finger | Real photo of an inked finger, ink wiped on after voting, used in the story card and link preview | Live |
 
 **Open items:**
+- Owner settings for Round 2: `ADMIN_SECRET`, `NEXT_PUBLIC_GRIEVANCE_EMAIL`, and (optional) the Upstash and Turnstile keys. Add a `SILENCE_WINDOWS` entry when the Election Commission announces dates.
+- A WhatsApp Channel ("Aaj ka mukabla") posting one duel a day: the owner creates it in WhatsApp.
+- Phone notifications for declared results (needs push keys and a sending job). The calendar link covers this for now.
 - Move the server and database near India (the server runs in Washington, USA today). Needs the owner's Vercel and Neon accounts; about 15 minutes, guided.
 - The owner's reference picture for the voting animation (a Vecteezy link that could not be downloaded; to be attached in chat). Vecteezy pictures need a licence, so it would be a style reference only.
 - A bigger, full-width ink moment (the finger is small on screen today).
@@ -169,8 +189,8 @@ Design, UX, UI and interaction are the selling points. The plan, with research a
 ## 12. Known limits today
 
 - No accounts, so someone who clears their cookies can vote again. This is fine for fun polls.
-- Rate limits are kept per server (in memory).
-- No report button or moderation yet.
+- Rate limits are kept per server until the Upstash settings are added.
+- Moderation is one person (the owner) on the review page. The word filter is a short list, so it misses things; reports catch the rest.
 - Duel creators can't add photos yet. Only the launch duel has photos.
 - The ink-free copy of the finger photo was made by digitally removing the ink. It shows only during the 0.9-second wipe, and a faint smudge can be seen if you look closely.
 - The server is in the USA, so pages are slower for people in India until it moves.

@@ -28,7 +28,7 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const lang = await getLang();
   return (
-    <html lang={lang}>
+    <html lang={lang === 'hg' ? 'hi-Latn' : lang}>
       <body>
         <LangProvider lang={lang}>
         <div className="shell">

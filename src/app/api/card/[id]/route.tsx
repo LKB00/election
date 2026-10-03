@@ -4,7 +4,7 @@ import { INK_CREDIT, INK_PHOTO } from '@/components/InkFinger';
 import { getDb } from '@/db';
 import { CARD, cardFonts, initialsOf, pickFromCode } from '@/lib/cards';
 import { getPoll } from '@/lib/polls';
-import { dict } from '@/lib/i18n';
+import { cardDict, isLang } from '@/lib/i18n';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,15 +16,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const url = new URL(req.url);
   const f = url.searchParams.get('f');
   const secret = url.searchParams.get('s') === '1';
-  // Images stay in English: the image renderer cannot join Hindi letters correctly (the message and link title are Hindi).
-  const lang = url.searchParams.get('l') === 'hi' ? 'hi' : 'en';
-  const t = dict.en;
+  // Images are English or Hinglish: the image renderer cannot join Hindi letters (the message and link title are Hindi).
+  const lang = url.searchParams.get('l');
+  const t = cardDict(lang);
   const db = await getDb();
   const poll = await getPoll(db, id, null);
   if (!poll) return new Response('Not found', { status: 404 });
   const pickId = await pickFromCode(db, id, f);
   const showPick = !!pickId && !secret;
-  const target = `${url.origin}/p/${id}${f ? `?f=${encodeURIComponent(f)}${secret ? '&s=1' : ''}${lang === 'hi' ? '&l=hi' : ''}` : ''}`;
+  const target = `${url.origin}/p/${id}${f ? `?f=${encodeURIComponent(f)}${secret ? '&s=1' : ''}${isLang(lang) && lang !== 'en' ? `&l=${lang}` : ''}` : ''}`;
   const qr = await QRCode.toDataURL(target, { margin: 1, width: 300, color: { dark: CARD.ink, light: '#ffffff' } });
   const abs = (src: string) => new URL(src, url.origin).toString();
   const shown = poll.options.slice(0, 2);
@@ -79,6 +79,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         </div>
       </div>
     ),
-    { width: 1080, height: 1920, fonts: await cardFonts(), headers: { 'Cache-Control': 'public, max-age=300' } },
+    { width: 1080, height: 1920, fonts: await cardFonts(), headers: { 'Cache-Control': 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400' } },
   );
 }

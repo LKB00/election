@@ -29,7 +29,7 @@ Every idea below follows two rules:
 
 ## Recommendations, in batches (biggest impact first)
 
-**Next:** see "Round 2 research" below for the new top 10.
+**Next:** "Round 2 research" below. Built: everything in it except moving the server (needs the owner), short-time page caching, and phone notifications (see "Round 2: what was built").
 
 **Status:** Batches 3, 4 and 5 are live (see DESIGN.md, "Batches 3–5"), plus a real inked-finger photo with an ink animation. Not done yet: moving the server and database near India (needs the owner), and Hindi in share images (the image renderer can't shape Hindi).
 
@@ -124,6 +124,23 @@ Each idea passes the election rule. **Impact** is how much it helps (High/Med/Lo
 - **Shares of each Indian language:** the numbers are from 2017.
 - **2027 IPL dates.**
 - **The exact 2026 exit-poll notice:** the government page refused the request.
+
+### Round 2: what was built (and what was not)
+| # | Idea | Status |
+|---|---|---|
+| 1 | Server to Mumbai, database to Singapore | **Not done: needs the owner's Vercel and Neon logins.** Moving only the server makes it slower. |
+| 2 | Report button and hide switch | Built: report link, auto-hide after 3 reports, review page `/admin` |
+| 3 | Silence windows | Built: politics duels sealed during a window (`SILENCE_WINDOWS` setting, or the list in `src/lib/silence.ts`) |
+| 4 | Short-time page caching | **Not done.** Every page is personal (your vote, your language), so caching it safely needs the bigger Redis step in the README growth plan. A cache now could show you a count without your own vote. The link-preview images are cached instead (idea 6). |
+| 5 | "Tell me when results are declared" | Built as a calendar link (works on every phone). **Phone notifications not done**: they need push keys and a server job that sends them. |
+| 6 | Faster preview image, home preview card | Built: images cached for an hour on Vercel's network; the home link shows today's duel |
+| 7 | Shared rate limit and bot check | Built: Upstash Redis and Cloudflare Turnstile, both off until their keys are set |
+| 8 | Hinglish | Built, including share images |
+| 9 | Calendar duels, WhatsApp Channel | Built: 4 starter duels. **The WhatsApp Channel is the owner's to create** (in WhatsApp: Updates → + → New channel). |
+| 10 | Search basics | Built: `robots.txt`, `sitemap.xml` (reviewed duels only), topic pages, unchecked duels marked "noindex" |
+| Polish | Scroll to exit poll, keep and delete my votes, counting ticker | Built |
+| Polish | Text-only emoji bar of the split (🟩🟩🟧) | **Not done on purpose**: it would show the split in chats, which breaks "never show the split". The WhatsApp line already carries the spoiler-free "Exit poll ✅". |
+| Safety | Word filter, politics hold, privacy page, no raw IPs | Built |
 
 ### Round 2 sources
 - [Vercel regions](https://vercel.com/docs/regions) and [Neon regions](https://neon.com/docs/introduction/regions)
