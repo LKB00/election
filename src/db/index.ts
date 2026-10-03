@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS options (
 );
 ALTER TABLE options ADD COLUMN IF NOT EXISTS subtitle text;
 ALTER TABLE options ADD COLUMN IF NOT EXISTS image_credit text;
+ALTER TABLE options ADD COLUMN IF NOT EXISTS emoji text;
 CREATE INDEX IF NOT EXISTS options_poll_idx ON options (poll_id);
 CREATE TABLE IF NOT EXISTS votes (
   id text PRIMARY KEY,

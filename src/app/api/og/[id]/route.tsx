@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 import { INK_CREDIT, INK_PHOTO } from '@/components/InkFinger';
 import { getDb } from '@/db';
-import { CARD, cardFonts, initialsOf, pickFromCode } from '@/lib/cards';
+import { CARD, cardFonts, faceLabels, pickFromCode } from '@/lib/cards';
 import { getPoll } from '@/lib/polls';
 import { cardDict } from '@/lib/i18n';
 
@@ -25,6 +25,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const pick = poll.options.find((o) => o.id === pickId);
   const abs = (src: string) => new URL(src, url.origin).toString();
   const shown = poll.options.slice(0, 2);
+  const faces = faceLabels(shown.map((o) => o.label));
   const headline = !voted ? t.ogAsk : showPick && pick ? t.ogPicked(pick.label) : t.ogGuess;
 
   return new ImageResponse(
@@ -52,7 +53,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={abs(o.imageUrl)} width={120} height={150} style={{ borderRadius: 12, objectFit: 'cover' }} alt="" />
                     ) : (
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 120, height: 120, borderRadius: 60, background: CARD.tints[n], fontSize: 44, fontWeight: 700 }}>{initialsOf(o.label)}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 120, height: 120, borderRadius: 60, background: CARD.tints[n], fontSize: 44, fontWeight: 700 }}>{faces[n]}</div>
                     )}
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       {mine && <div style={{ display: 'flex', fontSize: 20, fontWeight: 700, color: CARD.green, letterSpacing: 1 }}>{t.cardMyVote}</div>}

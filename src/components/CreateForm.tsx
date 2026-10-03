@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { CATEGORIES } from '@/lib/categories';
 import { useLang, useT } from '@/lib/lang';
 import { apiMsg } from '@/lib/i18n';
+import { faceLabels } from '@/lib/labels';
 
 export default function CreateForm() {
   const router = useRouter();
@@ -14,6 +15,8 @@ export default function CreateForm() {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<string>('general');
   const [choices, setChoices] = useState(['', '']);
+  // One optional emoji per choice, kept in step with the choices.
+  const [emojis, setEmojis] = useState(['', '']);
   const [endsAt, setEndsAt] = useState('');
   const [hideUntilVoted, setHide] = useState(true); // on by default: guess first, then see (the guess game)
   const [allowChange, setChange] = useState(false);
@@ -25,6 +28,20 @@ export default function CreateForm() {
   const [more, setMore] = useState(false);
 
   const setChoice = (i: number, v: string) => setChoices((c) => c.map((x, j) => (j === i ? v : x)));
+  const setEmoji = (i: number, v: string) => setEmojis((e) => e.map((x, j) => (j === i ? v.trim() : x)));
+  const removeChoice = (i: number) => {
+    setChoices((x) => x.filter((_, j) => j !== i));
+    setEmojis((x) => x.filter((_, j) => j !== i));
+  };
+  // Quick start: fill the shape of a common duel, then the person only types the question (and names).
+  function starter(kind: 'yesno' | 3 | 4) {
+    const next = kind === 'yesno' ? [t.yes, t.no] : Array.from({ length: kind }, (_, i) => choices[i] ?? '');
+    setChoices(next);
+    setEmojis(kind === 'yesno' ? ['👍', '👎'] : next.map((_, i) => emojis[i] ?? ''));
+    setFieldError({});
+    document.getElementById(kind === 'yesno' ? 'title' : 'choice-0')?.focus();
+  }
+  const filledChoices = choices.map((c, i) => ({ label: c.trim(), emoji: emojis[i] })).filter((c) => c.label);
 
   function check() {
     const filled = choices.map((c) => c.trim()).filter(Boolean);
@@ -43,6 +60,7 @@ export default function CreateForm() {
     if (busy || !check()) return;
     setBusy(true);
     setError('');
+    const kept = choices.map((c, i) => ({ c: c.trim(), e: emojis[i] ?? '' })).filter((x) => x.c);
     const res = await fetch('/api/polls', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -50,7 +68,8 @@ export default function CreateForm() {
         title,
         description,
         category,
-        options: choices.map((c) => c.trim()).filter(Boolean),
+        options: kept.map((x) => x.c),
+        emojis: kept.map((x) => x.e),
         hideUntilVoted,
         allowChange,
         endsAt: endsAt ? new Date(endsAt).toISOString() : undefined,
@@ -73,15 +92,29 @@ export default function CreateForm() {
         {fieldError.title && <p className="field-error" role="alert">{fieldError.title}</p>}
       </div>
 
+      {/* P3: quick start chips (the shape of a common duel). */}
+      <div className="duel-group">
+        <span className="label">{t.quickStart}</span>
+        <div className="row wrap">
+          <button type="button" className="chip" onClick={() => starter('yesno')}>{t.starterYesNo}</button>
+          <button type="button" className="chip" onClick={() => starter(3)}>{t.starterN(3)}</button>
+          <button type="button" className="chip" onClick={() => starter(4)}>{t.starterN(4)}</button>
+        </div>
+      </div>
+
       <div className="duel-group">
         <span className="label">{t.choicesLabel}</span>
         {choices.map((c, i) => (
           <div className="row" key={i}>
+            {/* Optional emoji, shown in the choice's circle (phones open the emoji keyboard). */}
+            <span className="search emoji-in">
+              <input value={emojis[i] ?? ''} maxLength={16} placeholder="🙂" aria-label={t.emojiN(i + 1)} onChange={(e) => setEmoji(i, e.target.value)} />
+            </span>
             <span className="search">
-              <input data-choice value={c} maxLength={60} aria-label={t.choiceN(i + 1)} placeholder={t.choiceN(i + 1)} aria-invalid={!!fieldError.choices} onChange={(e) => { setChoice(i, e.target.value); setFieldError((f) => ({ ...f, choices: undefined })); }} />
+              <input id={`choice-${i}`} data-choice value={c} maxLength={60} aria-label={t.choiceN(i + 1)} placeholder={t.choiceN(i + 1)} aria-invalid={!!fieldError.choices} onChange={(e) => { setChoice(i, e.target.value); setFieldError((f) => ({ ...f, choices: undefined })); }} />
             </span>
             {choices.length > 2 && (
-              <button type="button" className="icon-btn" aria-label={t.removeChoice(i + 1)} onClick={() => setChoices((x) => x.filter((_, j) => j !== i))}>
+              <button type="button" className="icon-btn" aria-label={t.removeChoice(i + 1)} onClick={() => removeChoice(i)}>
                 <X size={16} strokeWidth={1.75} aria-hidden />
               </button>
             )}
@@ -89,7 +122,7 @@ export default function CreateForm() {
         ))}
         {fieldError.choices && <p className="field-error" role="alert">{fieldError.choices}</p>}
         {choices.length < 10 && (
-          <button type="button" className="chip duel-add" onClick={() => setChoices((x) => [...x, ''])}>
+          <button type="button" className="chip duel-add" onClick={() => { setChoices((x) => [...x, '']); setEmojis((x) => [...x, '']); }}>
             <Plus size={14} strokeWidth={1.75} aria-hidden /> {t.addChoice}
           </button>
         )}
@@ -140,6 +173,28 @@ export default function CreateForm() {
         </button>
       </div>
       </>
+      )}
+
+      {/* P3: what voters will see, as you type (rows like the EVM ballot unit). */}
+      {(title.trim() || filledChoices.length > 0) && (
+        <section className="create-preview" aria-label={t.preview}>
+          <p className="label">{t.preview}</p>
+          {title.trim() && <p className="display duel-q">{title.trim()}</p>}
+          {filledChoices.length > 0 && (
+            <div className="tot-options duel-options is-ballot" aria-hidden>
+              {filledChoices.map((c, n) => (
+                <span key={n} className="tot-option duel-option" style={{ '--pc': `var(--p-${['input', 'feedback', 'control', 'agents', 'output', 'trust'][n % 6]})` } as React.CSSProperties}>
+                  <span className="tot-letter">{n + 1}</span>
+                  <span className="duel-body">
+                    <span className={'duel-face' + (c.emoji ? ' has-emoji' : '')}><span>{c.emoji || faceLabels(filledChoices.map((x) => x.label))[n]}</span></span>
+                    <span className="duel-text"><span className="duel-name">{c.label}</span></span>
+                  </span>
+                  <span className="evm-row"><span className="evm-led" /><span className="evm-btn">{t.vote}</span></span>
+                </span>
+              ))}
+            </div>
+          )}
+        </section>
       )}
 
       {error && <p className="duel-error" role="alert">{error}</p>}

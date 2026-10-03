@@ -2,7 +2,7 @@ import { ImageResponse } from 'next/og';
 import QRCode from 'qrcode';
 import { INK_CREDIT, INK_PHOTO } from '@/components/InkFinger';
 import { getDb } from '@/db';
-import { CARD, cardFonts, initialsOf, pickFromCode } from '@/lib/cards';
+import { CARD, cardFonts, faceLabels, pickFromCode } from '@/lib/cards';
 import { getPoll } from '@/lib/polls';
 import { cardDict, isLang } from '@/lib/i18n';
 
@@ -28,6 +28,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const qr = await QRCode.toDataURL(target, { margin: 1, width: 300, color: { dark: CARD.ink, light: '#ffffff' } });
   const abs = (src: string) => new URL(src, url.origin).toString();
   const shown = poll.options.slice(0, 2);
+  const faces = faceLabels(shown.map((o) => o.label));
   const pick = shown.find((o) => o.id === pickId);
 
   return new ImageResponse(
@@ -55,7 +56,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={abs(o.imageUrl)} width={300} height={375} style={{ borderRadius: 20, objectFit: 'cover' }} alt="" />
                 ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 300, height: 300, borderRadius: 150, background: CARD.tints[n], fontSize: 110, fontWeight: 700 }}>{initialsOf(o.label)}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 300, height: 300, borderRadius: 150, background: CARD.tints[n], fontSize: 110, fontWeight: 700 }}>{faces[n]}</div>
                 )}
                 <div style={{ display: 'flex', marginTop: 20, fontSize: 44, fontWeight: 700 }}>{o.label.slice(0, 18)}</div>
                 {mine && <div style={{ display: 'flex', marginTop: 8, fontSize: 32, fontWeight: 700, color: CARD.green, letterSpacing: 2 }}>{t.cardMyVote}</div>}

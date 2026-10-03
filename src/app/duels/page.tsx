@@ -22,6 +22,8 @@ export default async function Duels() {
     listPolls(db, 60),
     getMyVotes(db, voterId, 200),
   ]);
+  const hot = polls.filter((p) => !p.closed && p.lastHour > 0).sort((a, b) => b.lastHour - a.lastHour).slice(0, 3);
+  const rest = polls.filter((p) => !hot.includes(p));
   return (
     <div className="page page-wide">
       <header className="page-head">
@@ -34,10 +36,17 @@ export default async function Duels() {
           <DuelBanner poll={featured} />
         </section>
       )}
+      {/* P2: the duels with the most votes in the last hour, like TV's "hot seats". Not repeated in the list below. */}
+      {hot.length > 0 && (
+        <section className="block">
+          <h2>{t.mostWatched}</h2>
+          <DuelTiles polls={hot} votedIds={mine.map((v) => v.pollId)} noCreate />
+        </section>
+      )}
       <section className="block">
-        {/* A heading only when the banner sits above; otherwise it would just repeat the page title. */}
-        {featured && featured.myVote === null && <h2>{t.allDuels}</h2>}
-        <DuelTiles polls={polls} votedIds={mine.map((v) => v.pollId)} />
+        {/* A heading only when something sits above; otherwise it would just repeat the page title. */}
+        {((featured && featured.myVote === null) || hot.length > 0) && <h2>{t.allDuels}</h2>}
+        <DuelTiles polls={rest} votedIds={mine.map((v) => v.pollId)} />
       </section>
       {featured && featured.myVote !== null && (
         <section className="block">

@@ -17,6 +17,8 @@ export type PollOption = {
   imageUrl: string | null;
   subtitle: string | null;
   imageCredit: string | null;
+  /** The creator's emoji for this choice, if any. */
+  emoji: string | null;
   votes: number;
   percent: number;
   /** Why this option's voters picked it (only when results are visible). */
@@ -91,7 +93,7 @@ export async function createPoll(db: Db, input: CreatePollInput): Promise<string
     allowChange: input.allowChange,
     endsAt: input.endsAt ? new Date(input.endsAt) : null,
   });
-  await db.insert(options).values(input.options.map((label, position) => ({ id: nanoid(10), pollId: id, label, position })));
+  await db.insert(options).values(input.options.map((label, position) => ({ id: nanoid(10), pollId: id, label, position, emoji: input.emojis[position] || null })));
   return id;
 }
 
@@ -236,6 +238,7 @@ export async function getPoll(
         imageUrl: o.imageUrl,
         subtitle: o.subtitle,
         imageCredit: o.imageCredit,
+        emoji: o.emoji,
         votes: n,
         percent: resultsVisible && total ? (n / total) * 100 : 0,
         reasons: resultsVisible
@@ -371,7 +374,7 @@ export async function guessLeader(db: Db, id: string, voterId: string, choice: s
   return 'ok';
 }
 
-export type PollSummary = { id: string; title: string; category: string; totalVotes: number; options: string[]; closed: boolean };
+export type PollSummary = { id: string; title: string; category: string; totalVotes: number; lastHour: number; options: string[]; closed: boolean };
 
 /** Public duels, newest first. Hidden duels never; unreviewed politics duels not until the owner checks them. */
 export async function listPolls(db: Db, limit = 20, filter: { category?: string; reviewedOnly?: boolean } = {}): Promise<PollSummary[]> {
@@ -382,6 +385,7 @@ export async function listPolls(db: Db, limit = 20, filter: { category?: string;
       category: polls.category,
       endsAt: polls.endsAt,
       totalVotes: sql<number>`count(${votes.id})::int`,
+      lastHour: sql<number>`count(${votes.id}) filter (where ${votes.createdAt} > now() - interval '1 hour')::int`,
     })
     .from(polls)
     .leftJoin(votes, eq(votes.pollId, polls.id))
@@ -407,6 +411,7 @@ export async function listPolls(db: Db, limit = 20, filter: { category?: string;
     title: r.title,
     category: r.category,
     totalVotes: r.totalVotes,
+    lastHour: r.lastHour,
     closed: !!r.endsAt && r.endsAt.getTime() <= Date.now(),
     options: opts.filter((o) => o.pollId === r.id).map((o) => o.label),
   }));
@@ -474,20 +479,51 @@ export async function getDeck(db: Db, voterId: string | null, limit = 12): Promi
   return views.filter((v): v is PollView => v !== null);
 }
 
-export type MyVote = { pollId: string; title: string; pick: string; at: string };
+/** Where a duel you voted in stands now, as far as you are allowed to see (same rules as getPoll). */
+export type Standing =
+  | { kind: 'leading' | 'won'; name: string; percent: number }
+  | { kind: 'tie' | 'tied' | 'guess' | 'sealed' | 'none' };
+export type MyVote = { pollId: string; title: string; pick: string; at: string; standing: Standing };
 
-/** The duels this voter took part in, newest first. */
+/** The duels this voter took part in, newest first, with how each one stands now. */
 export async function getMyVotes(db: Db, voterId: string | null, limit = 50): Promise<MyVote[]> {
   if (!voterId) return [];
   const rows = await db
-    .select({ pollId: votes.pollId, title: polls.title, pick: options.label, at: votes.createdAt })
+    .select({
+      pollId: votes.pollId,
+      title: polls.title,
+      pick: options.label,
+      at: votes.createdAt,
+      prediction: votes.prediction,
+      category: polls.category,
+      hideUntilVoted: polls.hideUntilVoted,
+      endsAt: polls.endsAt,
+    })
     .from(votes)
     .innerJoin(polls, eq(polls.id, votes.pollId))
     .innerJoin(options, eq(options.id, votes.optionId))
     .where(and(eq(votes.voterKey, voterId), eq(polls.hidden, false)))
     .orderBy(desc(votes.createdAt))
     .limit(limit);
-  return rows.map((r) => ({ ...r, at: r.at.toISOString() }));
+  if (!rows.length) return [];
+  const counts = await db
+    .select({ pollId: options.pollId, label: options.label, n: sql<number>`count(${votes.id})::int` })
+    .from(options)
+    .leftJoin(votes, eq(votes.optionId, options.id))
+    .where(inArray(options.pollId, rows.map((r) => r.pollId)))
+    .groupBy(options.pollId, options.id, options.label);
+  return rows.map((r) => {
+    const closed = !!r.endsAt && r.endsAt.getTime() <= Date.now();
+    const mine = counts.filter((c) => c.pollId === r.pollId).sort((a, b) => b.n - a.n);
+    const total = mine.reduce((s, c) => s + c.n, 0);
+    let standing: Standing;
+    if (sealedUntil(r.category)) standing = { kind: 'sealed' };
+    else if (r.hideUntilVoted && !closed && r.prediction == null && mine.length >= 2) standing = { kind: 'guess' };
+    else if (!total) standing = { kind: 'none' };
+    else if (mine.length > 1 && mine[0].n === mine[1].n) standing = { kind: closed ? 'tied' : 'tie' };
+    else standing = { kind: closed ? 'won' : 'leading', name: mine[0].label, percent: Math.round((mine[0].n / total) * 100) };
+    return { pollId: r.pollId, title: r.title, pick: r.pick, at: r.at.toISOString(), standing };
+  });
 }
 
 /** How long after voting you can still take it back (an accidental tap). */

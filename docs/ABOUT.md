@@ -33,7 +33,7 @@ Election lets anyone make a **duel** between 2 or more choices, such as *Modi or
 4. **Inked finger:** a real photo of a finger rises in and the real ink is wiped on from the nail down. Then "Vote cast. Your finger is inked. Voter ID EL-000041".
 5. **Exit poll:** "Who's winning right now?" You make your guess, or skip it. You can undo your vote for 30 seconds.
 6. **Counting day:** results are counted in front of you in 3 real rounds (the lead can swing), with a majority line, "Swing in 24 h" and a LIVE dot. Then: whether your exit poll was right, and, if a friend sent the link, "you agree" or "you disagree". An ended duel shows "Result declared: X wins by N votes".
-7. **Show your ink:** share on WhatsApp, as a Status/Story image, or copy the link.
+7. **Share your ink:** share on WhatsApp, as a Status/Story image, or copy the link.
 8. **Next duel**, or come back later through **My votes**: the duels you voted in, and how often your exit poll was right.
 
 ## 4. Why people engage (human behaviour)
@@ -94,12 +94,12 @@ We decided **not to have streaks, levels, points or score bubbles**: they belong
 - **Search:** `robots.txt`, `sitemap.xml` (reviewed duels only) and topic pages (`/topic/cricket`).
 - **Pages**
   - **Home:** the duel game, then "More duels".
-  - **Duels:** all duels, then topic chips.
+  - **Duels:** the duel of the day, Most watched now, all duels, then topic chips.
   - **Topic pages:** `/topic/<topic>`, the duels of one topic.
   - **Privacy and reports:** `/privacy`.
   - **Review (owner only):** `/admin?key=<ADMIN_SECRET>`.
-  - **Create:** 2 to 10 choices, category, end time, hide results, allow vote change.
-  - **My votes:** your record in one sentence, the list of your votes, a private link to keep them, and Delete my votes.
+  - **Create:** 2 to 10 choices (each with an optional emoji), quick start chips, a live ballot preview, category, end time, hide results, allow vote change.
+  - **My votes:** your record in one sentence, the list of your votes with where each one stands now, a private link to keep them, and Delete my votes.
   - Top bar with just the logo (no scores); bottom nav with Home, Duels, Create and My votes.
 - **No game parts:** no levels, points, score bubbles, steppers or streaks. Everything must exist in a real election (see the election rule in DESIGN.md).
 - **Categories:** general, politics, cricket, movies, music, food, tech, sports, friends.
@@ -166,6 +166,7 @@ Design, UX, UI and interaction are the selling points. The plan, with research a
 | 4 | Feels like an app | Beep on/off, next duel slides in, offline bar and vote retry, loading outline, add to home screen, lighter photos and pages, reduce-motion support | Live. **Still to do: server and database near India** (needs the owner's Vercel and Neon settings) |
 | 5 | Speaks Bharat | Hindi switch (हिं / EN) for all interface text, spoiler-free WhatsApp line with your exit poll result | Live (share images stay English) |
 | Round 2 | Safe and found | Report and review, silence windows, Hinglish, calendar reminder, counting ticker, keep or delete my votes, privacy page, search basics, topic pages, starter duels, shared limits and bot check (off until keys are set) | Built on the work branch |
+| Round 3 | Easier to use | EVM ballot rows for 3+ choices, tap-to-skip slip, distinct circle letters, emoji per choice, "why people picked", My votes standings, Most watched now, Create quick start and live preview | Built on the work branch |
 | Ink | Real inked finger | Real photo of an inked finger, ink wiped on after voting, used in the story card and link preview | Live |
 
 **Open items:**
@@ -191,6 +192,6 @@ Design, UX, UI and interaction are the selling points. The plan, with research a
 - No accounts, so someone who clears their cookies can vote again. This is fine for fun polls.
 - Rate limits are kept per server until the Upstash settings are added.
 - Moderation is one person (the owner) on the review page. The word filter is a short list, so it misses things; reports catch the rest.
-- Duel creators can't add photos yet. Only the launch duel has photos.
+- Duel creators can add an emoji per choice, but not photos yet (needs file storage). Only the launch duel has photos.
 - The ink-free copy of the finger photo was made by digitally removing the ink. It shows only during the 0.9-second wipe, and a faint smudge can be seen if you look closely.
 - The server is in the USA, so pages are slower for people in India until it moves.

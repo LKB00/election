@@ -35,6 +35,8 @@ export const options = pgTable(
     subtitle: text('subtitle'),
     // Who took the photo and under which licence, shown next to it.
     imageCredit: text('image_credit'),
+    // Optional emoji the creator picked for this choice (shown in the face circle when there is no photo).
+    emoji: text('emoji'),
     position: integer('position').notNull(),
   },
   (t) => [index('options_poll_idx').on(t.pollId)],
