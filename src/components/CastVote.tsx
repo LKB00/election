@@ -14,7 +14,7 @@ type Props = { t: Dict; number: number; name: string; party: string | null; vote
 
 // The drawn hand, made once: the voter ID counting up re-renders this scene many times, and a fresh copy of the
 // drawing would restart its ink animation (it never got drawn).
-const HAND_HTML = { __html: handSvg('cast', 168) };
+const HAND_HTML = { __html: handSvg('cast', 210) };
 const HandArt = memo(function HandArt() {
   return <span className="cast-hand-art" dangerouslySetInnerHTML={HAND_HTML} />;
 });
