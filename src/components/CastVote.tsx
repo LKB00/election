@@ -1,15 +1,23 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import type { Dict } from '@/lib/i18n';
 import { vvpatThud } from '@/lib/sound';
+import { handSvg } from '@/lib/inkHand';
 
 // The "vote cast" moment, the way it happens in a real booth (docs/DESIGN.md, "The cast-vote moment"):
 // 1. EVM: your row's blue key goes down, the red light glows while it beeps.
 // 2. VVPAT: the window lights up, your slip prints, stays behind the glass, then is cut and drops into the box.
-// 3. Ink: the polling officer's rod draws the line down from your nail; your voter ID counts up.
+// 3. Ink: a drawn hand rises; the polling officer's rod draws the ink line down from your nail; your voter ID counts up.
 // One scene in the middle of the screen (it used to be three small pieces spread down the page).
 // Tap anywhere to move on. Shorter after the first vote of a visit. Not shown when the phone asks for less motion.
 type Props = { t: Dict; number: number; name: string; party: string | null; voterNo: number | null; short: boolean; onDone: () => void };
+
+// The drawn hand, made once: the voter ID counting up re-renders this scene many times, and a fresh copy of the
+// drawing would restart its ink animation (it never got drawn).
+const HAND_HTML = { __html: handSvg('cast', 168) };
+const HandArt = memo(function HandArt() {
+  return <span className="cast-hand-art" dangerouslySetInnerHTML={HAND_HTML} />;
+});
 
 // When each beat starts (seconds). The CSS reads these, so the picture and the sounds stay in step.
 const TIMES = {
@@ -77,13 +85,10 @@ export default function CastVote({ t, number, name, party, voterNo, short, onDon
 
         {/* Beat 3: the ink. */}
         <div className="cast-ink">
-          <span className="cast-finger" aria-hidden>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className="cast-finger-clean" src="/ink/finger-clean.webp" alt="" />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className="cast-finger-inked" src="/ink/finger-inked.webp" alt="" />
+          {/* The drawn hand (src/lib/inkHand.ts): the ink line is drawn on as the officer's rod moves down. */}
+          <span className="cast-hand" aria-hidden>
+            <HandArt />
             <span className="cast-rod" />
-            <span className="cast-shine" />
           </span>
           <p className="cast-text">
             <strong>{t.inked}.</strong>

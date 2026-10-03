@@ -364,11 +364,11 @@ Now: **one scene in the middle of the screen**, the real booth in order. P1 at t
 |---|---|---|
 | 1. EVM (from 0 s) | Your row on the ballot unit: number, name, the blue key goes down, the red light glows while the beep sounds | The press and the light are what people remember from the booth |
 | 2. VVPAT (0.5 s) | A dark machine; the glass window lights up; your slip (number, name, party) prints down in small steps, stays, then is cut and drops into the box; the slot flashes lime as it lands with a soft thud | The trust moment: you see your choice recorded, then sealed |
-| 3. Ink (2.75 s) | A big inked-finger photo (168 px wide, was 56); the polling officer's glass rod draws the line down from the nail, a wet shine passes; "Vote cast. Your finger is inked." and the voter ID counts up | The proof everyone shares. Real photo, real ink (the ink-free copy shows under the rod) |
+| 3. Ink (2.75 s) | A big **drawn hand** (168 px wide, was a 56 px photo) rises, raised index finger, nail towards you; the polling officer's glass rod draws the ink line down from the base of the nail; "Vote cast. Your finger is inked." and the voter ID counts up | The proof everyone shares. The line is drawn on as the rod moves (one path in the drawing), not revealed from a photo |
 | End (5 s) | The scene closes; your result, confetti and the exit poll follow | Results and counting wait for the scene, so nothing important plays hidden behind it |
 
 - **Tap anywhere** (or Enter / Escape) to move on. "Tap to skip" is written at the bottom.
 - **Shorter after your first vote of a visit**: about 3.3 s (the slip prints at once, the ink comes sooner).
 - **Reduce motion**: no scene; the beep, your pick and the small ink record show at once.
-- Only the app's own pictures (the licensed finger photos) and patricka colours. No new images, no video, so it stays light on cheap phones.
+- **No photos** (owner: "I don't like those fingers… create one, don't use photos"). The hand is our own drawing (`src/lib/inkHand.ts`): soft shading, no thick outlines, so it is not cartoonish; a kurta-blue sleeve. One drawing for the vote moment, the small ink record, "You voted in every live duel" and both share images. No photo credit needed any more. The finger photos and `public/ink/` are removed.
 - The small ink record (56 px photo, voter ID) stays on the page after the scene, as before.

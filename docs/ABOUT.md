@@ -13,7 +13,7 @@ For the reasons behind each screen and element, see [DESIGN.md](DESIGN.md). For 
 Election lets anyone make a **duel** between 2 or more choices, such as *Modi or Rahul?* or *Virat, Rohit or Dhoni?* People vote with one tap, guess who is winning, and share that they voted.
 
 - **Fun and fan polls, open worldwide.** These are not legal or official elections, and the app says so on every screen and share image ("Fun duel · not official").
-- **It feels like a real Indian election.** It uses the EVM button and beep, the VVPAT paper slip, a real photo of an inked finger, exit polls and counting day, because people already know, trust and share these moments.
+- **It feels like a real Indian election.** It uses the EVM button and beep, the VVPAT paper slip, the inked finger (our own drawing), exit polls and counting day, because people already know, trust and share these moments.
 - **In English, Hindi and Hinglish** (language menu in the top bar).
 - **Launch duel:** *Modi or Rahul?* It is the main duel on the Home page.
 
@@ -30,7 +30,7 @@ Election lets anyone make a **duel** between 2 or more choices, such as *Modi or
 1. **Open** the Home page or a shared link. The duel is the first thing on screen, so there is nothing to read first.
 2. **Vote** by pressing the blue EVM **Vote** button. One scene opens in the middle of the screen: your row on the ballot unit, the blue key goes down, the red light glows and the machine beeps.
 3. **VVPAT slip:** the machine's window lights up, your slip prints, stays behind the glass, then is cut and drops into the box with a soft thud.
-4. **Inked finger:** a big, real photo of a finger; the officer's rod draws the ink down from the nail. Then "Vote cast. Your finger is inked. Voter ID EL-000041", counting up. Tap anywhere to skip; shorter after your first vote.
+4. **Inked finger:** a big drawn hand, raised index finger; the officer's rod draws the ink line down from the nail. Then "Vote cast. Your finger is inked. Voter ID EL-000041", counting up. Tap anywhere to skip; shorter after your first vote.
 5. **Exit poll:** "Who's winning right now?" You make your guess, or skip it. You can undo your vote for 30 seconds.
 6. **Counting day:** results are counted in front of you in 3 real rounds (the lead can swing), with a majority line, "Swing in 24 h" and a LIVE dot. Then: whether your exit poll was right, and, if a friend sent the link, "you agree" or "you disagree". An ended duel shows "Result declared: X wins by N votes".
 7. **Share your ink:** share on WhatsApp, as a Status/Story image, or copy the link.
@@ -56,7 +56,7 @@ We decided **not to have streaks, levels, points or score bubbles**: they belong
 - **Where:** WhatsApp first, then Status/Instagram Story, then Copy link.
 - **Secret ballot is on by default.** People click more to find out a friend's pick than to read it.
 - **The WhatsApp message** carries a short, spoiler-free line (the Wordle idea): "🗳️ “Modi or Rahul?” · I voted ☝️ · Exit poll ✅ · Guess who I picked?…". In Hindi when Hindi is on.
-- **Link preview** (1200×630, in chats): the real inked-finger photo, "I VOTED", both photos, and either your pick or "Guess who I picked?". It has **no QR code**, because the link can already be tapped.
+- **Link preview** (1200×630, in chats): the drawn inked finger, "I VOTED", both photos, and either your pick or "Guess who I picked?". It has **no QR code**, because the link can already be tapped.
 - **Story image** (1080×1920): the same content plus a **small QR code in the corner** with "Scan to vote", because links in Stories can't be tapped.
 - **Share images are English or Hinglish:** the image maker cannot join Hindi letters correctly.
 - **Shared images never show the split.** Friends have to vote to see it.
@@ -73,7 +73,7 @@ We decided **not to have streaks, levels, points or score bubbles**: they belong
 - **Photos:** licensed, with credits shown on screen.
   - Modi: Prime Minister's Office, GODL-India.
   - Rahul Gandhi: Himanshu Arya Khowal, CC BY 4.0.
-  - Inked finger: GaneshBhakt, CC BY-SA 3.0 (edited: cropped, and an ink-free copy made only for the animation). Credits in `public/ink/CREDITS.md`.
+  - The inked finger is our own drawing (`src/lib/inkHand.ts`), not a photo, so it needs no credit.
 - **The election rule:** only things a real election has. No quiz or game parts.
 - **All interface text** lives in one file, `src/lib/i18n.ts`, in English, Hindi and Hinglish.
 
@@ -135,7 +135,7 @@ Optional settings (each feature stays off until set):
 - `src/components/ShareSheet.tsx`: the share panel.
 - `src/app/api/og` and `src/app/api/card`: the share images.
 - `src/lib/i18n.ts`: all interface text, English, Hindi and Hinglish.
-- `src/components/InkFinger.tsx` and `public/ink/`: the inked-finger photo and its animation.
+- `src/lib/inkHand.ts`: the drawn inked hand. `src/components/CastVote.tsx`: the cast-vote moment (EVM, VVPAT, ink).
 
 **Before every push:** `npm run check` (types, tests and build).
 
@@ -167,7 +167,8 @@ Design, UX, UI and interaction are the selling points. The plan, with research a
 | 5 | Speaks Bharat | Hindi switch (हिं / EN) for all interface text, spoiler-free WhatsApp line with your exit poll result | Live (share images stay English) |
 | Round 2 | Safe and found | Report and review, silence windows, Hinglish, calendar reminder, counting ticker, keep or delete my votes, privacy page, search basics, topic pages, starter duels, shared limits and bot check (off until keys are set) | Built on the work branch |
 | Round 3 | Easier to use | EVM ballot rows for 3+ choices, tap-to-skip slip, distinct circle letters, emoji per choice, "why people picked", My votes standings, Most watched now, Create quick start and live preview | Built on the work branch |
-| Ink | Real inked finger | Real photo of an inked finger, ink wiped on after voting, used in the story card and link preview | Live |
+| Ink | Real inked finger | Real photo of an inked finger, ink wiped on after voting, used in the story card and link preview | Replaced: owner preferred a drawing |
+| Cast | The cast-vote moment | One scene: EVM key and light, VVPAT slip prints and drops, a drawn hand with the ink drawn on by the officer's rod; tap to skip | Built on the work branch |
 
 **Open items:**
 - Owner settings for Round 2: `ADMIN_SECRET`, `NEXT_PUBLIC_GRIEVANCE_EMAIL`, and (optional) the Upstash and Turnstile keys. Add a `SILENCE_WINDOWS` entry when the Election Commission announces dates.
@@ -192,5 +193,4 @@ Design, UX, UI and interaction are the selling points. The plan, with research a
 - Rate limits are kept per server until the Upstash settings are added.
 - Moderation is one person (the owner) on the review page. The word filter is a short list, so it misses things; reports catch the rest.
 - Duel creators can add an emoji per choice, but not photos yet (needs file storage). Only the launch duel has photos.
-- The ink-free copy of the finger photo was made by digitally removing the ink. It shows only during the 0.9-second wipe, and a faint smudge can be seen if you look closely.
 - The server is in the USA, so pages are slower for people in India until it moves.

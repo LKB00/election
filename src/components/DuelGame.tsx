@@ -6,7 +6,7 @@ import { flushSync } from 'react-dom';
 import type { PollOption, PollView } from '@/lib/polls';
 import { announceVote } from '@/lib/useStats';
 import Burst from './Burst';
-import InkFinger, { INK_CREDIT } from './InkFinger';
+import InkFinger from './InkFinger';
 import CastVote from './CastVote';
 import ShareSheet from './ShareSheet';
 import { evmBeep } from '@/lib/sound';
@@ -551,12 +551,8 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
         </div>
       )}
 
-      {(poll.options.some((o) => o.imageCredit) || voted) && (
-        <p className="duel-credit">
-          {poll.options.some((o) => o.imageCredit) && <>{t.photos}: {poll.options.filter((o) => o.imageCredit).map((o) => o.imageCredit).join(' · ')}</>}
-          {poll.options.some((o) => o.imageCredit) && voted && ' · '}
-          {voted && <>{t.inkPhoto}: {INK_CREDIT}</>}
-        </p>
+      {poll.options.some((o) => o.imageCredit) && (
+        <p className="duel-credit">{t.photos}: {poll.options.filter((o) => o.imageCredit).map((o) => o.imageCredit).join(' · ')}</p>
       )}
 
       {msg && <p className="duel-error" role="alert">{msg}</p>}

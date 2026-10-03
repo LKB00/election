@@ -175,11 +175,10 @@
 .duel-inked { display: flex; align-items: center; gap: 12px; padding: 0 4px; }
 .duel-inked p { margin: 0; display: flex; flex-direction: column; color: var(--ink); }
 .duel-inked .muted { font-variant-numeric: tabular-nums; }
-/* A real photo of an inked finger (the inking itself is animated in the cast-vote moment). */
-.ink-photo { position: relative; flex: none; display: inline-block; overflow: hidden; border-radius: 12px; background: var(--sand-dark); box-shadow: 0 1px 2px rgba(36, 40, 44, 0.12), 0 6px 16px rgba(36, 40, 44, 0.14); }
-.ink-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* The drawn inked finger (src/lib/inkHand.ts); the inking itself is animated in the cast-vote moment. */
+.ink-hand { flex: none; display: inline-block; line-height: 0; }
+.ink-hand svg { display: block; width: 100%; height: auto; }
 /* a wet shine passes over the fresh ink */
-@keyframes ink-shine { to { transform: translateY(100%); } }
 .duel-inked.is-new p { animation: fade-in 0.3s backwards; }
 @media (prefers-reduced-motion: reduce) { .duel-inked.is-new p { animation: none; } }
 
@@ -283,21 +282,22 @@ button.link-like { border: 0; background: none; padding: 8px 0; cursor: pointer;
 .cast-key { width: 48px; height: 28px; border-radius: 9999px; background: var(--d-input); box-shadow: inset 0 -3px 0 rgba(36, 40, 44, 0.22), 0 1px 2px rgba(36, 40, 44, 0.18); animation: key-press 0.45s ease both; }
 @keyframes key-press { 30% { transform: translateY(2px); box-shadow: inset 0 -1px 0 rgba(36, 40, 44, 0.22); } }
 
-/* Beat 3: the ink. A big photo; the officer's glass rod draws the line down from the nail, then a wet shine. */
-.cast-finger { position: relative; width: 168px; aspect-ratio: 4 / 5; overflow: hidden; border-radius: 20px; background: var(--sand-dark); box-shadow: 0 2px 4px rgba(36, 40, 44, 0.12), 0 16px 32px rgba(36, 40, 44, 0.22); }
-.cast-finger img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-/* The ink in the photo runs from about 40% to 78% of its height: reveal it from the nail down, in step with the rod. */
-.cast-finger-inked { clip-path: inset(0 0 60% 0); animation: ink-draw 0.85s calc((var(--t-ink) + 0.45) * 1s) cubic-bezier(0.45, 0, 0.35, 1) forwards; }
-@keyframes ink-draw { to { clip-path: inset(0 0 20% 0); } }
-.cast-rod { position: absolute; left: 49%; top: 0; width: 8px; height: 46%; margin-left: -4px; border-radius: 4px; background: linear-gradient(90deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.85) 45%, rgba(255, 255, 255, 0.4)); box-shadow: inset 0 0 0 1px rgba(36, 40, 44, 0.3), 2px 2px 4px rgba(36, 40, 44, 0.25); transform: translateY(-115%); animation: rod 1.2s calc((var(--t-ink) + 0.3) * 1s) linear forwards; }
-.cast-rod::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 16%; border-radius: 0 0 4px 4px; background: var(--ink); }
-/* Rod bottom = the edge of the ink: 40% of the photo at the start of the stroke, 80% at the end (the rod is 46% tall). */
+/* Beat 3: the ink. The drawn hand rises; the officer's glass rod draws the ink line down from the nail (the line is one
+   SVG path, drawn on with stroke-dashoffset in step with the rod). In the drawing the ink runs from 17.7% to 33.1% of its height. */
+.cast-hand { position: relative; display: block; width: 168px; animation: hand-up 0.45s calc(var(--t-ink) * 1s) cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
+.cast-hand-art { display: block; line-height: 0; filter: drop-shadow(0 12px 18px rgba(36, 40, 44, 0.18)); }
+.cast-hand-art svg { display: block; width: 100%; height: auto; }
+@keyframes hand-up { from { transform: translateY(24px) scale(0.92); opacity: 0; } }
+.cast-hand .hand-ink { stroke-dasharray: 1; stroke-dashoffset: 1; animation: ink-stroke 0.85s calc((var(--t-ink) + 0.45) * 1s) cubic-bezier(0.45, 0, 0.35, 1) forwards; }
+@keyframes ink-stroke { to { stroke-dashoffset: 0; } }
+/* The rod is 30% of the drawing's height; its tip follows the end of the line. */
+.cast-rod { position: absolute; left: 50%; top: 0; width: 7px; height: 30%; margin-left: -3.5px; border-radius: 4px; background: linear-gradient(90deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.95) 45%, rgba(255, 255, 255, 0.55)); box-shadow: inset 0 0 0 1px rgba(36, 40, 44, 0.3), 2px 3px 5px rgba(36, 40, 44, 0.25); opacity: 0; transform: translateY(-140%); animation: rod 1.2s calc((var(--t-ink) + 0.3) * 1s) linear forwards; }
+.cast-rod::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 18%; border-radius: 0 0 4px 4px; background: #33204a; }
 @keyframes rod {
-  0% { transform: translateY(-115%); }
-  12.5% { transform: translateY(-13%); animation-timing-function: cubic-bezier(0.45, 0, 0.35, 1); }
-  83% { transform: translateY(74%); opacity: 1; }
-  100% { transform: translateY(40%); opacity: 0; }
+  0% { transform: translateY(-140%); opacity: 0; }
+  12.5% { transform: translateY(-41%); opacity: 1; animation-timing-function: cubic-bezier(0.45, 0, 0.35, 1); }
+  83% { transform: translateY(10%); opacity: 1; }
+  100% { transform: translateY(-30%); opacity: 0; }
 }
-.cast-shine { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 30%, rgba(255, 255, 255, 0.4) 45%, transparent 60%); transform: translateY(-100%); animation: ink-shine 0.8s calc((var(--t-ink) + 1.35) * 1s) ease-out forwards; pointer-events: none; }
 .cast-text { display: flex; flex-direction: column; align-items: center; gap: 4px; margin: 0; text-align: center; font-size: 16px; line-height: 24px; animation: fade-in 0.4s calc((var(--t-ink) + 0.9) * 1s) backwards; }
 .cast-text .muted { font-variant-numeric: tabular-nums; }
