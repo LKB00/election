@@ -11,7 +11,7 @@ const TONES = ['game-e', 'game-f', 'game-b', 'game-d', 'game-a'];
 // The tile icon says the topic at a glance (it was the same people icon on every tile, which said nothing).
 const ICONS: Record<string, typeof Swords> = { politics: Landmark, cricket: Trophy, sports: Medal, movies: Film, music: Music, food: UtensilsCrossed, tech: Cpu, friends: Users };
 
-export default function DuelTiles({ polls, votedIds = [] }: { polls: PollSummary[]; votedIds?: string[] }) {
+export default function DuelTiles({ polls, votedIds = [], noCreate = false }: { polls: PollSummary[]; votedIds?: string[]; noCreate?: boolean }) {
   const t = useT();
   const [voted, setVoted] = useState<string[]>(votedIds);
   const [counts, setCounts] = useState<Record<string, number>>({});
@@ -54,12 +54,12 @@ export default function DuelTiles({ polls, votedIds = [] }: { polls: PollSummary
         );
       })}
       {/* Creating comes after voting, so this tile is last (docs/DESIGN.md). */}
-      <Link href="/create" className="game game-c">
+      {!noCreate && <Link href="/create" className="game game-c">
         <Plus size={22} strokeWidth={1.75} aria-hidden />
         <strong>{t.startOwn}</strong>
         <span>{t.startOwnLine}</span>
         <span className="game-meta">{t.freeNoSignup}</span>
-      </Link>
+      </Link>}
     </div>
   );
 }

@@ -2,6 +2,10 @@ import { z } from 'zod';
 
 import { CATEGORIES } from './categories';
 import { hasBlockedWord } from './moderation';
+
+/** One emoji (flags, skin tones and joined emoji like 👨‍👩‍👧 count as one). */
+export const isEmoji = (s: string) =>
+  /^(?:\p{Regional_Indicator}{2}|\p{Extended_Pictographic}(?:\p{Emoji_Modifier}|\uFE0F|\u20E3)*(?:\u200D\p{Extended_Pictographic}(?:\p{Emoji_Modifier}|\uFE0F)*)*)$/u.test(s);
 export { CATEGORIES, type Category } from './categories';
 
 export const createPollSchema = z.object({
@@ -13,6 +17,8 @@ export const createPollSchema = z.object({
     .min(2, 'Add at least 2 choices.')
     .max(10, 'At most 10 choices.')
     .refine((a) => new Set(a.map((x) => x.toLowerCase())).size === a.length, 'Two choices are the same. Make each one different.'),
+  // One optional emoji per choice, in the same order as the choices ('' = none).
+  emojis: z.array(z.string().max(16).refine((e) => e === '' || isEmoji(e), 'Pick one emoji per choice.')).max(10).default([]),
   hideUntilVoted: z.boolean().default(true),
   allowChange: z.boolean().default(false),
   endsAt: z

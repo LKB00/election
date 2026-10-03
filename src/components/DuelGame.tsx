@@ -12,6 +12,7 @@ import { evmBeep } from '@/lib/sound';
 import { humanToken, prepareHumanCheck } from '@/lib/turnstile-client';
 import { useLang, useT } from '@/lib/lang';
 import { apiMsg, reasonLabel, type Dict, type Lang } from '@/lib/i18n';
+import { faceLabels } from '@/lib/labels';
 
 // Duels, played like patricka's "This or That": tap a card, see the result on the
 // cards, then "Next duel". Results stay hidden until you vote.
@@ -20,7 +21,10 @@ const LETTERS = 'ABCDEFGHIJ';
 const serial = (n: number) => String(n + 1);
 const TONES = ['input', 'feedback', 'control', 'agents', 'output', 'trust'];
 
-const initials = (label: string) => label.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('');
+// The VVPAT slip shows for 2.6 s on your first vote of a visit, then shorter (it is a ritual, not a wait). Tap it to skip.
+const SLIP_FIRST_MS = 2600;
+const SLIP_AGAIN_MS = 1200;
+let votesThisVisit = 0;
 
 /** Whole-number percentages that always add up to 100. */
 function rounded(opts: PollOption[], total: number, counts?: Record<string, number>) {
@@ -57,7 +61,7 @@ function timeAgo(iso: string | null) {
 // Our own candidate photos also come as small WebP files (about half the data); share images keep the JPEG.
 const lighter = (url: string) => (url.startsWith('/candidates/') && url.endsWith('.jpg') ? url.replace(/\.jpg$/, '.webp') : url);
 
-function Face({ o, tone }: { o: PollOption; tone: string }) {
+function Face({ o, tone, letters }: { o: PollOption; tone: string; letters: string }) {
   const [ok, setOk] = useState<boolean | null>(null);
   const src = o.imageUrl ? lighter(o.imageUrl) : null;
   useEffect(() => {
@@ -76,8 +80,8 @@ function Face({ o, tone }: { o: PollOption; tone: string }) {
     );
   }
   return (
-    <span className={`duel-face tone-${tone}`} aria-hidden>
-      <span>{initials(o.label)}</span>
+    <span className={`duel-face tone-${tone}` + (o.emoji ? ' has-emoji' : '')} aria-hidden>
+      <span>{o.emoji ?? letters}</span>
     </span>
   );
 }
@@ -161,6 +165,12 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
   const nextRef = useRef<HTMLButtonElement>(null);
   const topRef = useRef<HTMLDivElement>(null);
   const guessRef = useRef<HTMLDivElement>(null);
+  const slipRef = useRef<HTMLDivElement>(null);
+  const slipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const endSlip = () => {
+    if (slipTimer.current) clearTimeout(slipTimer.current);
+    setSlipFor(null);
+  };
   // The "are you a person?" check (only when switched on) gets ready in the background.
   useEffect(() => prepareHumanCheck(), []);
 
@@ -254,7 +264,8 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
       evmBeep();
       setSlipFor(optionId);
       setInkedFor(poll.id);
-      setTimeout(() => setSlipFor(null), 2600);
+      if (slipTimer.current) clearTimeout(slipTimer.current);
+      slipTimer.current = setTimeout(() => setSlipFor(null), votesThisVisit++ === 0 ? SLIP_FIRST_MS : SLIP_AGAIN_MS);
       replace(data.poll);
       setJustVoted(data.poll.needsGuess ? null : optionId);
       setReasonSaved(false);
@@ -309,6 +320,13 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
     } else setMsg(data?.error ? apiMsg(lang, data.error) : t.undoLate);
   }
 
+  // On a long ballot (IPL's 10 teams) the slip appears below the list: bring it into view, so the vote visibly lands.
+  useEffect(() => {
+    if (!slipFor) return;
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    slipRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest' });
+  }, [slipFor]);
+
   // After the ink moment, bring the exit poll question onto the screen (it used to sit below the fold).
   const scrolledFor = useRef<string | null>(null);
   useEffect(() => {
@@ -349,7 +367,7 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
     requestAnimationFrame(() => topRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }));
   }
   function goNext() {
-    setSlipFor(null);
+    endSlip();
     setSharing(false);
     setJustVoted(null);
     setJustGuessed(false);
@@ -417,6 +435,9 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
   }
 
   const [vTitle, vLine] = mine && revealed ? verdict(t, poll, mine) : ['', ''];
+  const letters = faceLabels(poll.options.map((o) => o.label));
+  // 3 or more choices: one compact row per choice, like the real EVM ballot unit. Two choices keep the big photo cards.
+  const ballot = poll.options.length >= 3;
 
   return (
     <div className={'tot duel' + (revealed ? ' is-revealed' : '')} ref={topRef} style={{ viewTransitionName: 'ballot' } as React.CSSProperties}>
@@ -435,7 +456,7 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
         <p className="small duel-friend"><Users size={14} strokeWidth={1.75} aria-hidden /> {t.friendSealed}</p>
       )}
 
-      <div className={'tot-options duel-options n-' + poll.options.length}>
+      <div className={'tot-options duel-options n-' + poll.options.length + (ballot ? ' is-ballot' : '')}>
         {poll.options.map((o, n) => {
           const isMine = poll.myVote === o.id;
           const lead = n === leaderIdx;
@@ -457,7 +478,7 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
                 </span>
               )}
               <span className="duel-body">
-                <Face o={o} tone={TONES[n % TONES.length]} />
+                <Face o={o} tone={TONES[n % TONES.length]} letters={letters[n]} />
                 <span className="duel-text">
                   {o.subtitle && <span className="label">{o.subtitle}</span>}
                   <span className="duel-name">{o.label}</span>
@@ -492,7 +513,8 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
       )}
 
       {slipFor && (
-        <div className="vvpat" role="status" aria-live="polite">
+        // Tap the slip to move on (the beep and the slip still happen every time).
+        <div className="vvpat" role="status" aria-live="polite" ref={slipRef} onClick={endSlip} title={t.tapToSkip}>
           <p className="label">{t.vvpat}</p>
           <div className="vvpat-window">
             <div className="vvpat-slip">
@@ -621,7 +643,7 @@ null
             </p>
             <span className="row">
               <button type="button" className="btn btn-ghost" onClick={() => (mine && poll.myShareCode ? setSharing(true) : share())}>
-                <Share2 size={14} strokeWidth={1.75} aria-hidden /> {copied ? t.linkCopied : poll.closed ? t.shareResult : t.showInk}
+                <Share2 size={14} strokeWidth={1.75} aria-hidden /> {copied ? t.linkCopied : poll.closed ? t.shareResult : t.shareInk}
               </button>
               <button type="button" className="btn btn-primary" onClick={next} ref={nextRef}>
                 {t.next} <ArrowRight size={14} strokeWidth={1.75} aria-hidden />
@@ -661,6 +683,20 @@ null
                   </div>
                 </>
               )}
+            </div>
+          )}
+          {/* What everyone's reasons say (only once results are open): the reward for answering "why". */}
+          {revealed && poll.options.some((o) => o.reasons.length > 0) && (
+            <div className="duel-group duel-whys">
+              {poll.options.filter((o) => o.reasons.length > 0).map((o) => {
+                const sum = o.reasons.reduce((a, r) => a + r.n, 0);
+                return (
+                  <p key={o.id} className="small">
+                    <span className="label">{t.whyPeople(o.label)}</span>
+                    <span className="muted">{o.reasons.slice(0, 3).map((r) => `${reasonLabel(t, r.reason)} ${Math.round((r.n / sum) * 100)}%`).join(' · ')}</span>
+                  </p>
+                );
+              })}
             </div>
           )}
           <div className="duel-group">

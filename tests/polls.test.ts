@@ -405,3 +405,50 @@ describe('starter duels', () => {
     expect((await getPoll(db, 'chai-or-coffee', null))!.options).toHaveLength(2);
   });
 });
+
+describe('round 3: easier to use', () => {
+  it('never gives two choices the same letters in their circle', async () => {
+    const { faceLabels } = await import('@/lib/labels');
+    expect(faceLabels(['Narendra Modi', 'Rahul Gandhi'])).toEqual(['NM', 'RG']);
+    expect(faceLabels(['Chai', 'Coffee'])).toEqual(['Ch', 'Co']);
+    expect(faceLabels(['Chai', 'Chaas', 'Lassi'])).toEqual(['1', '2', 'L']);
+    expect(faceLabels(['🔥', 'Pizza'])).toEqual(['🔥', 'P']);
+  });
+
+  it('accepts one emoji per choice and stores it', async () => {
+    const { isEmoji } = await import('@/lib/validation');
+    for (const e of ['🔥', '👍🏽', '🇮🇳', '👨‍👩‍👧', '❤️']) expect(isEmoji(e)).toBe(true);
+    for (const e of ['a', '🔥🔥', ':)', '🔥x']) expect(isEmoji(e)).toBe(false);
+    expect(createPollSchema.safeParse({ title: 'Emoji duel', options: ['A', 'B'], emojis: ['🔥', 'nope'] }).success).toBe(false);
+    const id = await make({ title: 'Emoji duel', options: ['Tea', 'Coffee'], emojis: ['🍵', ''] });
+    expect((await getPoll(db, id, null))!.options.map((o) => o.emoji)).toEqual(['🍵', null]);
+  });
+
+  it('shows on My votes where each duel stands, with the same visibility rules as the duel', async () => {
+    const id = await make({ title: 'Standing check', options: ['A', 'B'], hideUntilVoted: true });
+    const [a, b] = (await getPoll(db, id, null))!.options;
+    await castVote(db, id, a.id, 'm1');
+    await castVote(db, id, a.id, 'm2');
+    await castVote(db, id, b.id, 'm3');
+    const mine = async () => (await getMyVotes(db, 'm1')).find((v) => v.pollId === id)!.standing;
+    expect(await mine()).toEqual({ kind: 'guess' }); // exit poll not answered yet: no numbers
+    await guessLeader(db, id, 'm1', 'skip');
+    expect(await mine()).toEqual({ kind: 'leading', name: 'A', percent: 67 });
+    await db.update(schema.polls).set({ endsAt: new Date(Date.now() - 1000) }).where(eq(schema.polls.id, id));
+    expect(await mine()).toEqual({ kind: 'won', name: 'A', percent: 67 });
+    const tie = await make({ title: 'Standing tie', options: ['A', 'B'] });
+    const [ta, tb] = (await getPoll(db, tie, null))!.options;
+    await castVote(db, tie, ta.id, 'm1');
+    await castVote(db, tie, tb.id, 'm4');
+    expect((await getMyVotes(db, 'm1')).find((v) => v.pollId === tie)!.standing).toEqual({ kind: 'tie' });
+  });
+
+  it('counts votes in the last hour for "Most watched now"', async () => {
+    const id = await make({ title: 'Hot duel' });
+    const p = (await getPoll(db, id, null))!;
+    await castVote(db, id, p.options[0].id, 'hot1');
+    await castVote(db, id, p.options[1].id, 'hot2');
+    await db.update(schema.votes).set({ createdAt: sql`now() - interval '2 hours'` }).where(eq(schema.votes.voterKey, 'hot2'));
+    expect((await listPolls(db, 500)).find((x) => x.id === id)).toMatchObject({ totalVotes: 2, lastHour: 1 });
+  });
+});

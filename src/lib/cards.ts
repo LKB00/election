@@ -29,4 +29,4 @@ export async function pickFromCode(db: Db, pollId: string, code: string | null) 
 }
 
 export const CARD = { ink: '#24282c', paper: '#fbfbf7', sand: '#f7f6f0', lime: '#c2ef72', green: '#5a7a1f', muted: '#5b5e61', tints: ['#e5eef7', '#f6e8ec', '#eef3dc', '#f5efd8'] };
-export const initialsOf = (label: string) => label.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('');
+export { faceLabels } from './labels';

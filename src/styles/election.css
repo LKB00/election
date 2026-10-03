@@ -223,3 +223,38 @@ button.link-like { border: 0; background: none; padding: 8px 0; cursor: pointer;
 .review-row { display: flex; flex-direction: column; gap: 8px; padding: 16px 0; border-top: var(--hair) solid var(--line); }
 .review-row .row { gap: 8px; }
 .keep-votes { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+
+/* ---- Round 3: easier to use (docs/DESIGN.md, "Round 3") ---- */
+/* 3+ choices: the EVM ballot unit. One row per choice: number, face, name, then the blue button (or the result). */
+.duel-options.is-ballot { grid-template-columns: 1fr; gap: 8px; }
+.is-ballot .duel-option { display: grid; grid-template-columns: 24px 1fr auto; grid-template-areas: "num body side" "num result result"; align-items: center; column-gap: 12px; row-gap: 8px; padding: 12px; }
+.is-ballot .tot-letter { position: static; grid-area: num; }
+.is-ballot .duel-body { grid-area: body; flex-direction: row; align-items: center; gap: 12px; padding: 0; min-width: 0; }
+.duel-options.is-ballot .duel-face, .duel-options.is-ballot .duel-photo { width: 40px; height: 40px; font-size: 14px; }
+.is-ballot .duel-name { font-size: 16px; line-height: 22px; }
+.is-ballot .evm-row { grid-area: side; margin: 0; padding: 0; }
+.is-ballot .tot-caption { position: static; grid-area: side; font-size: 12px; line-height: 16px; text-align: right; }
+.is-ballot .duel-result { grid-area: result; flex-direction: row; align-items: center; gap: 12px; padding: 0; }
+.is-ballot .duel-pct { font-size: 18px; line-height: 24px; min-width: 48px; }
+.is-ballot .duel-meter { flex: 1; }
+.is-ballot .duel-result .small { white-space: nowrap; }
+/* The Vote button looks pressable: raised, like the real EVM's blue key (it read as switched off when flat). */
+.evm-btn { box-shadow: inset 0 -3px 0 rgba(36, 40, 44, 0.22), 0 1px 2px rgba(36, 40, 44, 0.18); }
+.duel-option:not(:disabled):active .evm-btn { box-shadow: inset 0 -1px 0 rgba(36, 40, 44, 0.22); }
+/* The creator's emoji in the face circle. */
+.duel-face.has-emoji span { font-size: 1.6em; line-height: 1; }
+/* Tap the VVPAT slip to move on. */
+.vvpat { cursor: pointer; }
+/* "Why people picked X": label above, reasons below. */
+.duel-whys p { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+/* Create: the emoji box next to each choice, quick-start chips, and the ballot preview. */
+.search.emoji-in { flex: 0 0 48px; width: 48px; max-width: 48px; padding: 0; justify-content: center; }
+.emoji-in input { text-align: center; padding: 0; width: 100%; }
+/* The 🙂 is only a hint: faded and grey, so it never looks like an answer. */
+.emoji-in input::placeholder { opacity: 0.35; filter: grayscale(1); }
+.create-preview { display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: 16px; background: var(--sand); }
+.create-preview .duel-q { font-size: 20px; line-height: 28px; margin: 0; }
+.create-preview .tot-option { cursor: default; }
+.create-preview .tot-option:hover { transform: none; }
+/* My votes: where each duel stands now. */
+.index-standing { font-size: 13px; line-height: 18px; color: var(--ink-2); }

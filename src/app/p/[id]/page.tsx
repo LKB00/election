@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import CreatedPanel from '@/components/CreatedPanel';
 import DuelGame from '@/components/DuelGame';
@@ -44,6 +45,14 @@ export default async function DuelPage({ params, searchParams }: Props) {
   const poll = await getPoll(db, id, voterId, f);
   if (!poll) notFound();
   const rest = await getDeck(db, voterId);
+  // Opened from inside the site (Duels list, a tile): nobody "wants your pick", so no label then.
+  const h = await headers();
+  let fromInside = false;
+  try {
+    fromInside = new URL(h.get('referer') ?? '').host === h.get('host');
+  } catch {
+    /* no referer: came from outside (WhatsApp, a typed link) */
+  }
   const deck = [poll, ...rest.filter((p) => p.id !== poll.id)];
   // The label says why you are here: you made it, a friend dared you, you already voted, or it is over.
   // Just created: no label, the panel below already says it.
@@ -55,7 +64,9 @@ export default async function DuelPage({ params, searchParams }: Props) {
         ? t.labelVoted
         : poll.friend.known
           ? t.labelDared
-          : t.labelAsk;
+          : fromInside
+            ? null
+            : t.labelAsk;
   // (Friend: the label says why you are here; the line in the game holds the hook, "their pick is sealed".)
   return (
     <div className="page page-wide">

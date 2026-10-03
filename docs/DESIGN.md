@@ -335,3 +335,22 @@ Verdicts: **Keep**, **Changed** or **Removed**.
 | My votes: **Keep your votes** (private link) and **Delete my votes** | P3 | A record kept only on one phone is lost with the phone. The private link brings it back; deleting is a privacy right. Copy is a ghost button, delete is a quiet text link with a confirm. |
 | Privacy and reports page `/privacy` (linked from My votes and Create) | P3 | What we keep, for how long, who sees your vote, and how to complain. The complaints contact comes from `NEXT_PUBLIC_GRIEVANCE_EMAIL`. |
 | Starter duels: Virat, Rohit or Dhoni? · Who wins IPL 2027? · UP 2027: who wins? · Chai or coffee? | — | Duels tied to what India talks about next, so Home never shows only one duel. |
+
+## Round 3: easier to use (owner: "make it more intuitive")
+
+| Element | Level | Job / why |
+|---|---|---|
+| **Ballot rows** for 3+ choices (number, face, name, blue Vote button in one row) | P1 | The 10-team IPL duel took 4 screens of big cards, and after voting the slip and exit poll were far below, so nothing seemed to happen. A row per choice is exactly the real EVM ballot unit. Results show on the same row (%, bar with majority mark, votes). Two-choice duels keep the big photo cards. |
+| VVPAT slip scrolls into view | — | On a long ballot the slip appears below the list; it now comes onto the screen, so every vote visibly lands. |
+| Tap the slip to move on; shorter slip after your first vote of a visit (2.6 s, then 1.2 s) | — | A ritual the first time, not a wait the fifth time. The beep and slip still happen on every vote. |
+| Circle letters never repeat ("Ch" / "Co" for Chai and Coffee, else the ballot number) | P2 | Two "C" circles said nothing. Same rule on the share images. |
+| Creator's **emoji** per choice (in the circle) | P2 | A face for choices without photos (🍗 Hyderabad). Photo upload needs file storage; not built. |
+| Label "Someone wants your pick" only when you arrived from outside the site | P3 | Opening a duel from the Duels list is your own choice; the label was wrong there. |
+| Vote button raised (shadow under it, presses down) | P1 | Flat pale blue read as switched off. Same blue, now looks like the EVM key. |
+| **Why people picked X**: top 3 reasons with % per choice, after the result | P3 | The reasons were collected but never shown. Seeing them is the reward for answering. |
+| My votes: where each duel stands ("Modi leading · 62%", "Result declared: Modi won", "Make your exit poll call to see the results", "Results sealed") | P2 | A reason to come back. Same visibility rules as the duel: no numbers before your exit poll call or during a silence window. |
+| "Share your ink" (was "Show your ink") | P2 | Says what the button does; the sheet keeps the "Show your ink" title. |
+| Create: **Quick start** chips (Yes or no · 3 choices · 4 choices) | P3 | The shape of common duels in one tap. Yes or no fills 👍/👎. |
+| Create: emoji box next to each choice | P3 | Optional; a faded 🙂 hint so it never looks filled in. |
+| Create: **Your ballot · preview** (rows, live as you type) | P3 | You see what voters will see before you share. Below the form, above the one ink button. |
+| Duels: **Most watched now** (up to 3 duels with the most votes in the last hour) | P2 | Like TV's "hot seats": where the action is. Not repeated in "All duels". Hidden when nothing got votes in the last hour. |

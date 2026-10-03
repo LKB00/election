@@ -2,12 +2,22 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { getDb } from '@/db';
-import { getMyVotes, getVoterStats } from '@/lib/polls';
+import { getMyVotes, getVoterStats, type Standing } from '@/lib/polls';
+import type { Dict } from '@/lib/i18n';
 import { readVoterId, voterKeyForLink } from '@/lib/voter';
 import KeepVotes from '@/components/KeepVotes';
 import { getT } from '@/lib/lang-server';
 
 export const dynamic = 'force-dynamic';
+
+const standingText = (t: Dict, s: Standing): string | null =>
+  s.kind === 'leading' ? t.meLeading(s.name, s.percent)
+  : s.kind === 'won' ? t.meWon(s.name)
+  : s.kind === 'tie' ? t.meTie
+  : s.kind === 'tied' ? t.meTied
+  : s.kind === 'guess' ? t.meGuess
+  : s.kind === 'sealed' ? t.meSealed
+  : null;
 export const metadata: Metadata = { title: 'My votes' };
 
 // My votes = your voting record on this phone. No levels or points: nothing here that a real election does not have.
@@ -39,6 +49,8 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
                 <Link href={`/p/${v.pollId}`} className="index-row">
                   <span className="index-title">{v.title}</span>
                   <span className="index-sum">{t.youPicked(v.pick)}</span>
+                  {/* Where it stands now: a reason to come back (same visibility rules as the duel itself). */}
+                  {standingText(t, v.standing) && <span className="index-standing">{standingText(t, v.standing)}</span>}
                   <ChevronRight size={16} strokeWidth={1.75} className="index-chev" aria-hidden />
                 </Link>
               </li>
