@@ -39,7 +39,8 @@ export default function DuelTiles({ polls, votedIds = [] }: { polls: PollSummary
           <Link key={p.id} href={`/p/${p.id}`} className={`game ${TONES[n % TONES.length]}`}>
             <Icon size={22} strokeWidth={1.75} aria-hidden />
             <strong>{p.title}</strong>
-            <span>{p.options.join(' vs ')}</span>
+            {/* Long duels (IPL's 10 teams) show the first three and how many more. */}
+            <span>{p.options.slice(0, 3).join(' vs ')}{p.options.length > 3 && ` +${p.options.length - 3}`}</span>
             <span className="game-meta">
               {done ? (
                 <><Check size={13} strokeWidth={2} aria-hidden /> {t.youVotedN(total)}</>

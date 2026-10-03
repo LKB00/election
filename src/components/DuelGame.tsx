@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { ArrowRight, Check, Plus, Share2, Users } from 'lucide-react';
+import { ArrowRight, CalendarPlus, Check, Flag, Lock, Plus, Share2, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type { PollOption, PollView } from '@/lib/polls';
@@ -9,8 +9,9 @@ import Burst from './Burst';
 import InkFinger, { INK_CREDIT } from './InkFinger';
 import ShareSheet from './ShareSheet';
 import { evmBeep } from '@/lib/sound';
+import { humanToken, prepareHumanCheck } from '@/lib/turnstile-client';
 import { useLang, useT } from '@/lib/lang';
-import { apiMsg, reasonLabel, type Dict } from '@/lib/i18n';
+import { apiMsg, reasonLabel, type Dict, type Lang } from '@/lib/i18n';
 
 // Duels, played like patricka's "This or That": tap a card, see the result on the
 // cards, then "Next duel". Results stay hidden until you vote.
@@ -90,6 +91,39 @@ function closesIn(t: Dict, iso: string) {
 
 const isOpen = (p: PollView) => p.myVote === null && !p.closed;
 
+// "Sealed till 5 Feb, 6:00 pm": India time, so the server page and the phone print the same.
+const sealedWhen = (iso: string, lang: Lang) =>
+  new Date(iso).toLocaleString(lang === 'hi' ? 'hi-IN' : 'en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' });
+
+// "Report this duel" (P3, last on the screen): one tap opens the reasons, one more sends it.
+function ReportDuel({ pollId, t }: { pollId: string; t: Dict }) {
+  const [state, setState] = useState<'closed' | 'open' | 'sent'>('closed');
+  useEffect(() => setState('closed'), [pollId]);
+  async function send(reason: string) {
+    setState('sent');
+    await fetch(`/api/polls/${pollId}/report`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason }) }).catch(() => null);
+  }
+  if (state === 'sent') return <p className="small muted duel-report" role="status">{t.reportThanks}</p>;
+  if (state === 'closed') {
+    return (
+      <p className="small duel-report">
+        <button type="button" className="link-like muted" onClick={() => setState('open')}><Flag size={12} strokeWidth={1.75} aria-hidden /> {t.reportDuel}</button>
+      </p>
+    );
+  }
+  return (
+    <div className="duel-group duel-report">
+      <p className="label">{t.reportWhy}</p>
+      <div className="row wrap">
+        {Object.entries(t.reportReasons).map(([key, label]) => (
+          <button key={key} type="button" className="chip" onClick={() => send(key)}>{label}</button>
+        ))}
+        <button type="button" className="link-like small muted" onClick={() => setState('closed')}>{t.cancel}</button>
+      </div>
+    </div>
+  );
+}
+
 // How the race moved: the first choice's share over time, with the 50% majority line. Like the odds line on poll trackers.
 function Sparkline({ points, label, aria }: { points: number[]; label: string; aria: (l: string) => string }) {
   const w = 120;
@@ -126,6 +160,9 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
   const [inkedFor, setInkedFor] = useState<string | null>(null);
   const nextRef = useRef<HTMLButtonElement>(null);
   const topRef = useRef<HTMLDivElement>(null);
+  const guessRef = useRef<HTMLDivElement>(null);
+  // The "are you a person?" check (only when switched on) gets ready in the background.
+  useEffect(() => prepareHumanCheck(), []);
 
   const poll = deck[i];
   // The friend's code only belongs to the duel they shared (the first one on a shared link).
@@ -133,6 +170,9 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
   const q = viaHere ? `?f=${encodeURIComponent(viaHere)}` : '';
   const voted = poll?.myVote != null;
   const revealed = !!poll && poll.resultsVisible && (voted || poll.closed);
+  // Election silence window: no numbers for anyone, but the pinned bar still offers Share and Next.
+  const sealed = !!poll?.sealedUntil;
+  const barOn = revealed || (sealed && (voted || !!poll?.closed));
   const votedCount = deck.filter((p) => p.myVote !== null).length;
   // Counting day: when results open in front of you, they are counted in 3 rounds (real vote order), like TV on counting day.
   const [countRound, setCountRound] = useState<number | null>(null);
@@ -154,6 +194,13 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
   const shownTotal = shown ? Object.values(shown).reduce((a, b) => a + b, 0) : poll?.totalVotes ?? 0;
   const pcts = useMemo(() => (poll ? rounded(poll.options, shownTotal, shown ?? undefined) : []), [poll, shownTotal, shown]);
   const votesOf = (o: PollOption) => (shown ? shown[o.id] ?? 0 : o.votes);
+  // The TV ticker line during counting: "Modi ahead by 412" (or "level").
+  const ticker = (() => {
+    if (!shown || !poll) return '';
+    const byVotes = poll.options.map((o) => ({ o, n: shown[o.id] ?? 0 })).sort((a, b) => b.n - a.n);
+    if (byVotes.length < 2 || byVotes[0].n === byVotes[1].n) return t.level;
+    return t.aheadBy(byVotes[0].o.label, byVotes[0].n - byVotes[1].n);
+  })();
   const mine = poll?.options.find((o) => o.id === poll.myVote) ?? null;
   // "Leading" / "won" only when one choice is clearly ahead (a tie has no leader).
   const top = pcts.length ? Math.max(...pcts) : 0;
@@ -196,10 +243,11 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
     setBusy(optionId);
     setMsg('');
     navigator.vibrate?.(12);
+    const human = await humanToken();
     const res = await fetch(`/api/polls/${poll.id}/vote`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ optionId, via: viaHere }),
+      body: JSON.stringify({ optionId, via: viaHere, human }),
     }).catch(() => null);
     const data = await res?.json().catch(() => null);
     if (res?.ok) {
@@ -260,6 +308,16 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
       announceVote(poll.id);
     } else setMsg(data?.error ? apiMsg(lang, data.error) : t.undoLate);
   }
+
+  // After the ink moment, bring the exit poll question onto the screen (it used to sit below the fold).
+  const scrolledFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!poll || slipFor || !poll.needsGuess || inkedFor !== poll.id || scrolledFor.current === poll.id) return;
+    scrolledFor.current = poll.id;
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const timer = setTimeout(() => guessRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' }), 900);
+    return () => clearTimeout(timer);
+  }, [poll, slipFor, inkedFor]);
 
   // The undo link hides itself when its time is up.
   useEffect(() => {
@@ -429,6 +487,10 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
         <p className="small muted duel-hint" data-hint>{t.ballotHint}</p>
       )}
 
+      {sealed && (
+        <p className="small duel-sealed" role="note"><Lock size={13} strokeWidth={1.75} aria-hidden /> {t.sealed(sealedWhen(poll.sealedUntil!, lang))}</p>
+      )}
+
       {slipFor && (
         <div className="vvpat" role="status" aria-live="polite">
           <p className="label">{t.vvpat}</p>
@@ -455,7 +517,7 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
       )}
 
       {!slipFor && voted && poll.needsGuess && (
-        <div className="duel-guess" aria-live="polite">
+        <div className="duel-guess" aria-live="polite" ref={guessRef}>
           <p className="label">{t.exitPoll}</p>
           <h2>{t.whoWinning}</h2>
           <p className="small muted">{t.exitPollNote}</p>
@@ -502,14 +564,18 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
       {msg && <p className="duel-error" role="alert">{msg}</p>}
 
       {/* The one next step, pinned at thumb height on phones. */}
-      <div className={'tot-result' + (revealed ? ' is-shown' : '')} aria-live="polite">
+      <div className={'tot-result' + (barOn ? ' is-shown' : '')} aria-live="polite">
         {revealed && counting && (
-          <p className="duel-counting"><span className="live-dot" aria-hidden /> <strong>{t.counting}</strong> · {t.round(countRound! + 1)}</p>
+          <p className="duel-counting"><span className="live-dot" aria-hidden /> <span><strong>{t.counting}</strong> · {t.round(countRound! + 1)}: {ticker}</span></p>
         )}
-        {revealed && !counting && (
+        {barOn && !counting && (
           <>
             <p>
-              {poll.closed && (
+              {/* Sealed: the note under the cards already says why there are no numbers; the bar keeps Undo, Share and Next. */}
+              {sealed && !revealed && undoUntil > 0 && !poll.closed && voted && (
+                <button type="button" className="link-like duel-undo small muted" onClick={undo}>{t.undoVote}</button>
+              )}
+              {revealed && poll.closed && (
                 <>
                   <strong>{t.declared}</strong>{' '}
                   {leaderIdx >= 0
@@ -520,7 +586,7 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
                   {mine && <br />}
                 </>
               )}
-              {mine ? (
+              {revealed && mine ? (
                 <>
                   {poll.myGuess && (
                     <span className={'duel-guessed' + (justGuessed ? ' is-new' : '')}>
@@ -572,8 +638,15 @@ null
       )}
 
       {/* P3, optional: after the pinned bar, so the bar never covers it. */}
-      {revealed && mine && (
+      {(revealed || sealed) && mine && (
         <div className="duel-after">
+          {poll.endsAt && !poll.closed && (
+            <p className="small">
+              <a className="text-link" href={`/api/polls/${poll.id}/ics`} download>
+                <CalendarPlus size={14} strokeWidth={1.75} aria-hidden /> {t.addCalendar}
+              </a>
+            </p>
+          )}
           {poll.reasons.length > 0 && (
             <div className="duel-group">
               {poll.myReason || reasonSaved ? (
@@ -605,6 +678,8 @@ null
           </div>
         </div>
       )}
+
+      <ReportDuel pollId={poll.id} t={t} />
     </div>
   );
 }

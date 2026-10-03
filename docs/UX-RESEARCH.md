@@ -29,6 +29,8 @@ Every idea below follows two rules:
 
 ## Recommendations, in batches (biggest impact first)
 
+**Next:** "Round 2 research" below. Built: everything in it except moving the server (needs the owner), short-time page caching, and phone notifications (see "Round 2: what was built").
+
 **Status:** Batches 3, 4 and 5 are live (see DESIGN.md, "Batches 3–5"), plus a real inked-finger photo with an ink animation. Not done yet: moving the server and database near India (needs the owner), and Hindi in share images (the image renderer can't shape Hindi).
 
 ### Batch 3: "Counting day" (the selling point)
@@ -57,6 +59,101 @@ Every idea below follows two rules:
 1. **Hindi / Hinglish switch** (Hindi first, others later). It needs one place that holds all the text, so it's a larger job.
 2. **WhatsApp text with a spoiler-free line** (Wordle lesson):
    "🗳️ Modi or Rahul? · I voted ☝️ · Exit poll ✅ · Guess who I picked? link"
+
+## Round 2 research (October 2026): what to do next
+
+How this was done:
+- I checked the live site from outside: its speed headers, link previews and search files.
+- I walked through the app at phone size: vote, exit poll, results, Duels, Create, My votes.
+- I researched current sources (listed at the end of this section).
+
+Each idea passes the election rule. **Impact** is how much it helps (High/Med/Low). **Effort** is how much work it is (S = hours, M = days, L = weeks).
+
+### What we found on the live site
+- **The server is in the USA.** The live headers say `iad1` (Washington). Every visitor in India waits for a trip to America and back.
+- **Nothing is cached.** Every page is sent as `no-store`, so each view is built fresh, even for a poll that thousands of people open.
+- **Search engines get little help.** There is no `robots.txt` and no `sitemap.xml`, and the home page has no link-preview tags (only duel pages do).
+- **The link-preview image is slow the first time.** It took 2.4 s to make the first time. It is cached for only 5 minutes. WhatsApp can give up on slow previews.
+- **The cheating guard barely works on Vercel.** Each Vercel server keeps its own vote-rate counts in memory, so the limit is weak.
+- **There is no report button or moderation.** For polls about politicians, this is the biggest risk (see "Safety and the law").
+- **Phone walkthrough:**
+  - After you press Vote, the exit-poll question starts below the bottom of the screen, so you have to scroll to find the next step.
+  - "My votes" says your votes are kept "on this device only". If you lose the phone or clear the browser, they are gone.
+
+### Top 10, in order
+
+| # | Idea | Why | Impact | Effort |
+|---|---|---|---|---|
+| 1 | **Move the server to Mumbai (`bom1`) and the database to Singapore** (Neon has no India region) | Probably the biggest "feels faster" win for India. Move both together, or it gets slower. | High | S–M (needs your Vercel and Neon logins) |
+| 2 | **Report button plus a hide switch for the owner** | India's IT Rules expect a way to complain and quick removal. 2026 changes cut some removal times to 2–3 hours (deepfakes). Polls about politicians attract abuse. | High | S |
+| 3 | **Freeze political duels during the poll "silence" window** | Election law bans showing exit polls and opinion polls in set windows around real voting. Our guess step is called "exit poll". During a notified window, results of duels about parties or candidates in that state are hidden ("Results open after polling ends"). This matches a real election. | High | M |
+| 4 | **Cache duel pages for a few seconds** and load "your vote" separately | A viral duel would not hit the database on every open; pages open faster. | High | M |
+| 5 | **"Tell me when results are declared"** (a phone notification, asked only after voting) | A reason to come back without streaks. It works on Android, and on iPhone only after "Add to Home Screen". A "Remind me" calendar link works for everyone. | High | M |
+| 6 | **Faster, longer-cached link-preview image** plus a preview card for the home page | The link card is what friends see first in WhatsApp. If it fails, fewer people click. | High | S |
+| 7 | **A shared vote-rate limit** (Upstash Redis) **plus an invisible bot check** (Cloudflare Turnstile) on the vote | Stops bots and scripts from inflating votes. Jio and Airtel put many people behind one IP address, so limits must stay loose. | Med | S |
+| 8 | **Hinglish** as a third language | Most Hindi speakers type Hindi in English letters online. It also works on share images, which cannot show Hindi letters. | High | S |
+| 9 | **Election-calendar duels and a WhatsApp Channel "Aaj ka mukabla"** (today's duel) | The 2027 state elections (UP, Punjab, Uttarakhand, Goa, Manipur), IPL and big film releases bring ready-made interest. A Channel posts one duel a day to followers. | High | S (mostly content, not code) |
+| 10 | **Search basics:** `robots.txt`, a sitemap, and topic pages ("UP 2027 duels", "IPL duels") | People find duels from Google. New duels made by users stay out of search until they are checked. | Med | S–M |
+
+### Smaller polish (from the phone walkthrough)
+- After the inked-finger moment, **scroll gently to the exit poll**, so the next step is always on screen.
+- **Keep my votes**: a private link to save or send to yourself, so a new phone can get your record back. This also lets people delete their record, which the privacy law (below) will expect.
+- **Counting ticker** while results are counted: "Round 2 of 3: Modi ahead by 412". This copies TV counting day.
+- **Text-only result line** for WhatsApp, like Wordle: "🗳️ Modi or Rahul? · Exit poll ✅ · 🟩🟩🟧". It needs no image.
+
+### Safety and the law (simple steps, not legal advice)
+- **IT Rules 2021 (updated 2026):**
+  - Name a grievance contact, reply to complaints within 24 h and resolve them within 15 days.
+  - Some content (deepfakes, private images) must come down within 2–3 hours of notice.
+  - **Steps:** add a report button and an admin "hide now" switch, and only allow licensed or credited photos.
+- **Election law (Sections 126 and 126A, RP Act):** exit polls are banned during notified windows, and opinion polls in the last 48 h before voting ends. **Step:** idea #3 above. Keep saying "fun poll, not a survey".
+- **Privacy law (DPDP Act; rules came in November 2025, full duties by May 2027):**
+  - Add a short notice saying what we store (a voter cookie) and why.
+  - Set how long we keep it.
+  - Add a "delete my votes" button.
+  - Never store raw IP addresses.
+- **Word filter when a duel is created:** block slurs in English, Hindi and Hinglish, and hold duels that name politicians for a quick check.
+
+### Not recommended
+- Paid phone OTP "verified voters" for now: it costs money and brings more privacy duties.
+- "See who voted" features like the NGL or Gas apps: they break the secret ballot.
+
+### Could not check
+- **Real speed scores:** the Google PageSpeed tool was out of quota. Run https://pagespeed.web.dev by hand on the live site.
+- **WhatsApp's preview size limit (~300 KB):** comes from developer testing only.
+- **Shares of each Indian language:** the numbers are from 2017.
+- **2027 IPL dates.**
+- **The exact 2026 exit-poll notice:** the government page refused the request.
+
+### Round 2: what was built (and what was not)
+| # | Idea | Status |
+|---|---|---|
+| 1 | Server to Mumbai, database to Singapore | **Not done: needs the owner's Vercel and Neon logins.** Moving only the server makes it slower. |
+| 2 | Report button and hide switch | Built: report link, auto-hide after 3 reports, review page `/admin` |
+| 3 | Silence windows | Built: politics duels sealed during a window (`SILENCE_WINDOWS` setting, or the list in `src/lib/silence.ts`) |
+| 4 | Short-time page caching | **Not done.** Every page is personal (your vote, your language), so caching it safely needs the bigger Redis step in the README growth plan. A cache now could show you a count without your own vote. The link-preview images are cached instead (idea 6). |
+| 5 | "Tell me when results are declared" | Built as a calendar link (works on every phone). **Phone notifications not done**: they need push keys and a server job that sends them. |
+| 6 | Faster preview image, home preview card | Built: images cached for an hour on Vercel's network; the home link shows today's duel |
+| 7 | Shared rate limit and bot check | Built: Upstash Redis and Cloudflare Turnstile, both off until their keys are set |
+| 8 | Hinglish | Built, including share images |
+| 9 | Calendar duels, WhatsApp Channel | Built: 4 starter duels. **The WhatsApp Channel is the owner's to create** (in WhatsApp: Updates → + → New channel). |
+| 10 | Search basics | Built: `robots.txt`, `sitemap.xml` (reviewed duels only), topic pages, unchecked duels marked "noindex" |
+| Polish | Scroll to exit poll, keep and delete my votes, counting ticker | Built |
+| Polish | Text-only emoji bar of the split (🟩🟩🟧) | **Not done on purpose**: it would show the split in chats, which breaks "never show the split". The WhatsApp line already carries the spoiler-free "Exit poll ✅". |
+| Safety | Word filter, politics hold, privacy page, no raw IPs | Built |
+
+### Round 2 sources
+- [Vercel regions](https://vercel.com/docs/regions) and [Neon regions](https://neon.com/docs/introduction/regions)
+- [IT Rules 2021 (PIB)](https://static.pib.gov.in/WriteReadData/specificdocs/documents/2021/jun/doc202162411.pdf) and [2026 amendments: 3-hour takedown, AI labels (Hogan Lovells)](https://www.hoganlovells.com/en/publications/india-introduces-mandatory-labelling-for-ai-and-3hour-takedown-for-illegal-content)
+- [ECI bars exit polls, 48-hour silence period (DD News)](https://ddnews.gov.in/en/eci-bars-exit-polls-reiterates-48-hour-silence-period-ahead-of-assembly-elections/)
+- [DPDP Rules 2025 timeline](https://www.glocertinternational.com/resources/guides/dpdp-rules-2025-compliance-timeline/)
+- [Turnstile Ephemeral IDs (Cloudflare)](https://blog.cloudflare.com/turnstile-ephemeral-ids-for-fraud-detection/)
+- [Safari 18.4: Declarative Web Push (WebKit)](https://webkit.org/blog/16574/webkit-features-in-safari-18-4/) and [web push opt-in benchmarks](https://lumapush.com/blog/web-push-notification-benchmarks-ctr-optin-rates-by-industry)
+- [Most-followed WhatsApp Channels](https://whatsscale.com/blog/most-followed-whatsapp-channels)
+- [OG image too large](https://www.opengraph.to/articles/og-image-too-large)
+- [Hinglish (Wikipedia)](https://en.wikipedia.org/wiki/Hinglish) and [KPMG–Google Indian languages report (Slator)](https://slator.com/localization-is-shaping-the-future-of-digital-india-kpmg-report/)
+- [Upcoming elections (BOOM)](https://elections.boomlive.in/elections/upcoming)
+- [Core Web Vitals targets](https://unlighthouse.dev/learn-lighthouse/core-web-vitals)
 
 ## What we should not do
 

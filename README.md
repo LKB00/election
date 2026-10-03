@@ -50,7 +50,7 @@ Files to know: `src/db/schema.ts` (tables), `src/lib/polls.ts` (all poll and vot
 
 ## Known limits today
 
-- Rate limiting is per server (in memory).
+- Rate limiting is per server unless the Upstash settings are added (see `.env.example`).
 - No accounts yet: a person who clears cookies can vote again. Fine for fun polls, not for sign-in-only polls (next step).
-- No poll moderation or report button yet.
+- Moderation is the owner's review page (`/admin`, needs `ADMIN_SECRET`).
 - Candidate images are in the database schema but not in the form yet.

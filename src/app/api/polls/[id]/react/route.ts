@@ -8,7 +8,7 @@ import { readVoterId } from '@/lib/voter';
 const body = z.object({ emoji: z.string().min(1).max(8) });
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (!rateLimit(`react:${clientIp(req)}`, 60, 60_000)) {
+  if (!(await rateLimit(`react:${clientIp(req)}`, 60, 60_000))) {
     return NextResponse.json({ error: 'Slow down a little.' }, { status: 429 });
   }
   const { id } = await params;

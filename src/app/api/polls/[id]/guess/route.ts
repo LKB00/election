@@ -7,7 +7,7 @@ import { readVoterId } from '@/lib/voter';
 
 // "Who's winning right now?" One answer per vote (or "skip"), checked on the server.
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (!rateLimit(`guess:${clientIp(req)}`, 30, 60_000)) {
+  if (!(await rateLimit(`guess:${clientIp(req)}`, 30, 60_000))) {
     return NextResponse.json({ error: 'Slow down a little.' }, { status: 429 });
   }
   const { id } = await params;

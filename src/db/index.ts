@@ -21,6 +21,10 @@ CREATE TABLE IF NOT EXISTS polls (
 );
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS reasons text NOT NULL DEFAULT '[]';
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS featured boolean NOT NULL DEFAULT false;
+ALTER TABLE polls ADD COLUMN IF NOT EXISTS hidden boolean NOT NULL DEFAULT false;
+-- Duels from before review existed count as reviewed; new ones start unreviewed.
+ALTER TABLE polls ADD COLUMN IF NOT EXISTS reviewed boolean NOT NULL DEFAULT true;
+ALTER TABLE polls ALTER COLUMN reviewed SET DEFAULT false;
 CREATE INDEX IF NOT EXISTS polls_created_idx ON polls (created_at);
 CREATE TABLE IF NOT EXISTS options (
   id text PRIMARY KEY,
@@ -57,6 +61,13 @@ CREATE TABLE IF NOT EXISTS reactions (
   emoji text NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (poll_id, voter_key, emoji)
+);
+CREATE TABLE IF NOT EXISTS reports (
+  poll_id text NOT NULL REFERENCES polls(id) ON DELETE CASCADE,
+  voter_key text NOT NULL,
+  reason text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (poll_id, voter_key)
 );
 `;
 

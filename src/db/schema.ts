@@ -14,6 +14,10 @@ export const polls = pgTable(
     reasons: text('reasons').notNull().default('[]'),
     // The flagship poll shown big on the home page.
     featured: boolean('featured').notNull().default(false),
+    // Taken down by the owner (or by enough reports). Hidden duels act as if they do not exist.
+    hidden: boolean('hidden').notNull().default(false),
+    // Checked by the owner. Only reviewed duels go into search, and only reviewed politics duels are listed.
+    reviewed: boolean('reviewed').notNull().default(false),
     endsAt: timestamp('ends_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -70,4 +74,16 @@ export const reactions = pgTable(
   },
   // One of each emoji per person per poll: tapping again removes it.
   (t) => [primaryKey({ columns: [t.pollId, t.voterKey, t.emoji] })],
+);
+
+export const reports = pgTable(
+  'reports',
+  {
+    pollId: text('poll_id').notNull().references(() => polls.id, { onDelete: 'cascade' }),
+    voterKey: text('voter_key').notNull(),
+    reason: text('reason').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  // One report per person per duel, so one person cannot take a duel down alone.
+  (t) => [primaryKey({ columns: [t.pollId, t.voterKey] })],
 );

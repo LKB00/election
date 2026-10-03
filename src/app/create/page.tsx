@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import CreateForm from '@/components/CreateForm';
 import { getT } from '@/lib/lang-server';
 
@@ -16,6 +17,9 @@ export default async function CreatePage() {
       <section className="block block-tight">
         <CreateForm />
       </section>
+      <p className="small block">
+        <Link href="/privacy" className="text-link">{t.privacyLink}</Link>
+      </p>
     </div>
   );
 }

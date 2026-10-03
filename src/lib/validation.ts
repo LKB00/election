@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { CATEGORIES } from './categories';
+import { hasBlockedWord } from './moderation';
 export { CATEGORIES, type Category } from './categories';
 
 export const createPollSchema = z.object({
@@ -19,8 +20,10 @@ export const createPollSchema = z.object({
     .datetime()
     .optional()
     .refine((v) => !v || new Date(v).getTime() > Date.now(), 'The end time must be in the future.'),
-});
+}).refine((p) => !hasBlockedWord(p.title, p.description, ...p.options), 'Please remove the abusive words.');
 export type CreatePollInput = z.infer<typeof createPollSchema>;
 
-export const voteSchema = z.object({ optionId: z.string().min(1).max(40), via: z.string().max(20).nullish() });
+export const voteSchema = z.object({ optionId: z.string().min(1).max(40), via: z.string().max(20).nullish(), human: z.string().max(4096).nullish() });
 export const guessSchema = z.object({ choice: z.string().min(1).max(40) });
+export const reportSchema = z.object({ reason: z.string().min(1).max(20) });
+export const adminSchema = z.object({ key: z.string().min(1).max(200), action: z.enum(['hide', 'show', 'approve']) });

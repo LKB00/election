@@ -11,7 +11,7 @@ import { useLang, useT } from '@/lib/lang';
 export default function ShareSheet({ poll, pick, shareCode, onClose }: { poll: PollView; pick: PollOption; shareCode: string; onClose: () => void }) {
   const t = useT();
   const lang = useLang();
-  const hi = lang === 'hi' ? '&l=hi' : '';
+  const hi = lang === 'en' ? '' : `&l=${lang}`;
   const [secret, setSecret] = useState(true);
   const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState(false);
