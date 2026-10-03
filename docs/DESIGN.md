@@ -354,3 +354,21 @@ Verdicts: **Keep**, **Changed** or **Removed**.
 | Create: emoji box next to each choice | P3 | Optional; a faded 🙂 hint so it never looks filled in. |
 | Create: **Your ballot · preview** (rows, live as you type) | P3 | You see what voters will see before you share. Below the form, above the one ink button. |
 | Duels: **Most watched now** (up to 3 duels with the most votes in the last hour) | P2 | Like TV's "hot seats": where the action is. Not repeated in "All duels". Hidden when nothing got votes in the last hour. |
+
+## The cast-vote moment (owner: "make the cast vote animation better")
+
+Before: three small pieces stacked down the page (a red light on the card, a slip sliding in a beige box, a 56 px finger photo). On long ballots they were far apart, and the ink was tiny.
+Now: **one scene in the middle of the screen**, the real booth in order. P1 at that moment; everything else waits under a dim layer.
+
+| Beat | What you see and hear | Why |
+|---|---|---|
+| 1. EVM (from 0 s) | Your row on the ballot unit: number, name, the blue key goes down, the red light glows while the beep sounds | The press and the light are what people remember from the booth |
+| 2. VVPAT (0.5 s) | A dark machine; the glass window lights up; your slip (number, name, party) prints down in small steps, stays, then is cut and drops into the box; the slot flashes lime as it lands with a soft thud | The trust moment: you see your choice recorded, then sealed |
+| 3. Ink (2.75 s) | A big **drawn hand** (flat style, from the owner's reference picture) (210 px wide, was a 56 px photo) rises, raised index finger, nail towards you; the polling officer's glass rod draws the ink line down from the base of the nail; "Vote cast. Your finger is inked." and the voter ID counts up | The proof everyone shares. The line is drawn on as the rod moves (one path in the drawing), not revealed from a photo |
+| End (5 s) | The scene closes; your result, confetti and the exit poll follow | Results and counting wait for the scene, so nothing important plays hidden behind it |
+
+- **Tap anywhere** (or Enter / Escape) to move on. "Tap to skip" is written at the bottom.
+- **Shorter after your first vote of a visit**: about 3.3 s (the slip prints at once, the ink comes sooner).
+- **Reduce motion**: no scene; the beep, your pick and the small ink record show at once.
+- **No photos** (owner: "I don't like those fingers… create one, don't use photos"). The hand is our own drawing (`src/lib/inkHand.ts`): soft shading, no thick outlines, so it is not cartoonish; a kurta-blue sleeve. One drawing for the vote moment, the small ink record, "You voted in every live duel" and both share images. No photo credit needed any more. The finger photos and `public/ink/` are removed.
+- The small ink record (56 px photo, voter ID) stays on the page after the scene, as before.

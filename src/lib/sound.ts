@@ -16,6 +16,29 @@ export function setSound(on: boolean) {
     /* private mode */
   }
 }
+/** The VVPAT slip landing in its sealed box: one soft, low thud. */
+export function vvpatThud() {
+  if (!soundOn()) return;
+  try {
+    const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AC) return;
+    ctx ??= new AC();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(190, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(70, ctx.currentTime + 0.12);
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.16);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.18);
+  } catch {
+    /* sound is a bonus, never an error */
+  }
+}
+
 export function evmBeep() {
   if (!soundOn()) return;
   try {

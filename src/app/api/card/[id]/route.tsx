@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
 import QRCode from 'qrcode';
-import { INK_CREDIT, INK_PHOTO } from '@/components/InkFinger';
+import { handDataUri } from '@/lib/inkHand';
 import { getDb } from '@/db';
 import { CARD, cardFonts, faceLabels, pickFromCode } from '@/lib/cards';
 import { getPoll } from '@/lib/polls';
@@ -43,7 +43,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         </div>
 
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={abs(INK_PHOTO)} width={240} height={300} style={{ marginTop: 64, borderRadius: 32, objectFit: 'cover', boxShadow: '0 16px 40px rgba(36,40,44,0.2)' }} alt="" />
+        <img src={handDataUri(240)} width={240} height={312} style={{ marginTop: 56 }} alt="" />
         <div style={{ display: 'flex', marginTop: 40, fontSize: 132, fontWeight: 700, letterSpacing: -3 }}>{t.cardVoted}</div>
         <div style={{ display: 'flex', marginTop: 8, fontSize: 52, color: CARD.muted, textAlign: 'center' }}>{t.cardIn(poll.title.slice(0, 40))}</div>
 
@@ -73,7 +73,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', fontSize: 44, fontWeight: 700 }}>{t.cardScan}</div>
             <div style={{ display: 'flex', fontSize: 30, color: CARD.muted }}>{url.host}</div>
-            <div style={{ display: 'flex', fontSize: 18, color: CARD.muted, marginTop: 8 }}>Ink photo: {INK_CREDIT}</div>
           </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={qr} width={200} height={200} style={{ borderRadius: 16 }} alt="" />

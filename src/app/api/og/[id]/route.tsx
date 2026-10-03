@@ -1,5 +1,5 @@
 import { ImageResponse } from 'next/og';
-import { INK_CREDIT, INK_PHOTO } from '@/components/InkFinger';
+import { handDataUri } from '@/lib/inkHand';
 import { getDb } from '@/db';
 import { CARD, cardFonts, faceLabels, pickFromCode } from '@/lib/cards';
 import { getPoll } from '@/lib/polls';
@@ -8,7 +8,7 @@ import { cardDict } from '@/lib/i18n';
 export const dynamic = 'force-dynamic';
 
 // The WhatsApp / X link preview (1200x630). The link is already tappable there, so no QR code.
-// From a friend's "Show your ink" link (?f=): the inked finger + "I voted" + their pick or "Guess who I picked?".
+// From a friend's "Show your ink" link (?f=): the drawn inked finger + "I voted" + their pick or "Guess who I picked?".
 // Never the split, so friends still have to vote to see it.
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -40,7 +40,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         </div>
         <div style={{ display: 'flex', flex: 1, alignItems: 'center', gap: 32, marginTop: 16 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          {voted && <img src={abs(INK_PHOTO)} width={150} height={188} style={{ borderRadius: 20, objectFit: 'cover', boxShadow: '0 8px 24px rgba(36,40,44,0.18)' }} alt="" />}
+          {voted && <img src={handDataUri(150)} width={150} height={195} alt="" />}
           <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
             {voted && <div style={{ display: 'flex', fontSize: 30, fontWeight: 700, color: CARD.green, letterSpacing: 2 }}>{t.ogVoted}</div>}
             <div style={{ display: 'flex', fontSize: 58, fontWeight: 700, letterSpacing: -1, lineHeight: 1.1 }}>{poll.title.slice(0, 50)}</div>
@@ -66,7 +66,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
           </div>
         </div>
         <div style={{ display: 'flex', justifyContent: 'center', fontSize: 34, fontWeight: 700 }}>{headline}</div>
-        {voted && <div style={{ display: 'flex', position: 'absolute', right: 24, bottom: 12, fontSize: 14, color: CARD.muted }}>Ink photo: {INK_CREDIT}</div>}
       </div>
     ),
     { width: 1200, height: 630, fonts: await cardFonts(), // Cached by Vercel's network for an hour, so WhatsApp gets the preview fast (it gives up on slow ones).

@@ -6,7 +6,8 @@ import { flushSync } from 'react-dom';
 import type { PollOption, PollView } from '@/lib/polls';
 import { announceVote } from '@/lib/useStats';
 import Burst from './Burst';
-import InkFinger, { INK_CREDIT } from './InkFinger';
+import InkFinger from './InkFinger';
+import CastVote from './CastVote';
 import ShareSheet from './ShareSheet';
 import { evmBeep } from '@/lib/sound';
 import { humanToken, prepareHumanCheck } from '@/lib/turnstile-client';
@@ -21,9 +22,7 @@ const LETTERS = 'ABCDEFGHIJ';
 const serial = (n: number) => String(n + 1);
 const TONES = ['input', 'feedback', 'control', 'agents', 'output', 'trust'];
 
-// The VVPAT slip shows for 2.6 s on your first vote of a visit, then shorter (it is a ritual, not a wait). Tap it to skip.
-const SLIP_FIRST_MS = 2600;
-const SLIP_AGAIN_MS = 1200;
+// The cast-vote moment is full length on your first vote of a visit, then shorter (a ritual, not a wait).
 let votesThisVisit = 0;
 
 /** Whole-number percentages that always add up to 100. */
@@ -157,20 +156,14 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
   const [over, setOver] = useState(start === undefined && firstOpen === -1);
   const [undoUntil, setUndoUntil] = useState(0);
   const [reasonSaved, setReasonSaved] = useState(false);
-  // The VVPAT moment: right after the beep your choice shows on a slip for a few seconds, like in a real booth.
-  const [slipFor, setSlipFor] = useState<string | null>(null);
+  // The cast-vote moment (EVM, VVPAT slip, ink) plays over the page; results wait until it is done.
+  const [casting, setCasting] = useState<{ optionId: string; short: boolean } | null>(null);
   const [sharing, setSharing] = useState(false);
   // Which duel you just voted in (plays the ink animation once).
   const [inkedFor, setInkedFor] = useState<string | null>(null);
   const nextRef = useRef<HTMLButtonElement>(null);
   const topRef = useRef<HTMLDivElement>(null);
   const guessRef = useRef<HTMLDivElement>(null);
-  const slipRef = useRef<HTMLDivElement>(null);
-  const slipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const endSlip = () => {
-    if (slipTimer.current) clearTimeout(slipTimer.current);
-    setSlipFor(null);
-  };
   // The "are you a person?" check (only when switched on) gets ready in the background.
   useEffect(() => prepareHumanCheck(), []);
 
@@ -179,10 +172,10 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
   const viaHere = poll && start !== undefined && i === start ? via ?? null : null;
   const q = viaHere ? `?f=${encodeURIComponent(viaHere)}` : '';
   const voted = poll?.myVote != null;
-  const revealed = !!poll && poll.resultsVisible && (voted || poll.closed);
+  const revealed = !!poll && !casting && poll.resultsVisible && (voted || poll.closed);
   // Election silence window: no numbers for anyone, but the pinned bar still offers Share and Next.
   const sealed = !!poll?.sealedUntil;
-  const barOn = revealed || (sealed && (voted || !!poll?.closed));
+  const barOn = revealed || (!casting && sealed && (voted || !!poll?.closed));
   const votedCount = deck.filter((p) => p.myVote !== null).length;
   // Counting day: when results open in front of you, they are counted in 3 rounds (real vote order), like TV on counting day.
   const [countRound, setCountRound] = useState<number | null>(null);
@@ -244,9 +237,9 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
     if (res?.ok) replace(await res.json());
   }, [poll, q]);
   useEffect(() => {
-    const t = setInterval(() => document.visibilityState === 'visible' && !busy && refresh(), 8000);
+    const t = setInterval(() => document.visibilityState === 'visible' && !busy && !casting && refresh(), 8000);
     return () => clearInterval(t);
-  }, [refresh, busy]);
+  }, [refresh, busy, casting]);
 
   async function vote(optionId: string) {
     if (!poll || voted || busy || poll.closed) return;
@@ -262,16 +255,13 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
     const data = await res?.json().catch(() => null);
     if (res?.ok) {
       evmBeep();
-      setSlipFor(optionId);
       setInkedFor(poll.id);
-      if (slipTimer.current) clearTimeout(slipTimer.current);
-      slipTimer.current = setTimeout(() => setSlipFor(null), votesThisVisit++ === 0 ? SLIP_FIRST_MS : SLIP_AGAIN_MS);
       replace(data.poll);
-      setJustVoted(data.poll.needsGuess ? null : optionId);
       setReasonSaved(false);
-      setUndoUntil(Date.now() + 25_000); // a little under the server's 30 s
       announceVote(poll.id);
-      setTimeout(() => nextRef.current?.focus({ preventScroll: true }), 50);
+      const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      if (reduce) castDone(optionId, data.poll.needsGuess);
+      else setCasting({ optionId, short: votesThisVisit++ > 0 });
     } else if (!res && !navigator.onLine) {
       // No internet: keep the choice and send it by itself when the phone is back online.
       setMsg(t.noNet);
@@ -281,6 +271,14 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
       if (res?.status === 409) refresh();
     }
     setBusy(null);
+  }
+
+  // The cast-vote moment ended (or was tapped away): now the result, the confetti and the next step.
+  function castDone(optionId: string, needsGuess: boolean) {
+    setCasting(null);
+    setJustVoted(needsGuess ? null : optionId);
+    setUndoUntil(Date.now() + 20_000); // the server allows 30 s from the vote; the moment took up to 5 of them
+    setTimeout(() => nextRef.current?.focus({ preventScroll: true }), 50);
   }
 
   const [guessBusy, setGuessBusy] = useState(false);
@@ -320,22 +318,15 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
     } else setMsg(data?.error ? apiMsg(lang, data.error) : t.undoLate);
   }
 
-  // On a long ballot (IPL's 10 teams) the slip appears below the list: bring it into view, so the vote visibly lands.
-  useEffect(() => {
-    if (!slipFor) return;
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    slipRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest' });
-  }, [slipFor]);
-
   // After the ink moment, bring the exit poll question onto the screen (it used to sit below the fold).
   const scrolledFor = useRef<string | null>(null);
   useEffect(() => {
-    if (!poll || slipFor || !poll.needsGuess || inkedFor !== poll.id || scrolledFor.current === poll.id) return;
+    if (!poll || casting || !poll.needsGuess || inkedFor !== poll.id || scrolledFor.current === poll.id) return;
     scrolledFor.current = poll.id;
     const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    const timer = setTimeout(() => guessRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' }), 900);
+    const timer = setTimeout(() => guessRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' }), 300);
     return () => clearTimeout(timer);
-  }, [poll, slipFor, inkedFor]);
+  }, [poll, casting, inkedFor]);
 
   // The undo link hides itself when its time is up.
   useEffect(() => {
@@ -367,7 +358,7 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
     requestAnimationFrame(() => topRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }));
   }
   function goNext() {
-    endSlip();
+    setCasting(null);
     setSharing(false);
     setJustVoted(null);
     setJustGuessed(false);
@@ -512,25 +503,10 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
         <p className="small duel-sealed" role="note"><Lock size={13} strokeWidth={1.75} aria-hidden /> {t.sealed(sealedWhen(poll.sealedUntil!, lang))}</p>
       )}
 
-      {slipFor && (
-        // Tap the slip to move on (the beep and the slip still happen every time).
-        <div className="vvpat" role="status" aria-live="polite" ref={slipRef} onClick={endSlip} title={t.tapToSkip}>
-          <p className="label">{t.vvpat}</p>
-          <div className="vvpat-window">
-            <div className="vvpat-slip">
-              <span className="vvpat-no">{poll.options.findIndex((o) => o.id === slipFor) + 1}</span>
-              <span className="vvpat-name">{poll.options.find((o) => o.id === slipFor)?.label}</span>
-              <span className="vvpat-party">{poll.options.find((o) => o.id === slipFor)?.subtitle?.split(' · ')[0] ?? ''}</span>
-            </div>
-          </div>
-          <p className="small muted">{t.vvpatNote}</p>
-        </div>
-      )}
-
-      {!slipFor && voted && mine && !poll.closed && (
-        // The ink moment: right after the slip, the hand rises and the ink is brushed onto the nail (only for a vote made just now).
+      {!casting && voted && mine && !poll.closed && (
+        // The record of the ink moment (the moment itself plays in CastVote).
         <div className={'duel-inked' + (inkedFor === poll.id ? ' is-new' : '')}>
-          <InkFinger size={56} animate={inkedFor === poll.id} />
+          <InkFinger size={56} />
           <p className="small">
             <strong>{t.inked}.</strong>
             {poll.myVoterNumber ? <span className="muted"> {t.voterId} EL-{String(poll.myVoterNumber).padStart(6, '0')}</span> : null}
@@ -538,7 +514,7 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
         </div>
       )}
 
-      {!slipFor && voted && poll.needsGuess && (
+      {!casting && voted && poll.needsGuess && (
         <div className="duel-guess" aria-live="polite" ref={guessRef}>
           <p className="label">{t.exitPoll}</p>
           <h2>{t.whoWinning}</h2>
@@ -575,12 +551,8 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
         </div>
       )}
 
-      {(poll.options.some((o) => o.imageCredit) || voted) && (
-        <p className="duel-credit">
-          {poll.options.some((o) => o.imageCredit) && <>{t.photos}: {poll.options.filter((o) => o.imageCredit).map((o) => o.imageCredit).join(' · ')}</>}
-          {poll.options.some((o) => o.imageCredit) && voted && ' · '}
-          {voted && <>{t.inkPhoto}: {INK_CREDIT}</>}
-        </p>
+      {poll.options.some((o) => o.imageCredit) && (
+        <p className="duel-credit">{t.photos}: {poll.options.filter((o) => o.imageCredit).map((o) => o.imageCredit).join(' · ')}</p>
       )}
 
       {msg && <p className="duel-error" role="alert">{msg}</p>}
@@ -654,6 +626,18 @@ null
       </div>
 
       {declaredBurst && <Burst count={24} />}
+
+      {casting && mine && (
+        <CastVote
+          t={t}
+          number={poll.options.findIndex((o) => o.id === casting.optionId) + 1}
+          name={mine.label}
+          party={mine.subtitle?.split(' · ')[0] ?? null}
+          voterNo={poll.myVoterNumber}
+          short={casting.short}
+          onDone={() => castDone(casting.optionId, poll.needsGuess)}
+        />
+      )}
 
       {sharing && mine && poll.myShareCode && (
         <ShareSheet poll={poll} pick={mine} shareCode={poll.myShareCode} onClose={() => setSharing(false)} />
