@@ -1,6 +1,6 @@
 // The inked index finger, drawn (owner: "create one, don't use photos", then a flat reference picture: "something like this").
-// Flat style: light skin in a few flat tones, no outlines; a raised index finger, nail towards you, the other fingers
-// folded, and a wavy purple ink mark on the nail, as the polling officer draws it. Our own drawing (not traced).
+// Flat style: one smooth outline for the whole hand (owner: the boxy first try "looks weird"), light skin in a few flat
+// tones, no outlines; a raised index finger, nail towards you, the other fingers folded as rounded humps, and a wavy purple ink mark on the nail, as the polling officer draws it. Our own drawing (not traced).
 // One drawing for the app, the vote moment and the share images.
 // The ink is one path (class "hand-ink", length 1), so the vote moment can draw it on (see .cast-hand in election.css).
 // The drawing has no ids today; the prefix p is kept so ids can be added safely later.
@@ -9,21 +9,19 @@ export const HAND_RATIO = 260 / 200;
 export function handSvg(p = 'h', w = 200): string {
   const h = Math.round(w * HAND_RATIO);
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 260" width="${w}" height="${h}">
-  <path d="M88 124 L88 74 C88 66 93 61 100 61 C107 61 112 66 112 74 L112 124 Z" fill="#efb995"/>
-  <path d="M110 128 L110 80 C110 72 115 67 122 67 C129 67 134 72 134 80 L134 128 Z" fill="#ecb48f"/>
-  <path d="M132 134 L132 96 C132 89 136 84 142 84 C148 84 152 89 152 96 L152 134 Z" fill="#e9b08a"/>
-  <path d="M66 112 C58 114 52 122 51 132 C50 146 54 158 60 170 C66 182 74 192 80 200 L82 260 L142 260 L143 214 C152 202 158 186 158 166 L157 124 C157 116 151 110 143 110 L76 110 C72 110 69 111 66 112 Z" fill="#f4c3a0"/>
-  <path d="M51 132 C50 146 54 158 60 170 C66 182 74 192 80 200 L81 216 C73 206 63 194 57 182 C51 168 49 150 51 132 Z" fill="#ebb08b"/>
-  <path d="M143 214 C152 202 158 186 158 166 L157 124 C157 120 155 116 152 114 L152 166 C152 186 147 200 142 210 Z" fill="#ebb08b"/>
-  <path d="M100 128 C102 150 104 170 103 190 M118 132 C120 152 121 170 119 188 M136 138 C137 156 137 172 134 186" fill="none" stroke="#ecb592" stroke-width="4" stroke-linecap="round" opacity="0.45"/>
-  <path d="M56.5 133 C56.5 140 59 145 63 148" fill="none" stroke="#e5a983" stroke-width="2" stroke-linecap="round"/>
-  <path d="M66 150 L66 26 C66 17 71 11 78 11 C85 11 90 17 90 26 L90 118 C90 130 86 142 78 152 Z" fill="#f4c3a0"/>
-  <path d="M85 20 C88 24 90 28 90 34 L90 112 C88 108 86 106 85 106 Z" fill="#eebb98"/>
-  <path d="M71 84 Q78 86 85 84 M72 89 Q78 91 84 89" fill="none" stroke="#e7ac87" stroke-width="1.8" stroke-linecap="round"/>
-  <path d="M73 48 Q78 49.5 83 48" fill="none" stroke="#e7ac87" stroke-width="1.6" stroke-linecap="round"/>
-  <path d="M70.5 26 C70.5 18 74 14 78 14 C82 14 85.5 18 85.5 26 L85.5 36 C85.5 38.5 83.5 40 81 40 L75 40 C72.5 40 70.5 38.5 70.5 36 Z" fill="#fbe6dc"/>
-  <path d="M70.5 22 C71.5 17 74.5 14 78 14 C81.5 14 84.5 17 85.5 22 Z" fill="#fff5f0"/>
-  <path class="hand-ink" pathLength="1" d="M78.5 18 C76.5 22 80 26 78 30 C76.5 33.5 79.5 37 78 42" fill="none" stroke="#5b2fa0" stroke-width="5.5" stroke-linecap="round"/>
+  <path d="M54 112 L54 24 C54 15 60 9 67.6 9 C75 9 81.3 15 81.3 24 L81.3 84 C82.5 80 88 76.5 95 76.5 C102 76.5 107.5 80 108.6 87.5 C111 84.5 116 84 121 84.5 C127 85.5 131 90 131.6 99.5 C134 97 138 96.5 142 97.5 C147 99 150 103 151.5 110 C155 119 157.5 129 158 141 L157 171 C155 192 151 210 147 224 L145.6 260 L71.4 260 L69.7 224 C60 205 48 182 41 162 C39 152 40 140 46.6 125 C49 119 52 115 54 112 Z" fill="#f6c19c"/>
+  <path d="M41 162 C48 182 60 205 69.7 224 L71.4 260 L74.4 260 L73.4 225 C64 205 53 184 46.5 164 C44.5 156 44.5 146 47.5 136 C43 145 40 154 41 162 Z" fill="#efb088"/>
+  <path d="M158 141 L157 171 C155 192 151 210 147 224 L145.6 260 L142.6 260 L143.4 223 C148 208 152 190 153 170 L153.5 142 C153 132 151.5 122 150 114 C153.5 122 156.5 131 158 141 Z" fill="#efb088"/>
+  <path d="M102.5 78.5 C105.5 80.5 108 83.5 108.6 87.5 L107.6 112 C106.4 100 105 89 102.5 78.5 Z M125.5 86 C128.5 88 131 92 131.6 99.5 L130.6 122 C129.6 110 128 96 125.5 86 Z M146.5 100.5 C149 103 150.6 106 151.5 110 C155 119 157.5 129 158 141 L157.4 150 C155.8 134 152 116 146.5 100.5 Z" fill="#efb088"/>
+  <path d="M108.6 87.5 C107.8 101 107.2 114 105.8 128 M131.6 99.5 C130.9 112 130.2 124 128.8 134" fill="none" stroke="#e7a37c" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M95 138 C96.5 154 97 170 96 186 M119 142 C120.5 158 120.5 172 119 186" fill="none" stroke="#efb590" stroke-width="3.5" stroke-linecap="round" opacity="0.6"/>
+  <path d="M41.5 158 Q45.5 160.5 49.5 159.5" fill="none" stroke="#e7a37c" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M77 14 C80 17 81.3 20 81.3 26 L81.3 84 C80 66 79 40 77 14 Z" fill="#efb088"/>
+  <path d="M61 68 Q67.6 70.5 74 68 M62 73.5 Q67.6 75.5 73 73.5" fill="none" stroke="#e7a37c" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M63 42 Q67.6 43.5 72 42" fill="none" stroke="#e7a37c" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M59.5 22 C59.5 15 63 11.5 67.6 11.5 C72.2 11.5 75.7 15 75.7 22 L75.7 32.5 C75.7 35 73.8 36.5 71.5 36.5 L63.7 36.5 C61.4 36.5 59.5 35 59.5 32.5 Z" fill="#fbe2d6"/>
+  <path d="M60 31 Q67.6 27.5 75.2 31 L75.2 32.5 C75.2 34.6 73.6 36 71.5 36 L63.7 36 C61.6 36 60 34.6 60 32.5 Z" fill="#fff6f1"/>
+  <path class="hand-ink" pathLength="1" d="M68.5 15 C66.5 19 70 23 68 27 C66.5 31 69.5 35 68 41" fill="none" stroke="#5b2fa0" stroke-width="4.6" stroke-linecap="round"/>
 </svg>`;
 }
 
