@@ -22,6 +22,8 @@ npm run check      # types + tests + production build
 
 ## What is built (MVP)
 
+Short summary. The full, current list is in [docs/ABOUT.md](docs/ABOUT.md) (counting day, Hindi, real inked-finger photo, app feel).
+
 - Create a poll: question, 2 to 10 choices, category, optional end time.
 - Two options per poll: hide results until you vote, and allow changing your vote.
 - Vote with one tap. **One vote per person** is enforced by the database, so fast double taps cannot count twice.

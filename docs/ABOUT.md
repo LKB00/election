@@ -13,7 +13,8 @@ For the reasons behind each screen and element, see [DESIGN.md](DESIGN.md). For 
 Election lets anyone make a **duel** between 2 or more choices, such as *Modi or Rahul?* or *Virat, Rohit or Dhoni?* People vote with one tap, guess who is winning, and share that they voted.
 
 - **Fun and fan polls, open worldwide.** These are not legal or official elections, and the app says so on every screen and share image ("Fun duel · not official").
-- **It feels like a real Indian election.** It uses the EVM button and beep, the VVPAT paper slip and the inked finger, because people already know, trust and share these moments.
+- **It feels like a real Indian election.** It uses the EVM button and beep, the VVPAT paper slip, a real photo of an inked finger, exit polls and counting day, because people already know, trust and share these moments.
+- **In English and Hindi** (हिं / EN switch in the top bar).
 - **Launch duel:** *Modi or Rahul?* It is the main duel on the Home page.
 
 ## 2. Who it is for
@@ -29,9 +30,9 @@ Election lets anyone make a **duel** between 2 or more choices, such as *Modi or
 1. **Open** the Home page or a shared link. The duel is the first thing on screen, so there is nothing to read first.
 2. **Vote** by pressing the blue EVM **Vote** button. The red light turns on and the machine beeps.
 3. **VVPAT slip:** your choice shows behind glass for about 2.5 seconds, then drops into the box.
-4. **Inked finger:** "Vote cast. Your finger is inked · Voter ID EL-000041".
+4. **Inked finger:** a real photo of a finger rises in and the real ink is wiped on from the nail down. Then "Vote cast. Your finger is inked. Voter ID EL-000041".
 5. **Exit poll:** "Who's winning right now?" You make your guess, or skip it. You can undo your vote for 30 seconds.
-6. **Results open:** percentages, whether your guess was right, and, if a friend sent the link, "your friend agrees" or "your friend disagrees".
+6. **Counting day:** results are counted in front of you in 3 real rounds (the lead can swing), with a majority line, "Swing in 24 h" and a LIVE dot. Then: whether your exit poll was right, and, if a friend sent the link, "you agree" or "you disagree". An ended duel shows "Result declared: X wins by N votes".
 7. **Show your ink:** share on WhatsApp, as a Status/Story image, or copy the link.
 8. **Next duel**, or come back later through **My votes**: the duels you voted in, and how often your exit poll was right.
 
@@ -44,7 +45,8 @@ Election lets anyone make a **duel** between 2 or more choices, such as *Modi or
 | Tribe | "Your friend voted. Your turn", then "you agree" or "you disagree" |
 | Being right | Exit poll guess: "Your exit poll was right!" |
 | Reciprocity | A friend's dare asks for an answer; after voting they get their own share |
-| Urgency | "Polling open · closes in…" and "Polling closed · X won" |
+| Urgency | "● Polling open · closes in…", the LIVE dot, and "Result declared" |
+| Drama | Counting in rounds, the swing, the majority line |
 
 We decided **not to have streaks, levels, points or score bubbles**: they belong to quiz games, not elections.
 
@@ -53,8 +55,10 @@ We decided **not to have streaks, levels, points or score bubbles**: they belong
 - **When:** right after the result, the most exciting moment.
 - **Where:** WhatsApp first, then Status/Instagram Story, then Copy link.
 - **Secret ballot is on by default.** People click more to find out a friend's pick than to read it.
-- **Link preview** (1200×630, in chats): inked finger, "I VOTED", both photos, and either your pick or "Guess who I picked?". It has **no QR code**, because the link can already be tapped.
+- **The WhatsApp message** carries a short, spoiler-free line (the Wordle idea): "🗳️ “Modi or Rahul?” · I voted ☝️ · Exit poll ✅ · Guess who I picked?…". In Hindi when Hindi is on.
+- **Link preview** (1200×630, in chats): the real inked-finger photo, "I VOTED", both photos, and either your pick or "Guess who I picked?". It has **no QR code**, because the link can already be tapped.
 - **Story image** (1080×1920): the same content plus a **small QR code in the corner** with "Scan to vote", because links in Stories can't be tapped.
+- **Share images are always English:** the image maker cannot join Hindi letters correctly.
 - **Shared images never show the split.** Friends have to vote to see it.
 - **Link format:** `/p/<duel>?f=<your share code>`, plus `&s=1` when your pick is secret.
 
@@ -69,6 +73,9 @@ We decided **not to have streaks, levels, points or score bubbles**: they belong
 - **Photos:** licensed, with credits shown on screen.
   - Modi: Prime Minister's Office, GODL-India.
   - Rahul Gandhi: Himanshu Arya Khowal, CC BY 4.0.
+  - Inked finger: GaneshBhakt, CC BY-SA 3.0 (edited: cropped, and an ink-free copy made only for the animation). Credits in `public/ink/CREDITS.md`.
+- **The election rule:** only things a real election has. No quiz or game parts.
+- **All interface text** lives in one file, `src/lib/i18n.ts`, in English and Hindi.
 
 ## 7. Features built
 
@@ -78,6 +85,9 @@ We decided **not to have streaks, levels, points or score bubbles**: they belong
   - Results hidden until you vote. They are hidden on the server too, so nothing leaks.
 - **Exit poll guess** and **friends vs everyone** (agree or disagree).
 - **Why you picked it and emoji reactions** (🔥😂😮👏🤔). Both are optional.
+- **Counting day:** 3 real counting rounds, majority line, 24-hour swing with a race line, LIVE dot, "Result declared".
+- **Feels like an app:** beep on/off, the next duel slides in, a "no internet" bar (and offline votes send later), a loading outline, add to home screen, small photos, and no motion for phones set to "reduce motion".
+- **Hindi:** every screen and message, with a Hindi font bundled.
 - **Pages**
   - **Home:** the duel game, then "More duels".
   - **Duels:** all duels.
@@ -108,6 +118,8 @@ We decided **not to have streaks, levels, points or score bubbles**: they belong
 - `src/components/DuelGame.tsx`: the voting screen.
 - `src/components/ShareSheet.tsx`: the share panel.
 - `src/app/api/og` and `src/app/api/card`: the share images.
+- `src/lib/i18n.ts`: all interface text, English and Hindi.
+- `src/components/InkFinger.tsx` and `public/ink/`: the inked-finger photo and its animation.
 
 **Before every push:** `npm run check` (types, tests and build).
 
@@ -134,9 +146,15 @@ Design, UX, UI and interaction are the selling points. The plan, with research a
 | 1 | Guess the crowd | Exit poll, friends vs everyone, share image with your pick | Live |
 | 2 | Feels like a real election | EVM button and beep, VVPAT slip, inked finger, "Show your ink" sharing, story card with QR | Live |
 | Audit | Every element checked | Repeats removed, election rule (no points, levels, steppers), party-only lines, full names | Live |
-| 3 | Counting day | Results counted in 3 real rounds, majority line, swing in 24 h with a race line, LIVE dot, "Result declared: X wins by N votes" | Built |
-| 4 | Feels like an app | Beep on/off, next duel slides in, offline bar and vote retry, loading outline, add to home screen, lighter photos and pages, reduce-motion support | Built. **Still to do: server and database near India** (needs the owner's Vercel and Neon settings) |
-| 5 | Speaks Bharat | Hindi switch (हिं / EN) for all interface text, spoiler-free WhatsApp line with your exit poll result | Built (share images stay English) |
+| 3 | Counting day | Results counted in 3 real rounds, majority line, swing in 24 h with a race line, LIVE dot, "Result declared: X wins by N votes" | Live |
+| 4 | Feels like an app | Beep on/off, next duel slides in, offline bar and vote retry, loading outline, add to home screen, lighter photos and pages, reduce-motion support | Live. **Still to do: server and database near India** (needs the owner's Vercel and Neon settings) |
+| 5 | Speaks Bharat | Hindi switch (हिं / EN) for all interface text, spoiler-free WhatsApp line with your exit poll result | Live (share images stay English) |
+| Ink | Real inked finger | Real photo of an inked finger, ink wiped on after voting, used in the story card and link preview | Live |
+
+**Open items:**
+- Move the server and database near India (the server runs in Washington, USA today). Needs the owner's Vercel and Neon accounts; about 15 minutes, guided.
+- The owner's reference picture for the voting animation (a Vecteezy link that could not be downloaded; to be attached in chat). Vecteezy pictures need a licence, so it would be a style reference only.
+- A bigger, full-width ink moment (the finger is small on screen today).
 
 **We will not do:** swipe-to-vote, carousels, points, levels, streaks, badges, heavy 3D or video effects. We will also never show anyone's pick without their choice.
 
@@ -154,3 +172,5 @@ Design, UX, UI and interaction are the selling points. The plan, with research a
 - Rate limits are kept per server (in memory).
 - No report button or moderation yet.
 - Duel creators can't add photos yet. Only the launch duel has photos.
+- The ink-free copy of the finger photo was made by digitally removing the ink. It shows only during the 0.9-second wipe, and a faint smudge can be seen if you look closely.
+- The server is in the USA, so pages are slower for people in India until it moves.
