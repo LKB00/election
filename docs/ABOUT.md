@@ -28,9 +28,9 @@ Election lets anyone make a **duel** between 2 or more choices, such as *Modi or
 ## 3. Main user journey
 
 1. **Open** the Home page or a shared link. The duel is the first thing on screen, so there is nothing to read first.
-2. **Vote** by pressing the blue EVM **Vote** button. The red light turns on and the machine beeps.
-3. **VVPAT slip:** your choice shows behind glass for about 2.5 seconds, then drops into the box.
-4. **Inked finger:** a real photo of a finger rises in and the real ink is wiped on from the nail down. Then "Vote cast. Your finger is inked. Voter ID EL-000041".
+2. **Vote** by pressing the blue EVM **Vote** button. One scene opens in the middle of the screen: your row on the ballot unit, the blue key goes down, the red light glows and the machine beeps.
+3. **VVPAT slip:** the machine's window lights up, your slip prints, stays behind the glass, then is cut and drops into the box with a soft thud.
+4. **Inked finger:** a big, real photo of a finger; the officer's rod draws the ink down from the nail. Then "Vote cast. Your finger is inked. Voter ID EL-000041", counting up. Tap anywhere to skip; shorter after your first vote.
 5. **Exit poll:** "Who's winning right now?" You make your guess, or skip it. You can undo your vote for 30 seconds.
 6. **Counting day:** results are counted in front of you in 3 real rounds (the lead can swing), with a majority line, "Swing in 24 h" and a LIVE dot. Then: whether your exit poll was right, and, if a friend sent the link, "you agree" or "you disagree". An ended duel shows "Result declared: X wins by N votes".
 7. **Share your ink:** share on WhatsApp, as a Status/Story image, or copy the link.
@@ -175,7 +175,6 @@ Design, UX, UI and interaction are the selling points. The plan, with research a
 - Phone notifications for declared results (needs push keys and a sending job). The calendar link covers this for now.
 - Move the server and database near India (the server runs in Washington, USA today). Needs the owner's Vercel and Neon accounts; about 15 minutes, guided.
 - The owner's reference picture for the voting animation (a Vecteezy link that could not be downloaded; to be attached in chat). Vecteezy pictures need a licence, so it would be a style reference only.
-- A bigger, full-width ink moment (the finger is small on screen today).
 
 **We will not do:** swipe-to-vote, carousels, points, levels, streaks, badges, heavy 3D or video effects. We will also never show anyone's pick without their choice.
 

@@ -354,3 +354,21 @@ Verdicts: **Keep**, **Changed** or **Removed**.
 | Create: emoji box next to each choice | P3 | Optional; a faded 🙂 hint so it never looks filled in. |
 | Create: **Your ballot · preview** (rows, live as you type) | P3 | You see what voters will see before you share. Below the form, above the one ink button. |
 | Duels: **Most watched now** (up to 3 duels with the most votes in the last hour) | P2 | Like TV's "hot seats": where the action is. Not repeated in "All duels". Hidden when nothing got votes in the last hour. |
+
+## The cast-vote moment (owner: "make the cast vote animation better")
+
+Before: three small pieces stacked down the page (a red light on the card, a slip sliding in a beige box, a 56 px finger photo). On long ballots they were far apart, and the ink was tiny.
+Now: **one scene in the middle of the screen**, the real booth in order. P1 at that moment; everything else waits under a dim layer.
+
+| Beat | What you see and hear | Why |
+|---|---|---|
+| 1. EVM (from 0 s) | Your row on the ballot unit: number, name, the blue key goes down, the red light glows while the beep sounds | The press and the light are what people remember from the booth |
+| 2. VVPAT (0.5 s) | A dark machine; the glass window lights up; your slip (number, name, party) prints down in small steps, stays, then is cut and drops into the box; the slot flashes lime as it lands with a soft thud | The trust moment: you see your choice recorded, then sealed |
+| 3. Ink (2.75 s) | A big inked-finger photo (168 px wide, was 56); the polling officer's glass rod draws the line down from the nail, a wet shine passes; "Vote cast. Your finger is inked." and the voter ID counts up | The proof everyone shares. Real photo, real ink (the ink-free copy shows under the rod) |
+| End (5 s) | The scene closes; your result, confetti and the exit poll follow | Results and counting wait for the scene, so nothing important plays hidden behind it |
+
+- **Tap anywhere** (or Enter / Escape) to move on. "Tap to skip" is written at the bottom.
+- **Shorter after your first vote of a visit**: about 3.3 s (the slip prints at once, the ink comes sooner).
+- **Reduce motion**: no scene; the beep, your pick and the small ink record show at once.
+- Only the app's own pictures (the licensed finger photos) and patricka colours. No new images, no video, so it stays light on cheap phones.
+- The small ink record (56 px photo, voter ID) stays on the page after the scene, as before.
