@@ -20,8 +20,10 @@ export async function seedFlagship(db: Db) {
       reasons: JSON.stringify(FLAGSHIP_REASONS),
       featured: true,
       reviewed: true,
+      electionMode: true,
     })
-    .onConflictDoUpdate({ target: schema.polls.id, set: { title: 'Modi or Rahul?', description: 'Pick one. See where everyone stands.' } });
+    // Featured is the owner's choice after the first start ("Today's question" on /admin), so it is not reset here.
+    .onConflictDoUpdate({ target: schema.polls.id, set: { title: 'Modi or Rahul?', description: 'Pick one. See where everyone stands.', electionMode: true } });
   await db
     .insert(schema.options)
     .values([

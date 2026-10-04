@@ -182,7 +182,7 @@ function Sparkline({ points, label, aria }: { points: number[]; label: string; a
 
 // start: given for a shared link (always open that duel, even if it ended or you voted).
 // Not given (Home): the first live duel you have not voted in, or "all caught up".
-export default function DuelGame({ deck: initialDeck, start, via }: { deck: PollView[]; start?: number; via?: string | null }) {
+export default function DuelGame({ deck: initialDeck, start, via, todayId }: { deck: PollView[]; start?: number; via?: string | null; todayId?: string | null }) {
   const t = useT();
   const lang = useLang();
   const [deck, setDeck] = useState(initialDeck);
@@ -615,6 +615,8 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
     <div className={'tot duel' + (revealed ? ' is-revealed' : '') + (poll.electionMode ? '' : ' is-light')} ref={topRef} style={{ viewTransitionName: 'ballot' } as React.CSSProperties}>
 
       <div className="tot-q">
+        {/* The owner's pick for the top of Home (P2): says why this poll is first. */}
+        {todayId === poll.id && <p className="label duel-today">{t.todaysQuestion}</p>}
         <h1 key={poll.id} className="display duel-q">{poll.title}</h1>
         <p className="small muted">
           {poll.closed ? t.pollingClosed : <><span className="live-dot" aria-hidden /> {t.pollingOpen}</>} · <span key={poll.participants} className="tick">{poll.participants.toLocaleString('en-IN')}</span> {t.votesCast(poll.participants)}
