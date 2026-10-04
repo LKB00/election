@@ -651,3 +651,17 @@ describe("today's question and trending", () => {
     expect(list.some((p) => p.id === quiet)).toBe(false);
   });
 });
+
+describe('story card friends line', () => {
+  it('counts friends from a share link and how many agree, without saying who leads', async () => {
+    const { friendsFromCode } = await import('@/lib/cards');
+    const id = await make({ title: 'Friends line', options: ['A', 'B'] });
+    const [a, b] = (await getPoll(db, id, null))!.options;
+    await castVote(db, id, a.id, 'host');
+    const code = (await getPoll(db, id, 'host'))!.myShareCode!;
+    await castVote(db, id, a.id, 'fr1', code);
+    await castVote(db, id, b.id, 'fr2', code);
+    expect(await friendsFromCode(db, id, code, a.id)).toEqual({ all: 2, agree: 1 });
+    expect(await friendsFromCode(db, id, 'bad code', a.id)).toEqual({ all: 0, agree: 0 });
+  });
+});

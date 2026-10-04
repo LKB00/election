@@ -539,3 +539,10 @@ Ballots keep one vote per person; each place is stored in `vote_picks.rank`. Poi
 | "Today's question" section on /admin: current pick + the newest open polls, one button each | Admin | P1 on that section | Change the top of Home in one tap. |
 | **Trending now** (up to 4 tiles on Home, 3 on Polls) | Home, Polls | P2 | Score = votes in the last 24 h ÷ (hours since start + 2)^1.5, divided by (1 + reports). Fresh activity rises, old polls sink, reported ones sink faster. Only polls with votes in the last day. Replaces "Most watched". |
 | Topic shelves (the two topics with the most open polls, 2–4 tiles each, "All polls →" to the topic page) | Home | P3 | Browse by interest without searching. Polls already shown in Trending are not repeated. |
+
+## Phase 3: WhatsApp pieces
+
+| Element | Where | Priority | Job |
+|---|---|---|---|
+| `/today`: a fixed link that always opens today's question (shown on /admin to copy) | Link | – | Post it once in a WhatsApp Channel, group description or Instagram bio; it follows your daily pick. |
+| Story card line: "5 friends voted from my link · 3 agree with me" (lime pill, only when friends have voted) | Status / Story image | P2 | Something to brag about that never says who leads (Wordle lesson), so friends still have to vote to see the result. Lime = your progress. |

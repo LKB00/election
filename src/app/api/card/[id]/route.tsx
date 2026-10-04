@@ -2,7 +2,7 @@ import { ImageResponse } from 'next/og';
 import QRCode from 'qrcode';
 import { handDataUri } from '@/lib/inkHand';
 import { getDb } from '@/db';
-import { CARD, cardFonts, faceLabels, pickFromCode } from '@/lib/cards';
+import { CARD, cardFonts, faceLabels, friendsFromCode, pickFromCode } from '@/lib/cards';
 import { clip, drawable } from '@/lib/labels';
 import { isShareProof } from '@/lib/secret';
 import { getPoll } from '@/lib/polls';
@@ -37,6 +37,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   // Same letters as on the ballot (worked out over all choices), or the creator's emoji.
   const faces = faceLabels(poll.options.map((o) => o.label)).map((f, n) => poll.options[n].emoji ?? (drawable(f) ? f : String(n + 1)));
   const pick = shown.find((o) => o.id === pickId);
+  // The social line (P2): how many friends came through your link and agree with you. No spoiler of who leads.
+  const friends = await friendsFromCode(db, id, f, pickId);
 
   return new ImageResponse(
     (
@@ -74,6 +76,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         <div style={{ display: 'flex', marginTop: 40, fontSize: 60, fontWeight: 700 }}>
           {showPick && pick ? t.cardPicked(rating ? pick.emoji ?? pick.label : drawable(pick.label) ? pick.label : String(poll.options.indexOf(pick) + 1)) : t.cardGuess}
         </div>
+        {friends.all > 0 && (
+          <div style={{ display: 'flex', marginTop: 24, padding: '14px 28px', borderRadius: 999, background: CARD.lime, fontSize: 36, fontWeight: 700 }}>
+            {t.cardFriends(friends.all, friends.agree)}
+          </div>
+        )}
 
         <div style={{ display: 'flex', flex: 1, minHeight: 48 }} />
         <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between' }}>

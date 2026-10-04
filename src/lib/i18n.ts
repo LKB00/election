@@ -314,6 +314,7 @@ const en = {
   adminMakeToday: 'Make today’s question',
   adminIsToday: 'Today’s question now',
   trendingNow: 'Trending now',
+  adminTodayLink: 'Daily link for your WhatsApp Channel (always opens today’s question):',
   adminReports: (n: number) => plural(n, 'report', 'reports'),
   adminHidden: 'Hidden',
   adminUnreviewed: 'Not reviewed',
@@ -326,6 +327,7 @@ const en = {
   cardPicked: (name: string) => `I picked ${name}. You?`,
   cardGuess: 'Guess who I picked?',
   cardScan: 'Scan to vote',
+  cardFriends: (all: number, agree: number) => `${all} ${all === 1 ? 'friend' : 'friends'} voted from my link · ${agree} agree with me`,
   ogAsk: 'Who would you pick? Tap to vote',
   ogPicked: (name: string) => `I voted for ${name}. Who would you pick?`,
   ogGuess: 'I voted. Guess who I picked?',
@@ -338,7 +340,7 @@ const en = {
 };
 
 export type Dict = Omit<typeof en, CardKeys>;
-type CardKeys = 'cardFun' | 'cardVoted' | 'cardIn' | 'cardMyVote' | 'cardPicked' | 'cardGuess' | 'cardScan' | 'ogAsk' | 'ogPicked' | 'ogGuess' | 'ogVoted';
+type CardKeys = 'cardFun' | 'cardVoted' | 'cardIn' | 'cardMyVote' | 'cardPicked' | 'cardGuess' | 'cardScan' | 'cardFriends' | 'ogAsk' | 'ogPicked' | 'ogGuess' | 'ogVoted';
 
 const hi: Dict = {
   home: 'होम',
@@ -630,6 +632,7 @@ const hi: Dict = {
   adminMakeToday: 'आज का सवाल बनाएं',
   adminIsToday: 'अभी आज का सवाल',
   trendingNow: 'अभी ट्रेंडिंग',
+  adminTodayLink: 'WhatsApp चैनल के लिए रोज़ का लिंक (हमेशा आज का सवाल खोलता है):',
   adminReports: (n: number) => (n === 1 ? '1 शिकायत' : `${n} शिकायतें`),
   adminHidden: 'छिपा हुआ',
   adminUnreviewed: 'जांच बाक़ी',
@@ -937,6 +940,7 @@ const hg: typeof en = {
   adminMakeToday: 'Aaj ka sawaal banao',
   adminIsToday: 'Abhi aaj ka sawaal',
   trendingNow: 'Abhi trending',
+  adminTodayLink: 'WhatsApp Channel ke liye roz ka link (hamesha aaj ka sawaal kholta hai):',
   adminReports: (n: number) => (n === 1 ? '1 shikayat' : `${n} shikayatein`),
   adminHidden: 'Chhupa hua',
   adminUnreviewed: 'Jaanch baaki',
@@ -950,6 +954,7 @@ const hg: typeof en = {
   cardPicked: (name: string) => `Maine ${name} ko chuna. Aap?`,
   cardGuess: 'Batao maine kise chuna?',
   cardScan: 'Scan karke vote karo',
+  cardFriends: (all: number, agree: number) => `Mere link se ${all} dost vote kar chuke · ${agree} mujhse sehmat`,
   ogAsk: 'Aap kise chunoge? Tap karke vote karo',
   ogPicked: (name: string) => `Maine ${name} ko vote diya. Aap kise chunoge?`,
   ogGuess: 'Maine vote kiya. Batao kise chuna?',
