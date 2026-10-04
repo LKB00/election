@@ -828,3 +828,10 @@ On My votes, above your list, once you have voted in 3+ polls this month (India 
 ## Every poll is made by a person (owner, Oct 2026)
 
 The site no longer adds polls of its own. The "Modi or Rahul?" flagship (with its leaders' photos) and the four starter polls (Virat/Rohit/Dhoni, IPL 2027, UP 2027, Chai or coffee) are gone from the code; on a database that has them they are hidden once (votes kept; the owner can "Show again" on /admin, and they then stay shown). Today's question is always one of people's polls, picked by the owner; if none is picked, Home shows the day's set of people's polls, and with nothing open, the "Start a poll" empty state. Ideas on Create and pack templates stay: a person chooses them and the poll is theirs.
+
+## New visitor on an empty site (owner: "see how a new user uses it, with empty states")
+
+Walked through on an empty database (no polls at all), as a first visitor, a creator and a friend. Fixed:
+- **Home, nothing at all:** one empty state that says what the site is for ("Ask your friends anything. Make a poll, share the link on WhatsApp, and see what everyone thinks. It takes 30 seconds." → Start a poll). It used to show the empty state twice (again under "More polls").
+- **Home, a few polls:** each poll shows once. Trending, topic shelves and "More polls" leave out today's set, and "More polls" leaves out ended polls; the "More polls" block is hidden when it has nothing left (it used to say "No polls open right now" under a list that had one).
+- **My votes, nothing to vote on yet:** the button is "Start a poll" (it pointed to "today's poll", which did not exist).
