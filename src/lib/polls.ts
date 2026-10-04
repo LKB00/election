@@ -166,7 +166,8 @@ export async function getPoll(
   // Guess first, then see: on hidden-results duels you answer "who's winning?" before the numbers show.
   // During an election silence window, politics duels show no numbers and ask no exit poll, to anyone.
   const sealed = sealedUntil(poll.category);
-  const needsGuess = !sealed && poll.hideUntilVoted && !closed && myVote !== null && mine[0]?.prediction == null && opts.length >= 2;
+  // Not while yours is the only vote: "who's winning?" needs someone else's vote to be a question.
+  const needsGuess = !sealed && poll.hideUntilVoted && !closed && myVote !== null && mine[0]?.prediction == null && opts.length >= 2 && total >= 2;
   const resultsVisible = !sealed && (!poll.hideUntilVoted || closed || (myVote !== null && !needsGuess));
 
   // Your share code (made on first need, also for votes from before share codes existed).
@@ -233,7 +234,7 @@ export async function getPoll(
     needsGuess,
     myGuess:
       // Sealed: "your exit poll was right" would tell who leads.
-      !sealed && mine[0]?.prediction && mine[0].prediction !== 'skip' ? { optionId: mine[0].prediction, correct: !!mine[0].predictionCorrect } : null,
+      !sealed && mine[0]?.prediction && mine[0].prediction !== 'skip' && mine[0].prediction !== 'alone' ? { optionId: mine[0].prediction, correct: !!mine[0].predictionCorrect } : null,
     myShareCode,
     myShareProof: myShareCode ? shareProof(myShareCode) : null,
     // How your friends voted tells who leads, so it waits for the results too.
@@ -371,16 +372,22 @@ export async function guessLeader(db: Db, id: string, voterId: string, choice: s
     .where(and(eq(votes.pollId, id), eq(votes.voterKey, voterId)))
     .limit(1);
   if (!v || v.prediction != null) return 'not_allowed';
-  if (choice === 'skip') {
-    await db.update(votes).set({ prediction: 'skip' }).where(and(eq(votes.pollId, id), eq(votes.voterKey, voterId)));
-    return 'ok';
-  }
   const counts = await db
     .select({ optionId: options.id, n: sql<number>`count(${votes.id})::int` })
     .from(options)
     .leftJoin(votes, eq(votes.optionId, options.id))
     .where(eq(options.pollId, id))
     .groupBy(options.id);
+  // Only your own vote is in: nothing to guess, so it is not counted as a right (or wrong) call.
+  if (counts.reduce((sum, c) => sum + c.n, 0) < 2) {
+    // 'alone': you only saw your own vote, so taking it back (undo) stays allowed.
+    await db.update(votes).set({ prediction: 'alone' }).where(and(eq(votes.pollId, id), eq(votes.voterKey, voterId), isNull(votes.prediction)));
+    return 'ok';
+  }
+  if (choice === 'skip') {
+    await db.update(votes).set({ prediction: 'skip' }).where(and(eq(votes.pollId, id), eq(votes.voterKey, voterId)));
+    return 'ok';
+  }
   if (!counts.some((c) => c.optionId === choice)) return 'bad_option';
   const top = Math.max(...counts.map((c) => c.n));
   const correct = counts.some((c) => c.optionId === choice && c.n === top); // a tie: any leader counts
@@ -536,7 +543,7 @@ export async function getMyVotes(db: Db, voterId: string | null, limit = 50): Pr
     const total = mine.reduce((s, c) => s + c.n, 0);
     let standing: Standing;
     if (sealedUntil(r.category)) standing = { kind: 'sealed' };
-    else if (r.hideUntilVoted && !closed && r.prediction == null && mine.length >= 2) standing = { kind: 'guess' };
+    else if (r.hideUntilVoted && !closed && r.prediction == null && mine.length >= 2 && total >= 2) standing = { kind: 'guess' };
     else if (!total) standing = { kind: 'none' };
     else if (mine.length > 1 && mine[0].n === mine[1].n) standing = { kind: closed ? 'tied' : 'tie' };
     else standing = { kind: closed ? 'won' : 'leading', name: mine[0].label, percent: Math.round((mine[0].n / total) * 100) };
@@ -561,7 +568,7 @@ export async function undoVote(db: Db, id: string, voterId: string): Promise<boo
         eq(votes.voterKey, voterId),
         sql`${votes.createdAt} > now() - make_interval(secs => ${UNDO_SECONDS})`,
         // Not after the exit poll: by then you have seen the numbers, and could vote again for the leader.
-        isNull(votes.prediction),
+        or(isNull(votes.prediction), eq(votes.prediction, 'alone')),
       ),
     )
     .returning({ id: votes.id });

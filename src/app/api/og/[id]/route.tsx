@@ -2,7 +2,7 @@ import { ImageResponse } from 'next/og';
 import { handDataUri } from '@/lib/inkHand';
 import { getDb } from '@/db';
 import { CARD, cardFonts, faceLabels, pickFromCode } from '@/lib/cards';
-import { clip } from '@/lib/labels';
+import { clip, drawable } from '@/lib/labels';
 import { isShareProof } from '@/lib/secret';
 import { getPoll } from '@/lib/polls';
 import { cardDict } from '@/lib/i18n';
@@ -29,8 +29,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const abs = (src: string) => new URL(src, url.origin).toString();
   const shown = poll.options.slice(0, 2);
   // Same letters as on the ballot (worked out over all choices), or the creator's emoji.
-  const faces = faceLabels(poll.options.map((o) => o.label)).map((f, n) => poll.options[n].emoji ?? f);
-  const headline = !voted ? t.ogAsk : showPick && pick ? t.ogPicked(pick.label) : t.ogGuess;
+  const faces = faceLabels(poll.options.map((o) => o.label)).map((f, n) => poll.options[n].emoji ?? (drawable(f) ? f : String(n + 1)));
+  const headline = !voted ? t.ogAsk : showPick && pick ? t.ogPicked(drawable(pick.label) ? pick.label : String(poll.options.indexOf(pick) + 1)) : t.ogGuess;
 
   return new ImageResponse(
     (
@@ -47,7 +47,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
           {voted && <img src={handDataUri(150)} width={150} height={195} alt="" />}
           <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
             {voted && <div style={{ display: 'flex', fontSize: 30, fontWeight: 700, color: CARD.green, letterSpacing: 2 }}>{t.ogVoted}</div>}
-            <div style={{ display: 'flex', fontSize: 58, fontWeight: 700, letterSpacing: -1, lineHeight: 1.1 }}>{clip(poll.title, 50)}</div>
+            {drawable(poll.title) && <div style={{ display: 'flex', fontSize: 58, fontWeight: 700, letterSpacing: -1, lineHeight: 1.1 }}>{clip(poll.title, 50)}</div>}
             <div style={{ display: 'flex', gap: 16, marginTop: 24 }}>
               {shown.map((o, n) => {
                 const mine = showPick && o.id === pickId;
@@ -61,7 +61,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
                     )}
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       {mine && <div style={{ display: 'flex', fontSize: 20, fontWeight: 700, color: CARD.green, letterSpacing: 1 }}>{t.cardMyVote}</div>}
-                      <div style={{ display: 'flex', fontSize: 32, fontWeight: 700 }}>{clip(o.label, 16)}</div>
+                      {drawable(o.label) && <div style={{ display: 'flex', fontSize: 32, fontWeight: 700 }}>{clip(o.label, 16)}</div>}
                     </div>
                   </div>
                 );

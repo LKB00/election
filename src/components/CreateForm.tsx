@@ -62,7 +62,7 @@ export default function CreateForm() {
     const errs: { title?: string; choices?: string; end?: string } = {};
     if (title.trim().length < 3) errs.title = t.errTitle;
     if (filled.length < 2) errs.choices = t.errChoices;
-    else if (new Set(filled.map((c) => c.toLowerCase())).size !== filled.length) errs.choices = t.errSame;
+    else if (new Set(filled.map((c) => c.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '') || c)).size !== filled.length) errs.choices = t.errSame;
     if (endsAt && !(new Date(endsAt).getTime() > Date.now())) errs.end = t.errEnd;
     setFieldError(errs);
     if (errs.title) document.getElementById('title')?.focus();

@@ -15,6 +15,9 @@ export const initialsOf = (label: string) =>
     .map((c) => c!.toUpperCase())
     .join('') || (graphemes(label.trim())[0] ?? '');
 
+/** The share-image renderer cannot join Hindi (or other Indian-script) letters: such text is left out of images. */
+export const drawable = (text: string) => !/[\u0900-\u0DFF]/.test(text);
+
 /**
  * Shortens text for the share images: never cuts an emoji or a Hindi letter in half (counts what you see, not code
  * units), stops at a space when one is near, and adds "…".

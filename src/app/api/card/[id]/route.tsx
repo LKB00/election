@@ -3,7 +3,7 @@ import QRCode from 'qrcode';
 import { handDataUri } from '@/lib/inkHand';
 import { getDb } from '@/db';
 import { CARD, cardFonts, faceLabels, pickFromCode } from '@/lib/cards';
-import { clip } from '@/lib/labels';
+import { clip, drawable } from '@/lib/labels';
 import { isShareProof } from '@/lib/secret';
 import { getPoll } from '@/lib/polls';
 import { cardDict, isLang } from '@/lib/i18n';
@@ -33,7 +33,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const abs = (src: string) => new URL(src, url.origin).toString();
   const shown = poll.options.slice(0, 2);
   // Same letters as on the ballot (worked out over all choices), or the creator's emoji.
-  const faces = faceLabels(poll.options.map((o) => o.label)).map((f, n) => poll.options[n].emoji ?? f);
+  const faces = faceLabels(poll.options.map((o) => o.label)).map((f, n) => poll.options[n].emoji ?? (drawable(f) ? f : String(n + 1)));
   const pick = shown.find((o) => o.id === pickId);
 
   return new ImageResponse(
@@ -50,7 +50,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={handDataUri(240)} width={240} height={312} style={{ marginTop: 56 }} alt="" />
         <div style={{ display: 'flex', marginTop: 40, fontSize: 132, fontWeight: 700, letterSpacing: -3 }}>{t.cardVoted}</div>
-        <div style={{ display: 'flex', marginTop: 8, fontSize: 52, color: CARD.muted, textAlign: 'center' }}>{t.cardIn(clip(poll.title, 40))}</div>
+        {drawable(poll.title) && <div style={{ display: 'flex', marginTop: 8, fontSize: 52, color: CARD.muted, textAlign: 'center' }}>{t.cardIn(clip(poll.title, 40))}</div>}
 
         <div style={{ display: 'flex', gap: 32, marginTop: 56, padding: 32, borderRadius: 40, background: CARD.sand }}>
           {shown.map((o, n) => {
@@ -63,14 +63,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
                 ) : (
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 300, height: 300, borderRadius: 150, background: CARD.tints[n], fontSize: 110, fontWeight: 700 }}>{faces[n]}</div>
                 )}
-                <div style={{ display: 'flex', marginTop: 20, fontSize: 44, fontWeight: 700 }}>{clip(o.label, 18)}</div>
+                {drawable(o.label) && <div style={{ display: 'flex', marginTop: 20, fontSize: 44, fontWeight: 700 }}>{clip(o.label, 18)}</div>}
                 {mine && <div style={{ display: 'flex', marginTop: 8, fontSize: 32, fontWeight: 700, color: CARD.green, letterSpacing: 2 }}>{t.cardMyVote}</div>}
               </div>
             );
           })}
         </div>
         <div style={{ display: 'flex', marginTop: 40, fontSize: 60, fontWeight: 700 }}>
-          {showPick && pick ? t.cardPicked(pick.label) : t.cardGuess}
+          {showPick && pick ? t.cardPicked(drawable(pick.label) ? pick.label : String(poll.options.indexOf(pick) + 1)) : t.cardGuess}
         </div>
 
         <div style={{ display: 'flex', flex: 1, minHeight: 48 }} />

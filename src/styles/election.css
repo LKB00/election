@@ -398,3 +398,16 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .index-meter.is-mine > span { background: var(--lime); }
 @keyframes meter-grow { from { transform: scaleX(0); } }
 @media (prefers-reduced-motion: reduce) { .index-meter > span { animation: none; } }
+
+/* ---- Edge cases (docs/DESIGN.md, "Edge cases") ---- */
+/* One very long word (a name, "aaaa…") must never make the page wider than the phone: grid columns may shrink,
+   long words break where they have to. */
+.games { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 640px) { .games { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1040px) { .games { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+.game, .tot-option, .duel-option, .duel-body, .duel-text, .index-row > * { min-width: 0; }
+.game strong, .game span, .duel-name, .duel-q, .index-title, .guess-name, .cast-evm-name, .vv-name, .duel-bar p { overflow-wrap: anywhere; }
+.duel-options.n-2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.duel-options.is-ballot { grid-template-columns: minmax(0, 1fr); }
+/* Typing boxes big enough for a thumb (they were 28px tall on Android). */
+@media (pointer: coarse) { .search input { min-height: 44px; } }

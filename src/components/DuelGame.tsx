@@ -275,6 +275,8 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
     }
   }, [poll?.closed, poll?.id, revealed, leaderIdx]);
 
+  const deckRef = useRef(deck);
+  deckRef.current = deck;
   const replace = (p: PollView) => {
     fetchedAt.current[p.id] = Date.now();
     setDeck((d) => d.map((x) => (x.id === p.id ? p : x)));
@@ -371,6 +373,11 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
   // The cast-vote moment ended (or was tapped away): now the result, the confetti and the next step.
   function castDone(optionId: string, needsGuess: boolean) {
     setCasting(null);
+    // The very first vote in a hidden-results duel: no exit poll ("who's winning?" with one vote is no question).
+    if (needsGuess && (deckRef.current.find((p) => p.id === poll?.id)?.participants ?? 0) <= 1) {
+      guess('skip');
+      needsGuess = false;
+    }
     setJustVoted(needsGuess ? null : optionId);
     setUndoUntil(Date.now() + 20_000); // the server allows 30 s from the vote; the moment took up to 5 of them
     focusAfter.current = true;
@@ -378,14 +385,20 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
   // Keyboard and screen-reader users land on the next step once the screen has settled (after the count):
   // the exit poll question if it is asked, else Next.
   const focusAfter = useRef(false);
+  const focusTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => {
     if (!focusAfter.current || casting || counting || !poll) return;
-    const target = poll.needsGuess ? guessRef.current?.querySelector<HTMLElement>('h2') : nextRef.current;
-    if (!target) return;
-    focusAfter.current = false;
-    target.focus({ preventScroll: true });
+    const wantGuess = poll.needsGuess;
+    // A moment later, and looked up again then: the bar slides in, and the count may still start and re-draw it.
+    clearTimeout(focusTimer.current);
+    focusTimer.current = setTimeout(() => {
+      const target = wantGuess ? guessRef.current?.querySelector<HTMLElement>('h2') : nextRef.current;
+      if (!target || !focusAfter.current) return;
+      focusAfter.current = false;
+      const now = document.activeElement;
+      if (!now || now === document.body || (now as HTMLButtonElement).disabled || now.closest('.duel-options')) target.focus({ preventScroll: true });
+    }, 450);
   });
-
   const [guessBusy, setGuessBusy] = useState(false);
   const [justGuessed, setJustGuessed] = useState(false);
   async function guess(choice: string) {
@@ -422,6 +435,8 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
       setJustVoted(null);
       scrolledFor.current = null; // vote again: the exit poll comes into view again
       announceVote(poll.id, -1);
+      // Keyboard and screen readers: back on the ballot, not at the top of the page.
+      setTimeout(() => topRef.current?.querySelector<HTMLElement>('.duel-option:not(:disabled)')?.focus({ preventScroll: true }), 50);
     } else setMsg(data?.error ? apiMsg(lang, data.error) : t.undoLate);
   }
 

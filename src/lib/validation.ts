@@ -20,6 +20,8 @@ export const cleanText = (s: string) =>
     .replace(/[\u00AD\u180E\u200B\u200E\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
+/** "Rahul", "rahul." and "RAHUL " are the same choice (letters and numbers only; an emoji-only choice as it is). */
+export const sameKey = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '') || s;
 /** Has something you can see: a letter, a number or an emoji (not only joiners and dots). */
 const visible = (s: string) => /[\p{L}\p{N}\p{Extended_Pictographic}]/u.test(s);
 const text = () => z.string().max(1000).transform(cleanText);
@@ -34,7 +36,7 @@ export const createPollSchema = z.object({
     .array(text().pipe(z.string().min(1, 'A choice is empty.').max(60, 'A choice is too long (60 letters max).')).refine(visible, 'A choice is empty.'))
     .min(2, 'Add at least 2 choices.')
     .max(10, 'At most 10 choices.')
-    .refine((a) => new Set(a.map((x) => x.toLowerCase())).size === a.length, 'Two choices are the same. Make each one different.'),
+    .refine((a) => new Set(a.map(sameKey)).size === a.length, 'Two choices are the same. Make each one different.'),
   // One optional emoji per choice, in the same order as the choices ('' = none).
   emojis: z.array(z.string().max(16).refine((e) => e === '' || isEmoji(e), 'Pick one emoji per choice.')).max(10).default([]),
   hideUntilVoted: z.boolean().default(true),

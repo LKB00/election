@@ -432,3 +432,13 @@ Found by testing every screen and API with odd inputs. Rules that came out of it
 | Create: Enter in the emoji or details box sent the form; "3 choices" deleted typed choices; Yes/No overwrote them; end time in the past only caught after sending | Enter moves on; chips never remove typed choices (Yes/No shows only while empty); the end time is checked at once, under its box. |
 | A "keep my votes" link opened on a phone that has its own votes | Asks first ("Use the votes from the link" / "Keep my votes"). |
 | "Today" in My votes | Counted in India time. |
+| Long single words (names, "aaaa…") made Home, Duels and the ballot wider than the phone | Grid columns can shrink and long words break; tested at 320 px before and after voting. |
+| Two taps while offline counted twice when the phone came back | One waiting vote at most; the keys stay pressed until it is sent. |
+| An older refresh arriving after your vote brought the Vote buttons back and froze the screen | Refreshes that started before a vote, guess, undo or reaction are thrown away. |
+| A reaction tapped during the count left the bar stuck on "round 1 of 3" with no Next | The count always finishes. |
+| Tiles said +2 after vote + guess, and "You voted" stayed after undo | Tiles and the banner count +1 on vote, −1 on undo. |
+| Exit poll asked when yours is the only vote ("Your exit poll was right!" with 1 vote) | Not asked until someone else has voted; that first voter can still undo. "First vote!" now says "You cast the first vote here" (not "You started this duel"). |
+| "Rahul" and "rahul." accepted as two choices | The same choice (letters and numbers compared). |
+| Keyboard / screen reader: focus lost after the vote moment, undo, or opening Share | Focus goes to the exit poll question or Next, back to the ballot after undo, and into the share panel (and back out). The vote moment is announced once, not 40 times. |
+| Sounds silent after an app switch on iPhone | Sound wakes up again on the next tap. |
+| Hindi typed into a duel drawn broken on share images | The image renderer cannot join Hindi letters, so such text is left out of images (the ballot numbers show instead). |
