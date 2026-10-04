@@ -625,3 +625,13 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
   .is-rare { background: linear-gradient(var(--lime), var(--lime)) no-repeat 0 85% / 100% 40%; }
 }
 .is-ballot .ink-stamp { top: calc(50% - 14px); left: 9px; }
+/* Guess the crowd: the card you guessed stays pressed with an ink ring while the count is checked (0.7 s), the others
+   step back; then the reveal. Right: confetti on the card you guessed. */
+.guess-card.is-guessed, .guess-card.is-guessed:disabled { opacity: 1; box-shadow: inset 0 0 0 2px var(--ink); transform: scale(0.98); }
+.guess-card.is-dim { opacity: 0.45; }
+.guess-card { transition: opacity 0.2s, transform 0.15s, box-shadow 0.15s; }
+.guess-checking { margin: 0; display: flex; align-items: center; gap: 6px; }
+@media (prefers-reduced-motion: no-preference) {
+  .guess-card.is-guessed { animation: guess-hold 0.7s ease-in-out; }
+  @keyframes guess-hold { 50% { transform: scale(0.96); } }
+}
