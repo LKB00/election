@@ -57,7 +57,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={abs(o.imageUrl)} width={120} height={150} style={{ borderRadius: 12, objectFit: 'cover' }} alt="" />
                     ) : (
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 120, height: 120, borderRadius: 60, background: CARD.tints[n], fontSize: 44, fontWeight: 700 }}>{faces[n]}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 120, height: 120, borderRadius: 60, background: CARD.tints[n], fontSize: o.emoji ? 64 : 44, fontWeight: 700 }}>{faces[n]}</div>
                     )}
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       {mine && <div style={{ display: 'flex', fontSize: 20, fontWeight: 700, color: CARD.green, letterSpacing: 1 }}>{t.cardMyVote}</div>}

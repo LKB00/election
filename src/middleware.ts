@@ -18,4 +18,4 @@ export function middleware(req: NextRequest) {
     : NextResponse.rewrite(new URL('/not-found-page', req.url), { status: 404 });
 }
 
-export const config = { matcher: ['/p/:id*', '/api/polls/:id/:rest*', '/api/og/:id*', '/api/card/:id*', '/api/admin/:id*'] };
+export const config = { matcher: ['/p/:id*', '/api/polls/:id/:rest*', '/api/og/:id*', '/api/card/:id*', '/api/admin/:id*', '/api/img/:id*'] };

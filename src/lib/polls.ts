@@ -7,7 +7,7 @@ import type { CreatePollInput } from './validation';
 import { namesPolitics } from './moderation';
 import { sealedUntil } from './silence';
 
-const { polls, options, votes, reactions, reports } = schema;
+const { polls, options, votes, reactions, reports, photos } = schema;
 
 export const REACTIONS = ['🔥', '😂', '😮', '👏', '🤔'] as const;
 const pollId = customAlphabet('23456789abcdefghijkmnpqrstuvwxyz', 8);
@@ -87,9 +87,13 @@ function parseReasons(raw: string): string[] {
 
 export async function createPoll(db: Db, input: CreatePollInput): Promise<string> {
   const id = pollId();
-  // One transaction: a duel is never saved without its choices.
+  // Photos get their own short ids; the choice points at /api/img/<id>.
+  const photoIds = input.options.map((_, n) => (input.photos[n] ? nanoid(12) : null));
+  const hasPhotos = photoIds.some(Boolean);
+  // One transaction: a duel is never saved without its choices (or with half its photos).
   await db.transaction(async (tx) => {
   await tx.insert(polls).values({
+    hasPhotos,
     id,
     title: input.title,
     description: input.description,
@@ -99,7 +103,21 @@ export async function createPoll(db: Db, input: CreatePollInput): Promise<string
     allowChange: input.allowChange,
     endsAt: input.endsAt ? new Date(input.endsAt) : null,
   });
-  await tx.insert(options).values(input.options.map((label, position) => ({ id: nanoid(10), pollId: id, label, position, emoji: input.emojis[position] || null })));
+  if (hasPhotos) {
+    await tx.insert(photos).values(
+      photoIds.flatMap((pid, n) => (pid ? [{ id: pid, pollId: id, data: input.photos[n].slice(input.photos[n].indexOf(',') + 1) }] : [])),
+    );
+  }
+  await tx.insert(options).values(
+    input.options.map((label, position) => ({
+      id: nanoid(10),
+      pollId: id,
+      label,
+      position,
+      emoji: input.emojis[position] || null,
+      imageUrl: photoIds[position] ? `/api/img/${photoIds[position]}` : null,
+    })),
+  );
   });
   return id;
 }
@@ -417,7 +435,8 @@ export async function listPolls(db: Db, limit = 20, filter: { category?: string;
       and(
         eq(polls.featured, false),
         eq(polls.hidden, false),
-        filter.reviewedOnly ? eq(polls.reviewed, true) : or(eq(polls.reviewed, true), ne(polls.category, 'politics')),
+        // Held until the owner looks: politics duels, and duels with photos from people's phones.
+        filter.reviewedOnly ? eq(polls.reviewed, true) : or(eq(polls.reviewed, true), and(ne(polls.category, 'politics'), eq(polls.hasPhotos, false))),
         filter.category ? eq(polls.category, filter.category) : undefined,
       ),
     )
@@ -600,7 +619,7 @@ export async function reportPoll(db: Db, id: string, voterId: string, reason: st
   return true;
 }
 
-export type ReviewItem = { id: string; title: string; options: string[]; category: string; hidden: boolean; reviewed: boolean; reports: number; reasons: string[]; createdAt: string };
+export type ReviewItem = { id: string; title: string; options: string[]; photos: string[]; category: string; hidden: boolean; reviewed: boolean; reports: number; reasons: string[]; createdAt: string };
 
 /** What the owner should look at: reported duels first, then unreviewed ones, newest first. */
 export async function getReviewQueue(db: Db, limit = 100): Promise<ReviewItem[]> {
@@ -622,11 +641,13 @@ export async function getReviewQueue(db: Db, limit = 100): Promise<ReviewItem[]>
     .orderBy(sql`count(${reports.voterKey}) desc`, desc(polls.createdAt))
     .limit(limit);
   const opts = rows.length
-    ? await db.select({ pollId: options.pollId, label: options.label }).from(options).where(inArray(options.pollId, rows.map((r) => r.id))).orderBy(options.position)
+    ? await db.select({ pollId: options.pollId, label: options.label, imageUrl: options.imageUrl }).from(options).where(inArray(options.pollId, rows.map((r) => r.id))).orderBy(options.position)
     : [];
   return rows.map((r) => ({
     ...r,
     options: opts.filter((o) => o.pollId === r.id).map((o) => o.label),
+    // Photos people added from their phone, so the owner can look at them right here.
+    photos: opts.filter((o) => o.pollId === r.id && o.imageUrl?.startsWith('/api/img/')).map((o) => o.imageUrl!),
     reasons: r.reasons ? r.reasons.split(',') : [],
     createdAt: r.createdAt.toISOString(),
   }));

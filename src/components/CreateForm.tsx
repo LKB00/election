@@ -1,12 +1,13 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { ChevronDown, Clock, EyeOff, Lightbulb, Repeat, Sparkles, X } from 'lucide-react';
+import { ChevronDown, Clock, EyeOff, ImagePlus, Lightbulb, Repeat, Sparkles, X } from 'lucide-react';
 import { useState } from 'react';
 import { CATEGORIES } from '@/lib/categories';
 import { useLang, useT } from '@/lib/lang';
 import { apiMsg } from '@/lib/i18n';
 import { faceLabels } from '@/lib/labels';
 import { choicesFromQuestion, emojiFor } from '@/lib/createHelp';
+import PicturePicker, { type Picture } from './PicturePicker';
 
 export default function CreateForm() {
   const router = useRouter();
@@ -20,6 +21,10 @@ export default function CreateForm() {
   const [emojis, setEmojis] = useState(['', '']);
   // An emoji box you have not touched shows a fitting emoji for the name ("Chai" → 🍵); once you type in it, yours wins.
   const [touched, setTouched] = useState([false, false]);
+  // One optional photo per choice (a small JPEG made on the phone); a photo shows instead of the emoji.
+  const [photos, setPhotos] = useState(['', '']);
+  // Which choice's picture sheet is open.
+  const [picking, setPicking] = useState<number | null>(null);
   const emojiAt = (i: number) => (touched[i] ? emojis[i] ?? '' : emojis[i] || emojiFor(choices[i] ?? ''));
   const [endsAt, setEndsAt] = useState('');
   const [hideUntilVoted, setHide] = useState(true); // on by default: guess first, then see (the guess game)
@@ -38,22 +43,26 @@ export default function CreateForm() {
     if (grow) {
       setEmojis((e) => [...e, '']);
       setTouched((d) => [...d, false]);
+      setPhotos((x) => [...x, '']);
     }
   };
-  const setEmoji = (i: number, v: string) => {
-    setEmojis((e) => e.map((x, j) => (j === i ? v.trim() : x)));
+  const setPicture = (i: number, p: Picture) => {
+    setEmojis((e) => e.map((x, j) => (j === i ? p.emoji.trim() : x)));
     setTouched((d) => d.map((x, j) => (j === i ? true : x)));
+    setPhotos((x) => x.map((v, j) => (j === i ? p.photo : v)));
   };
   const removeChoice = (i: number) => {
     setChoices((x) => x.filter((_, j) => j !== i));
     setEmojis((x) => x.filter((_, j) => j !== i));
     setTouched((x) => x.filter((_, j) => j !== i));
+    setPhotos((x) => x.filter((_, j) => j !== i));
   };
   const fill = (next: string[]) => {
     const list = [...next, ...(next.length < 10 ? [''] : [])];
     setChoices(list);
     setEmojis(list.map(() => ''));
     setTouched(list.map(() => false));
+    setPhotos(list.map(() => ''));
     setFieldError({});
   };
   // A ready-made idea: question and choices in one tap (only offered while the form is empty).
@@ -81,7 +90,7 @@ export default function CreateForm() {
     const d = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000);
     return d.toISOString().slice(0, 16);
   };
-  const filledChoices = choices.map((c, i) => ({ label: c.trim(), emoji: emojiAt(i) })).filter((c) => c.label);
+  const filledChoices = choices.map((c, i) => ({ label: c.trim(), emoji: emojiAt(i), photo: photos[i] ?? '' })).filter((c) => c.label);
 
   function check() {
     const filled = choices.map((c) => c.trim().replace(/\s+/g, ' ')).filter(Boolean);
@@ -106,7 +115,7 @@ export default function CreateForm() {
     if (busy || !check()) return;
     setBusy(true);
     setError('');
-    const kept = choices.map((c, i) => ({ c: c.trim(), e: emojiAt(i) })).filter((x) => x.c);
+    const kept = choices.map((c, i) => ({ c: c.trim(), e: emojiAt(i), p: photos[i] ?? '' })).filter((x) => x.c);
     const res = await fetch('/api/polls', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -116,6 +125,7 @@ export default function CreateForm() {
         category,
         options: kept.map((x) => x.c),
         emojis: kept.map((x) => x.e),
+        photos: kept.map((x) => x.p),
         hideUntilVoted,
         allowChange,
         endsAt: endsAt ? new Date(endsAt).toISOString() : undefined,
@@ -162,10 +172,17 @@ export default function CreateForm() {
         <span className="label">{t.choicesLabel}</span>
         {choices.map((c, i) => (
           <div className="row" key={i}>
-            {/* Optional emoji, shown in the choice's circle (phones open the emoji keyboard). */}
-            <span className="search emoji-in">
-              <input value={emojiAt(i)} maxLength={16} placeholder="🙂" aria-label={t.emojiN(i + 1)} title={!touched[i] && emojiAt(i) ? t.emojiAuto : undefined} className={!touched[i] && emojiAt(i) ? 'is-auto' : undefined} enterKeyHint="next" onKeyDown={(e) => onEnter(e, `choice-${i}`)} onFocus={(e) => e.target.select()} onChange={(e) => setEmoji(i, e.target.value)} />
-            </span>
+            {/* The choice's picture: tap for the sheet (emoji suggestions, popular emoji, or a photo from the phone). */}
+            <button
+              type="button"
+              className={'face-pick' + (photos[i] ? ' has-photo' : emojiAt(i) ? (touched[i] ? ' has-emoji' : ' has-emoji is-auto') : '')}
+              aria-label={t.pictureN(i + 1)}
+              title={!touched[i] && !photos[i] && emojiAt(i) ? t.emojiAuto : undefined}
+              onClick={() => setPicking(i)}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {photos[i] ? <img src={photos[i]} alt="" /> : emojiAt(i) ? <span>{emojiAt(i)}</span> : <ImagePlus size={18} strokeWidth={1.75} aria-hidden />}
+            </button>
             <span className="search">
               <input id={`choice-${i}`} enterKeyHint={i < choices.length - 1 ? 'next' : 'go'} autoCapitalize="words" autoComplete="off" onKeyDown={(e) => onEnter(e, i < choices.length - 1 ? `choice-${i + 1}` : null)} data-choice value={c} maxLength={60} aria-label={t.choiceN(i + 1)} placeholder={t.choiceN(i + 1)} aria-invalid={!!fieldError.choices} onChange={(e) => { setChoice(i, e.target.value); setFieldError((f) => ({ ...f, choices: undefined })); }} />
             </span>
@@ -238,7 +255,12 @@ export default function CreateForm() {
                 <span key={n} className="tot-option duel-option" style={{ '--pc': `var(--p-${['input', 'feedback', 'control', 'agents', 'output', 'trust'][n % 6]})` } as React.CSSProperties}>
                   <span className="tot-letter">{n + 1}</span>
                   <span className="duel-body">
-                    <span className={'duel-face' + (c.emoji ? ' has-emoji' : '')}><span>{c.emoji || faceLabels(filledChoices.map((x) => x.label))[n]}</span></span>
+                    {c.photo ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <span className="duel-photo"><img src={c.photo} alt="" /></span>
+                    ) : (
+                      <span className={'duel-face' + (c.emoji ? ' has-emoji' : '')}><span>{c.emoji || faceLabels(filledChoices.map((x) => x.label))[n]}</span></span>
+                    )}
                     <span className="duel-text"><span className="duel-name">{c.label}</span></span>
                   </span>
                   <span className="evm-row"><span className="evm-led" /><span className="evm-btn">{t.vote}</span></span>
@@ -249,7 +271,17 @@ export default function CreateForm() {
         </section>
       )}
 
+      {photos.some(Boolean) && <p className="small muted">{t.photosHeld}</p>}
       {error && <p className="duel-error" role="alert">{error}</p>}
+      {picking !== null && (
+        <PicturePicker
+          name={choices[picking]?.trim() || t.choiceN(picking + 1)}
+          value={{ emoji: emojiAt(picking), photo: photos[picking] ?? '' }}
+          suggested={emojiFor(choices[picking] ?? '')}
+          onChange={(p) => setPicture(picking, p)}
+          onClose={() => setPicking(null)}
+        />
+      )}
       <div className="row">
         <button className="btn btn-primary btn-lg" disabled={busy}>{buttonText}</button>
       </div>

@@ -459,3 +459,12 @@ Found by testing every screen and API with odd inputs. Rules that came out of it
 | Element | Screen | Priority | Job |
 |---|---|---|---|
 | "Testing · Reset this phone" (dashed box, last on the page) | My votes | P3 | The owner tests the site as a first-time visitor again. Removes this phone's votes, exit poll calls and reactions (same as "Delete my votes") and clears what the browser remembered, then opens Home. Never touches other people's votes or the duels. Remove before a public launch: `src/components/ResetFresh.tsx` and its line in `src/app/me/page.tsx`. |
+
+### Create: pictures (owner: "add images option… suggest emojis… add image from device… intuitive and beautiful")
+
+| Element | Level | Job / why |
+|---|---|---|
+| The circle in front of each choice (dashed "add picture" icon when empty; the emoji or photo when set) | P2 | One obvious place for a choice's picture. Tap it to open the picture sheet. Replaces the small emoji typing box. |
+| Picture sheet: big preview, "Photo from your phone" (ink, the sheet's one main action), the suggested emoji first (outlined), 30 popular emoji, "Or type any emoji", "No picture", "Done" | P2 | Emoji in one tap, a photo in two (camera or gallery). Back / Escape / tapping outside closes it. |
+| Photos are cut to the ballot's 4:5 shape, made small (480×600 JPEG, under ~110 KB) and re-drawn on the phone | – | Fast on Indian mobile data; the photo's hidden details (like where it was taken) are dropped before it leaves the phone. |
+| "Duels with photos appear in public lists after a quick check. Your own link works straight away." | P3 | People's photos are held like politics duels: they show in Home / Duels lists after the owner approves them on /admin (thumbnails shown there). The share link works at once. |
