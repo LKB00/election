@@ -2,7 +2,9 @@
 // rule of a normal poll (one vote each, hidden results, Guess the crowd, sealing) works unchanged.
 export const RATING_LABELS = ['1', '2', '3', '4', '5'];
 export const RATING_EMOJIS = ['😖', '🙁', '😐', '🙂', '😍'];
-export type PollKind = 'choice' | 'rating' | 'multi';
+export type PollKind = 'choice' | 'rating' | 'multi' | 'rank';
+/** Kinds whose votes keep every chosen option (in vote_picks). */
+export const usesPicks = (kind: string) => kind === 'multi' || kind === 'rank';
 
 /** Average of a rating poll (1–5, one decimal), from the votes per step; null with no votes. */
 export function ratingAverage(votesPerStep: number[]): number | null {

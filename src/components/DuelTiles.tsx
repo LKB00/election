@@ -41,7 +41,7 @@ export default function DuelTiles({ polls, votedIds = [], noCreate = false }: { 
             <Icon size={22} strokeWidth={1.75} aria-hidden />
             <strong>{p.title}</strong>
             {/* Long duels (IPL's 10 teams) show the first three and how many more. */}
-            <span>{p.kind === 'rating' ? t.tileRate : <>{p.kind === 'multi' ? `${t.tileMulti}: ` : ''}{p.options.slice(0, 3).join(p.kind === 'multi' ? ', ' : ' vs ')}{p.options.length > 3 && ` +${p.options.length - 3}`}</>}</span>
+            <span>{p.kind === 'rating' ? t.tileRate : <>{p.kind === 'multi' ? `${t.tileMulti}: ` : p.kind === 'rank' ? `${t.tileRank}: ` : ''}{p.options.slice(0, 3).join(p.kind === 'multi' || p.kind === 'rank' ? ', ' : ' vs ')}{p.options.length > 3 && ` +${p.options.length - 3}`}</>}</span>
             <span className="game-meta">
               {done ? (
                 <><Check size={13} strokeWidth={2} aria-hidden /> {t.youVotedN(total)}</>

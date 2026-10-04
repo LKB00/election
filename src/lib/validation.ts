@@ -53,7 +53,7 @@ export const createPollSchema = z.object({
   hideUntilVoted: z.boolean().default(true),
   allowChange: z.boolean().default(false),
   electionMode: z.boolean().default(false),
-  kind: z.enum(['choice', 'rating', 'multi']).default('choice'),
+  kind: z.enum(['choice', 'rating', 'multi', 'rank']).default('choice'),
   endsAt: z
     .string()
     .datetime()

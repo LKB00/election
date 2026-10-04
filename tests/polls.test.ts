@@ -609,3 +609,21 @@ describe('pick several', () => {
     expect((await getPoll(db, id, 'm1'))!.options.map((o) => o.votes)).toEqual([1, 1, 0]);
   });
 });
+
+describe('rank', () => {
+  it('needs every choice placed, scores places with points, and shows the order in My votes', async () => {
+    const id = await make({ title: 'Rank the captains', options: ['Dhoni', 'Kohli', 'Rohit'], kind: 'rank' });
+    const [d, k, r] = (await getPoll(db, id, null))!.options;
+    expect(await castVote(db, id, d.id, 'k1', null, [k.id])).toBe('bad_option'); // Rohit not placed
+    expect(await castVote(db, id, d.id, 'k1', null, [k.id, r.id])).toBe('ok'); // D 2, K 1, R 0
+    expect(await castVote(db, id, k.id, 'k2', null, [d.id, r.id])).toBe('ok'); // K 2, D 1, R 0
+    expect(await castVote(db, id, d.id, 'k3', null, [r.id, k.id])).toBe('ok'); // D 2, R 1, K 0
+    const p = (await getPoll(db, id, 'k1'))!;
+    expect(p.kind).toBe('rank');
+    expect(p.myPicks).toEqual([d.id, k.id, r.id]);
+    expect(p.options.map((o) => o.votes)).toEqual([5, 3, 1]);
+    expect(p.options.map((o) => Math.round(o.percent))).toEqual([83, 50, 17]);
+    expect(p.options[0].avgPlace).toBe(1.3);
+    expect((await getMyVotes(db, 'k1')).find((v) => v.pollId === id)).toMatchObject({ pick: '1. Dhoni, 2. Kohli, 3. Rohit', standing: { kind: 'leading', name: 'Dhoni', percent: 83 } });
+  });
+});

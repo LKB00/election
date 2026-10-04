@@ -171,6 +171,7 @@ export default function CreateForm() {
         <div className="builder-kind" role="radiogroup" aria-label={t.ballotLabel}>
           <button type="button" role="radio" aria-checked={kind === 'choice'} className={'chip' + (kind === 'choice' ? ' chip-on' : '')} onClick={() => setKind('choice')}>☑️ {t.formatChoice}</button>
           <button type="button" role="radio" aria-checked={kind === 'multi'} className={'chip' + (kind === 'multi' ? ' chip-on' : '')} onClick={() => setKind('multi')}>✅ {t.formatMulti}</button>
+          <button type="button" role="radio" aria-checked={kind === 'rank'} className={'chip' + (kind === 'rank' ? ' chip-on' : '')} onClick={() => setKind('rank')}>🔢 {t.formatRank}</button>
           <button type="button" role="radio" aria-checked={isRating} className={'chip' + (isRating ? ' chip-on' : '')} onClick={() => setKind('rating')}>😍 {t.formatRate}</button>
         </div>
         <textarea
@@ -273,6 +274,7 @@ export default function CreateForm() {
         </div>
         )}
         {kind === 'multi' && <p className="small muted builder-hint">{t.multiHint}</p>}
+        {kind === 'rank' && <p className="small muted builder-hint">{t.rankHint}</p>}
         {fieldError.choices && <p className="field-error" role="alert">{fieldError.choices}</p>}
       </section>
 

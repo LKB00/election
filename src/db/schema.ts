@@ -118,6 +118,8 @@ export const votePicks = pgTable(
     voteId: text('vote_id').notNull().references(() => votes.id, { onDelete: 'cascade' }),
     pollId: text('poll_id').notNull().references(() => polls.id, { onDelete: 'cascade' }),
     optionId: text('option_id').notNull().references(() => options.id, { onDelete: 'cascade' }),
+    // "Rank" polls: the place this voter gave the choice (1 = first). Empty for "pick several".
+    rank: integer('rank'),
   },
   (t) => [primaryKey({ columns: [t.voteId, t.optionId] }), index('vote_picks_poll_idx').on(t.pollId)],
 );

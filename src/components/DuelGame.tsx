@@ -214,7 +214,9 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
   );
   const rating = poll?.kind === 'rating';
   // "Pick several": tick choices first (kept here until you press Vote), then one vote carries them all.
-  const multi = poll?.kind === 'multi';
+  const multi = poll?.kind === 'multi' || poll?.kind === 'rank';
+  // Rank: the order you tap is your ranking (first tap = #1).
+  const ranking = poll?.kind === 'rank';
   const [ticks, setTicks] = useState<string[]>([]);
   useEffect(() => setTicks([]), [raw?.id]);
   const toggleTick = (id: string) => setTicks((x) => (x.includes(id) ? x.filter((y) => y !== id) : [...x, id]));
@@ -255,7 +257,7 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
   const shownTotal = shown ? Object.values(shown).reduce((a, b) => a + b, 0) : poll?.totalVotes ?? 0;
   // Pick several: each bar is the share of voters who ticked it (they add up to more than 100%).
   const pcts = useMemo(
-    () => (poll ? (poll.kind === 'multi' ? poll.options.map((o) => Math.round(o.percent)) : rounded(poll.options, shownTotal, shown ?? undefined)) : []),
+    () => (poll ? (poll.kind === 'multi' || poll.kind === 'rank' ? poll.options.map((o) => Math.round(o.percent)) : rounded(poll.options, shownTotal, shown ?? undefined)) : []),
     [poll, shownTotal, shown],
   );
   const votesOf = (o: PollOption) => (shown ? shown[o.id] ?? 0 : o.votes);
@@ -684,11 +686,13 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
                 aria-pressed={multi && !voted ? ticked : undefined}
                 aria-label={`${o.label}${revealed ? `, ${t.percent(pcts[n])}` : ''}`}
               >
-                <span className="tot-letter">{isMine || ticked ? <Check size={13} strokeWidth={2.5} aria-hidden /> : serial(n)}</span>
-                {revealed && (lead || isMine) && (
+                <span className="tot-letter">
+                  {ranking && (ticked || isMine) ? `#${(voted ? poll.myPicks : ticks).indexOf(o.id) + 1}` : isMine || ticked ? <Check size={13} strokeWidth={2.5} aria-hidden /> : serial(n)}
+                </span>
+                {revealed && (lead || (isMine && !ranking)) && (
                   <span className="tot-caption">
-                    {isMine ? t.yourPick : poll.closed && !counting ? t.won : t.leading}
-                    {isMine && lead ? ` · ${poll.closed && !counting ? t.wonLower : t.leadingLower}` : ''}
+                    {isMine && !ranking ? t.yourPick : poll.closed && !counting ? t.won : t.leading}
+                    {isMine && !ranking && lead ? ` · ${poll.closed && !counting ? t.wonLower : t.leadingLower}` : ''}
                   </span>
                 )}
                 <span className="duel-body">
@@ -703,13 +707,13 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
                     <span className="duel-pct"><Tween value={pcts[n]} render={(v) => `${v}%`} /></span>
                     {/* The line at 50% is the majority mark, as on counting-day tallies. */}
                     <span className="meter duel-meter" aria-hidden><span style={{ width: `${pcts[n]}%` }} /></span>
-                    <span className="small muted"><Tween value={votesOf(o)} render={(v) => t.votes(v)} /></span>
+                    <span className="small muted">{ranking ? (o.avgPlace != null ? t.rankAvg(o.avgPlace.toFixed(1)) : '') : <Tween value={votesOf(o)} render={(v) => t.votes(v)} />}</span>
                   </span>
                 )}
                 {!revealed && !poll.closed && (
                   <span className="evm-row" aria-hidden>
                     <span className={'evm-led' + (isMine || ticked ? ' is-on' : '')} />
-                    <span className="evm-btn">{multi && !voted ? (ticked ? t.multiTicked : t.multiTick) : isMine ? t.voted : t.vote}</span>
+                    <span className="evm-btn">{multi && !voted ? (ranking ? (ticked ? `#${ticks.indexOf(o.id) + 1}` : t.rankTap) : ticked ? t.multiTicked : t.multiTick) : isMine ? t.voted : t.vote}</span>
                   </span>
                 )}
                 {justVoted === o.id && !counting && <Burst />}
@@ -722,13 +726,19 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
       {/* Pick several: the one main step is the Vote button under the ticks; it says how many you picked. */}
       {multi && !voted && !poll.closed && (
         <div className="multi-cast">
-          <p className="small muted">{t.multiHint}</p>
-          <button type="button" className="btn btn-primary btn-lg" disabled={!ticks.length || !!busy} onClick={() => vote(ticks[0], ticks.slice(1))}>
-            {t.multiCast(ticks.length)}
+          <p className="small muted">{ranking ? t.rankHint : t.multiHint}</p>
+          <button
+            type="button"
+            className="btn btn-primary btn-lg"
+            disabled={(ranking ? ticks.length !== poll.options.length : !ticks.length) || !!busy}
+            onClick={() => vote(ticks[0], ticks.slice(1))}
+          >
+            {ranking ? t.rankCast(ticks.length, poll.options.length) : t.multiCast(ticks.length)}
           </button>
+          {ranking && ticks.length > 0 && <button type="button" className="link-like small muted" onClick={() => setTicks([])}>{t.rankClear}</button>}
         </div>
       )}
-      {multi && revealed && <p className="small muted">{t.multiNote}</p>}
+      {multi && revealed && <p className="small muted">{ranking ? t.rankNote : t.multiNote}</p>}
 
       {!voted && !poll.closed && (
         <p className="small muted duel-hint" data-hint>{t.ballotHint}</p>
@@ -784,7 +794,7 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
             ) : poll.trend.length > 2 && sparkOpt ? (
               <>{t.shareOverTime(sparkOpt.label)} · </>
             ) : null}
-            {!rating && t.majorityLine}
+            {!rating && !ranking && t.majorityLine}
           </p>
         </div>
       )}

@@ -82,6 +82,7 @@ CREATE TABLE IF NOT EXISTS vote_picks (
   PRIMARY KEY (vote_id, option_id)
 );
 CREATE INDEX IF NOT EXISTS vote_picks_poll_idx ON vote_picks (poll_id);
+ALTER TABLE vote_picks ADD COLUMN IF NOT EXISTS rank integer;
 CREATE TABLE IF NOT EXISTS photos (
   id text PRIMARY KEY,
   poll_id text NOT NULL REFERENCES polls(id) ON DELETE CASCADE,
