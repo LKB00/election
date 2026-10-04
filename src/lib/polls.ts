@@ -7,6 +7,8 @@ import { schema, type Db } from '@/db';
 import type { CreatePollInput } from './validation';
 import { namesPolitics } from './moderation';
 import { sealedUntil } from './silence';
+import { createHash, timingSafeEqual } from 'node:crypto';
+import { isAdminKey } from './admin';
 
 const { polls, options, votes, reactions, reports, photos, votePicks } = schema;
 
@@ -85,6 +87,9 @@ export type PollView = {
   /** My group vs everyone (pick-one polls, results visible, at least GROUP_MIN friends from your link): the share of your
    *  group (you + those friends) and of everyone who picked what you picked, in whole percent. */
   group: { size: number; mine: number; everyone: number } | null;
+  /** "Called it": a question about a real event. `outcome` is the choice that came true, once the creator marked it. */
+  calledIt: boolean;
+  outcome: string | null;
   /** Opened from a friend's link: whether that friend exists, and their pick once you can see results. */
   friend: { known: boolean; optionId: string | null };
   options: PollOption[];
@@ -108,7 +113,10 @@ export function groupSplit(friendsAll: number, friendsAgree: number, everyoneMin
   return { size: friendsAll + 1, mine: Math.round(((friendsAgree + 1) / (friendsAll + 1)) * 100), everyone: Math.round((everyoneMine / everyoneTotal) * 100) };
 }
 
-export async function createPoll(db: Db, raw: CreatePollInput): Promise<string> {
+const hashKey = (key: string) => createHash('sha256').update(key).digest('hex');
+
+/** `manageKey`: the creator's private key (kept on their phone); only its hash is stored. */
+export async function createPoll(db: Db, raw: CreatePollInput, manageKey?: string): Promise<string> {
   // A rating poll always has the same five steps, whatever was sent.
   const input = raw.kind === 'rating' ? { ...raw, options: RATING_LABELS, emojis: RATING_EMOJIS, photos: [] } : raw;
   const id = pollId();
@@ -117,15 +125,19 @@ export async function createPoll(db: Db, raw: CreatePollInput): Promise<string> 
   const hasPhotos = photoIds.some(Boolean);
   // One transaction: a duel is never saved without its choices (or with half its photos).
   await db.transaction(async (tx) => {
+  const category = namesPolitics(input.title, input.description, ...input.options) ? 'politics' : input.category;
   await tx.insert(polls).values({
     hasPhotos,
+    // "Called it" is for pick-one questions about sport, films, shows and the like; never politics (election law).
+    calledIt: input.calledIt && input.kind === 'choice' && category !== 'politics',
+    manageHash: manageKey ? hashKey(manageKey) : null,
     electionMode: input.electionMode,
     kind: input.kind,
     id,
     title: input.title,
     description: input.description,
     // A duel that names a politician or party is politics, whatever was picked: silence windows and the review hold apply.
-    category: namesPolitics(input.title, input.description, ...input.options) ? 'politics' : input.category,
+    category,
     hideUntilVoted: input.hideUntilVoted,
     allowChange: input.allowChange,
     endsAt: input.endsAt ? new Date(input.endsAt) : null,
@@ -251,7 +263,8 @@ export async function getPoll(
   // During an election silence window, politics duels show no numbers and ask no exit poll, to anyone.
   const sealed = sealedUntil(poll.category);
   // Not while yours is the only vote: "who's winning?" needs someone else's vote to be a question.
-  const needsGuess = !sealed && poll.hideUntilVoted && !closed && myVote !== null && mine[0]?.prediction == null && opts.length >= 2 && total >= 2;
+  // "Called it": the vote itself is the prediction, so there is no second "who's winning?" guess.
+  const needsGuess = !poll.calledIt && !sealed && poll.hideUntilVoted && !closed && myVote !== null && mine[0]?.prediction == null && opts.length >= 2 && total >= 2;
   const resultsVisible = !sealed && (!poll.hideUntilVoted || closed || (myVote !== null && !needsGuess));
 
   // Your share code (made on first need, also for votes from before share codes existed).
@@ -325,6 +338,8 @@ export async function getPoll(
     electionMode: poll.electionMode || poll.category === 'politics',
     kind: poll.kind === 'rating' || poll.kind === 'multi' || poll.kind === 'rank' ? poll.kind : 'choice',
     myPicks,
+    calledIt: poll.calledIt,
+    outcome: poll.calledIt ? poll.outcome : null,
     myShareProof: myShareCode ? shareProof(myShareCode) : null,
     // How your friends voted tells who leads, so it waits for the results too.
     friends: !resultsVisible ? { agree: 0, disagree: 0 } : { agree: friendRows[0]?.agree ?? 0, disagree: (friendRows[0]?.all ?? 0) - (friendRows[0]?.agree ?? 0) },
@@ -518,7 +533,7 @@ export async function guessLeader(db: Db, id: string, voterId: string, choice: s
   return 'ok';
 }
 
-export type PollSummary = { id: string; title: string; category: string; kind: PollKind; totalVotes: number; lastHour: number; options: string[]; closed: boolean; /** The creator's emoji per choice ('' when none), in choice order. */ emojis: string[] };
+export type PollSummary = { id: string; title: string; category: string; kind: PollKind; totalVotes: number; lastHour: number; options: string[]; closed: boolean; /** The creator's emoji per choice ('' when none), in choice order. */ emojis: string[]; /** A "Called it" question about a real event. */ calledIt: boolean };
 
 /** Public duels, newest first. Hidden duels never; unreviewed politics duels not until the owner checks them. */
 export async function listPolls(db: Db, limit = 20, filter: { category?: string; reviewedOnly?: boolean; q?: string; before?: Date } = {}): Promise<PollSummary[]> {
@@ -533,6 +548,7 @@ export async function listPolls(db: Db, limit = 20, filter: { category?: string;
       category: polls.category,
       kind: polls.kind,
       endsAt: polls.endsAt,
+      calledIt: polls.calledIt,
       totalVotes: sql<number>`count(${votes.id})::int`,
       lastHour: sql<number>`count(${votes.id}) filter (where ${votes.createdAt} > now() - interval '1 hour')::int`,
     })
@@ -569,6 +585,7 @@ export async function listPolls(db: Db, limit = 20, filter: { category?: string;
     closed: !!r.endsAt && r.endsAt.getTime() <= Date.now(),
     options: opts.filter((o) => o.pollId === r.id).map((o) => o.label),
     emojis: opts.filter((o) => o.pollId === r.id).map((o) => o.emoji ?? ''),
+    calledIt: r.calledIt,
   }));
 }
 
@@ -772,6 +789,8 @@ export async function getTodaySet(db: Db, voterId: string | null, size = SET_SIZ
 export type Standing =
   | { kind: 'leading' | 'won'; name: string; percent: number }
   | { kind: 'rating'; average: number }
+  /** "Called it": what happened, and whether your pick was it. */
+  | { kind: 'called'; name: string; right: boolean }
   | { kind: 'tie' | 'tied' | 'guess' | 'sealed' | 'none' };
 export type MyVote = { pollId: string; title: string; pick: string; at: string; standing: Standing; voters: number };
 
@@ -790,6 +809,8 @@ export async function getMyVotes(db: Db, voterId: string | null, limit = 50): Pr
       category: polls.category,
       hideUntilVoted: polls.hideUntilVoted,
       endsAt: polls.endsAt,
+      optionId: votes.optionId,
+      outcome: polls.outcome,
     })
     .from(votes)
     .innerJoin(polls, eq(polls.id, votes.pollId))
@@ -799,7 +820,7 @@ export async function getMyVotes(db: Db, voterId: string | null, limit = 50): Pr
     .limit(limit);
   if (!rows.length) return [];
   const counts = await db
-    .select({ pollId: options.pollId, label: options.label, n: sql<number>`count(${votes.id})::int` })
+    .select({ pollId: options.pollId, optionId: options.id, label: options.label, n: sql<number>`count(${votes.id})::int` })
     .from(options)
     .leftJoin(votes, eq(votes.optionId, options.id))
     .where(inArray(options.pollId, rows.map((r) => r.pollId)))
@@ -833,7 +854,9 @@ export async function getMyVotes(db: Db, voterId: string | null, limit = 50): Pr
     const total = counts.filter((c) => c.pollId === r.pollId).reduce((s, c) => s + c.n, 0);
     const mine = (multi ? pickCounts : counts).filter((c) => c.pollId === r.pollId).sort((a, b) => b.n - a.n);
     let standing: Standing;
-    if (sealedUntil(r.category)) standing = { kind: 'sealed' };
+    const happened = r.outcome ? counts.find((c) => c.optionId === r.outcome) : undefined;
+    if (happened) standing = { kind: 'called', name: happened.label, right: r.optionId === r.outcome };
+    else if (sealedUntil(r.category)) standing = { kind: 'sealed' };
     else if (r.hideUntilVoted && !closed && r.prediction == null && mine.length >= 2 && total >= 2) standing = { kind: 'guess' };
     else if (!total) standing = { kind: 'none' };
     else if (r.pollKind === 'rating') standing = { kind: 'rating', average: ratingAverage([1, 2, 3, 4, 5].map((v) => mine.find((c) => c.label === String(v))?.n ?? 0)) ?? 0 };
@@ -981,4 +1004,22 @@ export async function deleteVoterData(db: Db, voterId: string): Promise<number> 
   await db.delete(reports).where(eq(reports.voterKey, voterId));
   const removed = await db.delete(votes).where(eq(votes.voterKey, voterId)).returning({ id: votes.id });
   return removed.length;
+}
+
+/** "Called it": the creator (with their private key) or the owner marks which choice came true. Voting closes then. */
+export async function setOutcome(db: Db, id: string, optionId: string, key: string): Promise<'ok' | 'not_found' | 'not_allowed' | 'bad_option' | 'done'> {
+  const [poll] = await db.select().from(polls).where(and(eq(polls.id, id), eq(polls.hidden, false))).limit(1);
+  if (!poll || !poll.calledIt) return 'not_found';
+  const creator = !!poll.manageHash && poll.manageHash.length === 64 && timingSafeEqual(Buffer.from(poll.manageHash), Buffer.from(hashKey(key)));
+  if (!creator && !isAdminKey(key)) return 'not_allowed';
+  if (poll.outcome) return 'done';
+  const [opt] = await db.select({ id: options.id }).from(options).where(and(eq(options.id, optionId), eq(options.pollId, id))).limit(1);
+  if (!opt) return 'bad_option';
+  const now = new Date();
+  // Closing it (end time = now) lets every "closed" rule apply: no more votes, results open to all.
+  await db
+    .update(polls)
+    .set({ outcome: optionId, outcomeAt: now, endsAt: poll.endsAt && poll.endsAt < now ? poll.endsAt : now })
+    .where(and(eq(polls.id, id), isNull(polls.outcome)));
+  return 'ok';
 }

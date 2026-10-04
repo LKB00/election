@@ -37,6 +37,12 @@ export default function CreateForm({ initialTitle = '' }: { initialTitle?: strin
   // What kind of question: pick one of your choices, or rate it 1–5 with faces.
   const [kind, setKind] = useState<PollKind>('choice');
   const isRating = kind === 'rating';
+  // "Called it": a pick-one question about a real event; you mark what happened later.
+  const [calledIt, setCalledIt] = useState(false);
+  const pickKind = (k: PollKind, called = false) => {
+    setKind(k);
+    setCalledIt(called);
+  };
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   // Errors show under the field they belong to, and focus moves there.
@@ -134,6 +140,7 @@ export default function CreateForm({ initialTitle = '' }: { initialTitle?: strin
         description,
         category,
         kind,
+        calledIt,
         options: isRating ? RATING_LABELS : kept.map((x) => x.c),
         emojis: isRating ? RATING_EMOJIS : kept.map((x) => x.e),
         photos: isRating ? [] : kept.map((x) => x.p),
@@ -146,7 +153,7 @@ export default function CreateForm({ initialTitle = '' }: { initialTitle?: strin
     }).catch(() => null);
     const data = await res?.json().catch(() => null);
     if (res?.ok && data?.id) {
-      rememberMyPoll(data.id);
+      rememberMyPoll(data.id, data.manageKey);
       return router.push(`/p/${data.id}?new=1`);
     }
     setError(data?.error ? apiMsg(lang, data.error) : t.errGeneric);
@@ -178,10 +185,11 @@ export default function CreateForm({ initialTitle = '' }: { initialTitle?: strin
         <p className="label">{t.ballotLabel}</p>
         {/* What kind of question (P2): your own choices, or a 1–5 rating with faces. */}
         <div className="builder-kind" role="radiogroup" aria-label={t.ballotLabel}>
-          <button type="button" role="radio" aria-checked={kind === 'choice'} className={'chip' + (kind === 'choice' ? ' chip-on' : '')} onClick={() => setKind('choice')}>☑️ {t.formatChoice}</button>
-          <button type="button" role="radio" aria-checked={kind === 'multi'} className={'chip' + (kind === 'multi' ? ' chip-on' : '')} onClick={() => setKind('multi')}>✅ {t.formatMulti}</button>
-          <button type="button" role="radio" aria-checked={kind === 'rank'} className={'chip' + (kind === 'rank' ? ' chip-on' : '')} onClick={() => setKind('rank')}>🔢 {t.formatRank}</button>
-          <button type="button" role="radio" aria-checked={isRating} className={'chip' + (isRating ? ' chip-on' : '')} onClick={() => setKind('rating')}>😍 {t.formatRate}</button>
+          <button type="button" role="radio" aria-checked={kind === 'choice' && !calledIt} className={'chip' + (kind === 'choice' && !calledIt ? ' chip-on' : '')} onClick={() => pickKind('choice')}>☑️ {t.formatChoice}</button>
+          <button type="button" role="radio" aria-checked={calledIt} className={'chip' + (calledIt ? ' chip-on' : '')} onClick={() => pickKind('choice', true)}>🔮 {t.formatCalled}</button>
+          <button type="button" role="radio" aria-checked={kind === 'multi'} className={'chip' + (kind === 'multi' ? ' chip-on' : '')} onClick={() => pickKind('multi')}>✅ {t.formatMulti}</button>
+          <button type="button" role="radio" aria-checked={kind === 'rank'} className={'chip' + (kind === 'rank' ? ' chip-on' : '')} onClick={() => pickKind('rank')}>🔢 {t.formatRank}</button>
+          <button type="button" role="radio" aria-checked={isRating} className={'chip' + (isRating ? ' chip-on' : '')} onClick={() => pickKind('rating')}>😍 {t.formatRate}</button>
         </div>
         <textarea
           id="title"
@@ -192,7 +200,7 @@ export default function CreateForm({ initialTitle = '' }: { initialTitle?: strin
           autoComplete="off"
           value={title}
           maxLength={120}
-          placeholder={t.questionPh}
+          placeholder={calledIt ? t.calledPh : t.questionPh}
           aria-label={t.yourQuestion}
           aria-invalid={!!fieldError.title}
           onKeyDown={(e) => {
@@ -214,7 +222,7 @@ export default function CreateForm({ initialTitle = '' }: { initialTitle?: strin
             <span><strong>{t.useAsChoices}</strong> <span className="muted">{fromQuestion.join(' · ')}</span></span>
           </button>
         )}
-        {!title.trim() && !typedChoices && <p className="small muted builder-hint">{t.builderHint}</p>}
+        {calledIt ? <p className="small muted builder-hint">{t.calledHint}</p> : !title.trim() && !typedChoices && <p className="small muted builder-hint">{t.builderHint}</p>}
 
         {isRating ? (
           <>

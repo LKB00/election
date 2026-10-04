@@ -17,6 +17,7 @@ import { sideEmoji, sideOf, type Side } from '@/lib/sides';
 import { useLang, useT } from '@/lib/lang';
 import { apiMsg, reasonLabel, type Dict, type Lang } from '@/lib/i18n';
 import { faceLabels } from '@/lib/labels';
+import { manageKeyFor } from './MyPolls';
 
 // Duels, played like patricka's "This or That": tap a card, see the result on the
 // cards, then "Next duel". Results stay hidden until you vote.
@@ -370,6 +371,19 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
     if (gained > 0 && recent && next.myVote === poll.myVote) setFresh({ id: next.id, n: gained });
     replace(next);
   }, [poll, q]);
+  // "Called it": this phone made the poll (it holds the private key), so it can mark what happened.
+  const [manageKey, setManageKey] = useState<string | null>(null);
+  const [marking, setMarking] = useState(false);
+  useEffect(() => setManageKey(poll?.calledIt && !poll.outcome ? manageKeyFor(poll.id) : null), [poll?.id, poll?.calledIt, poll?.outcome]);
+  async function markOutcome(o: PollOption) {
+    if (!poll || !manageKey || marking || !window.confirm(t.calledMarkConfirm(o.label))) return;
+    setMarking(true);
+    const res = await fetch(`/api/polls/${poll.id}/outcome`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ optionId: o.id, key: manageKey }) }).catch(() => null);
+    setMarking(false);
+    if (res?.ok) return refresh();
+    const data = await res?.json().catch(() => null);
+    setMsg(data?.error ? apiMsg(lang, data.error) : t.saveFail2);
+  }
   useEffect(() => {
     const t = setInterval(() => document.visibilityState === 'visible' && !busy && !casting && refresh(), 8000);
     return () => clearInterval(t);
@@ -721,6 +735,8 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
   const letters = faceLabels(poll.options.map((o) => o.label));
   // 3 or more choices: one compact row per choice, like the real EVM ballot unit. Two choices keep the big photo cards.
   const ballot = poll.options.length >= 3;
+  const happened = poll.calledIt ? poll.outcome : null;
+  const happenedIdx = happened ? poll.options.findIndex((o) => o.id === happened) : -1;
   const numbered = poll.electionMode || ranking;
   // The duel that Next will open (the same rule as goNext): named in the bar, so Next is an invitation, not a guess.
   const upNext = deck.length > 1 ? [...deck.keys()].map((k) => deck[(i + 1 + k) % deck.length]).find((p) => p.id !== poll.id && isOpen(p)) ?? null : null;
@@ -755,6 +771,8 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
             {daily && setIds.has(poll.id) && setLeft > 0 && <span className="duel-set"> · {t.setLeft(setLeft)}</span>}
           </p>
         )}
+        {/* "Called it" (P2): says this is about a real event, answered later. */}
+        {poll.calledIt && !poll.outcome && !(todayId === poll.id || (daily && setIds.has(poll.id) && setLeft > 0)) && <p className="label duel-today">🔮 {t.calledLabel}</p>}
         <h1 key={poll.id} className="display duel-q">{poll.title}</h1>
         <p className="small muted">
           {poll.closed ? t.pollingClosed : <><span className="live-dot" aria-hidden /> {t.pollingOpen}</>}
@@ -834,10 +852,11 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
                     {ranking && (ticked || isMine) ? `#${(voted ? poll.myPicks : ticks).indexOf(o.id) + 1}` : isMine || ticked ? <Check size={13} strokeWidth={2.5} aria-hidden /> : serial(n)}
                   </span>
                 )}
-                {revealed && (lead || (isMine && !ranking) || poll.friend.optionId === o.id) && (
+                {revealed && (lead || (isMine && !ranking) || poll.friend.optionId === o.id || happened === o.id) && (
                   <span className="tot-caption">
-                    {isMine && !ranking ? t.yourPick : lead ? (poll.closed && !counting ? t.won : t.leading) : t.friendsPick}
-                    {isMine && !ranking && lead ? ` · ${poll.closed && !counting ? t.wonLower : t.leadingLower}` : ''}
+                    {/* "Called it": what happened is the answer; the most-picked choice is only "most called". */}
+                    {isMine && !ranking ? t.yourPick : happened === o.id ? `✓ ${t.calledHappened}` : lead ? (poll.calledIt ? t.calledCrowd : poll.closed && !counting ? t.won : t.leading) : t.friendsPick}
+                    {isMine && happened === o.id ? ` · ✓ ${t.calledHappened}` : isMine && !ranking && lead && !poll.calledIt ? ` · ${poll.closed && !counting ? t.wonLower : t.leadingLower}` : ''}
                     {poll.friend.optionId === o.id && (isMine || lead) ? ` · ${t.friendsPickLower}` : ''}
                   </span>
                 )}
@@ -897,6 +916,19 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
 
       {!voted && !poll.closed && (
         <p className="small muted duel-hint" data-hint>{t.ballotHint}</p>
+      )}
+
+      {/* The creator's one job on a "Called it" poll (P1 for them): mark what happened. */}
+      {manageKey && !poll.outcome && (
+        <div className="duel-group called-mark">
+          <p className="label">🔮 {t.calledMarkTitle}</p>
+          <div className="row wrap">
+            {poll.options.map((o) => (
+              <button key={o.id} type="button" className="chip" disabled={marking} onClick={() => markOutcome(o)}>{o.emoji ? `${o.emoji} ` : ''}{o.label}</button>
+            ))}
+          </div>
+          <p className="small muted">{t.calledMarkNote}</p>
+        </div>
       )}
 
       {poll.pausedUntil && !voted && !poll.closed && (
@@ -978,7 +1010,14 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
               {sealed && !revealed && undoUntil > 0 && !poll.closed && voted && (
                 <button type="button" className="link-like duel-undo small muted" onClick={undo}>{t.undoVote}</button>
               )}
-              {revealed && poll.closed && (
+              {revealed && happenedIdx >= 0 && (
+                <>
+                  <strong>{t.calledResult(poll.options[happenedIdx].label)}</strong>{' '}
+                  {mine ? (mine.id === happened ? <strong className="txt-good">{t.calledRight(pcts[happenedIdx])}</strong> : t.calledWrong(pcts[happenedIdx])) : pcts[happenedIdx] ? t.calledPct(pcts[happenedIdx]) : t.calledNobody}
+                  {mine && <br />}
+                </>
+              )}
+              {revealed && poll.closed && happenedIdx < 0 && (
                 <>
                   <strong>{poll.electionMode ? t.declared : t.finalResult}</strong>{' '}
                   {leaderIdx >= 0
@@ -1011,7 +1050,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
                       <br />
                     </span>
                   )}
-                  <strong className={rareNow ? 'is-rare' : undefined}>{vTitle}</strong> {vLine}
+                  {happenedIdx < 0 && <><strong className={rareNow ? 'is-rare' : undefined}>{vTitle}</strong> {vLine}</>}
                   {poll.friends.agree + poll.friends.disagree > 0 && (
                     <span className="small muted">
                       {' '}{t.dares(poll.friends.agree + poll.friends.disagree, poll.friends.agree, poll.friends.disagree)}

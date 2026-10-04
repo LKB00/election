@@ -15,6 +15,7 @@ export const dynamic = 'force-dynamic';
 const standingText = (t: Dict, s: Standing): string | null =>
   s.kind === 'leading' ? t.meLeading(s.name, s.percent)
   : s.kind === 'won' ? t.meWon(s.name)
+  : s.kind === 'called' ? (s.right ? t.meCalledRight(s.name) : t.meCalledWrong(s.name))
   : s.kind === 'rating' ? t.meRating(s.average.toFixed(1))
   : s.kind === 'tie' ? t.meTie
   : s.kind === 'tied' ? t.meTied
@@ -60,7 +61,8 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
           <ul className="al-listcard block-tight">
             {mine.map((v) => {
               // Your pick in front (or won): the yellow disc of "you" with a tick; otherwise a quiet disc.
-              const ahead = (v.standing.kind === 'leading' || v.standing.kind === 'won') && v.standing.name === v.pick;
+              // A "Called it" you got right counts as ahead too.
+              const ahead = ((v.standing.kind === 'leading' || v.standing.kind === 'won') && v.standing.name === v.pick) || (v.standing.kind === 'called' && v.standing.right);
               return (
                 <li key={v.pollId}>
                   <Link href={`/p/${v.pollId}`} className="al-row">

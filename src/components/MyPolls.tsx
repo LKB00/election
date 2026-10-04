@@ -7,13 +7,28 @@ import { useT } from '@/lib/lang';
 // "Your polls · 37 votes so far" (P2): people value what they made (the IKEA effect), and group admins who come back
 // to check their poll are the ones who make the next one. The list lives only on this phone (no login); counts are real.
 const KEY = 'election-my-polls';
+const MANAGE = 'election-manage-keys';
 
 /** Called after a poll is made: remember it on this phone (newest first, 20 at most). */
-export function rememberMyPoll(id: string) {
+export function rememberMyPoll(id: string, manageKey?: string) {
   try {
     const ids = JSON.parse(localStorage.getItem(KEY) ?? '[]') as string[];
     localStorage.setItem(KEY, JSON.stringify([id, ...ids.filter((x) => x !== id)].slice(0, 20)));
+    // The creator's private key: lets this phone mark a "Called it" result later.
+    if (manageKey) {
+      const keys = JSON.parse(localStorage.getItem(MANAGE) ?? '{}') as Record<string, string>;
+      keys[id] = manageKey;
+      localStorage.setItem(MANAGE, JSON.stringify(keys));
+    }
   } catch {}
+}
+/** This phone's private key for a poll it created, if any. */
+export function manageKeyFor(id: string): string | null {
+  try {
+    return (JSON.parse(localStorage.getItem(MANAGE) ?? '{}') as Record<string, string>)[id] ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export default function MyPolls() {

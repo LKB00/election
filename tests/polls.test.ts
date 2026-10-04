@@ -860,3 +860,36 @@ describe('planned days for today\'s question', () => {
     expect(await planToday(db, later, null)).toBe(true);
   });
 });
+
+describe('called it', () => {
+  it('only the creator marks what happened; voting closes and each voter sees if they called it', async () => {
+    const { setOutcome } = await import('@/lib/polls');
+    const id = await createPoll(db, createPollSchema.parse({ title: 'Who wins tonight?', options: ['CSK', 'MI'], calledIt: true, hideUntilVoted: true }), 'creator-key');
+    const p = (await getPoll(db, id, null))!;
+    expect(p.calledIt).toBe(true);
+    const [csk, mi] = p.options;
+    await castVote(db, id, csk.id, 'fan1');
+    await castVote(db, id, mi.id, 'fan2');
+    await castVote(db, id, csk.id, 'fan3');
+    // The vote is the prediction: no second "who's winning?" guess.
+    expect((await getPoll(db, id, 'fan1'))!.needsGuess).toBe(false);
+    expect(await setOutcome(db, id, csk.id, 'wrong-key')).toBe('not_allowed');
+    expect(await setOutcome(db, id, 'nope', 'creator-key')).toBe('bad_option');
+    expect(await setOutcome(db, id, mi.id, 'creator-key')).toBe('ok');
+    expect(await setOutcome(db, id, csk.id, 'creator-key')).toBe('done'); // cannot be changed
+    const after = (await getPoll(db, id, 'fan2'))!;
+    expect(after.outcome).toBe(mi.id);
+    expect(after.closed).toBe(true);
+    expect(after.resultsVisible).toBe(true);
+    expect(await castVote(db, id, csk.id, 'late')).toBe('closed');
+    const mine = await getMyVotes(db, 'fan2');
+    expect(mine.find((v) => v.pollId === id)?.standing).toEqual({ kind: 'called', name: 'MI', right: true });
+    expect((await getMyVotes(db, 'fan1')).find((v) => v.pollId === id)?.standing).toEqual({ kind: 'called', name: 'MI', right: false });
+  });
+  it('is never on for politics or for other poll kinds', async () => {
+    const politics = await createPoll(db, createPollSchema.parse({ title: 'Will Modi win?', options: ['Yes', 'No'], calledIt: true }), 'k');
+    expect((await getPoll(db, politics, null))!.calledIt).toBe(false);
+    const multi = await createPoll(db, createPollSchema.parse({ title: 'Which snacks?', options: ['Samosa', 'Chips'], kind: 'multi', calledIt: true }), 'k');
+    expect((await getPoll(db, multi, null))!.calledIt).toBe(false);
+  });
+});
