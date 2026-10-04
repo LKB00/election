@@ -8,7 +8,7 @@ import { activeSilence } from '@/lib/silence';
 import { createPollSchema } from '@/lib/validation';
 import { rateLimit } from '@/lib/rate-limit';
 import { schema, type Db } from '@/db';
-import { eq, sql } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 
 let db: Db;
 beforeAll(async () => {
@@ -139,23 +139,29 @@ describe('listing', () => {
   });
 });
 
-describe('flagship poll and reasons', () => {
-  it('is seeded once and kept out of the normal list', async () => {
-    const id = await getFeaturedId(db);
-    expect(id).toBe('modi-vs-rahul');
-    const poll = (await getPoll(db, id!, null))!;
-    expect(poll.options.map((o) => o.label)).toEqual(['Narendra Modi', 'Rahul Gandhi']);
-    expect(poll.hideUntilVoted).toBe(true);
-    expect(poll.options.map((o) => o.subtitle)).toEqual(['BJP', 'INC']);
-    expect((await listPolls(db, 100)).some((p) => p.id === id)).toBe(false);
-    await (await import('@/db/seed')).seedFlagship(db); // running again changes nothing
-    expect((await getPoll(db, id!, null))!.options).toHaveLength(2);
+describe('every poll is made by a person', () => {
+  it('the site adds no polls of its own, and the old seeded ones stay retired', async () => {
+    const { SEEDED_IDS, retireSeeded } = await import('@/db/retire');
+    const rows = await db.select({ id: schema.polls.id }).from(schema.polls).where(inArray(schema.polls.id, SEEDED_IDS));
+    expect(rows).toEqual([]);
+    // An old database that still has one: retired the first time only (the owner can show it again for good).
+    await db.execute(sql`delete from app_migrations`);
+    await db.insert(schema.polls).values({ id: 'chai-or-coffee', title: 'Chai or coffee?', reviewed: true });
+    await retireSeeded(db);
+    expect(await getPoll(db, 'chai-or-coffee', null)).toBeNull();
+    await setPollFlags(db, 'chai-or-coffee', { hidden: false, reviewed: true });
+    await retireSeeded(db);
+    expect(await getPoll(db, 'chai-or-coffee', null)).not.toBeNull();
   });
+});
 
+describe('reasons', () => {
   it('saves a reason only for allowed answers and only after voting', async () => {
-    const id = 'modi-vs-rahul';
+    const id = await make({ title: 'Why this one?', hideUntilVoted: true });
+    await db.update(schema.polls).set({ reasons: JSON.stringify(['Leadership', 'Vision']) }).where(eq(schema.polls.id, id));
+    const first = (await getPoll(db, id, null))!.options[0].id;
     expect(await setReason(db, id, 'nobody', 'Leadership')).toBe(false); // has not voted
-    await castVote(db, id, 'modi', 'r1');
+    await castVote(db, id, first, 'r1');
     await guessLeader(db, id, 'r1', 'skip');
     expect(await setReason(db, id, 'r1', 'Made up reason')).toBe(false);
     expect(await setReason(db, id, 'r1', 'Leadership')).toBe(true);
@@ -224,8 +230,10 @@ describe('voter stats and deck', () => {
   });
 
   it('puts the featured duel first', async () => {
+    const pick = await make({ title: 'Featured first check' });
+    await setToday(db, pick);
     const deck = await getDeck(db, null);
-    expect(deck[0].id).toBe('modi-vs-rahul');
+    expect(deck[0].id).toBe(pick);
     expect(deck.length).toBeGreaterThan(1);
   });
 });
@@ -383,9 +391,11 @@ describe('safety: reports and hiding', () => {
     expect((await getReviewQueue(db)).some((r) => r.id === id)).toBe(false);
   });
 
-  it('never auto-hides a reviewed duel (people cannot report the flagship away)', async () => {
-    for (let k = 0; k < AUTO_HIDE_REPORTS + 2; k++) await reportPoll(db, 'modi-vs-rahul', `mass${k}`, 'false');
-    expect(await getPoll(db, 'modi-vs-rahul', null)).not.toBeNull();
+  it('never auto-hides a reviewed duel (people cannot report a checked poll away)', async () => {
+    const id = await make({ title: 'Checked by the owner' });
+    await setPollFlags(db, id, { reviewed: true });
+    for (let k = 0; k < AUTO_HIDE_REPORTS + 2; k++) await reportPoll(db, id, `mass${k}`, 'false');
+    expect(await getPoll(db, id, null)).not.toBeNull();
   });
 });
 
@@ -431,16 +441,6 @@ describe('privacy: delete my votes', () => {
     const after = (await getPoll(db, id, 'keep-me'))!;
     expect(after.totalVotes).toBe(1);
     expect(after.reactions.find((r) => r.emoji === '🔥')!.n).toBe(0);
-  });
-});
-
-describe('starter duels', () => {
-  it('are seeded once, reviewed, and listed', async () => {
-    const list = await listPolls(db, 500, { reviewedOnly: true });
-    expect(list.map((p) => p.id)).toEqual(expect.arrayContaining(['virat-rohit-dhoni', 'ipl-2027-winner', 'up-2027', 'chai-or-coffee']));
-    expect(list.find((p) => p.id === 'ipl-2027-winner')!.options).toHaveLength(10);
-    await (await import('@/db/seed')).seedFlagship(db);
-    expect((await getPoll(db, 'chai-or-coffee', null))!.options).toHaveLength(2);
   });
 });
 
@@ -602,14 +602,13 @@ describe('photos from the phone', () => {
 });
 
 describe('election mode', () => {
-  it('is off for everyday polls, on when chosen, and always on for politics and the flagship', async () => {
+  it('is off for everyday polls, on when chosen, and always on for politics', async () => {
     const plain = await make({ title: 'Mode off' });
     expect((await getPoll(db, plain, null))!.electionMode).toBe(false);
     const chosen = await make({ title: 'Mode on', electionMode: true });
     expect((await getPoll(db, chosen, null))!.electionMode).toBe(true);
     const politics = await make({ title: 'Modi or Kejriwal?' });
     expect((await getPoll(db, politics, null))!.electionMode).toBe(true);
-    expect((await getPoll(db, 'modi-vs-rahul', null))!.electionMode).toBe(true);
   });
 });
 
@@ -685,7 +684,6 @@ describe("today's question and trending", () => {
     const featured = await db.select({ id: schema.polls.id }).from(schema.polls).where(eq(schema.polls.featured, true));
     expect(featured.map((r) => r.id)).toEqual([other]);
     expect(await setToday(db, 'no-such-poll')).toBe(false);
-    await setToday(db, 'modi-vs-rahul'); // put the flagship back for the other tests
   });
   it('trending ranks polls with recent votes, newest activity first', async () => {
     const { trendingPolls } = await import('@/lib/polls');

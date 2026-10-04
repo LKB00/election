@@ -56,6 +56,12 @@ Say "continue features" and Claude picks up the next one.
 - [x] Group polls that reveal together: Create → More options → Group poll. Good for office lunch, class trips, family plans.
 - [x] "Your month in opinions" card (on My votes after 3+ votes in a month). Idea: on the 1st of each month, post "Share your month" in your WhatsApp Channel.
 
+## 7. Good to know
+
+- **Every poll is made by people now.** The site's own polls (Modi or Rahul?, Virat/Rohit/Dhoni, IPL 2027, UP 2027, Chai or coffee) were hidden once. Their votes are kept. To bring one back, open it on `/admin` and press **Show again**.
+- **Today's question** is always one of people's polls that you pick on `/admin`. If you pick none, Home shows the day's set of people's polls.
+- **Early days:** with few polls, ask friends and groups to make the first ones (or make a few yourself, as a person). A match-day pack is the quickest way to get several at once.
+
 ## Done
 
 - (Move items here when finished.)
