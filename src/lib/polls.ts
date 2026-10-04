@@ -87,6 +87,10 @@ export type PollView = {
   /** My group vs everyone (pick-one polls, results visible, at least GROUP_MIN friends from your link): the share of your
    *  group (you + those friends) and of everyone who picked what you picked, in whole percent. */
   group: { size: number; mine: number; everyone: number } | null;
+  /** A group poll: how many people the group has (results open for everyone when they have all voted, or at the end). */
+  groupSize: number | null;
+  /** True while a group poll waits for its group: nobody sees results yet, not even voters. */
+  groupWaiting: boolean;
   /** "Called it": a question about a real event. `outcome` is the choice that came true, once the creator marked it. */
   calledIt: boolean;
   outcome: string | null;
@@ -132,6 +136,7 @@ export async function createPoll(db: Db, raw: CreatePollInput, manageKey?: strin
     calledIt: input.calledIt && input.kind === 'choice' && category !== 'politics',
     manageHash: manageKey ? hashKey(manageKey) : null,
     packId: packId ?? null,
+    groupSize: input.groupSize ?? null,
     electionMode: input.electionMode,
     kind: input.kind,
     id,
@@ -264,9 +269,12 @@ export async function getPoll(
   // During an election silence window, politics duels show no numbers and ask no exit poll, to anyone.
   const sealed = sealedUntil(poll.category);
   // Not while yours is the only vote: "who's winning?" needs someone else's vote to be a question.
+  // A group poll waiting for its group: closed results for everyone. Group polls ask no crowd guess at all: while
+  // waiting its answer would tell who leads, and once all have voted there is no crowd left to guess.
+  const groupWaiting = !!poll.groupSize && !closed && total < poll.groupSize;
   // "Called it": the vote itself is the prediction, so there is no second "who's winning?" guess.
-  const needsGuess = !poll.calledIt && !sealed && poll.hideUntilVoted && !closed && myVote !== null && mine[0]?.prediction == null && opts.length >= 2 && total >= 2;
-  const resultsVisible = !sealed && (!poll.hideUntilVoted || closed || (myVote !== null && !needsGuess));
+  const needsGuess = !poll.groupSize && !poll.calledIt && !sealed && poll.hideUntilVoted && !closed && myVote !== null && mine[0]?.prediction == null && opts.length >= 2 && total >= 2;
+  const resultsVisible = !sealed && !groupWaiting && (!poll.hideUntilVoted || closed || (myVote !== null && !needsGuess));
 
   // Your share code (made on first need, also for votes from before share codes existed).
   let myShareCode = mine[0]?.shareCode ?? null;
@@ -339,6 +347,8 @@ export async function getPoll(
     electionMode: poll.electionMode || poll.category === 'politics',
     kind: poll.kind === 'rating' || poll.kind === 'multi' || poll.kind === 'rank' ? poll.kind : 'choice',
     myPicks,
+    groupSize: poll.groupSize,
+    groupWaiting,
     calledIt: poll.calledIt,
     outcome: poll.calledIt ? poll.outcome : null,
     myShareProof: myShareCode ? shareProof(myShareCode) : null,
@@ -492,11 +502,13 @@ export async function castVote(db: Db, id: string, optionId: string, voterId: st
 /** "Who's winning right now?": checked against the live count (your vote included) at the moment you answer. */
 export async function guessLeader(db: Db, id: string, voterId: string, choice: string): Promise<'ok' | 'not_found' | 'not_allowed' | 'bad_option'> {
   const [poll] = await db
-    .select({ category: polls.category, hidden: polls.hidden, hideUntilVoted: polls.hideUntilVoted, endsAt: polls.endsAt })
+    .select({ category: polls.category, hidden: polls.hidden, hideUntilVoted: polls.hideUntilVoted, endsAt: polls.endsAt, groupSize: polls.groupSize, calledIt: polls.calledIt })
     .from(polls)
     .where(eq(polls.id, id))
     .limit(1);
   if (!poll || poll.hidden) return 'not_found';
+  // Group polls and "Called it" ask no crowd guess (getPoll never offers one; this stops a hand-made request too).
+  if (poll.groupSize || poll.calledIt) return 'not_allowed';
   // Only while the numbers are still hidden: a "guess" made while looking at the results is not a guess.
   const closed = !!poll.endsAt && poll.endsAt.getTime() <= Date.now();
   if (sealedUntil(poll.category) || !poll.hideUntilVoted || closed) return 'not_allowed';
@@ -560,6 +572,8 @@ export async function listPolls(db: Db, limit = 20, filter: { category?: string;
         // Today's question has its own banner, so the list leaves it out; a search finds it like any other.
         q ? undefined : eq(polls.featured, false),
         eq(polls.hidden, false),
+        // Group polls are for the group's link only, never in public lists or search.
+        isNull(polls.groupSize),
         // Held until the owner looks: politics duels, and duels with photos from people's phones.
         filter.reviewedOnly ? eq(polls.reviewed, true) : or(eq(polls.reviewed, true), and(ne(polls.category, 'politics'), eq(polls.hasPhotos, false))),
         filter.category ? eq(polls.category, filter.category) : undefined,
@@ -790,6 +804,8 @@ export async function getTodaySet(db: Db, voterId: string | null, size = SET_SIZ
 export type Standing =
   | { kind: 'leading' | 'won'; name: string; percent: number }
   | { kind: 'rating'; average: number }
+  /** A group poll still waiting for its group. */
+  | { kind: 'group'; voted: number; of: number }
   /** "Called it": what happened, and whether your pick was it. */
   | { kind: 'called'; name: string; right: boolean }
   | { kind: 'tie' | 'tied' | 'guess' | 'sealed' | 'none' };
@@ -812,6 +828,8 @@ export async function getMyVotes(db: Db, voterId: string | null, limit = 50): Pr
       endsAt: polls.endsAt,
       optionId: votes.optionId,
       outcome: polls.outcome,
+      groupSize: polls.groupSize,
+      calledIt: polls.calledIt,
     })
     .from(votes)
     .innerJoin(polls, eq(polls.id, votes.pollId))
@@ -857,8 +875,10 @@ export async function getMyVotes(db: Db, voterId: string | null, limit = 50): Pr
     let standing: Standing;
     const happened = r.outcome ? counts.find((c) => c.optionId === r.outcome) : undefined;
     if (happened) standing = { kind: 'called', name: happened.label, right: r.optionId === r.outcome };
+    else if (r.groupSize && !closed && total < r.groupSize) standing = { kind: 'group', voted: total, of: r.groupSize };
     else if (sealedUntil(r.category)) standing = { kind: 'sealed' };
-    else if (r.hideUntilVoted && !closed && r.prediction == null && mine.length >= 2 && total >= 2) standing = { kind: 'guess' };
+    // (Group and "Called it" polls never ask for a crowd guess.)
+    else if (!r.groupSize && !r.calledIt && r.hideUntilVoted && !closed && r.prediction == null && mine.length >= 2 && total >= 2) standing = { kind: 'guess' };
     else if (!total) standing = { kind: 'none' };
     else if (r.pollKind === 'rating') standing = { kind: 'rating', average: ratingAverage([1, 2, 3, 4, 5].map((v) => mine.find((c) => c.label === String(v))?.n ?? 0)) ?? 0 };
     else if (mine.length > 1 && mine[0].n === mine[1].n) standing = { kind: closed ? 'tied' : 'tie' };

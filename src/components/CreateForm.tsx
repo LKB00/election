@@ -1,6 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { Clock, Landmark, EyeOff, ImagePlus, Lightbulb, Repeat, Sparkles, X, SlidersHorizontal } from 'lucide-react';
+import { Clock, Landmark, EyeOff, ImagePlus, Lightbulb, Repeat, Sparkles, X, SlidersHorizontal, Users } from 'lucide-react';
 import { useState } from 'react';
 import { CATEGORIES } from '@/lib/categories';
 import { useLang, useT } from '@/lib/lang';
@@ -30,6 +30,10 @@ export default function CreateForm({ initialTitle = '', initialTopic }: { initia
   const [endsAt, setEndsAt] = useState('');
   const [hideUntilVoted, setHide] = useState(true); // on by default: guess first, then see (the guess game)
   const [allowChange, setChange] = useState(false);
+  // A group poll: results open for everyone once this many have voted (typed as text; empty = not a group poll).
+  const [groupSize, setGroupSize] = useState('');
+  const groupN = Number.parseInt(groupSize, 10);
+  const isGroup = Number.isFinite(groupN) && groupN >= 2 && groupN <= 200;
   // Election mode: the full booth ritual for this poll. Politics polls get it anyway (the server decides that).
   const [electionMode, setElectionMode] = useState(false);
   // "I am 18+, and these photos are me or people who said yes": ticked once in the picture sheet, before any photo.
@@ -48,7 +52,7 @@ export default function CreateForm({ initialTitle = '', initialTopic }: { initia
   // Errors show under the field they belong to, and focus moves there.
   const [fieldError, setFieldError] = useState<{ title?: string; choices?: string; end?: string }>({});
   // P3 settings are one line of chips; each opens its small box underneath, one at a time.
-  const [open, setOpen] = useState<'ends' | 'topic' | 'details' | null>(null);
+  const [open, setOpen] = useState<'ends' | 'topic' | 'details' | 'group' | null>(null);
   // The less-used settings (Election mode, votes can change, end time, details) wait behind "More options".
   const [showMore, setShowMore] = useState(false);
 
@@ -147,6 +151,7 @@ export default function CreateForm({ initialTitle = '', initialTopic }: { initia
         hideUntilVoted,
         allowChange,
         electionMode,
+        groupSize: isGroup ? groupN : undefined,
         photoConsent,
         endsAt: endsAt ? new Date(endsAt).toISOString() : undefined,
       }),
@@ -161,7 +166,7 @@ export default function CreateForm({ initialTitle = '', initialTopic }: { initia
   }
 
   const TONES = ['input', 'feedback', 'control', 'agents', 'output', 'trust'];
-  const toggleOpen = (k: 'ends' | 'topic' | 'details') => setOpen((o) => (o === k ? null : k));
+  const toggleOpen = (k: 'ends' | 'topic' | 'details' | 'group') => setOpen((o) => (o === k ? null : k));
   const endsLabel = endsAt ? new Date(endsAt).toLocaleString(lang === 'hi' ? 'hi-IN' : 'en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : t.setEnds;
 
   // Not a form: you build the ballot itself (docs/DESIGN.md, "Create: build the ballot"). The question is the big title,
@@ -314,6 +319,11 @@ export default function CreateForm({ initialTitle = '', initialTopic }: { initia
             <Repeat size={13} strokeWidth={1.75} aria-hidden /> {t.setChange}
           </button>
         )}
+        {(showMore || isGroup) && (
+          <button type="button" className={'chip' + (isGroup ? ' chip-on' : '')} aria-expanded={open === 'group'} onClick={() => toggleOpen('group')}>
+            <Users size={13} strokeWidth={1.75} aria-hidden /> {isGroup ? `${t.setGroup} · ${groupN}` : t.setGroup}
+          </button>
+        )}
         {(showMore || endsAt || fieldError.end) && (
           <button type="button" className={'chip' + (endsAt ? ' chip-on' : '')} aria-expanded={open === 'ends'} onClick={() => toggleOpen('ends')}>
             <Clock size={13} strokeWidth={1.75} aria-hidden /> <span suppressHydrationWarning>{endsLabel}</span>
@@ -339,6 +349,15 @@ export default function CreateForm({ initialTitle = '', initialTopic }: { initia
           </span>
           {endsAt && <button type="button" className="link-like small muted" onClick={() => setEndsAt('')}>{t.endsClear}</button>}
           {fieldError.end && <p className="field-error" role="alert">{fieldError.end}</p>}
+        </div>
+      )}
+      {open === 'group' && (
+        <div className="duel-group">
+          <span className="search">
+            <Users size={14} strokeWidth={1.75} aria-hidden />
+            <input id="group" type="number" inputMode="numeric" min={2} max={200} value={groupSize} placeholder="12" aria-label={t.grpHow} onChange={(e) => setGroupSize(e.target.value.replace(/\D/g, '').slice(0, 3))} />
+          </span>
+          <p className="small muted">{t.grpHow} {t.grpNote}</p>
         </div>
       )}
       {open === 'topic' && (

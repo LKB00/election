@@ -4,6 +4,7 @@ import { checkFlow, recordFlow } from '@/lib/flood';
 import { eq } from 'drizzle-orm';
 import { getDb, schema } from '@/db';
 import { castVote, getPoll, undoVote } from '@/lib/polls';
+import { pushEnabled, sendResultAlerts } from '@/lib/push';
 import { clientIp, rateLimit } from '@/lib/rate-limit';
 import { verifyHuman } from '@/lib/turnstile';
 import { voteSchema } from '@/lib/validation';
@@ -47,7 +48,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (meta && result === 'ok' && (await recordFlow(db, id, net, meta.category))) {
     after(() => alertOwner('Poll paused: flood of votes', `"${meta.title}" /p/${id} got a sudden flood of votes and is paused. Resume it on /admin if it looks fine.`, true));
   }
-  return NextResponse.json({ result, poll: await getPoll(db, id, voterId, parsed.data.via) });
+  const view = await getPoll(db, id, voterId, parsed.data.via);
+  // A group poll just got its last vote: its results open now, so tell the people who asked.
+  if (view?.groupSize && !view.groupWaiting && view.participants === view.groupSize && pushEnabled()) after(() => sendResultAlerts(db, [id]).then(() => undefined));
+  return NextResponse.json({ result, poll: view });
 }
 
 // Undo: only within a few seconds of voting (for an accidental tap).

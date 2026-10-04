@@ -20,6 +20,7 @@ import { faceLabels } from '@/lib/labels';
 import { manageKeyFor } from './MyPolls';
 import PeopleGrid from './PeopleGrid';
 import ResultAlert from './ResultAlert';
+import GroupWait from './GroupWait';
 
 // Duels, played like patricka's "This or That": tap a card, see the result on the
 // cards, then "Next duel". Results stay hidden until you vote.
@@ -273,7 +274,8 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
   const revealed = !!poll && !casting && poll.resultsVisible && (voted || poll.closed);
   // Election silence window: no numbers for anyone, but the pinned bar still offers Share and Next.
   const sealed = !!poll?.sealedUntil;
-  const barOn = revealed || (!casting && sealed && (voted || !!poll?.closed));
+  // A sealed poll or a group poll still waiting: the bar keeps Share and Next even without numbers.
+  const barOn = revealed || (!casting && (sealed || !!poll?.groupWaiting) && (voted || !!poll?.closed));
   const votedCount = deck.filter((p) => p.myVote !== null).length;
   // Counting day: when results open in front of you, they are counted in 3 rounds (real vote order), like TV on counting day.
   const [countRound, setCountRound] = useState<number | null>(null);
@@ -774,6 +776,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
           </p>
         )}
         {/* "Called it" (P2): says this is about a real event, answered later. */}
+        {poll.groupSize && !(todayId === poll.id) && <p className="label duel-today">👥 {t.grpLabel}</p>}
         {poll.calledIt && !poll.outcome && !(todayId === poll.id || (daily && setIds.has(poll.id) && setLeft > 0)) && <p className="label duel-today">🔮 {t.calledLabel}</p>}
         <h1 key={poll.id} className="display duel-q">{poll.title}</h1>
         {/* The creator's "Details" line (and a pack's "Fan poll, not the official vote"). */}
@@ -893,6 +896,11 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
             );
           })}
         </div>
+      )}
+
+      {/* A group poll waiting for its group (P1 while waiting): how many have voted, and remind them. */}
+      {poll.groupWaiting && poll.groupSize && !casting && (
+        <GroupWait pollId={poll.id} title={poll.title} voted={poll.participants} of={poll.groupSize} mine={voted} />
       )}
 
       {/* Where you stand, as people (P2): 100 dots, yours in yellow. Pick-one polls once there is a crowd to stand in. */}
@@ -1108,7 +1116,7 @@ null
       )}
 
       {/* P3, optional: after the pinned bar, so the bar never covers it. */}
-      {(revealed || sealed) && mine && (
+      {(revealed || sealed || poll.groupWaiting) && mine && (
         <div className="duel-after">
           {/* P2: your group (you + friends from your link) vs everyone, for your pick. Lime = you. */}
           {revealed && poll.group && (
@@ -1127,7 +1135,7 @@ null
             </div>
           )}
           {/* P2 when the result comes later: one alert when it is in (an end time, or a "Called it" waiting for its answer). */}
-          {!poll.closed && (poll.endsAt || (poll.calledIt && !poll.outcome)) && <ResultAlert pollId={poll.id} />}
+          {!poll.closed && (poll.endsAt || (poll.calledIt && !poll.outcome) || poll.groupWaiting) && <ResultAlert pollId={poll.id} />}
           {poll.endsAt && !poll.closed && (
             <p className="small">
               <a className="text-link" href={`/api/polls/${poll.id}/ics`} download>

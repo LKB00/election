@@ -16,6 +16,7 @@ export const dynamic = 'force-dynamic';
 const standingText = (t: Dict, s: Standing): string | null =>
   s.kind === 'leading' ? t.meLeading(s.name, s.percent)
   : s.kind === 'won' ? t.meWon(s.name)
+  : s.kind === 'group' ? t.meGroupWaiting(s.voted, s.of)
   : s.kind === 'called' ? (s.right ? t.meCalledRight(s.name) : t.meCalledWrong(s.name))
   : s.kind === 'rating' ? t.meRating(s.average.toFixed(1))
   : s.kind === 'tie' ? t.meTie

@@ -940,3 +940,42 @@ describe('result alerts', () => {
     expect(await duePolls(db)).not.toContain(a);
   });
 });
+
+describe('group polls', () => {
+  it('keep results closed for everyone until the whole group has voted, and stay off public lists', async () => {
+    const id = await make({ title: 'Where do we eat Friday?', groupSize: 3, hideUntilVoted: false });
+    const p = (await getPoll(db, id, null))!;
+    await castVote(db, id, p.options[0].id, 'g1');
+    await castVote(db, id, p.options[1].id, 'g2');
+    const waiting = (await getPoll(db, id, 'g1'))!;
+    expect(waiting.groupWaiting).toBe(true);
+    expect(waiting.resultsVisible).toBe(false);
+    expect(waiting.totalVotes).toBe(0);
+    expect(waiting.options.every((o) => o.votes === 0)).toBe(true);
+    expect(waiting.participants).toBe(2); // the count is safe to show
+    expect(await guessLeader(db, id, 'g1', p.options[0].id)).toBe('not_allowed');
+    expect((await getMyVotes(db, 'g1')).find((v) => v.pollId === id)?.standing).toEqual({ kind: 'group', voted: 2, of: 3 });
+    expect((await listPolls(db, 200)).some((x) => x.id === id)).toBe(false);
+    await castVote(db, id, p.options[0].id, 'g3');
+    const open = (await getPoll(db, id, 'g1'))!;
+    expect(open.groupWaiting).toBe(false);
+    expect(open.resultsVisible).toBe(true);
+    expect(open.totalVotes).toBe(3);
+  });
+});
+
+describe('no crowd guess on group or called-it polls', () => {
+  it('shows results straight away once open, and My votes never asks for a guess', async () => {
+    const g = await make({ title: 'Group of two', groupSize: 2, hideUntilVoted: true });
+    const c = await make({ title: 'Who wins tomorrow?', calledIt: true, hideUntilVoted: true, options: ['A', 'B'] });
+    for (const id of [g, c]) {
+      const p = (await getPoll(db, id, null))!;
+      await castVote(db, id, p.options[0].id, 'ng1');
+      await castVote(db, id, p.options[1].id, 'ng2');
+      const v = (await getPoll(db, id, 'ng1'))!;
+      expect(v.needsGuess).toBe(false);
+      expect(v.resultsVisible).toBe(true);
+      expect((await getMyVotes(db, 'ng1')).find((x) => x.pollId === id)?.standing.kind).not.toBe('guess');
+    }
+  });
+});

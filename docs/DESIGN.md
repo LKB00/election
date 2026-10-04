@@ -794,3 +794,13 @@ After you vote on a poll whose result comes later (it has an end time, or it is 
 - **States:** on → "You'll get one notification when the result is in. Turn off"; blocked → how to allow it; iPhone in the browser → "add Election to your Home Screen first" (iOS only allows web alerts from the Home Screen).
 - Hidden until the owner sets the keys (docs/OWNER_TODO.md). Deleting your votes on My votes also deletes your alert address. The Privacy page says what is kept.
 - Not used for: "come back" nudges, new polls, streak reminders, or anything the person did not ask for.
+
+## Group polls that reveal together (research: reports/Next features for Election, #4)
+
+For a friend group, class or office: Create → More options → **👥 Group poll** → "How many people are in the group?" (2–200).
+- **Nobody sees results until the whole group has voted** (or the poll's end time passes, if it has one). Not even voters: the numbers are zeroed on the server like any hidden result.
+- **While waiting (P1):** a card with "7 of 12 voted", one dot per person filled in yellow as they vote, "Results open when everyone in the group has voted", and after you vote **Remind the group** (WhatsApp first, with "7 of 12 have voted"). The page refreshes by itself, so the results appear the moment the last vote lands.
+- **Label:** "👥 Group poll" above the question. **My votes:** "Waiting for the group: 7 of 12 voted".
+- **Link-only:** group polls never appear in public lists, Trending, topics or search.
+- **No crowd guess** on group polls (or "Called it" polls): while waiting it would tell who leads, and once everyone has voted there is no crowd left to guess.
+- **"Tell me the result"** works here too: the alert goes out the moment the last person votes.

@@ -58,6 +58,8 @@ export const createPollSchema = z.object({
   kind: z.enum(['choice', 'rating', 'multi', 'rank']).default('choice'),
   // "Called it": about a real event that has not happened yet; the creator marks what happened later.
   calledIt: z.boolean().default(false),
+  // A group poll: how many people are in the group (results open when they have all voted).
+  groupSize: z.number().int().min(2).max(200).optional(),
   endsAt: z
     .string()
     .datetime()
