@@ -784,3 +784,13 @@ A few quick polls around one live moment, made in one go from **Create → "Make
 - **Pack page** (`/pack/<id>`): the pack chip (🏏/📺), the title, "Predictions close Sat, 7:30 pm" (or "Started · results when it ends"), Share the pack (WhatsApp first), then the polls played one after another.
 - **Home → "Tonight"** (P2, under Your polls): packs starting in the next 36 hours or started in the last 6, as list rows.
 - Also fixed: a poll's "Details" line (and the pack's fan-poll note) now shows under the question; it was saved but never shown.
+
+## Result alerts: "Tell me the result" (research: reports/Next features for Election, #3)
+
+After you vote on a poll whose result comes later (it has an end time, or it is a "Called it" waiting for its answer), the after-vote area offers **🔔 Tell me the result** with the line "One notification when the result is in. Nothing else." (P2).
+- **Our line first, the browser's question only on tap** (never on arrival): Google's data says on-arrival prompts are mostly refused, and Chrome now limits sites whose alerts people ignore.
+- **One alert per poll**, then it is forgotten. Several results at the same time become one alert ("3 results are in" → My votes). Written in the language that was on screen.
+- **When:** a "Called it" the moment its answer is marked; other polls in the evening run just after the 9 pm final count (Vercel cron, `/api/cron/results`).
+- **States:** on → "You'll get one notification when the result is in. Turn off"; blocked → how to allow it; iPhone in the browser → "add Election to your Home Screen first" (iOS only allows web alerts from the Home Screen).
+- Hidden until the owner sets the keys (docs/OWNER_TODO.md). Deleting your votes on My votes also deletes your alert address. The Privacy page says what is kept.
+- Not used for: "come back" nudges, new polls, streak reminders, or anything the person did not ask for.

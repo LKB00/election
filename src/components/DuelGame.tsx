@@ -19,6 +19,7 @@ import { apiMsg, reasonLabel, type Dict, type Lang } from '@/lib/i18n';
 import { faceLabels } from '@/lib/labels';
 import { manageKeyFor } from './MyPolls';
 import PeopleGrid from './PeopleGrid';
+import ResultAlert from './ResultAlert';
 
 // Duels, played like patricka's "This or That": tap a card, see the result on the
 // cards, then "Next duel". Results stay hidden until you vote.
@@ -1125,6 +1126,8 @@ null
               <p className="small muted">{t.groupNote}</p>
             </div>
           )}
+          {/* P2 when the result comes later: one alert when it is in (an end time, or a "Called it" waiting for its answer). */}
+          {!poll.closed && (poll.endsAt || (poll.calledIt && !poll.outcome)) && <ResultAlert pollId={poll.id} />}
           {poll.endsAt && !poll.closed && (
             <p className="small">
               <a className="text-link" href={`/api/polls/${poll.id}/ics`} download>

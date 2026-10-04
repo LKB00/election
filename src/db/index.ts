@@ -108,6 +108,22 @@ CREATE TABLE IF NOT EXISTS packs (
 CREATE INDEX IF NOT EXISTS packs_starts_idx ON packs (starts_at);
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS pack_id text;
 CREATE INDEX IF NOT EXISTS polls_pack_idx ON polls (pack_id);
+-- "Tell me the result": a phone's push address, and which polls it wants one alert for.
+CREATE TABLE IF NOT EXISTS push_subs (
+  endpoint text PRIMARY KEY,
+  p256dh text NOT NULL,
+  auth text NOT NULL,
+  voter_key text NOT NULL,
+  last_sent_at timestamptz,
+  lang text NOT NULL DEFAULT 'en',
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS push_wants (
+  poll_id text NOT NULL REFERENCES polls(id) ON DELETE CASCADE,
+  endpoint text NOT NULL REFERENCES push_subs(endpoint) ON DELETE CASCADE,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (poll_id, endpoint)
+);
 CREATE INDEX IF NOT EXISTS polls_today_on_idx ON polls (today_on);
 CREATE TABLE IF NOT EXISTS vote_flow (
   poll_id text NOT NULL REFERENCES polls(id) ON DELETE CASCADE,
