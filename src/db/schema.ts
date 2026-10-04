@@ -37,6 +37,8 @@ export const polls = pgTable(
     manageHash: text('manage_hash'),
     // Part of a match-day or show-night pack (see packs).
     packId: text('pack_id'),
+    // A group poll: results stay closed for everyone until this many people have voted (or the poll ends).
+    groupSize: integer('group_size'),
     endsAt: timestamp('ends_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },

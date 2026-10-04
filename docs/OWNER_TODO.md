@@ -53,7 +53,7 @@ Say "continue features" and Claude picks up the next one.
 - [x] "Called it" polls (live)
 - [x] Match-day and show-night packs (Create → "Make a match-day or show-night pack"). Tip: make one each IPL match morning and post its link in your WhatsApp Channel.
 - [x] "Tell me the result" alert: built. **It needs 4 settings on Vercel to switch on** (see section 1).
-- [ ] Group polls that reveal together ("9 of 12 voted")
+- [x] Group polls that reveal together: Create → More options → Group poll. Good for office lunch, class trips, family plans.
 - [ ] "Your month in opinions" card
 
 ## Done

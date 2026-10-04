@@ -107,6 +107,8 @@ CREATE TABLE IF NOT EXISTS packs (
 );
 CREATE INDEX IF NOT EXISTS packs_starts_idx ON packs (starts_at);
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS pack_id text;
+-- Group polls: results open for everyone once this many have voted (or when the poll ends).
+ALTER TABLE polls ADD COLUMN IF NOT EXISTS group_size integer;
 CREATE INDEX IF NOT EXISTS polls_pack_idx ON polls (pack_id);
 -- "Tell me the result": a phone's push address, and which polls it wants one alert for.
 CREATE TABLE IF NOT EXISTS push_subs (
