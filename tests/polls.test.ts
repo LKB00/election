@@ -712,3 +712,36 @@ describe('story card friends line', () => {
     expect(await friendsFromCode(db, id, 'bad code', a.id)).toEqual({ all: 0, agree: 0 });
   });
 });
+
+describe('flood guard', () => {
+  it('limits one network per poll, pauses a one-network flood, and the owner can resume', async () => {
+    const { checkFlow, recordFlow, resumeVoting, NET_LIMIT, NET_LIMIT_POLITICS, SPIKE_MIN } = await import('@/lib/flood');
+    const id = await make({ title: 'Flood check' });
+    const p = (await getPoll(db, id, null))!;
+    // Many people from many networks: never paused.
+    for (let k = 0; k < SPIKE_MIN; k++) expect(await recordFlow(db, id, `net${k % 20}`, 'general')).toBe(false);
+    expect(await checkFlow(db, id, 'net1', 'general')).toBe('ok');
+    // A few networks send a flood (many votes each): the poll pauses, once.
+    let paused = 0;
+    for (let k = 0; k < SPIKE_MIN * 2; k++) if (await recordFlow(db, id, `bot-net${k % 3}`, 'general')) paused++;
+    expect(paused).toBe(1);
+    expect(NET_LIMIT).toBeGreaterThan(NET_LIMIT_POLITICS);
+    expect(await checkFlow(db, id, 'someone-else', 'general')).toBe('frozen');
+    expect(await castVote(db, id, p.options[0].id, 'flood-voter')).toBe('frozen');
+    expect((await getPoll(db, id, null))!.pausedUntil).not.toBeNull();
+    expect((await getReviewQueue(db))[0]).toMatchObject({ id, paused: true });
+    expect(await resumeVoting(db, id)).toBe(true);
+    expect(await checkFlow(db, id, 'bot-net0', 'general')).toBe('ok');
+    expect(await castVote(db, id, p.options[0].id, 'flood-voter')).toBe('ok');
+    expect((await getPoll(db, id, null))!.pausedUntil).toBeNull();
+  });
+
+  it('gives each network a soft limit per poll, tighter on politics', async () => {
+    const { checkFlow, recordFlow, NET_LIMIT_POLITICS } = await import('@/lib/flood');
+    const id = await make({ title: 'Network limit check', category: 'politics' });
+    for (let k = 0; k < NET_LIMIT_POLITICS; k++) await recordFlow(db, id, 'college-wifi', 'politics');
+    expect(await checkFlow(db, id, 'college-wifi', 'politics')).toBe('busy');
+    expect(await checkFlow(db, id, 'college-wifi', 'general')).toBe('ok');
+    expect(await checkFlow(db, id, 'home-wifi', 'politics')).toBe('ok');
+  });
+});

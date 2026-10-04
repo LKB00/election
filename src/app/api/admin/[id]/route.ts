@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/db';
 import { isAdminKey } from '@/lib/admin';
+import { resumeVoting } from '@/lib/flood';
 import { setPollFlags, setToday } from '@/lib/polls';
 import { clientIp, rateLimit } from '@/lib/rate-limit';
 import { adminSchema } from '@/lib/validation';
@@ -16,8 +17,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (parsed.data.action === 'today') {
     return (await setToday(await getDb(), id)) ? NextResponse.json({ ok: true }) : NextResponse.json({ error: 'Poll not found.' }, { status: 404 });
   }
+  if (parsed.data.action === 'resume') {
+    return (await resumeVoting(await getDb(), id)) ? NextResponse.json({ ok: true }) : NextResponse.json({ error: 'Poll not found.' }, { status: 404 });
+  }
   // "Show again" means the owner looked at it: it counts as reviewed, so the next single report cannot hide it again.
   const flags = parsed.data.action === 'hide' ? { hidden: true } : { hidden: false, reviewed: true };
-  const ok = await setPollFlags(await getDb(), id, flags);
+  const db = await getDb();
+  const ok = await setPollFlags(db, id, flags);
+  // Approving a paused poll means the owner looked at the flood and it is fine.
+  if (ok && parsed.data.action === 'approve') await resumeVoting(db, id);
   return ok ? NextResponse.json({ ok: true }) : NextResponse.json({ error: 'Poll not found.' }, { status: 404 });
 }

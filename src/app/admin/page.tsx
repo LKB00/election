@@ -24,11 +24,15 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
       <header className="page-head page-head-tight">
         <h1 className="display">{t.adminTitle}</h1>
         <p className="lead">{t.adminLead}</p>
+        {items.length > 0 && (
+          <p className="small"><strong>{t.adminSummary(items.filter((i) => i.paused).length, items.filter((i) => i.reports > 0).length, items.filter((i) => !i.reviewed && i.reports === 0).length)}</strong></p>
+        )}
       </header>
-      <TodayPicker current={featured ? { id: featured.id, title: featured.title } : null} polls={recent.filter((p) => !p.closed).map((p) => ({ id: p.id, title: p.title }))} adminKey={key!} />
       <section className="block">
         {items.length === 0 ? <p className="muted">{t.adminEmpty}</p> : items.map((item) => <AdminRow key={item.id} item={item} adminKey={key!} />)}
       </section>
+      {/* After the queue: what needs you comes first. */}
+      <TodayPicker current={featured ? { id: featured.id, title: featured.title } : null} polls={recent.filter((p) => !p.closed).map((p) => ({ id: p.id, title: p.title }))} adminKey={key!} />
     </div>
   );
 }

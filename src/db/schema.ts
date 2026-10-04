@@ -20,6 +20,8 @@ export const polls = pgTable(
     reviewed: boolean('reviewed').notNull().default(false),
     // The creator added photos from their phone: the duel stays out of public lists until the owner has looked.
     hasPhotos: boolean('has_photos').notNull().default(false),
+    // Voting paused until this time after a sudden flood of votes (see src/lib/flood.ts). The owner can resume it.
+    frozenUntil: timestamp('frozen_until', { withTimezone: true }),
     // Election mode: the full booth ritual (EVM, VVPAT slip, voter ID, counting day). Politics polls always have it.
     electionMode: boolean('election_mode').notNull().default(false),
     // What kind of question: 'choice' (pick one) or 'rating' (a 1–5 scale of faces). See src/lib/rating.ts.
@@ -122,4 +124,16 @@ export const votePicks = pgTable(
     rank: integer('rank'),
   },
   (t) => [primaryKey({ columns: [t.voteId, t.optionId] }), index('vote_picks_poll_idx').on(t.pollId)],
+);
+
+// Where recent votes came from, to spot floods: a scrambled network code (never the address, never the voter) and the
+// time. Rows older than an hour are deleted. See src/lib/flood.ts.
+export const voteFlow = pgTable(
+  'vote_flow',
+  {
+    pollId: text('poll_id').notNull().references(() => polls.id, { onDelete: 'cascade' }),
+    net: text('net').notNull(),
+    at: timestamp('at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('vote_flow_poll_at_idx').on(t.pollId, t.at), index('vote_flow_at_idx').on(t.at)],
 );

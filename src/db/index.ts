@@ -90,6 +90,14 @@ CREATE TABLE IF NOT EXISTS photos (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS photos_poll_idx ON photos (poll_id);
+ALTER TABLE polls ADD COLUMN IF NOT EXISTS frozen_until timestamptz;
+CREATE TABLE IF NOT EXISTS vote_flow (
+  poll_id text NOT NULL REFERENCES polls(id) ON DELETE CASCADE,
+  net text NOT NULL,
+  at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS vote_flow_poll_at_idx ON vote_flow (poll_id, at);
+CREATE INDEX IF NOT EXISTS vote_flow_at_idx ON vote_flow (at);
 `;
 
 const g = globalThis as unknown as { __db?: Promise<Db> };

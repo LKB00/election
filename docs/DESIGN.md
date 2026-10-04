@@ -573,3 +573,19 @@ Ballots keep one vote per person; each place is stored in `vote_picks.rank`. Poi
 | "A reminder of our rules: be kind, no private photos, no money." + Read the rules · OK | Home, under the poll, once a quarter per phone | P3 | The 3-monthly reminder the IT Rules ask for. One quiet line, never above the poll; gone after OK or after opening the rules. |
 | "I am 18+, and these photos are of me or of people who said yes." tick | Photo sheet, above "Photo from your phone" | P2 | No children's data (DPDP) and no faces without consent. The photo button waits for it; the server refuses photos without it. Ticked once per poll. |
 | "This is me, remove it" report reason | Report this poll | P3 | The person in a photo can take it down at once, without the owner. |
+
+## Phase 3: Flood guard and a faster review page
+
+Rules live in `src/lib/flood.ts`. A scrambled network code (never the address, never linked to a voter) is kept for an hour per vote.
+
+| Element | Where | Priority | Job |
+|---|---|---|---|
+| Soft limit per network: 60 votes per poll per 10 minutes (25 on politics) | Vote | – | Slows a script on one connection without blocking a college Wi-Fi or a mobile network where many people share one address. Message: "Lots of votes from your network… try again in a few minutes." |
+| Pause: 100+ votes in 10 minutes at 8+ votes per network on average, or 300+ in 10 minutes on a politics poll | Vote | – | Real sharing comes from many phones; a bot farm comes from a few networks. Voting stops for 30 minutes, results stay open, the owner's phone gets an urgent alert. |
+| "Voting is paused for a few minutes: we saw unusual activity. Results stay open." | Poll, before you vote | P2 | Says why the ballot does not work, without blaming anyone. |
+| Summary "1 paused · 2 reported · 3 new" | /admin, top | P1 | What needs you, at a glance. |
+| Order: paused, then photo reports (2-hour rule), then other reports, then new | /admin | – | The most urgent first. |
+| "first report 35 min ago" + red "Photo report: act within 2 hours" | /admin row | P2 | The legal clock, visible. |
+| Resume voting (and Approve also resumes) | /admin row | P1 for paused rows | The owner looked: voting opens again. |
+| Acted rows dim with "Done ✓"; the Today's question picker sits below the queue | /admin | – | The next one to look at stands out; what needs you comes first. |
+| Vote buttons off while paused | Poll | – | No tap that can only fail. |

@@ -662,7 +662,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId }: { d
                 type="button"
                 className={'rate-step' + (poll.myVote === o.id ? ' is-mine' : '') + (busy === o.id ? ' is-busy' : '')}
                 onClick={() => vote(o.id)}
-                disabled={voted || !!busy || poll.closed}
+                disabled={voted || !!busy || poll.closed || !!poll.pausedUntil}
                 aria-pressed={poll.myVote === o.id}
               >
                 <span className="rate-step-face" aria-hidden>{o.emoji}</span>
@@ -684,7 +684,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId }: { d
                 className={'tot-option duel-option' + (isMine || ticked ? ' is-mine' : '') + (revealed && !isMine ? ' is-other' : '') + (busy === o.id ? ' is-busy' : '')}
                 style={{ '--pc': `var(--p-${TONES[n % TONES.length]})`, '--dc': `var(--d-${TONES[n % TONES.length]})` } as React.CSSProperties}
                 onClick={() => (multi ? toggleTick(o.id) : vote(o.id))}
-                disabled={voted || !!busy || poll.closed}
+                disabled={voted || !!busy || poll.closed || !!poll.pausedUntil}
                 aria-pressed={multi && !voted ? ticked : undefined}
                 aria-label={`${o.label}${revealed ? `, ${t.percent(pcts[n])}` : ''}`}
               >
@@ -732,7 +732,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId }: { d
           <button
             type="button"
             className="btn btn-primary btn-lg"
-            disabled={(ranking ? ticks.length !== poll.options.length : !ticks.length) || !!busy}
+            disabled={(ranking ? ticks.length !== poll.options.length : !ticks.length) || !!busy || !!poll.pausedUntil}
             onClick={() => vote(ticks[0], ticks.slice(1))}
           >
             {ranking ? t.rankCast(ticks.length, poll.options.length) : t.multiCast(ticks.length)}
@@ -744,6 +744,10 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId }: { d
 
       {!voted && !poll.closed && (
         <p className="small muted duel-hint" data-hint>{t.ballotHint}</p>
+      )}
+
+      {poll.pausedUntil && !voted && !poll.closed && (
+        <p className="small duel-sealed" role="note"><Lock size={13} strokeWidth={1.75} aria-hidden /> {t.paused}</p>
       )}
 
       {sealed && (

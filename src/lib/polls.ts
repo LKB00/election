@@ -48,6 +48,8 @@ export type PollView = {
   featured: boolean;
   /** Checked by the owner (only reviewed duels are offered to search engines). */
   reviewed: boolean;
+  /** Voting paused after a sudden flood of votes, until this time (results stay visible). */
+  pausedUntil: string | null;
   /** Election silence window: results of this politics duel stay sealed for everyone until this time. */
   sealedUntil: string | null;
   /** Choices for the one-tap "why?" question. Empty means the poll does not ask. */
@@ -305,6 +307,7 @@ export async function getPoll(
     featured: poll.featured,
     reviewed: poll.reviewed,
     sealedUntil: sealed,
+    pausedUntil: poll.frozenUntil && poll.frozenUntil.getTime() > Date.now() ? poll.frozenUntil.toISOString() : null,
     reasons: parseReasons(poll.reasons),
     myReason: mine[0]?.reason ?? null,
     pulse: { lastHour: pulseRows[0]?.lastHour ?? 0, lastVoteAt: lastVote ? new Date(lastVote).toISOString() : null },
@@ -412,12 +415,14 @@ async function shareOverTime(db: Db, id: string, createdAt: Date, firstOptionId:
   return points.slice(-48);
 }
 
-export type VoteResult = 'ok' | 'changed' | 'already_voted' | 'closed' | 'not_found' | 'bad_option';
+export type VoteResult = 'ok' | 'changed' | 'already_voted' | 'closed' | 'not_found' | 'bad_option' | 'frozen';
 
 export async function castVote(db: Db, id: string, optionId: string, voterId: string, via?: string | null, morePicks: string[] = []): Promise<VoteResult> {
   const [poll] = await db.select().from(polls).where(eq(polls.id, id)).limit(1);
   if (!poll || poll.hidden) return 'not_found';
   if (poll.endsAt && poll.endsAt.getTime() <= Date.now()) return 'closed';
+  // Paused after a flood of votes (src/lib/flood.ts) until the time runs out or the owner resumes it.
+  if (poll.frozenUntil && poll.frozenUntil.getTime() > Date.now()) return 'frozen';
   // "Pick several": every ticked choice must belong to this poll (the first one is the vote row's own choice).
   // "Rank": the list is the order, first = #1, and every choice must be placed.
   const picks = usesPicks(poll.kind) ? [...new Set([optionId, ...morePicks])] : [optionId];
@@ -821,7 +826,7 @@ export async function reportPoll(db: Db, id: string, voterId: string, reason: st
   return { title: poll.title, hidden: hide };
 }
 
-export type ReviewItem = { id: string; title: string; options: string[]; photos: string[]; category: string; hidden: boolean; reviewed: boolean; reports: number; reasons: string[]; createdAt: string };
+export type ReviewItem = { id: string; title: string; options: string[]; photos: string[]; category: string; hidden: boolean; reviewed: boolean; reports: number; reasons: string[]; createdAt: string; paused: boolean; firstReportAt: string | null };
 
 /** What the owner should look at: reported duels first, then unreviewed ones, newest first. */
 export async function getReviewQueue(db: Db, limit = 100): Promise<ReviewItem[]> {
@@ -835,12 +840,20 @@ export async function getReviewQueue(db: Db, limit = 100): Promise<ReviewItem[]>
       createdAt: polls.createdAt,
       reports: sql<number>`count(${reports.voterKey})::int`,
       reasons: sql<string | null>`string_agg(distinct ${reports.reason}, ',')`,
+      paused: sql<boolean>`coalesce(${polls.frozenUntil} > now(), false)`,
+      firstReportAt: sql<string | null>`min(${reports.createdAt})`,
     })
     .from(polls)
     .leftJoin(reports, eq(reports.pollId, polls.id))
     .groupBy(polls.id)
-    .having(sql`count(${reports.voterKey}) > 0 or not ${polls.reviewed} or ${polls.hidden}`)
-    .orderBy(sql`count(${reports.voterKey}) desc`, desc(polls.createdAt))
+    .having(sql`count(${reports.voterKey}) > 0 or not ${polls.reviewed} or ${polls.hidden} or coalesce(${polls.frozenUntil} > now(), false)`)
+    // Most urgent first: paused by a flood, then reported (photo reports first: the 2-hour rule), then the rest.
+    .orderBy(
+      sql`coalesce(${polls.frozenUntil} > now(), false) desc`,
+      sql`bool_or(${reports.reason} in ('private', 'me')) desc nulls last`,
+      sql`count(${reports.voterKey}) desc`,
+      desc(polls.createdAt),
+    )
     .limit(limit);
   const opts = rows.length
     ? await db.select({ pollId: options.pollId, label: options.label, imageUrl: options.imageUrl }).from(options).where(inArray(options.pollId, rows.map((r) => r.id))).orderBy(options.position)
@@ -852,6 +865,7 @@ export async function getReviewQueue(db: Db, limit = 100): Promise<ReviewItem[]>
     photos: opts.filter((o) => o.pollId === r.id && o.imageUrl?.startsWith('/api/img/')).map((o) => o.imageUrl!),
     reasons: r.reasons ? r.reasons.split(',') : [],
     createdAt: r.createdAt.toISOString(),
+    firstReportAt: r.firstReportAt ? new Date(r.firstReportAt).toISOString() : null,
   }));
 }
 
