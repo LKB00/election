@@ -573,8 +573,40 @@ export async function listPolls(db: Db, limit = 20, filter: { category?: string;
 
 /** Id of the flagship poll, if there is one. */
 export async function getFeaturedId(db: Db): Promise<string | null> {
+  // A poll the owner planned for today (a festival, a match day) takes over by itself on its morning, with the 9 pm
+  // final count, so the owner does not have to be online that day. No timer needed: the first visit of the day does it.
+  const [planned] = await db
+    .select({ id: polls.id, featured: polls.featured })
+    .from(polls)
+    .where(and(eq(polls.todayOn, indiaDay().label), eq(polls.hidden, false)))
+    .orderBy(desc(polls.createdAt))
+    .limit(1);
+  if (planned) {
+    if (!planned.featured) await setToday(db, planned.id, true);
+    return planned.id;
+  }
   const [row] = await db.select({ id: polls.id }).from(polls).where(and(eq(polls.featured, true), eq(polls.hidden, false))).orderBy(desc(polls.createdAt)).limit(1);
   return row?.id ?? null;
+}
+
+export type PlannedToday = { id: string; title: string; day: string };
+
+/** The owner plans a poll as Today's question for a day ("2026-11-08"), or clears it (null). Today or later only. */
+export async function planToday(db: Db, id: string, day: string | null): Promise<boolean> {
+  if (day !== null && (!/^\d{4}-\d{2}-\d{2}$/.test(day) || day < indiaDay().label)) return false;
+  const updated = await db.update(polls).set({ todayOn: day }).where(and(eq(polls.id, id), eq(polls.hidden, false))).returning({ id: polls.id });
+  return updated.length > 0;
+}
+
+/** What is planned from today on, soonest first. */
+export async function getPlannedToday(db: Db): Promise<PlannedToday[]> {
+  const rows = await db
+    .select({ id: polls.id, title: polls.title, day: polls.todayOn })
+    .from(polls)
+    .where(and(sql`${polls.todayOn} >= ${indiaDay().label}`, eq(polls.hidden, false)))
+    .orderBy(polls.todayOn)
+    .limit(60);
+  return rows.map((r) => ({ id: r.id, title: r.title, day: r.day! }));
 }
 
 /** Saves the voter's one-tap "why". Only allowed answers, only for a vote they already cast. */
@@ -647,6 +679,8 @@ export async function setToday(db: Db, id: string, closeTonight = false): Promis
     const final = nextFinalCount();
     const endsAt = closeTonight && (!row.endsAt || row.endsAt.getTime() > final.getTime()) ? final : row.endsAt;
     await tx.update(polls).set({ featured: false }).where(eq(polls.featured, true));
+    // Picked by hand today: it wins over anything else planned for today.
+    await tx.update(polls).set({ todayOn: null }).where(and(eq(polls.todayOn, indiaDay().label), ne(polls.id, id)));
     await tx.update(polls).set({ featured: true, reviewed: true, endsAt }).where(eq(polls.id, id));
     return true;
   });

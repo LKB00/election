@@ -613,3 +613,10 @@ The research says Election already has the right loop (guess → vote → reveal
 | "Today's question · final count" + the final result, still first in today's set after 9 pm | Home | P1 in the evening | Evening visitors see how it ended. In "Your day vs everyone" a poll you missed says "closed before you voted". |
 | Numbers (last 7 days): returning voters first, then today, new voters who came back, votes via friends' links, politics share | /admin, bottom | P3 | The one number to watch is weekly returning voters (aim 20–25%+). Totals only, never a list of people. |
 | Speed (checked Oct 2026, 4× slower CPU, slow 4G): Vote buttons visible ≈1.2 s, working ≈2.0 s | Home, poll page | – | Under the 3-second target; most people leave pages slower than that. Biggest single file: the heading font (128 KB). |
+
+### Engagement round 3: planned days and "Add to home screen"
+
+| Element | Where | Priority | Job |
+|---|---|---|---|
+| Date box next to each poll + "Planned days" list (Remove) | /admin, Today's question | P2 | Event programming without being online: a Diwali poll for Diwali, a cricket poll for match day. On its India day it becomes Today's question by itself (the first visit of the day switches it, no timer), with the 9 pm final count. A pick by hand that day wins. |
+| "Tomorrow in one tap. Add Election to your home screen." Add · Not now | End of today's set, once | P3 | An easier way back (Flipkart Lite: 60% of visits from the home-screen icon). Only where it works: Android Chrome's real prompt, or the two steps in words on iPhone Safari; nothing inside WhatsApp's browser, on computers, or once installed. Asked once, either answer remembered (CCPA: no nagging). |

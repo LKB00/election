@@ -9,6 +9,7 @@ import Burst from './Burst';
 import InkFinger from './InkFinger';
 import CastVote from './CastVote';
 import ShareSheet from './ShareSheet';
+import InstallInvite from './InstallInvite';
 import { evmBeep, keyClick, votePop } from '@/lib/sound';
 import { ratingAverage, ratingEmoji } from '@/lib/rating';
 import { humanToken, prepareHumanCheck } from '@/lib/turnstile-client';
@@ -668,6 +669,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
           )}
         </div>
         <p className="small"><Link href="/create" className="text-link"><Plus size={13} strokeWidth={1.75} aria-hidden /> {t.startOwn}</Link></p>
+        <InstallInvite />
       </div>
     );
   }

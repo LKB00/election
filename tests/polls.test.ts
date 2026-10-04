@@ -835,3 +835,28 @@ describe('owner numbers', () => {
     expect(after.todayVotes - before.todayVotes).toBe(2);
   });
 });
+
+describe('planned days for today\'s question', () => {
+  it('takes over on its day by itself, with the 9 pm count, and a pick by hand still wins', async () => {
+    const { planToday, getPlannedToday, indiaDay, nextFinalCount } = await import('@/lib/polls');
+    const today = indiaDay().label;
+    const festival = await make({ title: 'Festival plan check' });
+    const later = await make({ title: 'Later plan check' });
+    expect(await planToday(db, festival, '2020-01-01')).toBe(false); // the past
+    expect(await planToday(db, festival, 'next week')).toBe(false);
+    expect(await planToday(db, later, '2099-11-08')).toBe(true);
+    expect((await getPlannedToday(db)).map((p) => p.id)).toContain(later);
+    expect(await getFeaturedId(db)).not.toBe(later);
+    expect(await planToday(db, festival, today)).toBe(true);
+    expect(await getFeaturedId(db)).toBe(festival);
+    const f = (await getPoll(db, festival, null))!;
+    expect(f.featured).toBe(true);
+    expect(f.endsAt).toBe(nextFinalCount().toISOString());
+    // The owner picks another one by hand today: it wins, and today's plan is cleared.
+    const byHand = await make({ title: 'Picked by hand' });
+    await setToday(db, byHand, false);
+    expect(await getFeaturedId(db)).toBe(byHand);
+    expect((await getPlannedToday(db)).some((p) => p.id === festival)).toBe(false);
+    expect(await planToday(db, later, null)).toBe(true);
+  });
+});
