@@ -31,7 +31,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const target = `${url.origin}/p/${id}${f ? `?f=${encodeURIComponent(f)}${secret ? '&s=1' : `&o=${proof}`}${isLang(lang) && lang !== 'en' ? `&l=${lang}` : ''}` : ''}`;
   const qr = await QRCode.toDataURL(target, { margin: 1, width: 300, color: { dark: CARD.ink, light: '#ffffff' } });
   const abs = (src: string) => new URL(src, url.origin).toString();
-  const shown = poll.options.slice(0, 2);
+  // A rating poll shows its five faces (smaller); other polls their first two choices.
+  const rating = poll.kind === 'rating';
+  const shown = rating ? poll.options : poll.options.slice(0, 2);
   // Same letters as on the ballot (worked out over all choices), or the creator's emoji.
   const faces = faceLabels(poll.options.map((o) => o.label)).map((f, n) => poll.options[n].emoji ?? (drawable(f) ? f : String(n + 1)));
   const pick = shown.find((o) => o.id === pickId);
@@ -52,25 +54,25 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         <div style={{ display: 'flex', marginTop: 40, fontSize: 132, fontWeight: 700, letterSpacing: -3 }}>{t.cardVoted}</div>
         {drawable(poll.title) && <div style={{ display: 'flex', marginTop: 8, fontSize: 52, color: CARD.muted, textAlign: 'center' }}>{t.cardIn(clip(poll.title, 40))}</div>}
 
-        <div style={{ display: 'flex', gap: 32, marginTop: 56, padding: 32, borderRadius: 40, background: CARD.sand }}>
+        <div style={{ display: 'flex', gap: rating ? 12 : 32, marginTop: 56, padding: 32, borderRadius: 40, background: CARD.sand }}>
           {shown.map((o, n) => {
             const mine = showPick && o.id === pickId;
             return (
-              <div key={o.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 380, padding: 24, borderRadius: 28, background: mine ? CARD.tints[n] : '#ffffff', border: mine ? `6px solid ${CARD.ink}` : '6px solid transparent', opacity: showPick && !mine ? 0.6 : 1 }}>
+              <div key={o.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: rating ? 156 : 380, padding: 24, borderRadius: 28, background: mine ? CARD.tints[n % CARD.tints.length] : '#ffffff', border: mine ? `6px solid ${CARD.ink}` : '6px solid transparent', opacity: showPick && !mine ? 0.6 : 1 }}>
                 {o.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={abs(o.imageUrl)} width={300} height={375} style={{ borderRadius: 20, objectFit: 'cover' }} alt="" />
                 ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 300, height: 300, borderRadius: 150, background: CARD.tints[n], fontSize: o.emoji ? 150 : 110, fontWeight: 700 }}>{faces[n]}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: rating ? 120 : 300, height: rating ? 120 : 300, borderRadius: 150, background: CARD.tints[n % CARD.tints.length], fontSize: rating ? 72 : o.emoji ? 150 : 110, fontWeight: 700 }}>{faces[n]}</div>
                 )}
-                {drawable(o.label) && <div style={{ display: 'flex', marginTop: 20, fontSize: 44, fontWeight: 700 }}>{clip(o.label, 18)}</div>}
+                {!rating && drawable(o.label) && <div style={{ display: 'flex', marginTop: 20, fontSize: 44, fontWeight: 700 }}>{clip(o.label, 18)}</div>}
                 {mine && <div style={{ display: 'flex', marginTop: 8, fontSize: 32, fontWeight: 700, color: CARD.green, letterSpacing: 2 }}>{t.cardMyVote}</div>}
               </div>
             );
           })}
         </div>
         <div style={{ display: 'flex', marginTop: 40, fontSize: 60, fontWeight: 700 }}>
-          {showPick && pick ? t.cardPicked(drawable(pick.label) ? pick.label : String(poll.options.indexOf(pick) + 1)) : t.cardGuess}
+          {showPick && pick ? t.cardPicked(rating ? pick.emoji ?? pick.label : drawable(pick.label) ? pick.label : String(poll.options.indexOf(pick) + 1)) : t.cardGuess}
         </div>
 
         <div style={{ display: 'flex', flex: 1, minHeight: 48 }} />

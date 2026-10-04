@@ -565,3 +565,27 @@ describe('election mode', () => {
     expect((await getPoll(db, 'modi-vs-rahul', null))!.electionMode).toBe(true);
   });
 });
+
+describe('rate it (1–5 faces)', () => {
+  it('always gets the five faces, votes like a normal poll, and My votes shows the average', async () => {
+    const id = await createPoll(db, createPollSchema.parse({ title: 'Rate the new song', kind: 'rating', options: ['x', 'y'] }));
+    const p = (await getPoll(db, id, null))!;
+    expect(p.kind).toBe('rating');
+    expect(p.options.map((o) => o.label)).toEqual(['1', '2', '3', '4', '5']);
+    expect(p.options.map((o) => o.emoji)).toEqual(['😖', '🙁', '😐', '🙂', '😍']);
+    await castVote(db, id, p.options[4].id, 'r1');
+    await castVote(db, id, p.options[3].id, 'r2');
+    expect(await castVote(db, id, p.options[0].id, 'r1')).toBe('already_voted');
+    expect((await getMyVotes(db, 'r1')).find((v) => v.pollId === id)?.standing).toEqual({ kind: 'guess' }); // hidden until the crowd guess
+    await guessLeader(db, id, 'r1', 'skip');
+    const [mine] = (await getMyVotes(db, 'r1')).filter((v) => v.pollId === id);
+    expect(mine.pick).toBe('😍 5/5');
+    expect(mine.standing).toEqual({ kind: 'rating', average: 4.5 });
+    expect((await listPolls(db, 500)).find((x) => x.id === id)?.kind).toBe('rating');
+  });
+  it('averages to one decimal', async () => {
+    const { ratingAverage } = await import('@/lib/rating');
+    expect(ratingAverage([0, 0, 0, 0, 0])).toBeNull();
+    expect(ratingAverage([1, 0, 0, 0, 2])).toBe(3.7);
+  });
+});

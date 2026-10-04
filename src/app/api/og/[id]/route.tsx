@@ -27,10 +27,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const showPick = voted && !secret;
   const pick = poll.options.find((o) => o.id === pickId);
   const abs = (src: string) => new URL(src, url.origin).toString();
-  const shown = poll.options.slice(0, 2);
+  // A rating poll shows its five faces; other polls their first two choices.
+  const rating = poll.kind === 'rating';
+  const shown = rating ? poll.options : poll.options.slice(0, 2);
   // Same letters as on the ballot (worked out over all choices), or the creator's emoji.
   const faces = faceLabels(poll.options.map((o) => o.label)).map((f, n) => poll.options[n].emoji ?? (drawable(f) ? f : String(n + 1)));
-  const headline = !voted ? t.ogAsk : showPick && pick ? t.ogPicked(drawable(pick.label) ? pick.label : String(poll.options.indexOf(pick) + 1)) : t.ogGuess;
+  const headline = !voted ? t.ogAsk : showPick && pick ? t.ogPicked(rating ? pick.emoji ?? pick.label : drawable(pick.label) ? pick.label : String(poll.options.indexOf(pick) + 1)) : t.ogGuess;
 
   return new ImageResponse(
     (
@@ -52,16 +54,16 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
               {shown.map((o, n) => {
                 const mine = showPick && o.id === pickId;
                 return (
-                  <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: 12, paddingRight: 24, borderRadius: 20, background: mine ? CARD.tints[n] : '#ffffff', border: mine ? `4px solid ${CARD.ink}` : `4px solid ${CARD.sand}`, opacity: showPick && !mine ? 0.6 : 1 }}>
+                  <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: 12, paddingRight: 24, borderRadius: 20, background: mine ? CARD.tints[n % CARD.tints.length] : '#ffffff', border: mine ? `4px solid ${CARD.ink}` : `4px solid ${CARD.sand}`, opacity: showPick && !mine ? 0.6 : 1 }}>
                     {o.imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={abs(o.imageUrl)} width={120} height={150} style={{ borderRadius: 12, objectFit: 'cover' }} alt="" />
                     ) : (
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 120, height: 120, borderRadius: 60, background: CARD.tints[n], fontSize: o.emoji ? 64 : 44, fontWeight: 700 }}>{faces[n]}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 120, height: 120, borderRadius: 60, background: CARD.tints[n % CARD.tints.length], fontSize: o.emoji ? 64 : 44, fontWeight: 700 }}>{faces[n]}</div>
                     )}
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       {mine && <div style={{ display: 'flex', fontSize: 20, fontWeight: 700, color: CARD.green, letterSpacing: 1 }}>{t.cardMyVote}</div>}
-                      {drawable(o.label) && <div style={{ display: 'flex', fontSize: 32, fontWeight: 700 }}>{clip(o.label, 16)}</div>}
+                      {!rating && drawable(o.label) && <div style={{ display: 'flex', fontSize: 32, fontWeight: 700 }}>{clip(o.label, 16)}</div>}
                     </div>
                   </div>
                 );

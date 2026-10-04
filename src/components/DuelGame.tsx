@@ -10,6 +10,7 @@ import InkFinger from './InkFinger';
 import CastVote from './CastVote';
 import ShareSheet from './ShareSheet';
 import { evmBeep, keyClick, votePop } from '@/lib/sound';
+import { ratingAverage, ratingEmoji } from '@/lib/rating';
 import { humanToken, prepareHumanCheck } from '@/lib/turnstile-client';
 import { useLang, useT } from '@/lib/lang';
 import { apiMsg, reasonLabel, type Dict, type Lang } from '@/lib/i18n';
@@ -205,7 +206,13 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
   // The "are you a person?" check (only when switched on) gets ready in the background.
   useEffect(() => prepareHumanCheck(), []);
 
-  const poll = deck[i];
+  // A rating poll's steps are stored as "1"…"5"; on screen they are the words ("Love it"), in your language.
+  const raw = deck[i];
+  const poll = useMemo(
+    () => (raw && raw.kind === 'rating' ? { ...raw, options: raw.options.map((o, n) => ({ ...o, label: t.rateWords[n] ?? o.label })) } : raw),
+    [raw, t],
+  );
+  const rating = poll?.kind === 'rating';
   // The friend's code only belongs to the duel they shared (the first one on a shared link).
   const viaHere = poll && start !== undefined && i === start ? via ?? null : null;
   const q = viaHere ? `?f=${encodeURIComponent(viaHere)}` : '';
@@ -605,53 +612,94 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
         <p className="small duel-friend"><Users size={14} strokeWidth={1.75} aria-hidden /> {t.friendSealed}</p>
       )}
 
-      <div className={'tot-options duel-options n-' + poll.options.length + (ballot ? ' is-ballot' : '') + (nudge && !voted ? ' is-nudge' : '')}>
-        {poll.options.map((o, n) => {
-          const isMine = poll.myVote === o.id;
-          const lead = n === leaderIdx;
-          return (
-            <button
-              key={o.id}
-              type="button"
-              className={'tot-option duel-option' + (isMine ? ' is-mine' : '') + (revealed && !isMine ? ' is-other' : '') + (busy === o.id ? ' is-busy' : '')}
-              style={{ '--pc': `var(--p-${TONES[n % TONES.length]})`, '--dc': `var(--d-${TONES[n % TONES.length]})` } as React.CSSProperties}
-              onClick={() => vote(o.id)}
-              disabled={voted || !!busy || poll.closed}
-              aria-label={`${o.label}${revealed ? `, ${t.percent(pcts[n])}` : ''}`}
-            >
-              <span className="tot-letter">{isMine ? <Check size={13} strokeWidth={2.5} aria-hidden /> : serial(n)}</span>
-              {revealed && (lead || isMine) && (
-                <span className="tot-caption">
-                  {isMine ? t.yourPick : poll.closed && !counting ? t.won : t.leading}
-                  {isMine && lead ? ` · ${poll.closed && !counting ? t.wonLower : t.leadingLower}` : ''}
-                </span>
-              )}
-              <span className="duel-body">
-                <Face o={o} tone={TONES[n % TONES.length]} letters={letters[n]} />
-                <span className="duel-text">
-                  {o.subtitle && <span className="label">{o.subtitle}</span>}
-                  <span className="duel-name">{o.label}</span>
-                </span>
+      {rating ? (
+        // Rate it: five faces in a row. Before voting, tap one; after, the average and how many picked each face.
+        revealed ? (
+          <div className="rate-result" aria-live="polite">
+            <p className="rate-avg">
+              <span className="rate-face" aria-hidden>{ratingEmoji(ratingAverage(poll.options.map((o) => votesOf(o))) ?? 3)}</span>
+              <span>
+                <strong className="duel-pct"><Tween value={Math.round((ratingAverage(poll.options.map((o) => votesOf(o))) ?? 0) * 10)} render={(v) => t.rateAvg((v / 10).toFixed(1))} /></strong>
+                <span className="small muted">{t.rateFrom(shownTotal)}{mine ? ` · ${t.rateMine(`${mine.emoji} ${mine.label}`)}` : ''}</span>
               </span>
-              {revealed && (
-                <span className="duel-result">
-                  <span className="duel-pct"><Tween value={pcts[n]} render={(v) => `${v}%`} /></span>
-                  {/* The line at 50% is the majority mark, as on counting-day tallies. */}
-                  <span className="meter duel-meter" aria-hidden><span style={{ width: `${pcts[n]}%` }} /></span>
-                  <span className="small muted"><Tween value={votesOf(o)} render={(v) => t.votes(v)} /></span>
+            </p>
+            <div className="rate-bars">
+              {poll.options.map((o, n) => (
+                <div key={o.id} className={'rate-bar' + (poll.myVote === o.id ? ' is-mine' : '')}>
+                  <span className="rate-bar-face" aria-hidden>{o.emoji}</span>
+                  <span className="meter" aria-hidden><span style={{ width: `${pcts[n]}%` }} /></span>
+                  <span className="small rate-bar-pct">{pcts[n]}%</span>
+                  <span className="sr-only">{o.label}: {t.percent(pcts[n])}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className={'rate-scale' + (nudge && !voted ? ' is-nudge' : '')} role="group" aria-label={poll.title}>
+            {poll.options.map((o) => (
+              <button
+                key={o.id}
+                type="button"
+                className={'rate-step' + (poll.myVote === o.id ? ' is-mine' : '') + (busy === o.id ? ' is-busy' : '')}
+                onClick={() => vote(o.id)}
+                disabled={voted || !!busy || poll.closed}
+                aria-pressed={poll.myVote === o.id}
+              >
+                <span className="rate-step-face" aria-hidden>{o.emoji}</span>
+                <span className="rate-step-word">{o.label}</span>
+              </button>
+            ))}
+          </div>
+        )
+      ) : (
+      <div className={'tot-options duel-options n-' + poll.options.length + (ballot ? ' is-ballot' : '') + (nudge && !voted ? ' is-nudge' : '')}>
+          {poll.options.map((o, n) => {
+            const isMine = poll.myVote === o.id;
+            const lead = n === leaderIdx;
+            return (
+              <button
+                key={o.id}
+                type="button"
+                className={'tot-option duel-option' + (isMine ? ' is-mine' : '') + (revealed && !isMine ? ' is-other' : '') + (busy === o.id ? ' is-busy' : '')}
+                style={{ '--pc': `var(--p-${TONES[n % TONES.length]})`, '--dc': `var(--d-${TONES[n % TONES.length]})` } as React.CSSProperties}
+                onClick={() => vote(o.id)}
+                disabled={voted || !!busy || poll.closed}
+                aria-label={`${o.label}${revealed ? `, ${t.percent(pcts[n])}` : ''}`}
+              >
+                <span className="tot-letter">{isMine ? <Check size={13} strokeWidth={2.5} aria-hidden /> : serial(n)}</span>
+                {revealed && (lead || isMine) && (
+                  <span className="tot-caption">
+                    {isMine ? t.yourPick : poll.closed && !counting ? t.won : t.leading}
+                    {isMine && lead ? ` · ${poll.closed && !counting ? t.wonLower : t.leadingLower}` : ''}
+                  </span>
+                )}
+                <span className="duel-body">
+                  <Face o={o} tone={TONES[n % TONES.length]} letters={letters[n]} />
+                  <span className="duel-text">
+                    {o.subtitle && <span className="label">{o.subtitle}</span>}
+                    <span className="duel-name">{o.label}</span>
+                  </span>
                 </span>
-              )}
-              {!revealed && !poll.closed && (
-                <span className="evm-row" aria-hidden>
-                  <span className={'evm-led' + (isMine ? ' is-on' : '')} />
-                  <span className="evm-btn">{isMine ? t.voted : t.vote}</span>
-                </span>
-              )}
-              {justVoted === o.id && !counting && <Burst />}
-            </button>
-          );
-        })}
-      </div>
+                {revealed && (
+                  <span className="duel-result">
+                    <span className="duel-pct"><Tween value={pcts[n]} render={(v) => `${v}%`} /></span>
+                    {/* The line at 50% is the majority mark, as on counting-day tallies. */}
+                    <span className="meter duel-meter" aria-hidden><span style={{ width: `${pcts[n]}%` }} /></span>
+                    <span className="small muted"><Tween value={votesOf(o)} render={(v) => t.votes(v)} /></span>
+                  </span>
+                )}
+                {!revealed && !poll.closed && (
+                  <span className="evm-row" aria-hidden>
+                    <span className={'evm-led' + (isMine ? ' is-on' : '')} />
+                    <span className="evm-btn">{isMine ? t.voted : t.vote}</span>
+                  </span>
+                )}
+                {justVoted === o.id && !counting && <Burst />}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {!voted && !poll.closed && (
         <p className="small muted duel-hint" data-hint>{t.ballotHint}</p>
@@ -707,7 +755,7 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
             ) : poll.trend.length > 2 && sparkOpt ? (
               <>{t.shareOverTime(sparkOpt.label)} · </>
             ) : null}
-            {t.majorityLine}
+            {!rating && t.majorityLine}
           </p>
         </div>
       )}

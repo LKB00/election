@@ -14,6 +14,7 @@ export const dynamic = 'force-dynamic';
 const standingText = (t: Dict, s: Standing): string | null =>
   s.kind === 'leading' ? t.meLeading(s.name, s.percent)
   : s.kind === 'won' ? t.meWon(s.name)
+  : s.kind === 'rating' ? t.meRating(s.average.toFixed(1))
   : s.kind === 'tie' ? t.meTie
   : s.kind === 'tied' ? t.meTied
   : s.kind === 'guess' ? t.meGuess
@@ -64,6 +65,9 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
                   {/* Where it stands now: a reason to come back (same visibility rules as the duel itself). */}
                   {standingText(t, v.standing) && <span className="index-standing">{standingText(t, v.standing)}</span>}
                   {/* A small bar: how far ahead the leader is. Lime (= you) when your pick is the one in front. */}
+                  {v.standing.kind === 'rating' && (
+                    <span className="index-meter" aria-hidden><span style={{ width: `${v.standing.average * 20}%` }} /></span>
+                  )}
                   {(v.standing.kind === 'leading' || v.standing.kind === 'won') && (
                     <span className={'index-meter' + (v.standing.name === v.pick ? ' is-mine' : '')} aria-hidden>
                       <span style={{ width: `${v.standing.percent}%` }} />
