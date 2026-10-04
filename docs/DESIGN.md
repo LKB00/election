@@ -661,3 +661,26 @@ Every screen, flow and rule stays the same; only the look changes, in one file (
 | Poll tiles | Solid pastel blocks | White cards; the tone fills only a round circle behind the topic icon | Arogya keeps cards white and puts colour in small round icons. |
 | Dark mode | Dark palette | One light look | Arogya Line has no dark mode. |
 | Share images, app icon | Lato, lime | Figtree, Arogya palette | Same look in WhatsApp as on the site. |
+
+## The Arogya Line design language (owner: "I want to use the same design language")
+
+Not just its colours: Arogya Line's way of building screens. Its principles (from its `docs/design-rationale.md`) now apply here too, next to ours:
+
+| Arogya principle | What it means in Election |
+|---|---|
+| One next step | One main action per screen, at the thumb (already our rule: one ink button). |
+| Colour never alone | Every status says a word and shows an icon (chips: "Poll of the day", "You already voted here"). |
+| Every element earns its place | If it repeats what is already on screen, it goes (the My votes bar went: it repeated the % next to it). |
+| End on a high | Already ours (peak–end): the end of today's set, the "your poll is live" moment. |
+
+**Building blocks** (in `src/styles/arogya.css`, prefixed `al-`; use them for every new screen):
+
+| Block | Classes | Used on | Job |
+|---|---|---|---|
+| Header: date, greeting, the size of the day | `al-home`, `__date`, `__title`, `__sub` | Home ("Sunday, 4 Oct · Namaste · 5 questions today · 2 left") | Speaks to you before the work, then says how much there is (Arogya's "Namaste, Sunita · 4 people need you today"). Small enough that today's question is still on the first screen. |
+| Titled block | `al-block`, `__title`, `__aside` | Home, Polls, Topic, Your polls | Sentence-case title with a quiet count ("3 polls") or link ("All polls →") on the right. |
+| List card + rows | `al-listcard`, `al-row`, `__disc`, `__main`, `__title`, `__meta`, `__when`, `__chevron` | Poll lists (was a tile grid), My votes, Your polls | One row per poll: a tinted disc with the topic icon, the question, the choices as a quiet line, the count or "New" / "Voted ✓" on the right, a chevron. Easier to scan than tiles; long questions wrap instead of being cut. |
+| "Up next" card | `al-hero`, `__name`, `__fact`, `__action` | Poll of the day (Polls page; was the dark banner) | One soft card, a chip, the big line, one full-width action. |
+| Status chip | `al-chip` (`is-you`, `is-good`, `is-alert`), and `.eyebrow` restyled | Poll page labels, Create, Poll of the day | Small and quiet, icon + word, never a button. Yellow when it is about you. |
+
+Note: the earlier rule "nothing above the duel on Home" gives way to Arogya's Today header; it is three short lines, and today's question still starts on the first screen of a phone.
