@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import DuelGame from '@/components/DuelGame';
+import RulesNotice from '@/components/RulesNotice';
 import DuelTiles from '@/components/DuelTiles';
 import { getDb } from '@/db';
 import { getDeck, getFeaturedId, listPolls, trendingPolls } from '@/lib/polls';
@@ -48,6 +49,7 @@ export default async function Home() {
           <DuelGame deck={deck} todayId={todayId} />
         </section>
       )}
+      <RulesNotice />
 
       {trending.length > 0 && (
         <section className="block">

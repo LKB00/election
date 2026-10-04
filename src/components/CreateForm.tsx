@@ -31,6 +31,8 @@ export default function CreateForm({ initialTitle = '' }: { initialTitle?: strin
   const [allowChange, setChange] = useState(false);
   // Election mode: the full booth ritual for this poll. Politics polls get it anyway (the server decides that).
   const [electionMode, setElectionMode] = useState(false);
+  // "I am 18+, and these photos are me or people who said yes": ticked once in the picture sheet, before any photo.
+  const [photoConsent, setPhotoConsent] = useState(false);
   // What kind of question: pick one of your choices, or rate it 1–5 with faces.
   const [kind, setKind] = useState<PollKind>('choice');
   const isRating = kind === 'rating';
@@ -135,6 +137,7 @@ export default function CreateForm({ initialTitle = '' }: { initialTitle?: strin
         hideUntilVoted,
         allowChange,
         electionMode,
+        photoConsent,
         endsAt: endsAt ? new Date(endsAt).toISOString() : undefined,
       }),
     }).catch(() => null);
@@ -334,6 +337,8 @@ export default function CreateForm({ initialTitle = '' }: { initialTitle?: strin
           suggested={emojiFor(choices[picking] ?? '')}
           onChange={(p) => setPicture(picking, p)}
           onClose={() => setPicking(null)}
+          consent={photoConsent}
+          onConsent={setPhotoConsent}
         />
       )}
       {/* The one main step, pinned at thumb height on phones (like Next on a duel). */}

@@ -573,7 +573,7 @@ describe('edge cases, round 3', () => {
 describe('photos from the phone', () => {
   const jpeg = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==';
   it('saves a photo with the choice and holds the duel from public lists until reviewed', async () => {
-    const id = await createPoll(db, createPollSchema.parse({ title: 'Photo duel', options: ['Mine', 'Yours'], photos: [jpeg, ''] }));
+    const id = await createPoll(db, createPollSchema.parse({ title: 'Photo duel', options: ['Mine', 'Yours'], photos: [jpeg, ''], photoConsent: true }));
     const p = (await getPoll(db, id, null))!;
     expect(p.options[0].imageUrl).toMatch(/^\/api\/img\/[\w-]{12}$/);
     expect(p.options[1].imageUrl).toBeNull();
@@ -582,6 +582,17 @@ describe('photos from the phone', () => {
     expect((await listPolls(db, 500)).some((x) => x.id === id)).toBe(true);
     const [row] = await db.select().from(schema.photos).where(eq(schema.photos.pollId, id));
     expect(Buffer.from(row.data, 'base64')[0]).toBe(0xff);
+  });
+  it('needs the 18+ / permission tick for photos, and comes down at the first photo report', async () => {
+    expect(createPollSchema.safeParse({ title: 'No tick', options: ['A', 'B'], photos: [jpeg, ''] }).success).toBe(false);
+    expect(createPollSchema.safeParse({ title: 'No photos', options: ['A', 'B'], photos: ['', ''] }).success).toBe(true);
+    const id = await createPoll(db, createPollSchema.parse({ title: 'Photo report', options: ['Mine', 'Yours'], photos: [jpeg, ''], photoConsent: true }));
+    await setPollFlags(db, id, { reviewed: true });
+    expect(await reportPoll(db, id, 'pr1', 'spam')).toEqual({ title: 'Photo report', hidden: false });
+    expect(await reportPoll(db, id, 'pr2', 'me')).toEqual({ title: 'Photo report', hidden: true });
+    expect(await getPoll(db, id, null)).toBeNull();
+    const plain = await make({ title: 'No photo, me report' });
+    expect(await reportPoll(db, plain, 'pr3', 'me')).toEqual({ title: 'No photo, me report', hidden: false });
   });
   it('refuses anything that is not a small JPEG', () => {
     expect(createPollSchema.safeParse({ title: 'Bad photo', options: ['A', 'B'], photos: ['data:image/png;base64,iVBORw0KGgo=', ''] }).success).toBe(false);

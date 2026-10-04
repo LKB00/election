@@ -564,3 +564,12 @@ Ballots keep one vote per person; each place is stored in `vote_picks.rank`. Poi
 |---|---|---|---|
 | "Who picked Pani puri, like you": Your group (4) 75% (lime bar) vs Everyone 56% (grey bar) | Poll, after the vote (first thing under the pinned bar) | P2 | The question people actually argue about in a group chat: "are we different from everyone?" Lime = you. Only once results are open to you, and only with at least 3 friends (`GROUP_MIN`), so no single friend's vote can be worked out. |
 | Story card line "75% of my group picked Pani puri · 56% of everyone" | Status / Story image | P2 | Replaces the friends line, only when the poll's result is already public to everyone (results not hidden, or the poll ended), the link is open (pick shown) and there are 3+ friends. Otherwise the spoiler-free friends line stays. |
+
+## Legal must-dos (Rules page, 18+ tick, reminders)
+
+| Element | Where | Priority | Job |
+|---|---|---|---|
+| Rules page `/terms` (linked from Create, My votes, Privacy and the photo sheet) | Page | P3 | The banned-content list and our removal times in the reader's language, plus the named complaints officer (IT Rules). |
+| "A reminder of our rules: be kind, no private photos, no money." + Read the rules · OK | Home, under the poll, once a quarter per phone | P3 | The 3-monthly reminder the IT Rules ask for. One quiet line, never above the poll; gone after OK or after opening the rules. |
+| "I am 18+, and these photos are of me or of people who said yes." tick | Photo sheet, above "Photo from your phone" | P2 | No children's data (DPDP) and no faces without consent. The photo button waits for it; the server refuses photos without it. Ticked once per poll. |
+| "This is me, remove it" report reason | Report this poll | P3 | The person in a photo can take it down at once, without the owner. |
