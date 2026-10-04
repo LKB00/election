@@ -12,5 +12,6 @@
 - Fonts are bundled (fontsource), not Google Fonts, so screenshots in the sandbox match real phones.
 - Tests run on PGlite; also run them on real Postgres with TEST_DATABASE_URL (it caught Date/precision bugs).
 - Before pushing run `npm run check`.
+- Vercel is on the free plan, which limits builds per day (every push builds a preview, every merge builds production). Push once per finished piece of work, not after every small step; when the owner says "make live", push, open the PR and merge (owner, Oct 2026).
 - Anything only the owner can do (settings, accounts, decisions, daily jobs) goes in `docs/OWNER_TODO.md` in easy English; mention it when it changes.
 - Develop on branch `claude/stoic-volta-r2mir5`. Do not open a PR unless asked.
