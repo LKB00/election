@@ -72,7 +72,7 @@ export default async function Duels({ searchParams }: { searchParams: Promise<{ 
       <section className="al-block">
         {/* A heading only when something sits above; otherwise it would just repeat the page title. */}
         {((featured && featured.myVote === null) || hot.length > 0) && <h2 className="al-block__title">{t.allDuels}<span className="al-block__aside">{t.pollsN(rest.length)}</span></h2>}
-        <DuelTiles polls={rest} votedIds={mine.map((v) => v.pollId)} />
+        <DuelTiles polls={rest} votedIds={mine.map((v) => v.pollId)} limit={12} />
       </section>
       {featured && featured.myVote !== null && (
         <section className="block">

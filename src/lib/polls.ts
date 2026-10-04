@@ -518,7 +518,7 @@ export async function guessLeader(db: Db, id: string, voterId: string, choice: s
   return 'ok';
 }
 
-export type PollSummary = { id: string; title: string; category: string; kind: PollKind; totalVotes: number; lastHour: number; options: string[]; closed: boolean };
+export type PollSummary = { id: string; title: string; category: string; kind: PollKind; totalVotes: number; lastHour: number; options: string[]; closed: boolean; /** The creator's emoji per choice ('' when none), in choice order. */ emojis: string[] };
 
 /** Public duels, newest first. Hidden duels never; unreviewed politics duels not until the owner checks them. */
 export async function listPolls(db: Db, limit = 20, filter: { category?: string; reviewedOnly?: boolean; q?: string; before?: Date } = {}): Promise<PollSummary[]> {
@@ -555,7 +555,7 @@ export async function listPolls(db: Db, limit = 20, filter: { category?: string;
     .limit(limit);
   if (!rows.length) return [];
   const opts = await db
-    .select({ pollId: options.pollId, label: options.label, position: options.position })
+    .select({ pollId: options.pollId, label: options.label, emoji: options.emoji, position: options.position })
     .from(options)
     .where(inArray(options.pollId, rows.map((r) => r.id)))
     .orderBy(options.position);
@@ -568,6 +568,7 @@ export async function listPolls(db: Db, limit = 20, filter: { category?: string;
     lastHour: r.lastHour,
     closed: !!r.endsAt && r.endsAt.getTime() <= Date.now(),
     options: opts.filter((o) => o.pollId === r.id).map((o) => o.label),
+    emojis: opts.filter((o) => o.pollId === r.id).map((o) => o.emoji ?? ''),
   }));
 }
 

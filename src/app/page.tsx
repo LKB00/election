@@ -43,17 +43,16 @@ export default async function Home() {
     .slice(0, 2)
     .map(([cat, ps]) => [cat, ps.slice(0, 4)] as const);
   const shelved = new Set([...shown, ...shelves.flatMap(([, ps]) => ps.map((p) => p.id))]);
-  const polls = recent.filter((p) => !shelved.has(p.id)).slice(0, 8);
+  const polls = recent.filter((p) => !shelved.has(p.id)).slice(0, 5);
 
-  // Arogya Line's Today header: the date, a greeting, and the size of the day in questions (left to answer).
-  const left = deck.filter((p) => p.myVote === null && !p.closed).length;
+  // Arogya Line's Today header: the date and a greeting. The size of the day ("4 left today") sits once, in today's
+  // question label just below, where it updates as you vote (it used to be said twice).
 
   return (
     <div className="page page-wide">
       <header className="al-home">
         <p className="al-home__date" suppressHydrationWarning>{t.homeDate(new Date())}</p>
         <p className="al-home__title">{t.homeHello}</p>
-        {deck.length > 0 && <p className="al-home__sub">{t.homeSub(deck.length, left)}</p>}
       </header>
       {deck.length > 0 && (
         <section className="home-game duel-first" aria-label="Duel">
@@ -61,7 +60,6 @@ export default async function Home() {
         </section>
       )}
       <MyPolls />
-      <RulesNotice />
 
       {trending.length > 0 && (
         <section className="al-block">
@@ -85,6 +83,8 @@ export default async function Home() {
         </h2>
         <DuelTiles polls={polls} votedIds={voted} />
       </section>
+      {/* P3: the 3-monthly rules reminder sits last, after everything there is to do. */}
+      <RulesNotice />
     </div>
   );
 }
