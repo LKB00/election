@@ -86,11 +86,10 @@ function timeAgo(iso: string | null) {
 // The face is how people recognise a candidate (P1), so a real photo gets the full card width.
 // No photo, or it fails to load: a soft initials circle instead (never a broken image).
 // Our own candidate photos also come as small WebP files (about half the data); share images keep the JPEG.
-const lighter = (url: string) => (url.startsWith('/candidates/') && url.endsWith('.jpg') ? url.replace(/\.jpg$/, '.webp') : url);
 
 function Face({ o, tone, letters }: { o: PollOption; tone: string; letters: string }) {
   const [ok, setOk] = useState<boolean | null>(null);
-  const src = o.imageUrl ? lighter(o.imageUrl) : null;
+  const src = o.imageUrl ?? null;
   useEffect(() => {
     if (!src) return;
     const img = new Image();

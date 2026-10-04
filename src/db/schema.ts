@@ -12,7 +12,7 @@ export const polls = pgTable(
     allowChange: boolean('allow_change').notNull().default(false),
     // Optional one-tap "why did you pick them?" answers, stored as a JSON list of short texts.
     reasons: text('reasons').notNull().default('[]'),
-    // The flagship poll shown big on the home page.
+    // Today's question: the one poll (made by a person, picked by the owner) shown first on Home.
     featured: boolean('featured').notNull().default(false),
     // Taken down by the owner (or by enough reports). Hidden duels act as if they do not exist.
     hidden: boolean('hidden').notNull().default(false),

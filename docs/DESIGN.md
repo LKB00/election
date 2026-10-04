@@ -7,7 +7,7 @@ Rule: if an element has no clear job on that screen, it is removed.
 ## The opinions rule (owner, most important; replaces "the election rule")
 
 **Election is a place to see what people think about anything.** Every poll keeps the parts of a fair vote that make it trustworthy and fun: ballot numbers, a secret ballot, one vote each, results only after you vote, the inked finger (our signature on every poll), "Guess the crowd", "leading / won", sharing that you voted.
-**Election mode** adds the full booth ritual on top: the EVM beep, the VVPAT slip, the voter ID number, counting day (3 rounds) and "Result declared". It is always on for politics polls and the flagship, and a creator can switch it on for any poll ("Election mode" chip on Create). Everything else gets a short ink moment and the result straight away.
+**Election mode** adds the full booth ritual on top: the EVM beep, the VVPAT slip, the voter ID number, counting day (3 rounds) and "Result declared". It is always on for politics polls, and a creator can switch it on for any poll ("Election mode" chip on Create). Everything else gets a short ink moment and the result straight away.
 The words "exit poll" are not used anywhere (legal risk; see docs/OPINIONS.md). Polls are "polls", not "duels".
 Quiz and game parts from patricka are **not used**:
 - no progress steppers or pips
@@ -491,7 +491,7 @@ No form fields any more: you make the ballot itself, and it looks the way voters
 | "Duel/duels" → "poll/polls" everywhere (Hindi पोल, Hinglish poll); the Duels tab and page are now **Polls** at `/polls` (old `/duels` links redirect) | The site is for any question, not only head-to-heads. |
 | "Exit poll" → **Guess the crowd** (Hindi सबका अंदाज़ा, Hinglish Bheed ka andaaza); "Your crowd guess was right!" | Same engagement, no legal risk from the words "exit poll" (RP Act s.126A). |
 | Site title and preview: "Election · What does everyone think?"; "Ask anything. Vote in one tap, then see what everyone thinks." | Says what the site is now. |
-| **Election mode** (per poll; chip on Create, P3) | On: EVM row light and beep, VVPAT slip, voter ID, counting day, "Result declared". Off: blue Vote key, a soft "pop", a 2-second ink moment, the result straight away, "Final result". Always on for politics polls and the flagship. |
+| **Election mode** (per poll; chip on Create, P3) | On: EVM row light and beep, VVPAT slip, voter ID, counting day, "Result declared". Off: blue Vote key, a soft "pop", a 2-second ink moment, the result straight away, "Final result". Always on for politics polls. |
 | Sealed note: "no poll results while a real election is voting" | Same rule, plainer words. |
 
 ## Phase 2: Rate it (owner: "start building next phase"; plan in docs/OPINIONS.md)
@@ -734,7 +734,7 @@ Kept on purpose: "Polling open/closed", "Vote cast. Your finger is inked" and "R
 ## Choice numbers (owner, Oct 2026: numbers on the voting choices are not needed)
 
 The 1, 2, 3 badges on choices came from the EVM, where each candidate has a serial number. On a normal poll they added nothing (every element earns its place), so they now show only where they mean something:
-- **Election mode** (politics, flagship, or when the creator turns it on): serial numbers stay, matching the EVM and the VVPAT slip.
+- **Election mode** (politics, or when the creator turns it on): serial numbers stay, matching the EVM and the VVPAT slip.
 - **Rank polls**: no badge until you place a choice, then its place (#1, #2…).
 - **Everything else**: no number. Your pick is shown by its colour plus the "Your pick" caption (colour never alone). The Create preview follows the same rule.
 
@@ -824,3 +824,7 @@ On My votes, above your list, once you have voted in 3+ polls this month (India 
 **Poll result:** the "line on each bar marks half (50%)" note and the 50% mark now show only in Election mode (counting-day look); elsewhere they were noise under every result. The trend line shows only when there is a trend.
 
 **Polls page:** topics moved up, right under search, as one scrolling row of picture + word chips (they were at the very bottom, under a long list).
+
+## Every poll is made by a person (owner, Oct 2026)
+
+The site no longer adds polls of its own. The "Modi or Rahul?" flagship (with its leaders' photos) and the four starter polls (Virat/Rohit/Dhoni, IPL 2027, UP 2027, Chai or coffee) are gone from the code; on a database that has them they are hidden once (votes kept; the owner can "Show again" on /admin, and they then stay shown). Today's question is always one of people's polls, picked by the owner; if none is picked, Home shows the day's set of people's polls, and with nothing open, the "Start a poll" empty state. Ideas on Create and pack templates stay: a person chooses them and the poll is theirs.

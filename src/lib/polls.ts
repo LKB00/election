@@ -79,7 +79,7 @@ export type PollView = {
   kind: PollKind;
   /** Every choice this voter ticked (one for pick-one polls; several for "pick several"). */
   myPicks: string[];
-  /** The full booth ritual (EVM, VVPAT slip, voter ID, counting day). Always on for politics and the flagship. */
+  /** The full booth ritual (EVM, VVPAT slip, voter ID, counting day). Always on for politics polls; a choice for the creator otherwise. */
   electionMode: boolean;
   /** Lets an open (not secret) share link show your pick on its preview image. */
   myShareProof: string | null;
@@ -604,7 +604,7 @@ export async function listPolls(db: Db, limit = 20, filter: { category?: string;
   }));
 }
 
-/** Id of the flagship poll, if there is one. */
+/** Id of today's question (picked by the owner from people's polls), if there is one. */
 export async function getFeaturedId(db: Db): Promise<string | null> {
   // A poll the owner planned for today (a festival, a match day) takes over by itself on its morning, with the 9 pm
   // final count, so the owner does not have to be online that day. No timer needed: the first visit of the day does it.

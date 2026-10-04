@@ -4,7 +4,7 @@ import type { PgDatabase, PgQueryResultHKT } from 'drizzle-orm/pg-core';
 import { mkdirSync } from 'node:fs';
 import postgres from 'postgres';
 import * as schema from './schema';
-import { seedFlagship } from './seed';
+import { retireSeeded } from './retire';
 
 export type Db = PgDatabase<PgQueryResultHKT, typeof schema>;
 
@@ -154,7 +154,7 @@ async function connect(): Promise<Db> {
       await tx.unsafe(SCHEMA_SQL);
     });
     const db = drizzlePostgres(client, { schema }) as unknown as Db;
-    await seedFlagship(db);
+    await retireSeeded(db);
     return db;
   }
   // No database set up: use a local file database so the app "just runs".
@@ -164,7 +164,7 @@ async function connect(): Promise<Db> {
   const client = new PGlite(dir);
   await client.exec(SCHEMA_SQL);
   const db = drizzlePglite(client, { schema }) as unknown as Db;
-  await seedFlagship(db);
+  await retireSeeded(db);
   return db;
 }
 
