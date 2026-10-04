@@ -23,7 +23,7 @@ export default function CreateForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   // Errors show under the field they belong to, and focus moves there.
-  const [fieldError, setFieldError] = useState<{ title?: string; choices?: string }>({});
+  const [fieldError, setFieldError] = useState<{ title?: string; choices?: string; end?: string }>({});
   // P3 settings stay folded: the promise is "30 seconds" (docs/DESIGN.md, Flow 3).
   const [more, setMore] = useState(false);
 
@@ -34,8 +34,10 @@ export default function CreateForm() {
     setEmojis((x) => x.filter((_, j) => j !== i));
   };
   // Quick start: fill the shape of a common duel, then the person only types the question (and names).
+  // A number chip never removes a choice you already typed (5 filled + "3 choices" keeps all 5).
   function starter(kind: 'yesno' | 3 | 4) {
-    const next = kind === 'yesno' ? [t.yes, t.no] : Array.from({ length: kind }, (_, i) => choices[i] ?? '');
+    const lastFilled = choices.reduce((m, c, i) => (c.trim() ? i : m), -1);
+    const next = kind === 'yesno' ? [t.yes, t.no] : Array.from({ length: Math.max(kind, lastFilled + 1) }, (_, i) => choices[i] ?? '');
     setChoices(next);
     setEmojis(kind === 'yesno' ? ['👍', '👎'] : next.map((_, i) => emojis[i] ?? ''));
     setFieldError({});
@@ -47,18 +49,30 @@ export default function CreateForm() {
     e.preventDefault();
     document.getElementById(next)?.focus();
   }
+  const typedChoices = choices.some((c) => c.trim());
+  // The end time as the phone shows it (local time, no seconds), for the picker's earliest allowed value.
+  const localNow = () => {
+    const d = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000);
+    return d.toISOString().slice(0, 16);
+  };
   const filledChoices = choices.map((c, i) => ({ label: c.trim(), emoji: emojis[i] })).filter((c) => c.label);
 
   function check() {
-    const filled = choices.map((c) => c.trim()).filter(Boolean);
-    const errs: { title?: string; choices?: string } = {};
+    const filled = choices.map((c) => c.trim().replace(/\s+/g, ' ')).filter(Boolean);
+    const errs: { title?: string; choices?: string; end?: string } = {};
     if (title.trim().length < 3) errs.title = t.errTitle;
     if (filled.length < 2) errs.choices = t.errChoices;
-    else if (new Set(filled.map((c) => c.toLowerCase())).size !== filled.length) errs.choices = t.errSame;
+    else if (new Set(filled.map((c) => c.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '') || c)).size !== filled.length) errs.choices = t.errSame;
+    if (endsAt && !(new Date(endsAt).getTime() > Date.now())) errs.end = t.errEnd;
     setFieldError(errs);
     if (errs.title) document.getElementById('title')?.focus();
     else if (errs.choices) document.querySelector<HTMLInputElement>('input[data-choice]')?.focus();
-    return !errs.title && !errs.choices;
+    else if (errs.end) {
+      // The end time sits under "More options": open it so the message is seen.
+      setMore(true);
+      setTimeout(() => document.getElementById('end')?.focus(), 0);
+    }
+    return !errs.title && !errs.choices && !errs.end;
   }
 
   async function submit(e: React.FormEvent) {
@@ -102,7 +116,8 @@ export default function CreateForm() {
       <div className="duel-group">
         <span className="label">{t.quickStart}</span>
         <div className="row wrap">
-          <button type="button" className="chip" onClick={() => starter('yesno')}>{t.starterYesNo}</button>
+          {/* Yes / No would replace what you typed, so it only shows while the choices are empty. */}
+          {!typedChoices && <button type="button" className="chip" onClick={() => starter('yesno')}>{t.starterYesNo}</button>}
           <button type="button" className="chip" onClick={() => starter(3)}>{t.starterN(3)}</button>
           <button type="button" className="chip" onClick={() => starter(4)}>{t.starterN(4)}</button>
         </div>
@@ -114,7 +129,7 @@ export default function CreateForm() {
           <div className="row" key={i}>
             {/* Optional emoji, shown in the choice's circle (phones open the emoji keyboard). */}
             <span className="search emoji-in">
-              <input value={emojis[i] ?? ''} maxLength={16} placeholder="🙂" aria-label={t.emojiN(i + 1)} onChange={(e) => setEmoji(i, e.target.value)} />
+              <input value={emojis[i] ?? ''} maxLength={16} placeholder="🙂" aria-label={t.emojiN(i + 1)} enterKeyHint="next" onKeyDown={(e) => onEnter(e, `choice-${i}`)} onChange={(e) => setEmoji(i, e.target.value)} />
             </span>
             <span className="search">
               <input id={`choice-${i}`} enterKeyHint={i < choices.length - 1 ? 'next' : 'go'} autoCapitalize="words" autoComplete="off" onKeyDown={(e) => onEnter(e, i < choices.length - 1 ? `choice-${i + 1}` : null)} data-choice value={c} maxLength={60} aria-label={t.choiceN(i + 1)} placeholder={t.choiceN(i + 1)} aria-invalid={!!fieldError.choices} onChange={(e) => { setChoice(i, e.target.value); setFieldError((f) => ({ ...f, choices: undefined })); }} />
@@ -143,7 +158,7 @@ export default function CreateForm() {
       <div className="duel-group">
         <label className="label" htmlFor="desc">{t.details}</label>
         <span className="search">
-          <input id="desc" value={description} maxLength={300} placeholder={t.detailsPh} onChange={(e) => setDescription(e.target.value)} />
+          <input id="desc" enterKeyHint="done" onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()} value={description} maxLength={300} placeholder={t.detailsPh} onChange={(e) => setDescription(e.target.value)} />
         </span>
       </div>
 
@@ -162,8 +177,9 @@ export default function CreateForm() {
         <label className="label" htmlFor="end">{t.ends}</label>
         <span className="search">
           <Clock size={14} strokeWidth={1.75} aria-hidden />
-          <input id="end" type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} />
+          <input id="end" type="datetime-local" min={localNow()} value={endsAt} aria-invalid={!!fieldError.end} onChange={(e) => { setEndsAt(e.target.value); setFieldError((f) => ({ ...f, end: undefined })); }} />
         </span>
+        {fieldError.end && <p className="field-error" role="alert">{fieldError.end}</p>}
       </div>
 
       <div className="me-stack">

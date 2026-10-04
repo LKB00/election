@@ -126,12 +126,22 @@ const sealedWhen = (iso: string, lang: Lang) =>
   new Date(iso).toLocaleString(lang === 'hi' ? 'hi-IN' : 'en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' });
 
 // "Report this duel" (P3, last on the screen): one tap opens the reasons, one more sends it.
-function ReportDuel({ pollId, t }: { pollId: string; t: Dict }) {
-  const [state, setState] = useState<'closed' | 'open' | 'sent'>('closed');
-  useEffect(() => setState('closed'), [pollId]);
+function ReportDuel({ pollId, t, lang }: { pollId: string; t: Dict; lang: Lang }) {
+  const [state, setState] = useState<'closed' | 'open' | 'busy' | 'sent'>('closed');
+  const [error, setError] = useState('');
+  useEffect(() => {
+    setState('closed');
+    setError('');
+  }, [pollId]);
+  // "Thanks" only once the report has really arrived; otherwise say why, and the reasons stay open to try again.
   async function send(reason: string) {
-    setState('sent');
-    await fetch(`/api/polls/${pollId}/report`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason }) }).catch(() => null);
+    setState('busy');
+    setError('');
+    const res = await fetch(`/api/polls/${pollId}/report`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason }) }).catch(() => null);
+    if (res?.ok) return setState('sent');
+    const data = await res?.json().catch(() => null);
+    setError(data?.error ? apiMsg(lang, data.error) : t.reportFail);
+    setState('open');
   }
   if (state === 'sent') return <p className="small muted duel-report" role="status">{t.reportThanks}</p>;
   if (state === 'closed') {
@@ -146,10 +156,11 @@ function ReportDuel({ pollId, t }: { pollId: string; t: Dict }) {
       <p className="label">{t.reportWhy}</p>
       <div className="row wrap">
         {Object.entries(t.reportReasons).map(([key, label]) => (
-          <button key={key} type="button" className="chip" onClick={() => send(key)}>{label}</button>
+          <button key={key} type="button" className="chip" disabled={state === 'busy'} onClick={() => send(key)}>{label}</button>
         ))}
         <button type="button" className="link-like small muted" onClick={() => setState('closed')}>{t.cancel}</button>
       </div>
+      {error && <p className="small duel-error" role="alert">{error}</p>}
     </div>
   );
 }
@@ -207,18 +218,25 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
   // Counting day: when results open in front of you, they are counted in 3 rounds (real vote order), like TV on counting day.
   const [countRound, setCountRound] = useState<number | null>(null);
   const wasRevealed = useRef<{ id: string; on: boolean } | null>(null);
+  // Runs on the duel and on "revealed" only: new data arriving mid-count (a reaction, a refresh) must not stop the
+  // count halfway, which used to leave the bar stuck on "round 1 of 3" with no Next button.
+  const countId = poll?.id;
+  const countRounds = poll?.rounds.length ?? 0;
   useEffect(() => {
-    if (!poll) return;
+    if (!countId) return;
     const before = wasRevealed.current;
-    wasRevealed.current = { id: poll.id, on: revealed };
+    wasRevealed.current = { id: countId, on: revealed };
     const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    if (!before || before.id !== poll.id || before.on || !revealed || poll.rounds.length !== 3 || reduce) return;
+    if (!before || before.id !== countId || before.on || !revealed || countRounds !== 3 || reduce) return;
     setCountRound(0);
     const t1 = setTimeout(() => setCountRound(1), 650);
     const t2 = setTimeout(() => setCountRound(2), 1300);
     const t3 = setTimeout(() => setCountRound(null), 1950);
-    return () => [t1, t2, t3].forEach(clearTimeout);
-  }, [poll, revealed]);
+    return () => {
+      [t1, t2, t3].forEach(clearTimeout);
+      setCountRound(null);
+    };
+  }, [countId, revealed, countRounds]);
   const counting = countRound !== null && !!poll && poll.rounds.length === 3;
   const shown = counting ? poll!.rounds[countRound!] : null;
   const shownTotal = shown ? Object.values(shown).reduce((a, b) => a + b, 0) : poll?.totalVotes ?? 0;
@@ -232,6 +250,8 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
     return t.aheadBy(byVotes[0].o.label, byVotes[0].n - byVotes[1].n);
   })();
   const mine = poll?.options.find((o) => o.id === poll.myVote) ?? null;
+  // The vote moment shows the choice you pressed (not the poll data, which a late refresh could have changed).
+  const castOpt = casting ? poll?.options.find((o) => o.id === casting.optionId) ?? null : null;
   // "Leading" / "won" only when one choice is clearly ahead (a tie has no leader).
   const top = pcts.length ? Math.max(...pcts) : 0;
   const leaderIdx = revealed && poll && poll.totalVotes > 0 && pcts.filter((v) => v === top).length === 1 ? pcts.indexOf(top) : -1;
@@ -255,7 +275,17 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
     }
   }, [poll?.closed, poll?.id, revealed, leaderIdx]);
 
-  const replace = (p: PollView) => setDeck((d) => d.map((x) => (x.id === p.id ? p : x)));
+  const deckRef = useRef(deck);
+  deckRef.current = deck;
+  const replace = (p: PollView) => {
+    fetchedAt.current[p.id] = Date.now();
+    setDeck((d) => d.map((x) => (x.id === p.id ? p : x)));
+  };
+  // Every vote, guess, undo, reaction bumps this. A refresh that started before one of them is thrown away when it
+  // lands, so old numbers never overwrite your vote (that used to bring the Vote buttons back and freeze the screen).
+  const gen = useRef(0);
+  // When each duel's numbers were last fetched: "N new votes just now" only compares with a recent fetch.
+  const fetchedAt = useRef<Record<string, number>>({});
 
   // "3 new votes just now": votes from other people that arrive while you watch (shown for a few seconds).
   const [fresh, setFresh] = useState<{ id: string; n: number } | null>(null);
@@ -268,11 +298,14 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
   // Live numbers for the open duel.
   const refresh = useCallback(async () => {
     if (!poll) return;
+    const started = gen.current;
     const res = await fetch(`/api/polls/${poll.id}${q}`, { cache: 'no-store' }).catch(() => null);
-    if (!res?.ok) return;
-    const next: PollView = await res.json();
+    if (!res?.ok || started !== gen.current) return;
+    const next: PollView | null = await res.json().catch(() => null);
+    if (!next?.id || started !== gen.current) return;
     const gained = next.participants - poll.participants;
-    if (gained > 0 && next.myVote === poll.myVote) setFresh({ id: next.id, n: gained });
+    const recent = Date.now() - (fetchedAt.current[next.id] ?? 0) < 15_000;
+    if (gained > 0 && recent && next.myVote === poll.myVote) setFresh({ id: next.id, n: gained });
     replace(next);
   }, [poll, q]);
   useEffect(() => {
@@ -280,8 +313,20 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
     return () => clearInterval(t);
   }, [refresh, busy, casting]);
 
+  // One vote waiting for the internet at most (tapping again while offline replaces it, never adds a second).
+  const queued = useRef<(() => void) | null>(null);
+  useEffect(
+    () => () => {
+      if (!queued.current) return;
+      window.removeEventListener('online', queued.current);
+      queued.current = null;
+      setBusy(null);
+    },
+    [countId],
+  );
   async function vote(optionId: string) {
     if (!poll || voted || busy || poll.closed) return;
+    gen.current++;
     setBusy(optionId);
     setMsg('');
     // Feedback the instant you press (the beep and the scene follow once the vote is saved).
@@ -294,22 +339,33 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
       body: JSON.stringify({ optionId, via: viaHere, human }),
     }).catch(() => null);
     const data = await res?.json().catch(() => null);
-    if (res?.ok) {
+    if (res?.ok && data?.poll) {
       evmBeep();
       setInkedFor(poll.id);
       replace(data.poll);
       setReasonSaved(false);
-      announceVote(poll.id);
+      announceVote(poll.id, 1);
       const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
       if (reduce) castDone(optionId, data.poll.needsGuess);
       else setCasting({ optionId, short: votesThisVisit++ > 0 });
     } else if (!res && !navigator.onLine) {
       // No internet: keep the choice and send it by itself when the phone is back online.
+      // The keys stay pressed (busy) until then, so a second tap cannot queue a second vote.
       setMsg(t.noNet);
-      window.addEventListener('online', () => { setMsg(''); vote(optionId); }, { once: true });
+      if (queued.current) window.removeEventListener('online', queued.current);
+      const retry = () => {
+        queued.current = null;
+        setMsg('');
+        setBusy(null);
+        vote(optionId);
+      };
+      queued.current = retry;
+      window.addEventListener('online', retry, { once: true });
+      return;
     } else {
       setMsg(data?.error ? apiMsg(lang, data.error) : t.saveFail);
-      if (res?.status === 409) refresh();
+      // Already voted, the duel just ended, or it was taken down: show what is true now.
+      if (res) refresh();
     }
     setBusy(null);
   }
@@ -317,15 +373,37 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
   // The cast-vote moment ended (or was tapped away): now the result, the confetti and the next step.
   function castDone(optionId: string, needsGuess: boolean) {
     setCasting(null);
+    // The very first vote in a hidden-results duel: no exit poll ("who's winning?" with one vote is no question).
+    if (needsGuess && (deckRef.current.find((p) => p.id === poll?.id)?.participants ?? 0) <= 1) {
+      guess('skip');
+      needsGuess = false;
+    }
     setJustVoted(needsGuess ? null : optionId);
     setUndoUntil(Date.now() + 20_000); // the server allows 30 s from the vote; the moment took up to 5 of them
-    setTimeout(() => nextRef.current?.focus({ preventScroll: true }), 50);
+    focusAfter.current = true;
   }
-
+  // Keyboard and screen-reader users land on the next step once the screen has settled (after the count):
+  // the exit poll question if it is asked, else Next.
+  const focusAfter = useRef(false);
+  const focusTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => {
+    if (!focusAfter.current || casting || counting || !poll) return;
+    const wantGuess = poll.needsGuess;
+    // A moment later, and looked up again then: the bar slides in, and the count may still start and re-draw it.
+    clearTimeout(focusTimer.current);
+    focusTimer.current = setTimeout(() => {
+      const target = wantGuess ? guessRef.current?.querySelector<HTMLElement>('h2') : nextRef.current;
+      if (!target || !focusAfter.current) return;
+      focusAfter.current = false;
+      const now = document.activeElement;
+      if (!now || now === document.body || (now as HTMLButtonElement).disabled || now.closest('.duel-options')) target.focus({ preventScroll: true });
+    }, 450);
+  });
   const [guessBusy, setGuessBusy] = useState(false);
   const [justGuessed, setJustGuessed] = useState(false);
   async function guess(choice: string) {
     if (!poll || guessBusy) return;
+    gen.current++;
     setGuessBusy(true);
     navigator.vibrate?.(10);
     const res = await fetch(`/api/polls/${poll.id}/guess${q}`, {
@@ -334,12 +412,11 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
       body: JSON.stringify({ choice }),
     }).catch(() => null);
     const data = await res?.json().catch(() => null);
-    if (res?.ok) {
+    if (res?.ok && data?.poll) {
       replace(data.poll);
       setJustGuessed(choice !== 'skip');
       if (data.poll.myGuess?.correct) setJustVoted(poll.myVote);
-      announceVote(poll.id);
-      setTimeout(() => nextRef.current?.focus({ preventScroll: true }), 50);
+      focusAfter.current = true;
     } else {
       setMsg(data?.error ? apiMsg(lang, data.error) : t.saveFail2);
       refresh();
@@ -349,13 +426,17 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
 
   async function undo() {
     if (!poll) return;
+    gen.current++;
     setUndoUntil(0);
     const res = await fetch(`/api/polls/${poll.id}/vote${q}`, { method: 'DELETE' }).catch(() => null);
     const data = await res?.json().catch(() => null);
-    if (res?.ok) {
+    if (res?.ok && data?.poll) {
       replace(data.poll);
       setJustVoted(null);
-      announceVote(poll.id);
+      scrolledFor.current = null; // vote again: the exit poll comes into view again
+      announceVote(poll.id, -1);
+      // Keyboard and screen readers: back on the ballot, not at the top of the page.
+      setTimeout(() => topRef.current?.querySelector<HTMLElement>('.duel-option:not(:disabled)')?.focus({ preventScroll: true }), 50);
     } else setMsg(data?.error ? apiMsg(lang, data.error) : t.undoLate);
   }
 
@@ -397,16 +478,23 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
     return () => clearTimeout(t);
   }, [undoUntil]);
 
+  // One at a time: a double tap on a reaction must not send two toggles that land in the wrong order.
+  const posting = useRef(false);
   async function post(path: string, body: object) {
-    if (!poll) return;
-    if (path === 'reason') setReasonSaved(true);
+    if (!poll || posting.current) return;
+    posting.current = true;
+    gen.current++;
     const res = await fetch(`/api/polls/${poll.id}/${path}${q}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     }).catch(() => null);
     const data = await res?.json().catch(() => null);
-    if (res?.ok) replace(data.poll);
+    posting.current = false;
+    if (res?.ok && data?.poll) {
+      replace(data.poll);
+      if (path === 'reason') setReasonSaved(true);
+    } else setMsg(data?.error ? apiMsg(lang, data.error) : t.saveFail2);
   }
 
   // Next: the next live duel you have not voted in (wraps around), else "all caught up".
@@ -424,6 +512,7 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
     setSharing(false);
     setJustVoted(null);
     setJustGuessed(false);
+    setReasonSaved(false);
     setMsg('');
     setUndoUntil(0);
     const order = [...deck.keys()].map((k) => (i + 1 + k) % deck.length);
@@ -441,7 +530,7 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
       const k = e.key.toLowerCase();
       const n = /^[1-9]$/.test(k) ? Number(k) - 1 : LETTERS.toLowerCase().indexOf(k);
       if (!revealed && n >= 0 && n < poll.options.length) vote(poll.options[n].id);
-      if (e.key === 'Enter' && revealed && !t.closest('button, a')) next();
+      if (e.key === 'Enter' && revealed && !counting && !t.closest('button, a')) next();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -454,10 +543,11 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
     if (navigator.share) {
       try {
         await navigator.share({ title: poll?.title, text: shareText(), url: link() });
-        return;
-      } catch {
-        /* closed */
+      } catch (e) {
+        // Closed the phone's share menu: done. Only a real failure falls back to copying the link.
+        if ((e as Error)?.name !== 'AbortError') copy();
       }
+      return;
     }
     copy();
   }
@@ -501,7 +591,8 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
         <h1 key={poll.id} className="display duel-q">{poll.title}</h1>
         <p className="small muted">
           {poll.closed ? t.pollingClosed : <><span className="live-dot" aria-hidden /> {t.pollingOpen}</>} · <span key={poll.participants} className="tick">{poll.participants.toLocaleString('en-IN')}</span> {t.votesCast(poll.participants)}
-          {!poll.closed && poll.endsAt && ` · ${t.closes(closesIn(t, poll.endsAt))}`}
+          {/* Time left depends on the clock, so the server's and the phone's text can differ by a minute: that is fine. */}
+          {!poll.closed && poll.endsAt && <span suppressHydrationWarning>{` · ${t.closes(closesIn(t, poll.endsAt))}`}</span>}
           {!revealed && poll.pulse.lastHour > 0 && poll.pulse.lastHour < poll.participants && ` · ${t.inLastHour(poll.pulse.lastHour)}`}
           {poll.participants === 0 && !poll.closed && ` · ${t.beFirst}`}
           {fresh && fresh.id === poll.id && <span className="duel-fresh"> · {t.newVotes(fresh.n)}</span>}
@@ -582,7 +673,7 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
       {!casting && voted && poll.needsGuess && (
         <div className="duel-guess" aria-live="polite" ref={guessRef}>
           <p className="label">{t.exitPoll}</p>
-          <h2>{t.whoWinning}</h2>
+          <h2 tabIndex={-1}>{t.whoWinning}</h2>
           <p className="small muted">{t.exitPollNote}</p>
           {/* Each choice as a small card with its face (photo, emoji or letters): you recognise before you read. */}
           <div className={'duel-guess-options' + (poll.options.length > 4 ? ' is-many' : '')}>
@@ -696,12 +787,12 @@ null
 
       {declaredBurst && <Burst count={24} />}
 
-      {casting && mine && (
+      {casting && castOpt && (
         <CastVote
           t={t}
           number={poll.options.findIndex((o) => o.id === casting.optionId) + 1}
-          name={mine.label}
-          party={mine.subtitle?.split(' · ')[0] ?? null}
+          name={castOpt.label}
+          party={castOpt.subtitle?.split(' · ')[0] ?? null}
           voterNo={poll.myVoterNumber}
           short={casting.short}
           onDone={() => castDone(casting.optionId, poll.needsGuess)}
@@ -768,7 +859,7 @@ null
         </div>
       )}
 
-      <ReportDuel pollId={poll.id} t={t} />
+      <ReportDuel pollId={poll.id} t={t} lang={lang} />
     </div>
   );
 }

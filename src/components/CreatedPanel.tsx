@@ -25,10 +25,11 @@ export default function CreatedPanel({ id, title }: { id: string; title: string 
     if (navigator.share) {
       try {
         await navigator.share({ title, text: t.shareTextAsk(title), url: link() });
-        return;
-      } catch {
-        /* closed */
+      } catch (e) {
+        // Closed the phone's share menu: done. Only a real failure falls back to copying the link.
+        if ((e as Error)?.name !== 'AbortError') copy();
       }
+      return;
     }
     copy();
   }

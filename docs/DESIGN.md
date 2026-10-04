@@ -408,3 +408,43 @@ Small touches, each tied to a real election moment; nothing from games (no point
 | "Up next: <question>" above Share / Next | Duel result bar | P3 | You know what Next brings, so pressing it is an easy yes. |
 | Idle nudge: after 5 s with no touch or scroll, the blue Vote keys rise gently 3 times | Duel, before voting | P3 | Shows first-time visitors what to press; stops at the first touch. |
 | Small bar under each duel: the leader's share; lime when your pick leads | My votes | P2 | "Where does my pick stand?" at a glance; lime = you. |
+
+## Edge cases (owner: "find all the edge cases and fix all of them")
+
+Found by testing every screen and API with odd inputs. Rules that came out of it:
+
+| Case | Rule now |
+|---|---|
+| Vote → exit poll "skip" → see numbers → undo → vote for the leader | Undo only before the exit poll. After it you have seen the numbers. |
+| "Guess" on a duel whose numbers are already open (or closed) | Not counted: the exit poll is only asked while the numbers are hidden. |
+| How your friends voted, before your results open | Hidden too (in a 2-way duel it tells who leads). |
+| Secret-ballot link with "&s=1" removed by hand | Still secret: an open link carries a signed proof (`o=`); without it the image never shows the pick. |
+| One person reporting three times after clearing cookies | Counts once (reports are counted per network). "Show again" by the owner also marks the duel reviewed. |
+| Zero-width spaces, soft hyphens, "_", digits for letters (ch_utiya, chut1ya, chutiyaaa) | Seen through by the word filter and the politics hold; invisible characters are removed from saved text; line breaks become spaces. |
+| Real names refused as abuse (Niki Lauda, Lund University, Katwa) | Those words are no longer blocked; reports and review catch abuse with them. |
+| A duel saved without choices after an error | Duel and choices are saved together or not at all. |
+| Odd characters in an address (NUL byte, spaces) | "Not found", never a server error. |
+| Emoji or Hindi letters cut in half on share images | Text is shortened by what you see, at a space when possible, with "…". Choice circles use the creator's emoji and the same letters as the ballot. |
+| X / LinkedIn previews without an image | robots.txt now allows the two share-image addresses. |
+| Cancelling the phone's share menu | Closes quietly (it used to pop up "Copy this link"). |
+| "Status / Story image" on iPhone | The image is made when the panel opens, so the tap opens the share menu at once; a failure says so. |
+| "Thanks" shown for a report that never arrived | Thanks only after it arrives; otherwise the reason and a retry. |
+| Create: Enter in the emoji or details box sent the form; "3 choices" deleted typed choices; Yes/No overwrote them; end time in the past only caught after sending | Enter moves on; chips never remove typed choices (Yes/No shows only while empty); the end time is checked at once, under its box. |
+| A "keep my votes" link opened on a phone that has its own votes | Asks first ("Use the votes from the link" / "Keep my votes"). |
+| "Today" in My votes | Counted in India time. |
+| Long single words (names, "aaaa…") made Home, Duels and the ballot wider than the phone | Grid columns can shrink and long words break; tested at 320 px before and after voting. |
+| Two taps while offline counted twice when the phone came back | One waiting vote at most; the keys stay pressed until it is sent. |
+| An older refresh arriving after your vote brought the Vote buttons back and froze the screen | Refreshes that started before a vote, guess, undo or reaction are thrown away. |
+| A reaction tapped during the count left the bar stuck on "round 1 of 3" with no Next | The count always finishes. |
+| Tiles said +2 after vote + guess, and "You voted" stayed after undo | Tiles and the banner count +1 on vote, −1 on undo. |
+| Exit poll asked when yours is the only vote ("Your exit poll was right!" with 1 vote) | Not asked until someone else has voted; that first voter can still undo. "First vote!" now says "You cast the first vote here" (not "You started this duel"). |
+| "Rahul" and "rahul." accepted as two choices | The same choice (letters and numbers compared). |
+| Keyboard / screen reader: focus lost after the vote moment, undo, or opening Share | Focus goes to the exit poll question or Next, back to the ballot after undo, and into the share panel (and back out). The vote moment is announced once, not 40 times. |
+| Sounds silent after an app switch on iPhone | Sound wakes up again on the next tap. |
+| Hindi typed into a duel drawn broken on share images | The image renderer cannot join Hindi letters, so such text is left out of images (the ballot numbers show instead). |
+
+## Temporary: "Reset this phone" (owner: "add a temporary reset content button")
+
+| Element | Screen | Priority | Job |
+|---|---|---|---|
+| "Testing · Reset this phone" (dashed box, last on the page) | My votes | P3 | The owner tests the site as a first-time visitor again. Removes this phone's votes, exit poll calls and reactions (same as "Delete my votes") and clears what the browser remembered, then opens Home. Never touches other people's votes or the duels. Remove before a public launch: `src/components/ResetFresh.tsx` and its line in `src/app/me/page.tsx`. |

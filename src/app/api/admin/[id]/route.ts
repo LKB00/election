@@ -13,7 +13,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const parsed = adminSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success || !isAdminKey(parsed.data.key)) return NextResponse.json({ error: 'Not allowed.' }, { status: 403 });
   const { id } = await params;
-  const flags = parsed.data.action === 'hide' ? { hidden: true } : parsed.data.action === 'show' ? { hidden: false } : { hidden: false, reviewed: true };
+  // "Show again" means the owner looked at it: it counts as reviewed, so the next single report cannot hide it again.
+  const flags = parsed.data.action === 'hide' ? { hidden: true } : { hidden: false, reviewed: true };
   const ok = await setPollFlags(await getDb(), id, flags);
   return ok ? NextResponse.json({ ok: true }) : NextResponse.json({ error: 'Poll not found.' }, { status: 404 });
 }

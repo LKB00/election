@@ -73,7 +73,9 @@ export default function CastVote({ t, number, name, party, voterNo, short, onDon
   const vars = { '--t-vv': time.vv, '--t-drop': time.drop, '--t-ink': time.ink } as React.CSSProperties;
   // Rendered at the top of the page, so the bottom bar never sits on top of the scene.
   return createPortal(
-    <div className="cast-backdrop" style={vars} onClick={finish} role="status" aria-live="polite" title={t.tapToSkip}>
+    <div className="cast-backdrop" style={vars} onClick={finish} title={t.tapToSkip}>
+      {/* One short line for screen readers (the counting voter number below would be read out forty times). */}
+      <p className="sr-only" role="status">{t.inked}.{voterNo ? ` ${t.voterId} EL-${String(voterNo).padStart(6, '0')}` : ''}</p>
       <div className="cast-stage">
         {/* Beat 1 and 2: the ballot unit and the VVPAT, side by side in a real booth; here the VVPAT sits on top. */}
         <div className="cast-booth" aria-hidden>
@@ -104,7 +106,7 @@ export default function CastVote({ t, number, name, party, voterNo, short, onDon
             <HandArt />
             <span className="cast-rod" />
           </span>
-          <p className="cast-text">
+          <p className="cast-text" aria-hidden>
             <strong>{t.inked}.</strong>
             {voterNo ? <span className="muted">{t.voterId} EL-{String(count).padStart(6, '0')}</span> : null}
           </p>

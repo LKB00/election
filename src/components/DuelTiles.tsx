@@ -4,6 +4,7 @@ import { Check, Cpu, Film, Landmark, Medal, Music, Plus, Swords, Trophy, Users, 
 import { useEffect, useState } from 'react';
 import type { PollSummary } from '@/lib/polls';
 import { useT } from '@/lib/lang';
+import type { VotedEvent } from '@/lib/useStats';
 
 // One pastel tile per duel (patricka game tiles).
 // Order = what you can still do first: live and not voted → voted → ended. Updates the moment you vote.
@@ -17,10 +18,10 @@ export default function DuelTiles({ polls, votedIds = [], noCreate = false }: { 
   const [counts, setCounts] = useState<Record<string, number>>({});
   useEffect(() => {
     const on = (e: Event) => {
-      const id = (e as CustomEvent).detail as string | undefined;
+      const { id, delta } = (e as CustomEvent<VotedEvent>).detail ?? {};
       if (!id) return;
-      setVoted((v) => (v.includes(id) ? v : [...v, id]));
-      setCounts((c) => ({ ...c, [id]: (c[id] ?? 0) + 1 }));
+      setVoted((v) => (delta < 0 ? v.filter((x) => x !== id) : v.includes(id) ? v : [...v, id]));
+      setCounts((c) => ({ ...c, [id]: (c[id] ?? 0) + delta }));
     };
     window.addEventListener('voted', on);
     return () => window.removeEventListener('voted', on);

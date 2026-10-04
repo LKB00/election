@@ -46,5 +46,5 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   if (!voterId || !(await undoVote(db, id, voterId))) {
     return NextResponse.json({ error: 'Too late to undo this vote.' }, { status: 409 });
   }
-  return NextResponse.json({ poll: await getPoll(db, id, voterId) });
+  return NextResponse.json({ poll: await getPoll(db, id, voterId, new URL(req.url).searchParams.get('f')) });
 }

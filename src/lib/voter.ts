@@ -1,15 +1,9 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { cookies } from 'next/headers';
+import { appSecret } from './secret';
 
 const COOKIE = 'voter';
-const secret = () => {
-  const s = process.env.VOTER_SECRET;
-  if (s && s.length >= 16) return s;
-  // A weak secret would let people forge voter ids and vote many times.
-  if (process.env.NODE_ENV === 'production') throw new Error('VOTER_SECRET must be set (16+ characters).');
-  return 'dev-only-secret';
-};
-const sign = (id: string) => createHmac('sha256', secret()).update(id).digest('base64url').slice(0, 22);
+const sign = (id: string) => createHmac('sha256', appSecret()).update(id).digest('base64url').slice(0, 22);
 
 function verify(raw: string | undefined): string | null {
   if (!raw) return null;
@@ -49,6 +43,9 @@ export async function voterKeyForLink(): Promise<string | null> {
 }
 
 /** Opening a "keep my votes" link: this phone becomes that voter (route handlers only). False if the link was changed. */
+/** The voter id inside a "keep my votes" key, if the key is real. */
+export const voterIdFromKey = (raw: string | null) => (raw ? verify(raw) : null);
+
 export async function adoptVoterKey(raw: string | null): Promise<boolean> {
   if (!raw || !verify(raw)) return false;
   (await cookies()).set(COOKIE, raw, COOKIE_OPTS);

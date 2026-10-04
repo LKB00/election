@@ -1,6 +1,6 @@
 'use client';
 import { Check, Download, EyeOff, Link2, MessageCircle, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useOverlay } from '@/lib/useOverlay';
 import type { PollOption, PollView } from '@/lib/polls';
@@ -22,8 +22,11 @@ export default function ShareSheet({ poll, pick, shareCode, onClose }: { poll: P
 
   // Full name: a last name alone can be ambiguous ("Gandhi").
   const last = pick.label;
-  const link = () => `${window.location.origin}/p/${poll.id}?f=${shareCode}${secret ? '&s=1' : ''}${hi}`;
-  const card = `/api/card/${poll.id}?f=${shareCode}${secret ? '&s=1' : ''}${hi}`;
+  // An open link carries the proof (o=) that lets its preview show your pick; a secret one has none, so editing the
+  // address cannot reveal it.
+  const mode = secret || !poll.myShareProof ? '&s=1' : `&o=${poll.myShareProof}`;
+  const link = () => `${window.location.origin}/p/${poll.id}?f=${shareCode}${mode}${hi}`;
+  const card = `/api/card/${poll.id}?f=${shareCode}${mode}${hi}`;
   // Wordle lesson: a short, spoiler-free line anyone can read in a chat (and your exit poll result, if you made one).
   const mark = poll.myGuess ? ` · ${t.exitMark(poll.myGuess.correct)}` : '';
   const message = secret ? t.msgSecret(poll.title, mark) : t.msgOpen(poll.title, last, mark);
@@ -32,9 +35,28 @@ export default function ShareSheet({ poll, pick, shareCode, onClose }: { poll: P
   // Phones: the page behind stays still, and the Back button closes the sheet (not the page).
   useOverlay(onClose, { back: true });
 
-  // Close with Escape, like any sheet.
+  // Like any sheet: Escape closes it, focus moves into it, Tab stays inside, and focus goes back to the Share button after.
+  const sheetRef = useRef<HTMLElement>(null);
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    const before = document.activeElement as HTMLElement | null;
+    sheetRef.current?.querySelector<HTMLElement>('button, a')?.focus({ preventScroll: true });
+    return () => before?.focus?.({ preventScroll: true });
+  }, []);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') return onClose();
+      if (e.key !== 'Tab' || !sheetRef.current) return;
+      const items = [...sheetRef.current.querySelectorAll<HTMLElement>('button:not(:disabled), a[href]')];
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last?.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first?.focus();
+      }
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
@@ -49,11 +71,32 @@ export default function ShareSheet({ poll, pick, shareCode, onClose }: { poll: P
     }
   }
 
+  // The image is fetched as soon as the panel opens (and again when the secret switch changes): iPhones only open their
+  // share menu straight from a tap, so it must be ready before the tap, not downloaded after it.
+  const [image, setImage] = useState<{ url: string; blob: Blob } | null>(null);
+  const [imageFailed, setImageFailed] = useState(false);
+  useEffect(() => {
+    let live = true;
+    fetch(card)
+      .then((r) => (r.ok ? r.blob() : Promise.reject(new Error(String(r.status)))))
+      .then((blob) => live && setImage({ url: card, blob }))
+      .catch(() => {}); // tried again on tap
+    return () => {
+      live = false;
+    };
+  }, [card]);
+
   // Phones: share the image and the message together (Status, Instagram). Otherwise: download the image.
   async function shareImage() {
     setBusy(true);
+    setImageFailed(false);
     try {
-      const blob = await (await fetch(card)).blob();
+      let blob = image?.url === card ? image.blob : null;
+      if (!blob) {
+        const res = await fetch(card);
+        if (!res.ok) throw new Error(String(res.status));
+        blob = await res.blob();
+      }
       const file = new File([blob], 'i-voted.png', { type: 'image/png' });
       if (navigator.canShare?.({ files: [file] })) {
         await navigator.share({ files: [file], text: text() });
@@ -62,10 +105,13 @@ export default function ShareSheet({ poll, pick, shareCode, onClose }: { poll: P
         a.href = URL.createObjectURL(blob);
         a.download = 'i-voted.png';
         a.click();
-        URL.revokeObjectURL(a.href);
+        // Later, not at once: Safari can cancel a download whose address is revoked straight away.
+        const href = a.href;
+        setTimeout(() => URL.revokeObjectURL(href), 10_000);
       }
-    } catch {
-      /* closed the share sheet */
+    } catch (e) {
+      // Closing the phone's share menu is not an error; anything else is.
+      if ((e as Error)?.name !== 'AbortError') setImageFailed(true);
     }
     setBusy(false);
   }
@@ -73,7 +119,7 @@ export default function ShareSheet({ poll, pick, shareCode, onClose }: { poll: P
   // Rendered at the top of the page, so the bottom bar never covers its buttons.
   return createPortal(
     <div className="sheet-backdrop" onClick={onClose}>
-      <section className="sheet" role="dialog" aria-modal="true" aria-label={t.showInk} onClick={(e) => e.stopPropagation()}>
+      <section ref={sheetRef} className="sheet" role="dialog" aria-modal="true" aria-label={t.showInk} onClick={(e) => e.stopPropagation()}>
         <button type="button" className="icon-btn sheet-close" onClick={onClose} aria-label={t.close}><X size={16} strokeWidth={1.75} aria-hidden /></button>
         <p className="label">{t.showInk}</p>
         <h2>{t.tellFriends}</h2>
@@ -104,6 +150,7 @@ export default function ShareSheet({ poll, pick, shareCode, onClose }: { poll: P
             {copied ? <Check size={15} strokeWidth={2} aria-hidden /> : <Link2 size={15} strokeWidth={1.75} aria-hidden />} {copied ? t.copied : t.copyLink}
           </button>
         </div>
+        {imageFailed && <p className="small duel-error" role="alert">{t.imageFailed}</p>}
       </section>
     </div>,
     document.body,

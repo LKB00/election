@@ -27,7 +27,8 @@ export function useOverlay(onClose: () => void, { back = false }: { back?: boole
       html.style.overflow = before;
       window.removeEventListener('popstate', onPop);
       // Closed by a tap (not by Back): remove the entry we added, so Back works normally afterwards.
-      if (pushed) history.back();
+      // Only if our entry is still the current one: if the page already moved on, going back would undo that.
+      if (pushed && history.state?.overlay) history.back();
     };
   }, [back]);
 }

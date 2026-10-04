@@ -92,6 +92,7 @@ describe('voting', () => {
     const id = await make({ hideUntilVoted: true });
     const p = (await getPoll(db, id, null))!;
     await castVote(db, id, p.options[0].id, 'a');
+    await castVote(db, id, p.options[1].id, 'b'); // with only your own vote there is no exit poll
     const stranger = (await getPoll(db, id, 'zzz'))!;
     expect(stranger.resultsVisible).toBe(false);
     expect(stranger.totalVotes).toBe(0);
@@ -376,6 +377,7 @@ describe('election silence window', () => {
       delete process.env.SILENCE_WINDOWS;
     }
     expect(activeSilence()).toBeNull();
+    await castVote(db, pol, (await getPoll(db, pol, null))!.options[1].id, 's2'); // the exit poll needs a second vote
     expect((await getPoll(db, pol, 's1'))!.needsGuess).toBe(true); // after the window: the normal flow again
   });
 });
@@ -450,5 +452,84 @@ describe('round 3: easier to use', () => {
     await castVote(db, id, p.options[1].id, 'hot2');
     await db.update(schema.votes).set({ createdAt: sql`now() - interval '2 hours'` }).where(eq(schema.votes.voterKey, 'hot2'));
     expect((await listPolls(db, 500)).find((x) => x.id === id)).toMatchObject({ totalVotes: 2, lastHour: 1 });
+  });
+});
+
+describe('edge cases (found in testing)', () => {
+  it('no undo after the exit poll: you have seen the numbers by then', async () => {
+    const id = await make({ title: 'Peek and switch', options: ['A', 'B'], hideUntilVoted: true });
+    const [a, b] = (await getPoll(db, id, null))!.options;
+    await castVote(db, id, a.id, 'pk1');
+    await castVote(db, id, b.id, 'peeker');
+    expect(await guessLeader(db, id, 'peeker', 'skip')).toBe('ok');
+    expect(await undoVote(db, id, 'peeker')).toBe(false);
+    await castVote(db, id, a.id, 'quick');
+    expect(await undoVote(db, id, 'quick')).toBe(true); // before the exit poll it still works
+  });
+
+  it('no exit poll guess when the numbers are already open, or the duel is gone', async () => {
+    const open = await make({ title: 'Open results guess', options: ['A', 'B'] });
+    const [a] = (await getPoll(db, open, null))!.options;
+    await castVote(db, open, a.id, 'og1');
+    expect(await guessLeader(db, open, 'og1', a.id)).toBe('not_allowed');
+    expect(await guessLeader(db, 'no-such-duel', 'og1', a.id)).toBe('not_found');
+  });
+
+  it('keeps the friends tally hidden until your results open', async () => {
+    const id = await make({ title: 'Friends wait', options: ['A', 'B'], hideUntilVoted: true });
+    const [a, b] = (await getPoll(db, id, null))!.options;
+    await castVote(db, id, a.id, 'fw-sharer');
+    const code = (await getPoll(db, id, 'fw-sharer'))!.myShareCode!;
+    await castVote(db, id, b.id, 'fw-friend', code);
+    expect((await getPoll(db, id, 'fw-sharer'))!.friends).toEqual({ agree: 0, disagree: 0 });
+    await guessLeader(db, id, 'fw-sharer', 'skip');
+    expect((await getPoll(db, id, 'fw-sharer'))!.friends).toEqual({ agree: 0, disagree: 1 });
+  });
+
+  it('one network clearing its cookies counts as one reporter', async () => {
+    const id = await make({ title: 'Cookie clearer' });
+    for (let k = 0; k < AUTO_HIDE_REPORTS + 1; k++) await reportPoll(db, id, `cc${k}`, 'spam', 'same-ip');
+    expect(await getPoll(db, id, null)).not.toBeNull();
+  });
+
+  it('never saves a duel without its choices', async () => {
+    const before = (await db.select({ n: sql<number>`count(*)::int` }).from(schema.polls))[0].n;
+    // A NUL byte that got past the checks: Postgres refuses the choice, and then the duel must not stay behind either.
+    const bad = { ...createPollSchema.parse({ title: 'Broken', options: ['A', 'B'] }), options: ['A\u0000', 'B'] };
+    await expect(createPoll(db, bad)).rejects.toThrow();
+    expect((await db.select({ n: sql<number>`count(*)::int` }).from(schema.polls))[0].n).toBe(before);
+  });
+
+  it('ignores share codes with odd characters', async () => {
+    const id = await make({ title: 'Odd code' });
+    expect(await getPoll(db, id, null, 'a\u0000b')).not.toBeNull();
+  });
+});
+
+describe('edge cases, round 2', () => {
+  it('a guess with only your own vote in is not counted as right or wrong', async () => {
+    const id = await make({ title: 'Lonely first vote', options: ['A', 'B'], hideUntilVoted: true });
+    const [a] = (await getPoll(db, id, null))!.options;
+    await castVote(db, id, a.id, 'lonely');
+    expect(await guessLeader(db, id, 'lonely', a.id)).toBe('ok');
+    const p = (await getPoll(db, id, 'lonely'))!;
+    expect(p.myGuess).toBeNull();
+    expect(p.resultsVisible).toBe(true);
+    expect((await getVoterStats(db, 'lonely')).guesses).toBe(0);
+  });
+
+  it('refuses look-alike choices ("Rahul" and "rahul.")', () => {
+    expect(createPollSchema.safeParse({ title: 'Look alike', options: ['Rahul', 'rahul.'] }).success).toBe(false);
+    expect(createPollSchema.safeParse({ title: 'Emoji only', options: ['🔥', '❄️'] }).success).toBe(true);
+  });
+});
+
+describe('edge cases, round 3', () => {
+  it('the very first voter can still undo after the (skipped) exit poll', async () => {
+    const id = await make({ title: 'First voter undo', options: ['A', 'B'], hideUntilVoted: true });
+    const [a] = (await getPoll(db, id, null))!.options;
+    await castVote(db, id, a.id, 'first-undo');
+    await guessLeader(db, id, 'first-undo', 'skip'); // only your own vote was there to see
+    expect(await undoVote(db, id, 'first-undo')).toBe(true);
   });
 });

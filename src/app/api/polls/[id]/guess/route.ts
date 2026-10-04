@@ -16,6 +16,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!parsed.success || !voterId) return NextResponse.json({ error: 'Vote first.' }, { status: 400 });
   const db = await getDb();
   const result = await guessLeader(db, id, voterId, parsed.data.choice);
+  if (result === 'not_found') return NextResponse.json({ error: 'Poll not found.' }, { status: 404 });
   if (result !== 'ok') return NextResponse.json({ error: 'You already answered this one.' }, { status: 409 });
   const via = new URL(req.url).searchParams.get('f');
   return NextResponse.json({ poll: await getPoll(db, id, voterId, via) });
