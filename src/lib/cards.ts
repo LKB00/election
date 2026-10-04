@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { schema, type Db } from '@/db';
 import { isCode } from './validation';
 
@@ -31,3 +31,16 @@ export async function pickFromCode(db: Db, pollId: string, code: string | null) 
 
 export const CARD = { ink: '#24282c', paper: '#fbfbf7', sand: '#f7f6f0', lime: '#c2ef72', green: '#5a7a1f', muted: '#5b5e61', tints: ['#e5eef7', '#f6e8ec', '#eef3dc', '#f5efd8'] };
 export { faceLabels } from './labels';
+
+/** Friends who voted from this share link, and how many picked the same as the sender. Never says who leads. */
+export async function friendsFromCode(db: Db, pollId: string, code: string | null, pickId: string | null) {
+  if (!isCode(code) || !pickId) return { all: 0, agree: 0 };
+  const [row] = await db
+    .select({
+      all: sql<number>`count(*)::int`,
+      agree: sql<number>`count(*) filter (where ${schema.votes.optionId} = ${pickId})::int`,
+    })
+    .from(schema.votes)
+    .where(and(eq(schema.votes.pollId, pollId), eq(schema.votes.via, code)));
+  return { all: row?.all ?? 0, agree: row?.agree ?? 0 };
+}

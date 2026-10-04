@@ -22,6 +22,8 @@ export default function TodayPicker({ current, polls, adminKey }: { current: { i
       <h2>{t.todaysQuestion}</h2>
       {today && <p className="small"><strong>{t.adminIsToday}:</strong> {today.title}</p>}
       <p className="small muted">{t.adminTodayLead}</p>
+      {/* The one link to post every day: it always opens today's question. */}
+      <p className="small">{t.adminTodayLink} <code suppressHydrationWarning>{typeof window !== 'undefined' ? `${window.location.origin}/today` : '/today'}</code></p>
       <ul className="index-list block-tight">
         {polls.filter((p) => p.id !== today?.id).map((p) => (
           <li key={p.id} className="today-pick">
