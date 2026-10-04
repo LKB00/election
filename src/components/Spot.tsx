@@ -38,11 +38,11 @@ function Box({ dx = 0, tone = 'var(--p-input)', front = 'label' }: { dx?: number
   return (
     <g transform={`translate(${dx} 0)`}>
       <rect x="50" y="74" width="100" height="58" rx="12" fill={tone} stroke={INK} strokeWidth={W} />
-      <path d="M58 82h84" stroke="#fff" strokeOpacity=".55" strokeWidth="3" strokeLinecap="round" />
-      <rect x="42" y="62" width="116" height="18" rx="9" fill="#fff" stroke={INK} strokeWidth={W} />
+      <path d="M58 82h84" stroke="var(--spot-paper)" strokeOpacity=".55" strokeWidth="3" strokeLinecap="round" />
+      <rect x="42" y="62" width="116" height="18" rx="9" fill="var(--spot-paper)" stroke={INK} strokeWidth={W} />
       <rect x="80" y="67.5" width="40" height="6" rx="3" fill={INK} />
       {front === 'badge' ? (
-        <circle cx="100" cy="104" r="17" fill="#fff" stroke={INK} strokeWidth={W} />
+        <circle cx="100" cy="104" r="17" fill="var(--spot-paper)" stroke={INK} strokeWidth={W} />
       ) : (
         <>
           <rect x="76" y="95" width="48" height="20" rx="10" fill="var(--lime)" stroke={INK} strokeWidth="2" />
@@ -56,7 +56,7 @@ function Box({ dx = 0, tone = 'var(--p-input)', front = 'label' }: { dx?: number
 function Slip({ cx, cy, rot = 0, dashed = false, mark = 'tick' }: { cx: number; cy: number; rot?: number; dashed?: boolean; mark?: 'tick' | 'plus' | 'row' | 'q' | 'none' }) {
   return (
     <g transform={`translate(${cx} ${cy}) rotate(${rot})`}>
-      <rect x="-15" y="-20" width="30" height="40" rx="5" fill={dashed ? 'var(--card, #fff)' : '#fff'} stroke={INK} strokeWidth={W} strokeDasharray={dashed ? '5 4' : undefined} />
+      <rect x="-15" y="-20" width="30" height="40" rx="5" fill={dashed ? 'var(--spot-paper)' : 'var(--spot-paper)'} stroke={INK} strokeWidth={W} strokeDasharray={dashed ? '5 4' : undefined} />
       {mark === 'tick' && (
         <>
           <circle cx="0" cy="-5" r="8" fill="var(--lime)" stroke={INK} strokeWidth="2" />
@@ -90,7 +90,7 @@ export default function Spot({ kind, tone, size = 176 }: { kind: SpotKind; tone?
         <>
           {/* the box on the right; a chat bubble with a poll inside, its tail pointing at the box */}
           <Box dx={26} />
-          <path d="M20 8h70a14 14 0 0 1 14 14v34a14 14 0 0 1-14 14H64l-6 14-10-14H20A14 14 0 0 1 6 56V22A14 14 0 0 1 20 8z" fill="#fff" stroke={INK} strokeWidth={W} strokeLinejoin="round" />
+          <path d="M20 8h70a14 14 0 0 1 14 14v34a14 14 0 0 1-14 14H64l-6 14-10-14H20A14 14 0 0 1 6 56V22A14 14 0 0 1 20 8z" fill="var(--spot-paper)" stroke={INK} strokeWidth={W} strokeLinejoin="round" />
           <rect x="18" y="19" width="50" height="6" rx="3" fill={INK} opacity=".75" />
           <rect x="18" y="32" width="74" height="12" rx="6" fill="var(--p-input)" stroke={INK} strokeWidth="2" />
           <rect className="spot-fill" x="18" y="32" width="48" height="12" rx="6" fill="var(--lime)" stroke={INK} strokeWidth="2" />

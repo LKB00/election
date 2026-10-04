@@ -82,7 +82,7 @@
 .evm-row { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 0 8px 8px; }
 .evm-led { width: 12px; height: 12px; border-radius: 50%; background: var(--sand-dark); box-shadow: inset 0 0 0 1px var(--line); }
 .evm-led.is-on { background: var(--negative); box-shadow: 0 0 0 4px var(--negative-soft); }
-.evm-btn { display: inline-flex; align-items: center; justify-content: center; min-width: 64px; height: 32px; padding: 0 16px; border-radius: 9999px; background: var(--d-input); color: #24282c; font-size: 13px; font-weight: 700; }
+.evm-btn { display: inline-flex; align-items: center; justify-content: center; min-width: 64px; height: 32px; padding: 0 16px; border-radius: 9999px; background: var(--d-input); color: var(--on-key); font-size: 13px; font-weight: 700; }
 .duel-option:not(:disabled):active .evm-btn { transform: scale(0.95); }
 
 /* VVPAT: your slip shows behind the glass, then drops into the box */
@@ -90,7 +90,7 @@
 .duel-inked svg { flex: none; }
 
 /* Share sheet */
-.sheet-backdrop { position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center; background: rgba(36, 40, 44, 0.4); animation: fade-in 0.2s ease; }
+.sheet-backdrop { position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center; background: var(--backdrop); animation: fade-in 0.2s ease; }
 @keyframes fade-in { from { opacity: 0; } }
 .sheet { position: relative; width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: 12px; padding: 24px 16px calc(16px + env(safe-area-inset-bottom, 0px)); border-radius: 20px 20px 0 0; background: var(--paper); animation: sheet-up 0.3s cubic-bezier(0.2, 0.9, 0.3, 1); }
 @keyframes sheet-up { from { transform: translateY(100%); } }
@@ -245,7 +245,7 @@ button.link-like { border: 0; background: none; padding: 8px 0; cursor: pointer;
 
 /* ---- The cast-vote moment (docs/DESIGN.md, "The cast-vote moment") ----
    One scene in the middle of the screen. Beat times come from CastVote.tsx as --t-vv, --t-drop, --t-ink (seconds; not --ink, which is the ink colour). */
-.cast-backdrop { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 16px; background: rgba(36, 40, 44, 0.55); animation: fade-in 0.2s ease; cursor: pointer; }
+.cast-backdrop { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 16px; background: var(--backdrop); animation: fade-in 0.2s ease; cursor: pointer; }
 .cast-stage { width: min(340px, 100%); display: grid; justify-items: center; gap: 16px; padding: 24px 16px 16px; border-radius: 20px; background: var(--paper); box-shadow: 0 24px 64px rgba(36, 40, 44, 0.3); animation: cast-in 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
 @keyframes cast-in { from { transform: scale(0.94); opacity: 0; } }
 .cast-booth, .cast-ink { grid-area: 1 / 1; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; }
@@ -739,9 +739,10 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .create-type:hover { background: var(--sand); }
 .create-type.is-on:hover { background: var(--p-input); }
 /* On/off switch (with the row's words; the disc turns yellow when on). */
-.switch { flex: none; position: relative; width: 44px; height: 26px; border-radius: 999px; background: var(--line); transition: background-color 0.15s ease; }
+.switch { flex: none; position: relative; width: 44px; height: 26px; border-radius: 999px; background: var(--switch-off); transition: background-color 0.15s ease; }
 .switch > span { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform 0.15s ease; }
-.switch.is-on { background: var(--ink); }
+.switch.is-on { background: var(--switch-on); }
+.switch.is-on > span { background: var(--switch-knob-on); }
 .switch.is-on > span { transform: translateX(18px); }
 @media (max-width: 380px) { .create-panel { padding-left: 16px; } }
 /* Topics on the Polls page: one scrolling row under search. */

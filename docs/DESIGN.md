@@ -852,3 +852,15 @@ The picture says what will fill the page, so no two empty pages look alike:
 **Redrawn as one family (owner: "the previous [ballot box] was nice, put serious effort"):** every empty picture is now built around that same ballot box (white lid with slot, indigo box, yellow label, thick ink outline, ground shadow, yellow sparkles), each telling its page's story: Home = a chat bubble holding a poll and a slip going in; lists = slips fanned over the box, the middle one an empty "+"; a topic = the box in the topic's colour with its icon on the front badge; My votes = the inked finger (the vote moment's own drawing) beside the box and an empty slip; plus search (slips + magnifier), not found ("?" slip) and nothing to review (tick label). Code: `src/components/Spot.tsx`, `TopicSpot.tsx`.
 
 **Motion (owner: "subtle and delightful"):** slow, small, looping, never in the way, and off for people whose phone asks to reduce motion. The picture rises in once (0.5 s). Sparkles twinkle, each on its own beat. Slips float 4 px above the slot. The side slips on lists sway like cards in a hand. The inked finger gives a small nod every few seconds. The magnifier circles slowly. The "?" slip wobbles. The poll bars in Home's bubble fill once, like votes coming in. The admin tick draws itself once. CSS only (election.css, "Spot motion").
+
+## Dark mode (owner, Oct 2026: "design this website for dark mode")
+
+Follows the phone's setting (light by default). Every colour is a token in `src/styles/arogya.css`; the dark block only changes values, so every screen gets it at once.
+- **Ground and cards:** a warm near-black ground (#141311) and slightly lighter warm cards (#1f1d1a) with soft warm borders, so cards still read as objects.
+- **Text:** soft off-white (#f2eee7), never pure white; quiet text in warm greys.
+- **Brand yellow stays the same** (#fcd12a, "you"), with dark text and icons on it in both looks (`--on-lime`).
+- **Pastels become deep, muted versions** (indigo #262a4c, pink #3b1f2c, green #1b3325, marigold #352f18) that glow instead of glare; the vote key is a deeper indigo with light text.
+- **The main button flips:** off-white with dark text (the "ink" button in the dark look).
+- **Pictures:** the white parts (lid, slips, bubble) become dark surfaces with light outlines, like chalk on a slate.
+- **Unchanged on purpose:** the share images and the app icon stay light (they are pictures people send to others).
+- Things that used to be fixed colours are now named tokens (`--you-soft`, `--hero-bg`, `--on-key`, `--spot-paper`, `--switch-on`, `--backdrop`…).

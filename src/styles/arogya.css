@@ -5,7 +5,8 @@
  * its pink / marigold / green signals. Loaded LAST, after gb/ and election.css: gb/ stays untouched, and every screen
  * keeps its layout and behaviour; only the look changes here.
  *
- * Arogya Line has one light look, so this does too (also on phones set to dark mode).
+ * Light by default; a dark look follows the phone's dark mode (owner, Oct 2026: "design this website for dark mode").
+ * Colours are tokens: the dark block below only changes values, never rules.
  * "Lime = you" is now "yellow = you": --lime carries Arogya's brand yellow.
  */
 
@@ -67,6 +68,87 @@
   --radius-card: 18px;
   --shadow-card: 0 1px 2px rgba(29, 27, 24, 0.04);
   --shadow-raised: 0 4px 12px rgba(29, 27, 24, 0.14), 0 1px 3px rgba(29, 27, 24, 0.12);
+
+  /* Named surfaces that used to be fixed colours (so the dark look can change them too) */
+  --on-lime: #1d1b18;          /* text and icons on the brand yellow, in both looks */
+  --you-soft: #fef1b8;         /* "you" chips and the eyebrow chip */
+  --on-you-soft: #4d3800;
+  --hero-bg: #fef6d6;          /* the Up next card */
+  --hero-ink: #2b2208;
+  --on-good-soft: #0f3b22;
+  --on-bad-soft: #5a1030;
+  --on-key: #24282c;           /* text on the indigo vote key */
+  --key-pressed: #cdd3fb;
+  --spot-paper: #ffffff;       /* the white parts of the drawn pictures (lid, slips, bubble) */
+  --switch-off: #e7e2da;
+  --switch-on: #1d1b18;
+  --switch-knob-on: #ffffff;
+  --backdrop: rgba(36, 40, 44, 0.45);
+}
+
+/* The dark look: a warm near-black ground, slightly lighter warm cards, soft off-white text, deep muted pastels
+   that glow instead of glare, and the same brand yellow (with dark text on it). */
+@media (prefers-color-scheme: dark) {
+  :root:not(#arogya) {
+    color-scheme: dark;
+    --paper: #141311;
+    --sand: #1c1a17;
+    --sand-dark: #24211d;
+    --card: #1f1d1a;
+    --ink: #f2eee7;
+    --ink-hover: #ffffff;
+    --ink-2: #b8b1a6;
+    --ink-3: #9a9388;
+    --line: #36322c;
+    --divider: #2a2723;
+    --on-ink: #141311;
+
+    --positive: #7fd4a0;
+    --positive-soft: #1a3324;
+    --negative: #f294b7;
+    --negative-soft: #3b1a28;
+    --attention: #f2c76a;
+    --attention-soft: #302712;
+    --caution: #aeb7ff;
+    --caution-soft: #23274b;
+
+    --lime: #fcd12a;
+    --lime-badge: #3a3214;
+
+    --p-input: #262a4c;
+    --p-output: #352f18;
+    --p-control: #1b3325;
+    --p-trust: #33291a;
+    --p-feedback: #3b1f2c;
+    --p-agents: #24211d;
+    --d-input: #4a5293;
+    --d-output: #7a6621;
+    --d-control: #367050;
+    --d-trust: #7a6129;
+    --d-feedback: #7f3d5c;
+    --d-agents: #4a453e;
+
+    --indigo: #aeb7ff;
+    --indigo-soft: #262a4c;
+    --on-indigo-soft: #e3e6ff;
+
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --shadow-raised: 0 6px 16px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.4);
+
+    --you-soft: #3d3313;
+    --on-you-soft: #fbe08a;
+    --hero-bg: #2a2414;
+    --hero-ink: #f6eccb;
+    --on-good-soft: #b4ecc8;
+    --on-bad-soft: #f8c3d6;
+    --on-key: #eef0ff;
+    --key-pressed: #5a63a8;
+    --spot-paper: #2b2824;
+    --switch-off: #4a453e;
+    --switch-on: #fcd12a;
+    --switch-knob-on: #1d1b18;
+    --backdrop: rgba(0, 0, 0, 0.6);
+  }
 }
 
 body { background: var(--paper); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
@@ -96,7 +178,7 @@ h2 { font-weight: 600; }
 
 /* Vote keys: Arogya's soft indigo container ("Check someone"), ink text */
 .evm-btn { background: var(--indigo-soft); color: var(--on-indigo-soft); box-shadow: none; font-weight: 600; }
-.duel-option:not(:disabled):active .evm-btn { background: #cdd3fb; box-shadow: none; }
+.duel-option:not(:disabled):active .evm-btn { background: var(--key-pressed); box-shadow: none; }
 
 /* Chips: pills with a thin border; on = soft indigo (Arogya's selected filter) */
 .chip { border: 1px solid var(--line); font-weight: 500; }
@@ -158,18 +240,18 @@ a.al-block__aside:hover { color: var(--ink); }
 
 /* A status chip: small, quiet, one step deeper than its card; icon and word share the ink. Never an action. */
 .al-chip { display: inline-flex; align-self: flex-start; align-items: center; gap: 4px; height: 24px; padding: 0 8px 0 6px; border-radius: 12px; background: var(--chip-bg, var(--sand-dark)); color: var(--chip-ink, var(--ink)); font: 600 12px / 16px var(--sans); letter-spacing: 0.01em; white-space: nowrap; }
-.al-chip.is-you { --chip-bg: #fef1b8; --chip-ink: #4d3800; }
-.al-chip.is-good { --chip-bg: var(--positive-soft); --chip-ink: #0f3b22; }
-.al-chip.is-alert { --chip-bg: var(--negative-soft); --chip-ink: #5a1030; }
+.al-chip.is-you { --chip-bg: var(--you-soft); --chip-ink: var(--on-you-soft); }
+.al-chip.is-good { --chip-bg: var(--positive-soft); --chip-ink: var(--on-good-soft); }
+.al-chip.is-alert { --chip-bg: var(--negative-soft); --chip-ink: var(--on-bad-soft); }
 
 /* "Someone wants your pick", "Takes 30 seconds": Arogya's status chip, in the soft brand yellow (they are about you).
    Icon + word, quiet, never a button. */
-.eyebrow { align-items: center; gap: 4px; height: 24px; padding: 0 10px 0 7px; border-radius: 12px; background: #fef1b8; color: #4d3800; font: 600 12px / 16px var(--sans); letter-spacing: 0.01em; }
+.eyebrow { align-items: center; gap: 4px; height: 24px; padding: 0 10px 0 7px; border-radius: 12px; background: var(--you-soft); color: var(--on-you-soft); font: 600 12px / 16px var(--sans); letter-spacing: 0.01em; }
 .eyebrow svg { flex: none; }
 
 /* "Up next" (Arogya's hero card): one large soft card, a status chip, the name as the big line, the fact you act on,
    and one full-width action. Here: the poll of the day, in the soft brand yellow. */
-.al-hero { display: flex; flex-direction: column; gap: 12px; padding: 24px; border-radius: 24px; background: #fef6d6; color: #2b2208; }
+.al-hero { display: flex; flex-direction: column; gap: 12px; padding: 24px; border-radius: 24px; background: var(--hero-bg); color: var(--hero-ink); }
 .al-hero.is-done { background: var(--sand); color: var(--ink); }
 .al-hero__name { margin: 4px 0 0; font: 600 24px / 32px var(--display); letter-spacing: -0.015em; }
 .al-hero__fact { margin: 0; font: 500 16px / 24px var(--sans); }
@@ -179,3 +261,7 @@ a.al-block__aside:hover { color: var(--ink); }
 /* A row disc with the poll's own faces ("🍵☕"): two emoji side by side, tucked together. */
 .al-row__disc.is-faces { font-size: 15px; line-height: 1; letter-spacing: -3px; padding-right: 3px; box-sizing: border-box; }
 .al-more { align-self: stretch; }
+
+/* Icons sitting on the brand yellow stay dark in both looks (the yellow "you" disc on a row, the month card's type). */
+.al-row__disc[style*="var(--lime)"] { color: var(--on-lime); }
+.month-card__type svg { color: var(--on-lime) !important; }
