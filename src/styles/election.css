@@ -163,8 +163,9 @@
   --display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', 'Noto Sans Devanagari', 'Lato', ui-sans-serif, system-ui, sans-serif;
 }
 /* Language menu: a pill like the other top-bar buttons, with the phone's own menu inside. */
-.icon-btn.lang-btn { width: auto; gap: 4px; padding: 0 4px 0 8px; font-size: 13px; font-weight: 700; position: relative; }
-.lang-btn select { appearance: none; -webkit-appearance: none; border: 0; background: transparent; color: inherit; font: inherit; padding: 0 4px; height: 100%; cursor: pointer; }
+.icon-btn.lang-btn { width: auto; gap: 4px; padding: 0 10px 0 8px; font-size: 13px; font-weight: 700; position: relative; }
+/* The real menu covers the whole button but is invisible: tapping anywhere on it opens the phone's picker. 16px so iPhones do not zoom. */
+.lang-btn select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; appearance: none; -webkit-appearance: none; border: 0; font-size: 16px; cursor: pointer; }
 .lang-btn select:focus { outline: none; }
 .lang-btn:focus-within { outline: 2px solid var(--ink); outline-offset: 2px; }
 /* The invisible "are you a person?" check: shows only if Cloudflare needs a tap. */
@@ -301,3 +302,64 @@ button.link-like { border: 0; background: none; padding: 8px 0; cursor: pointer;
 }
 .cast-text { display: flex; flex-direction: column; align-items: center; gap: 4px; margin: 0; text-align: center; font-size: 16px; line-height: 24px; animation: fade-in 0.4s calc((var(--t-ink) + 0.9) * 1s) backwards; }
 .cast-text .muted { font-variant-numeric: tabular-nums; }
+
+/* ---- Phones (docs/DESIGN.md, "Mobile") ---- */
+/* Four tabs, four equal columns (the bar had room for five, so a gap sat on the right). */
+.bottomnav { grid-template-columns: repeat(4, 1fr); }
+/* Notch and rounded corners, also when the phone is held sideways (viewport-fit=cover in layout.tsx). */
+body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+.bottomnav { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+
+/* Touch screens */
+@media (pointer: coarse) {
+  /* 16px text in boxes: smaller makes iPhones zoom the whole page when you tap in. */
+  .search input, .search textarea, select { font-size: 16px; }
+  /* Big enough to hit with a thumb (44px is the phone makers' minimum). */
+  .topnav .topnav-right .icon-btn { width: 40px; height: 40px; }
+  .topnav .topnav-right .icon-btn.lang-btn { width: auto; min-width: 56px; }
+  .topnav .logo, .topnav-back { min-height: 44px; }
+  .chip { min-height: 40px; padding: 0 14px; font-size: 13px; }
+  .text-link, button.link-like { min-height: 44px; }
+  /* No grey flash or text-selection bubble when you press a card or a button; no double-tap zoom wait. */
+  a, button, label, .chip { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+  .tot-option, .evm-btn, .btn, .chip, .bottomnav, .game, .daily-banner { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+}
+
+/* Small phones (320–400px): ballot rows keep the name readable; the red light comes back in the vote moment. */
+@media (max-width: 400px) {
+  .is-ballot .duel-option { column-gap: 8px; padding: 12px 10px; }
+  .duel-options.is-ballot .duel-face, .duel-options.is-ballot .duel-photo { width: 32px; height: 32px; font-size: 12px; }
+  .is-ballot .duel-body { gap: 8px; }
+  .is-ballot .duel-name { font-size: 15px; line-height: 20px; }
+  .is-ballot .evm-led { display: none; }
+}
+
+/* Typing on a phone: the bottom bar would float above the keyboard and cover the boxes, so it steps aside. */
+@media (max-width: 720px) {
+  body:has(.search input:focus) .bottomnav { display: none; }
+  body:has(.search input:focus) .main { padding-bottom: 16px; }
+}
+
+/* Panels never taller than the screen: they scroll inside, and the page behind stays still. */
+.sheet { max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 12px); overflow-y: auto; overscroll-behavior: contain; }
+.sheet-backdrop, .cast-backdrop { overscroll-behavior: contain; touch-action: manipulation; }
+.cast-backdrop { padding: max(16px, env(safe-area-inset-top, 0px)) 16px max(16px, env(safe-area-inset-bottom, 0px)); }
+.cast-stage { max-height: 100%; }
+/* Short screens (small phones, and any phone held sideways): the vote moment shrinks to fit. */
+@media (max-height: 640px) {
+  .cast-stage { gap: 8px; padding: 16px 12px 12px; }
+  .cast-booth, .cast-ink { gap: 8px; }
+  .vv-machine { width: 220px; padding: 12px 12px 24px; }
+  .vv-glass { height: 88px; }
+  .cast-hand { width: 160px; }
+  .cast-text { font-size: 15px; line-height: 20px; }
+}
+@media (max-height: 440px) {
+  .cast-booth .label, .cast-skip { display: none; }
+  .vv-glass { height: 76px; }
+  .cast-evm { padding: 8px 12px; }
+  .cast-hand { width: 112px; }
+}
+/* "Election" is short and fits next to the compact language button, so it stays on the smallest phones too
+   (patricka hides its longer name below 340px). */
+@media (max-width: 340px) { .topnav .logo-full { display: inline; } }

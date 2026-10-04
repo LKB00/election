@@ -41,6 +41,12 @@ export default function CreateForm() {
     setFieldError({});
     document.getElementById(kind === 'yesno' ? 'title' : 'choice-0')?.focus();
   }
+  // Phone keyboards: Enter moves to the next box (it used to send a half-filled form); on the last choice it creates the duel.
+  function onEnter(e: React.KeyboardEvent<HTMLInputElement>, next: string | null) {
+    if (e.key !== 'Enter' || !next) return;
+    e.preventDefault();
+    document.getElementById(next)?.focus();
+  }
   const filledChoices = choices.map((c, i) => ({ label: c.trim(), emoji: emojis[i] })).filter((c) => c.label);
 
   function check() {
@@ -87,7 +93,7 @@ export default function CreateForm() {
       <div className="duel-group">
         <label className="label" htmlFor="title">{t.yourQuestion}</label>
         <span className="search">
-          <input id="title" value={title} maxLength={120} placeholder={t.questionPh} aria-invalid={!!fieldError.title} onChange={(e) => { setTitle(e.target.value); setFieldError((f) => ({ ...f, title: undefined })); }} />
+          <input id="title" enterKeyHint="next" autoCapitalize="sentences" autoComplete="off" onKeyDown={(e) => onEnter(e, 'choice-0')} value={title} maxLength={120} placeholder={t.questionPh} aria-invalid={!!fieldError.title} onChange={(e) => { setTitle(e.target.value); setFieldError((f) => ({ ...f, title: undefined })); }} />
         </span>
         {fieldError.title && <p className="field-error" role="alert">{fieldError.title}</p>}
       </div>
@@ -111,7 +117,7 @@ export default function CreateForm() {
               <input value={emojis[i] ?? ''} maxLength={16} placeholder="🙂" aria-label={t.emojiN(i + 1)} onChange={(e) => setEmoji(i, e.target.value)} />
             </span>
             <span className="search">
-              <input id={`choice-${i}`} data-choice value={c} maxLength={60} aria-label={t.choiceN(i + 1)} placeholder={t.choiceN(i + 1)} aria-invalid={!!fieldError.choices} onChange={(e) => { setChoice(i, e.target.value); setFieldError((f) => ({ ...f, choices: undefined })); }} />
+              <input id={`choice-${i}`} enterKeyHint={i < choices.length - 1 ? 'next' : 'go'} autoCapitalize="words" autoComplete="off" onKeyDown={(e) => onEnter(e, i < choices.length - 1 ? `choice-${i + 1}` : null)} data-choice value={c} maxLength={60} aria-label={t.choiceN(i + 1)} placeholder={t.choiceN(i + 1)} aria-invalid={!!fieldError.choices} onChange={(e) => { setChoice(i, e.target.value); setFieldError((f) => ({ ...f, choices: undefined })); }} />
             </span>
             {choices.length > 2 && (
               <button type="button" className="icon-btn" aria-label={t.removeChoice(i + 1)} onClick={() => removeChoice(i)}>

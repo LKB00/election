@@ -5,7 +5,7 @@ import { ChevronLeft, Languages, Volume2, VolumeX } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { setSound, soundOn } from '@/lib/sound';
 import { setLangCookie, useLang, useT } from '@/lib/lang';
-import { LANG_NAMES, LANGS, type Lang } from '@/lib/i18n';
+import { LANG_NAMES, LANG_SHORT, LANGS, type Lang } from '@/lib/i18n';
 
 export default function TopBar() {
   const path = usePathname();
@@ -34,9 +34,11 @@ export default function TopBar() {
           <Link href="/me" className={path === '/me' ? 'active' : ''}>{t.myVotes}</Link>
         </nav>
         <div className="topnav-right">
-          {/* English / हिंदी / Hinglish: the phone's own menu, each name in its own script so people find theirs. */}
+          {/* English / हिंदी / Hinglish: the phone's own menu, each name in its own script so people find theirs.
+              The button shows a short code (so the logo fits on small phones); the menu shows the full names. */}
           <label className="icon-btn lang-btn" title={t.language}>
             <Languages size={15} strokeWidth={1.75} aria-hidden />
+            <span className="lang-code" aria-hidden>{LANG_SHORT[lang]}</span>
             <select
               aria-label={t.language}
               value={lang}

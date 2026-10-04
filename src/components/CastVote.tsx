@@ -1,5 +1,7 @@
 'use client';
 import { memo, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { useOverlay } from '@/lib/useOverlay';
 import type { Dict } from '@/lib/i18n';
 import { vvpatThud } from '@/lib/sound';
 import { handSvg } from '@/lib/inkHand';
@@ -32,6 +34,8 @@ export default function CastVote({ t, number, name, party, voterNo, short, onDon
   const done = useRef(onDone);
   done.current = onDone;
   const finish = () => done.current();
+  // The page behind stays still while the moment plays.
+  useOverlay(finish);
 
   useEffect(() => {
     const end = () => done.current();
@@ -58,7 +62,8 @@ export default function CastVote({ t, number, name, party, voterNo, short, onDon
   }, [time, voterNo]);
 
   const vars = { '--t-vv': time.vv, '--t-drop': time.drop, '--t-ink': time.ink } as React.CSSProperties;
-  return (
+  // Rendered at the top of the page, so the bottom bar never sits on top of the scene.
+  return createPortal(
     <div className="cast-backdrop" style={vars} onClick={finish} role="status" aria-live="polite" title={t.tapToSkip}>
       <div className="cast-stage">
         {/* Beat 1 and 2: the ballot unit and the VVPAT, side by side in a real booth; here the VVPAT sits on top. */}
@@ -98,6 +103,7 @@ export default function CastVote({ t, number, name, party, voterNo, short, onDon
 
         <p className="small muted cast-skip">{t.tapToSkip}</p>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
