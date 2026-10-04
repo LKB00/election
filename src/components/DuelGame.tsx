@@ -652,7 +652,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
               <li key={p.id}>
                 <span aria-hidden>{sideEmoji(side)}</span>
                 <Link href={`/p/${p.id}`} className="day-q">{p.title}</Link>
-                <span className="small muted">{sideWords(t, side, p.kind)}</span>
+                <span className="small muted">{p.myVote === null && p.closed ? t.sideClosed : sideWords(t, side, p.kind)}</span>
               </li>
             ))}
           </ul>
@@ -704,6 +704,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
         {(todayId === poll.id || (daily && setIds.has(poll.id) && setLeft > 0)) && (
           <p className="label duel-today">
             {todayId === poll.id ? t.todaysQuestion : t.setLabel}
+            {todayId === poll.id && poll.closed && ` · ${t.finalCount}`}
             {daily && setIds.has(poll.id) && setLeft > 0 && <span className="duel-set"> · {t.setLeft(setLeft)}</span>}
           </p>
         )}

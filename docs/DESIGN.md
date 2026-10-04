@@ -604,3 +604,12 @@ The research says Election already has the right loop (guess → vote → reveal
 | Result lines: "You're with the 63%." · "Against the crowd. Only 38% picked this." · "Rare take. Only 1 in 8 picked this." · "Everyone agrees so far." (all votes on one side) | Result bar | P1 at that moment | Most people expect to be in the majority (false consensus), so real numbers and "rare take" make the reveal a surprise worth sharing. Numbers only for pick-one and pick-several; words for rank and rating. |
 | "Your polls · 37 votes so far" (this phone's own list, newest 3) | Home, under the game | P2 | People value what they made (IKEA effect); group admins who come back to check are the ones who make the next poll. |
 | One trending spot for the newest poll with few votes | Trending shelf | – | Fair discovery: counts make winners win more (MusicLab). |
+
+### Engagement round 2: evening final count, owner numbers, speed
+
+| Element | Where | Priority | Job |
+|---|---|---|---|
+| "Final count at 9 pm" tick (on by default) when picking Today's question | /admin picker | P2 | A real close at 9 pm India time (the evening peak): a reason to come back and a moment for group admins to post the result. Real time only, never a fake countdown; an earlier end set by the creator wins. |
+| "Today's question · final count" + the final result, still first in today's set after 9 pm | Home | P1 in the evening | Evening visitors see how it ended. In "Your day vs everyone" a poll you missed says "closed before you voted". |
+| Numbers (last 7 days): returning voters first, then today, new voters who came back, votes via friends' links, politics share | /admin, bottom | P3 | The one number to watch is weekly returning voters (aim 20–25%+). Totals only, never a list of people. |
+| Speed (checked Oct 2026, 4× slower CPU, slow 4G): Vote buttons visible ≈1.2 s, working ≈2.0 s | Home, poll page | – | Under the 3-second target; most people leave pages slower than that. Biggest single file: the heading font (128 KB). |

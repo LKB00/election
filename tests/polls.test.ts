@@ -790,3 +790,48 @@ describe("today's set and sides", () => {
     expect(shelf[2].id).toBe(fresh);
   });
 });
+
+describe('final count for today\'s question', () => {
+  it('closes at 9 pm India time when the owner ticks it, keeps an earlier end, and stays in the set once closed', async () => {
+    const { nextFinalCount, getTodaySet } = await import('@/lib/polls');
+    // 10:00 India time → 21:00 the same day; 22:00 → 21:00 the next day.
+    expect(nextFinalCount(Date.parse('2026-10-04T10:00:00+05:30')).toISOString()).toBe(new Date('2026-10-04T21:00:00+05:30').toISOString());
+    expect(nextFinalCount(Date.parse('2026-10-04T22:00:00+05:30')).toISOString()).toBe(new Date('2026-10-05T21:00:00+05:30').toISOString());
+    const id = await make({ title: 'Final count check' });
+    expect(await setToday(db, id, true)).toBe(true);
+    expect((await getPoll(db, id, null))!.endsAt).toBe(nextFinalCount().toISOString());
+    const soon = new Date(Date.now() + 10 * 60_000);
+    const early = await make({ title: 'Ends earlier', endsAt: new Date(Date.now() + 3600_000).toISOString() });
+    await db.update(schema.polls).set({ endsAt: soon }).where(eq(schema.polls.id, early));
+    await setToday(db, early, true);
+    expect((await getPoll(db, early, null))!.endsAt).toBe(soon.toISOString());
+    const plain = await make({ title: 'No final count' });
+    await setToday(db, plain, false);
+    expect((await getPoll(db, plain, null))!.endsAt).toBeNull();
+    // After the final count, today's question is still first in the set (closed), so evening visitors see the result.
+    await db.update(schema.polls).set({ endsAt: new Date(Date.now() - 1000) }).where(eq(schema.polls.id, plain));
+    const set = await getTodaySet(db, null);
+    expect(set[0]).toMatchObject({ id: plain, closed: true });
+  });
+});
+
+describe('owner numbers', () => {
+  it('counts returning voters (2+ India days in the last week), today, friends and politics, as totals only', async () => {
+    const { getStats } = await import('@/lib/stats');
+    const before = await getStats(db);
+    const id = await make({ title: 'Stats check' });
+    const id2 = await make({ title: 'Stats check two' });
+    const [a] = (await getPoll(db, id, null))!.options;
+    const [b] = (await getPoll(db, id2, null))!.options;
+    await castVote(db, id, a.id, 'stats-back');
+    await castVote(db, id2, b.id, 'stats-back');
+    // Move one of the two votes to 2 days ago: this voter came back on another day.
+    await db.update(schema.votes).set({ createdAt: new Date(Date.now() - 2 * 86400_000) }).where(sql`${schema.votes.voterKey} = 'stats-back' and ${schema.votes.pollId} = ${id}`);
+    await castVote(db, id, a.id, 'stats-once');
+    const after = await getStats(db);
+    expect(after.weekReturning - before.weekReturning).toBe(1);
+    expect(after.weekVoters - before.weekVoters).toBe(2);
+    expect(after.newCameBack - before.newCameBack).toBe(1);
+    expect(after.todayVotes - before.todayVotes).toBe(2);
+  });
+});

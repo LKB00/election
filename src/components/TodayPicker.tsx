@@ -7,12 +7,14 @@ export default function TodayPicker({ current, polls, adminKey }: { current: { i
   const t = useT();
   const [today, setToday] = useState(current);
   const [busy, setBusy] = useState<string | null>(null);
+  // On by default: today's question closes at 9 pm India time with a real final count (the evening comeback).
+  const [closeTonight, setCloseTonight] = useState(true);
   async function pick(p: { id: string; title: string }) {
     setBusy(p.id);
     const res = await fetch(`/api/admin/${p.id}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key: adminKey, action: 'today' }),
+      body: JSON.stringify({ key: adminKey, action: 'today', closeTonight }),
     }).catch(() => null);
     if (res?.ok) setToday(p);
     setBusy(null);
@@ -24,6 +26,10 @@ export default function TodayPicker({ current, polls, adminKey }: { current: { i
       <p className="small muted">{t.adminTodayLead}</p>
       {/* The one link to post every day: it always opens today's question. */}
       <p className="small">{t.adminTodayLink} <code suppressHydrationWarning>{typeof window !== 'undefined' ? `${window.location.origin}/today` : '/today'}</code></p>
+      <label className="small picker-consent">
+        <input type="checkbox" checked={closeTonight} onChange={(e) => setCloseTonight(e.target.checked)} />
+        <span>{t.adminCloseTonight}</span>
+      </label>
       <ul className="index-list block-tight">
         {polls.filter((p) => p.id !== today?.id).map((p) => (
           <li key={p.id} className="today-pick">

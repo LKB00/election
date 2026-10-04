@@ -627,12 +627,27 @@ export async function getVoterStats(db: Db, voterId: string | null): Promise<Vot
 }
 
 /** "Today's question": the owner picks one poll for the top of Home (the old one steps down). Hidden polls cannot be picked. */
-export async function setToday(db: Db, id: string): Promise<boolean> {
+/** When today's final count happens: 9 pm India time (the evening peak), tonight or, after 9 pm, tomorrow. */
+export const FINAL_HOUR_IST = 21;
+export function nextFinalCount(now = Date.now()): Date {
+  const { label } = indiaDay(now);
+  const tonight = new Date(`${label}T${String(FINAL_HOUR_IST).padStart(2, '0')}:00:00+05:30`);
+  return tonight.getTime() > now + 30 * 60_000 ? tonight : new Date(tonight.getTime() + 86400_000);
+}
+
+/**
+ * Makes a poll today's question. With closeTonight (the owner's tick, on by default) it gets a real final count at
+ * 9 pm India time: a reason to come back in the evening, and a moment for group admins to post "here is how we voted".
+ * A poll that already has an earlier end keeps it; the time is real, never a fake countdown.
+ */
+export async function setToday(db: Db, id: string, closeTonight = false): Promise<boolean> {
   return db.transaction(async (tx) => {
-    const [row] = await tx.select({ id: polls.id }).from(polls).where(and(eq(polls.id, id), eq(polls.hidden, false))).limit(1);
+    const [row] = await tx.select({ id: polls.id, endsAt: polls.endsAt }).from(polls).where(and(eq(polls.id, id), eq(polls.hidden, false))).limit(1);
     if (!row) return false;
+    const final = nextFinalCount();
+    const endsAt = closeTonight && (!row.endsAt || row.endsAt.getTime() > final.getTime()) ? final : row.endsAt;
     await tx.update(polls).set({ featured: false }).where(eq(polls.featured, true));
-    await tx.update(polls).set({ featured: true, reviewed: true }).where(eq(polls.id, id));
+    await tx.update(polls).set({ featured: true, reviewed: true, endsAt }).where(eq(polls.id, id));
     return true;
   });
 }
@@ -714,7 +729,8 @@ export async function getTodaySet(db: Db, voterId: string | null, size = SET_SIZ
     for (const p of await listPolls(db, 50)) if (ids.length < size && !p.closed && !ids.includes(p.id)) ids.push(p.id);
   }
   const views = await Promise.all(ids.map((id) => getPoll(db, id, voterId)));
-  return views.filter((v): v is PollView => v !== null && !v.closed);
+  // Today's question stays in the set after its final count, so evening visitors see how it ended.
+  return views.filter((v): v is PollView => v !== null && (!v.closed || v.id === featuredId));
 }
 
 /** Where a duel you voted in stands now, as far as you are allowed to see (same rules as getPoll). */

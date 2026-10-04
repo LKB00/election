@@ -11,4 +11,5 @@
 - Fonts are bundled (fontsource), not Google Fonts, so screenshots in the sandbox match real phones.
 - Tests run on PGlite; also run them on real Postgres with TEST_DATABASE_URL (it caught Date/precision bugs).
 - Before pushing run `npm run check`.
+- Anything only the owner can do (settings, accounts, decisions, daily jobs) goes in `docs/OWNER_TODO.md` in easy English; mention it when it changes.
 - Develop on branch `claude/stoic-volta-r2mir5`. Do not open a PR unless asked.
