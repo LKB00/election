@@ -505,3 +505,16 @@ The first new question type. A rating poll is stored as a normal poll with five 
 | After voting: the average big ("3.8 out of 5" with its face), "Average of N votes · You said: 🙂 Good", then one bar per face (yours lime) | Poll | P1 at that moment | You vs everyone, at a glance. No 50% line (it means nothing for a rating). |
 | Tiles say "Rate it · 😖 to 😍"; My votes says "😍 5/5" and "Average so far: 4.5 / 5" with a bar | Polls, My votes | P3 | Rating polls are recognisable in lists. |
 | Share images show the five faces; an open link says "I voted for 😍" | Share | P2 | Same share flow as other polls. |
+
+## Phase 2: Pick several
+
+One vote per person stays (the `votes` row and its unique index); the ticked choices are stored next to it in `vote_picks` and go with it (undo, delete my votes).
+
+| Element | Screen | Priority | Job |
+|---|---|---|---|
+| "✅ Pick several" in the kind switch | Create | P2 | Same rows as Choices; hint "Tick every choice you like, then Vote." |
+| Rows with "Tick / Ticked" (instead of Vote); tapped rows turn your colour with a ✓ | Poll | P1 | Choose as many as you like before anything is saved. |
+| Ink button under the rows: "Tick your choices" (off) → "Vote · 2 picked" | Poll | P1 action | The one main step; one vote carries all ticks. |
+| Results: each bar = % of voters who ticked it, with the note "the bars add up to more than 100%" | Poll | P1 at that moment | Honest maths for multi-answer polls. No race line, counting rounds or swing (they follow single votes). |
+| Verdict and Guess the crowd use the most-ticked choice | Poll | P2 | "You're with the crowd" if any of your ticks leads. |
+| Tiles "Pick several: A, B, C"; My votes "You picked A, B" | Polls, My votes | P3 | Recognisable in lists. |

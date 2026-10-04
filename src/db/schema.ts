@@ -109,3 +109,15 @@ export const photos = pgTable(
   },
   (t) => [index('photos_poll_idx').on(t.pollId)],
 );
+
+// "Pick several" polls: every choice a voter ticked. The vote row stays the one ballot per voter (unique index);
+// these rows hang off it and go when it goes (undo, delete my votes).
+export const votePicks = pgTable(
+  'vote_picks',
+  {
+    voteId: text('vote_id').notNull().references(() => votes.id, { onDelete: 'cascade' }),
+    pollId: text('poll_id').notNull().references(() => polls.id, { onDelete: 'cascade' }),
+    optionId: text('option_id').notNull().references(() => options.id, { onDelete: 'cascade' }),
+  },
+  (t) => [primaryKey({ columns: [t.voteId, t.optionId] }), index('vote_picks_poll_idx').on(t.pollId)],
+);

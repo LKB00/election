@@ -8,7 +8,7 @@ import type { CreatePollInput } from './validation';
 import { namesPolitics } from './moderation';
 import { sealedUntil } from './silence';
 
-const { polls, options, votes, reactions, reports, photos } = schema;
+const { polls, options, votes, reactions, reports, photos, votePicks } = schema;
 
 export const REACTIONS = ['🔥', '😂', '😮', '👏', '🤔'] as const;
 const pollId = customAlphabet('23456789abcdefghijkmnpqrstuvwxyz', 8);
@@ -69,8 +69,10 @@ export type PollView = {
   myGuess: { optionId: string; correct: boolean } | null;
   /** Code for your share link, and how the friends who used it voted. */
   myShareCode: string | null;
-  /** 'choice' (pick one) or 'rating' (1–5 faces; the options are the five steps). */
+  /** 'choice' (pick one), 'rating' (1–5 faces; the options are the five steps) or 'multi' (pick several). */
   kind: PollKind;
+  /** Every choice this voter ticked (one for pick-one polls; several for "pick several"). */
+  myPicks: string[];
   /** The full booth ritual (EVM, VVPAT slip, voter ID, counting day). Always on for politics and the flagship. */
   electionMode: boolean;
   /** Lets an open (not secret) share link show your pick on its preview image. */
@@ -186,8 +188,19 @@ export async function getPoll(
       : Promise.resolve([] as { emoji: string }[]),
   ]);
 
-  const byOption = new Map(counts.map((c) => [c.optionId, c.n]));
+  // "Pick several": a voter can count for several choices. `total` stays the number of voters (percent = share of voters).
+  const multi = poll.kind === 'multi';
+  const pickRows = multi
+    ? await db.select({ optionId: votePicks.optionId, n: sql<number>`count(*)::int` }).from(votePicks).where(eq(votePicks.pollId, id)).groupBy(votePicks.optionId)
+    : [];
+  const byOption = new Map((multi ? pickRows : counts).map((c) => [c.optionId, c.n]));
   const total = counts.reduce((s, c) => s + c.n, 0);
+  const myPicks =
+    multi && mine[0] && voterId
+      ? (await db.select({ optionId: votePicks.optionId }).from(votePicks).innerJoin(votes, eq(votes.id, votePicks.voteId)).where(and(eq(votes.pollId, id), eq(votes.voterKey, voterId)))).map((x) => x.optionId)
+      : mine[0]
+        ? [mine[0].optionId]
+        : [];
   const closed = !!poll.endsAt && poll.endsAt.getTime() <= Date.now();
   const myVote = mine[0]?.optionId ?? null;
   // Guess first, then see: on hidden-results duels you answer "who's winning?" before the numbers show.
@@ -229,8 +242,9 @@ export async function getPoll(
           )
       )[0]?.n ?? null
     : null;
-  const trend = resultsVisible && opts.length === 2 && total > 1 ? await shareOverTime(db, id, poll.createdAt, opts[0].id) : [];
-  const [rounds, swing] = resultsVisible && total > 0 ? await Promise.all([countingRounds(db, id), swingSince(db, id, byOption, total)]) : [[], null];
+  // Race line, counting rounds and swing follow single votes; a "pick several" poll does without them.
+  const trend = !multi && resultsVisible && opts.length === 2 && total > 1 ? await shareOverTime(db, id, poll.createdAt, opts[0].id) : [];
+  const [rounds, swing] = !multi && resultsVisible && total > 0 ? await Promise.all([countingRounds(db, id), swingSince(db, id, byOption, total)]) : [[], null];
   const lastVote = pulseRows[0]?.lastVoteAt;
 
   return {
@@ -264,7 +278,8 @@ export async function getPoll(
       !sealed && mine[0]?.prediction && mine[0].prediction !== 'skip' && mine[0].prediction !== 'alone' ? { optionId: mine[0].prediction, correct: !!mine[0].predictionCorrect } : null,
     myShareCode,
     electionMode: poll.electionMode || poll.category === 'politics' || poll.featured,
-    kind: poll.kind === 'rating' ? 'rating' : 'choice',
+    kind: poll.kind === 'rating' || poll.kind === 'multi' ? poll.kind : 'choice',
+    myPicks,
     myShareProof: myShareCode ? shareProof(myShareCode) : null,
     // How your friends voted tells who leads, so it waits for the results too.
     friends: !resultsVisible ? { agree: 0, disagree: 0 } : { agree: friendRows[0]?.agree ?? 0, disagree: (friendRows[0]?.all ?? 0) - (friendRows[0]?.agree ?? 0) },
@@ -351,12 +366,14 @@ async function shareOverTime(db: Db, id: string, createdAt: Date, firstOptionId:
 
 export type VoteResult = 'ok' | 'changed' | 'already_voted' | 'closed' | 'not_found' | 'bad_option';
 
-export async function castVote(db: Db, id: string, optionId: string, voterId: string, via?: string | null): Promise<VoteResult> {
+export async function castVote(db: Db, id: string, optionId: string, voterId: string, via?: string | null, morePicks: string[] = []): Promise<VoteResult> {
   const [poll] = await db.select().from(polls).where(eq(polls.id, id)).limit(1);
   if (!poll || poll.hidden) return 'not_found';
   if (poll.endsAt && poll.endsAt.getTime() <= Date.now()) return 'closed';
-  const [opt] = await db.select({ id: options.id }).from(options).where(and(eq(options.id, optionId), eq(options.pollId, id))).limit(1);
-  if (!opt) return 'bad_option';
+  // "Pick several": every ticked choice must belong to this poll (the first one is the vote row's own choice).
+  const picks = poll.kind === 'multi' ? [...new Set([optionId, ...morePicks])] : [optionId];
+  const valid = await db.select({ id: options.id }).from(options).where(and(eq(options.pollId, id), inArray(options.id, picks)));
+  if (valid.length !== picks.length) return 'bad_option';
 
   // Only keep "via" when it is a real share code for this duel from someone else.
   let viaCode: string | null = null;
@@ -366,22 +383,36 @@ export async function castVote(db: Db, id: string, optionId: string, voterId: st
   }
   const newVote = { id: nanoid(12), pollId: id, optionId, voterKey: voterId, prediction: null, shareCode: shareCodeId(), via: viaCode };
 
+  // The ticks of a "pick several" vote, written with the vote itself (all or nothing).
+  const savePicks = async (tx: Db, voteId: string) => {
+    if (poll.kind !== 'multi') return;
+    await tx.delete(votePicks).where(eq(votePicks.voteId, voteId));
+    await tx.insert(votePicks).values(picks.map((o) => ({ voteId, pollId: id, optionId: o })));
+  };
+
   if (poll.allowChange) {
     // One atomic statement: first vote inserts, a later vote moves it.
-    const [row] = await db
-      .insert(votes)
-      .values(newVote)
-      .onConflictDoUpdate({ target: [votes.pollId, votes.voterKey], set: { optionId } })
-      .returning({ created: sql<boolean>`(xmax = 0)` });
-    return row?.created ? 'ok' : 'changed';
+    return db.transaction(async (tx) => {
+      const [row] = await tx
+        .insert(votes)
+        .values(newVote)
+        .onConflictDoUpdate({ target: [votes.pollId, votes.voterKey], set: { optionId } })
+        .returning({ id: votes.id, created: sql<boolean>`(xmax = 0)` });
+      await savePicks(tx as unknown as Db, row.id);
+      return row?.created ? 'ok' : 'changed';
+    });
   }
   // Unique index decides, so two fast taps can never count twice.
-  const inserted = await db
-    .insert(votes)
-    .values(newVote)
-    .onConflictDoNothing()
-    .returning({ id: votes.id });
-  return inserted.length ? 'ok' : 'already_voted';
+  return db.transaction(async (tx) => {
+    const inserted = await tx
+      .insert(votes)
+      .values(newVote)
+      .onConflictDoNothing()
+      .returning({ id: votes.id });
+    if (!inserted.length) return 'already_voted';
+    await savePicks(tx as unknown as Db, inserted[0].id);
+    return 'ok';
+  });
 }
 
 /** "Who's winning right now?": checked against the live count (your vote included) at the moment you answer. */
@@ -401,10 +432,12 @@ export async function guessLeader(db: Db, id: string, voterId: string, choice: s
     .where(and(eq(votes.pollId, id), eq(votes.voterKey, voterId)))
     .limit(1);
   if (!v || v.prediction != null) return 'not_allowed';
+  const [{ kind }] = await db.select({ kind: polls.kind }).from(polls).where(eq(polls.id, id));
+  // "Pick several": the leader is the most-ticked choice.
   const counts = await db
-    .select({ optionId: options.id, n: sql<number>`count(${votes.id})::int` })
+    .select({ optionId: options.id, n: sql<number>`count(${kind === 'multi' ? votePicks.voteId : votes.id})::int` })
     .from(options)
-    .leftJoin(votes, eq(votes.optionId, options.id))
+    .leftJoin(kind === 'multi' ? votePicks : votes, kind === 'multi' ? eq(votePicks.optionId, options.id) : eq(votes.optionId, options.id))
     .where(eq(options.pollId, id))
     .groupBy(options.id);
   // Only your own vote is in: nothing to guess, so it is not counted as a right (or wrong) call.
@@ -465,7 +498,7 @@ export async function listPolls(db: Db, limit = 20, filter: { category?: string;
     id: r.id,
     title: r.title,
     category: r.category,
-    kind: r.kind === 'rating' ? 'rating' : 'choice',
+    kind: r.kind === 'rating' || r.kind === 'multi' ? r.kind : 'choice',
     totalVotes: r.totalVotes,
     lastHour: r.lastHour,
     closed: !!r.endsAt && r.endsAt.getTime() <= Date.now(),
@@ -572,10 +605,31 @@ export async function getMyVotes(db: Db, voterId: string | null, limit = 50): Pr
     .leftJoin(votes, eq(votes.optionId, options.id))
     .where(inArray(options.pollId, rows.map((r) => r.pollId)))
     .groupBy(options.pollId, options.id, options.label);
+  // "Pick several" polls: count every tick, and show all of this voter's ticks.
+  const multiIds = rows.filter((r) => r.pollKind === 'multi').map((r) => r.pollId);
+  const [pickCounts, myTicks] = multiIds.length
+    ? await Promise.all([
+        db
+          .select({ pollId: options.pollId, label: options.label, n: sql<number>`count(${votePicks.voteId})::int` })
+          .from(options)
+          .leftJoin(votePicks, eq(votePicks.optionId, options.id))
+          .where(inArray(options.pollId, multiIds))
+          .groupBy(options.pollId, options.id, options.label),
+        db
+          .select({ pollId: votePicks.pollId, label: options.label })
+          .from(votePicks)
+          .innerJoin(votes, eq(votes.id, votePicks.voteId))
+          .innerJoin(options, eq(options.id, votePicks.optionId))
+          .where(and(eq(votes.voterKey, voterId), inArray(votePicks.pollId, multiIds)))
+          .orderBy(options.position),
+      ])
+    : [[], []];
   return rows.map((r) => {
     const closed = !!r.endsAt && r.endsAt.getTime() <= Date.now();
-    const mine = counts.filter((c) => c.pollId === r.pollId).sort((a, b) => b.n - a.n);
-    const total = mine.reduce((s, c) => s + c.n, 0);
+    const multi = r.pollKind === 'multi';
+    // Voters per poll (each vote row has exactly one first choice).
+    const total = counts.filter((c) => c.pollId === r.pollId).reduce((s, c) => s + c.n, 0);
+    const mine = (multi ? pickCounts : counts).filter((c) => c.pollId === r.pollId).sort((a, b) => b.n - a.n);
     let standing: Standing;
     if (sealedUntil(r.category)) standing = { kind: 'sealed' };
     else if (r.hideUntilVoted && !closed && r.prediction == null && mine.length >= 2 && total >= 2) standing = { kind: 'guess' };
@@ -584,7 +638,10 @@ export async function getMyVotes(db: Db, voterId: string | null, limit = 50): Pr
     else if (mine.length > 1 && mine[0].n === mine[1].n) standing = { kind: closed ? 'tied' : 'tie' };
     else standing = { kind: closed ? 'won' : 'leading', name: mine[0].label, percent: Math.round((mine[0].n / total) * 100) };
     // A rating vote shows as its face ("🙂 4"), not as a bare number.
-    const pick = r.pollKind === 'rating' ? `${r.pickEmoji ?? ''} ${r.pick}/5`.trim() : r.pick;
+    const pick =
+      r.pollKind === 'rating' ? `${r.pickEmoji ?? ''} ${r.pick}/5`.trim()
+      : multi ? myTicks.filter((x) => x.pollId === r.pollId).map((x) => x.label).join(', ') || r.pick
+      : r.pick;
     return { pollId: r.pollId, title: r.title, pick, at: r.at.toISOString(), standing };
   });
 }

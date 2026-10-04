@@ -589,3 +589,23 @@ describe('rate it (1–5 faces)', () => {
     expect(ratingAverage([1, 0, 0, 0, 2])).toBe(3.7);
   });
 });
+
+describe('pick several', () => {
+  it('counts every tick, keeps one ballot per voter, and shows % of voters', async () => {
+    const id = await make({ title: 'Which snacks?', options: ['Samosa', 'Momos', 'Dosa'], kind: 'multi' });
+    const [a, b, c] = (await getPoll(db, id, null))!.options;
+    expect(await castVote(db, id, a.id, 'm1', null, [b.id])).toBe('ok');
+    expect(await castVote(db, id, b.id, 'm2', null, [c.id, b.id])).toBe('ok');
+    expect(await castVote(db, id, c.id, 'm1', null, [])).toBe('already_voted');
+    expect(await castVote(db, id, a.id, 'm3', null, ['not-an-option'])).toBe('bad_option');
+    const p = (await getPoll(db, id, 'm1'))!;
+    expect(p.kind).toBe('multi');
+    expect(p.participants).toBe(2);
+    expect(p.myPicks.sort()).toEqual([a.id, b.id].sort());
+    expect(p.options.map((o) => o.votes)).toEqual([1, 2, 1]);
+    expect(p.options.map((o) => Math.round(o.percent))).toEqual([50, 100, 50]);
+    expect((await getMyVotes(db, 'm1')).find((v) => v.pollId === id)?.pick).toBe('Samosa, Momos');
+    expect(await undoVote(db, id, 'm2')).toBe(true);
+    expect((await getPoll(db, id, 'm1'))!.options.map((o) => o.votes)).toEqual([1, 1, 0]);
+  });
+});

@@ -75,6 +75,13 @@ ALTER TABLE reports ADD COLUMN IF NOT EXISTS ip_hash text;
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS has_photos boolean NOT NULL DEFAULT false;
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS election_mode boolean NOT NULL DEFAULT false;
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'choice';
+CREATE TABLE IF NOT EXISTS vote_picks (
+  vote_id text NOT NULL REFERENCES votes(id) ON DELETE CASCADE,
+  poll_id text NOT NULL REFERENCES polls(id) ON DELETE CASCADE,
+  option_id text NOT NULL REFERENCES options(id) ON DELETE CASCADE,
+  PRIMARY KEY (vote_id, option_id)
+);
+CREATE INDEX IF NOT EXISTS vote_picks_poll_idx ON vote_picks (poll_id);
 CREATE TABLE IF NOT EXISTS photos (
   id text PRIMARY KEY,
   poll_id text NOT NULL REFERENCES polls(id) ON DELETE CASCADE,

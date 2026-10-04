@@ -213,6 +213,11 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
     [raw, t],
   );
   const rating = poll?.kind === 'rating';
+  // "Pick several": tick choices first (kept here until you press Vote), then one vote carries them all.
+  const multi = poll?.kind === 'multi';
+  const [ticks, setTicks] = useState<string[]>([]);
+  useEffect(() => setTicks([]), [raw?.id]);
+  const toggleTick = (id: string) => setTicks((x) => (x.includes(id) ? x.filter((y) => y !== id) : [...x, id]));
   // The friend's code only belongs to the duel they shared (the first one on a shared link).
   const viaHere = poll && start !== undefined && i === start ? via ?? null : null;
   const q = viaHere ? `?f=${encodeURIComponent(viaHere)}` : '';
@@ -248,7 +253,11 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
   const counting = countRound !== null && !!poll && poll.rounds.length === 3;
   const shown = counting ? poll!.rounds[countRound!] : null;
   const shownTotal = shown ? Object.values(shown).reduce((a, b) => a + b, 0) : poll?.totalVotes ?? 0;
-  const pcts = useMemo(() => (poll ? rounded(poll.options, shownTotal, shown ?? undefined) : []), [poll, shownTotal, shown]);
+  // Pick several: each bar is the share of voters who ticked it (they add up to more than 100%).
+  const pcts = useMemo(
+    () => (poll ? (poll.kind === 'multi' ? poll.options.map((o) => Math.round(o.percent)) : rounded(poll.options, shownTotal, shown ?? undefined)) : []),
+    [poll, shownTotal, shown],
+  );
   const votesOf = (o: PollOption) => (shown ? shown[o.id] ?? 0 : o.votes);
   // The TV ticker line during counting: "Modi ahead by 412" (or "level").
   const ticker = (() => {
@@ -332,7 +341,7 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
     },
     [countId],
   );
-  async function vote(optionId: string) {
+  async function vote(optionId: string, picks: string[] = []) {
     if (!poll || voted || busy || poll.closed) return;
     gen.current++;
     setBusy(optionId);
@@ -344,7 +353,7 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
     const res = await fetch(`/api/polls/${poll.id}/vote`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ optionId, via: viaHere, human }),
+      body: JSON.stringify({ optionId, picks, via: viaHere, human }),
     }).catch(() => null);
     const data = await res?.json().catch(() => null);
     if (res?.ok && data?.poll) {
@@ -424,6 +433,8 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
     if (res?.ok && data?.poll) {
       replace(data.poll);
       setJustGuessed(choice !== 'skip');
+      // After the crowd guess you have seen the numbers, so undo is over (the first, lone voter excepted).
+      if (data.poll.participants > 1) setUndoUntil(0);
       if (data.poll.myGuess?.correct) setJustVoted(poll.myVote);
       focusAfter.current = true;
     } else {
@@ -538,7 +549,10 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
       if (!poll || over) return;
       const k = e.key.toLowerCase();
       const n = /^[1-9]$/.test(k) ? Number(k) - 1 : LETTERS.toLowerCase().indexOf(k);
-      if (!revealed && n >= 0 && n < poll.options.length) vote(poll.options[n].id);
+      if (!revealed && n >= 0 && n < poll.options.length) {
+        if (poll.kind === 'multi') toggleTick(poll.options[n].id);
+        else vote(poll.options[n].id);
+      }
       if (e.key === 'Enter' && revealed && !counting && !t.closest('button, a')) next();
     };
     window.addEventListener('keydown', onKey);
@@ -586,7 +600,9 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
     );
   }
 
-  const [vTitle, vLine] = mine && revealed ? verdict(t, poll, mine) : ['', ''];
+  // Pick several: judge by your best-placed tick (you are "with the crowd" if any tick leads).
+  const verdictPick = multi ? poll.options.filter((o) => poll.myPicks.includes(o.id)).sort((a, b) => b.votes - a.votes)[0] ?? mine : mine;
+  const [vTitle, vLine] = verdictPick && revealed ? verdict(t, poll, verdictPick) : ['', ''];
   const letters = faceLabels(poll.options.map((o) => o.label));
   // 3 or more choices: one compact row per choice, like the real EVM ballot unit. Two choices keep the big photo cards.
   const ballot = poll.options.length >= 3;
@@ -654,19 +670,21 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
       ) : (
       <div className={'tot-options duel-options n-' + poll.options.length + (ballot ? ' is-ballot' : '') + (nudge && !voted ? ' is-nudge' : '')}>
           {poll.options.map((o, n) => {
-            const isMine = poll.myVote === o.id;
+            const isMine = multi ? poll.myPicks.includes(o.id) : poll.myVote === o.id;
+            const ticked = multi && !voted && ticks.includes(o.id);
             const lead = n === leaderIdx;
             return (
               <button
                 key={o.id}
                 type="button"
-                className={'tot-option duel-option' + (isMine ? ' is-mine' : '') + (revealed && !isMine ? ' is-other' : '') + (busy === o.id ? ' is-busy' : '')}
+                className={'tot-option duel-option' + (isMine || ticked ? ' is-mine' : '') + (revealed && !isMine ? ' is-other' : '') + (busy === o.id ? ' is-busy' : '')}
                 style={{ '--pc': `var(--p-${TONES[n % TONES.length]})`, '--dc': `var(--d-${TONES[n % TONES.length]})` } as React.CSSProperties}
-                onClick={() => vote(o.id)}
+                onClick={() => (multi ? toggleTick(o.id) : vote(o.id))}
                 disabled={voted || !!busy || poll.closed}
+                aria-pressed={multi && !voted ? ticked : undefined}
                 aria-label={`${o.label}${revealed ? `, ${t.percent(pcts[n])}` : ''}`}
               >
-                <span className="tot-letter">{isMine ? <Check size={13} strokeWidth={2.5} aria-hidden /> : serial(n)}</span>
+                <span className="tot-letter">{isMine || ticked ? <Check size={13} strokeWidth={2.5} aria-hidden /> : serial(n)}</span>
                 {revealed && (lead || isMine) && (
                   <span className="tot-caption">
                     {isMine ? t.yourPick : poll.closed && !counting ? t.won : t.leading}
@@ -690,8 +708,8 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
                 )}
                 {!revealed && !poll.closed && (
                   <span className="evm-row" aria-hidden>
-                    <span className={'evm-led' + (isMine ? ' is-on' : '')} />
-                    <span className="evm-btn">{isMine ? t.voted : t.vote}</span>
+                    <span className={'evm-led' + (isMine || ticked ? ' is-on' : '')} />
+                    <span className="evm-btn">{multi && !voted ? (ticked ? t.multiTicked : t.multiTick) : isMine ? t.voted : t.vote}</span>
                   </span>
                 )}
                 {justVoted === o.id && !counting && <Burst />}
@@ -700,6 +718,17 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
           })}
         </div>
       )}
+
+      {/* Pick several: the one main step is the Vote button under the ticks; it says how many you picked. */}
+      {multi && !voted && !poll.closed && (
+        <div className="multi-cast">
+          <p className="small muted">{t.multiHint}</p>
+          <button type="button" className="btn btn-primary btn-lg" disabled={!ticks.length || !!busy} onClick={() => vote(ticks[0], ticks.slice(1))}>
+            {t.multiCast(ticks.length)}
+          </button>
+        </div>
+      )}
+      {multi && revealed && <p className="small muted">{t.multiNote}</p>}
 
       {!voted && !poll.closed && (
         <p className="small muted duel-hint" data-hint>{t.ballotHint}</p>
