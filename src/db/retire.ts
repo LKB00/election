@@ -14,3 +14,15 @@ export async function retireSeeded(db: Db) {
     update polls set hidden = true, featured = false
     where id in (${sql.join(SEEDED_IDS.map((id) => sql`${id}`), sql`, `)}) and exists (select 1 from m)`);
 }
+
+// Polls the owner asked to delete for good (with their votes), each removed once when a server starts with this code.
+// Add an id here only when the owner asks; the marker keeps it from running twice.
+export const OWNER_DELETED_IDS = ['fxt5mpm3']; // "Gunda vs Bhatiya" (owner, Oct 2026)
+
+export async function deleteOwnerRemoved(db: Db) {
+  for (const id of OWNER_DELETED_IDS) {
+    await db.execute(sql`
+      with m as (insert into app_migrations (name) values (${`delete-poll-${id}`}) on conflict do nothing returning name)
+      delete from polls where id = ${id} and exists (select 1 from m)`);
+  }
+}

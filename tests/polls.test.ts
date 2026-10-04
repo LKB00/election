@@ -1008,3 +1008,16 @@ describe('month in opinions', () => {
     expect(m.topCategory).toBe('food');
   });
 });
+
+describe('owner-deleted polls', () => {
+  it('are deleted once with their votes', async () => {
+    const { deleteOwnerRemoved } = await import('@/db/retire');
+    await db.insert(schema.polls).values({ id: 'fxt5mpm3', title: 'To be deleted' });
+    await db.insert(schema.options).values([{ id: 'fx-a', pollId: 'fxt5mpm3', label: 'A', position: 0 }, { id: 'fx-b', pollId: 'fxt5mpm3', label: 'B', position: 1 }]);
+    await castVote(db, 'fxt5mpm3', 'fx-a', 'del1');
+    await db.execute(sql`delete from app_migrations where name = 'delete-poll-fxt5mpm3'`);
+    await deleteOwnerRemoved(db);
+    expect(await getPoll(db, 'fxt5mpm3', null, null, { includeHidden: true })).toBeNull();
+    expect(await db.select().from(schema.votes).where(eq(schema.votes.pollId, 'fxt5mpm3'))).toEqual([]);
+  });
+});
