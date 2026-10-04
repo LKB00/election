@@ -49,7 +49,7 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
           </form>
         )}
         {stats.votes > 0 && (
-          <p className="lead">{t.record(stats.votes, stats.guesses, stats.correct, stats.friends)}</p>
+          <p className="lead">{t.record(stats.votes, stats.friends)}</p>
         )}
       </header>
 
