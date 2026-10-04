@@ -53,7 +53,7 @@ export const createPollSchema = z.object({
   hideUntilVoted: z.boolean().default(true),
   allowChange: z.boolean().default(false),
   electionMode: z.boolean().default(false),
-  kind: z.enum(['choice', 'rating']).default('choice'),
+  kind: z.enum(['choice', 'rating', 'multi', 'rank']).default('choice'),
   endsAt: z
     .string()
     .datetime()
@@ -65,7 +65,7 @@ export type CreatePollInput = z.infer<typeof createPollSchema>;
 /** Ids and share codes are plain letters, digits, "-" and "_"; anything else (a NUL byte, spaces) is refused early. */
 export const isCode = (s: string | null | undefined): s is string => !!s && /^[\w-]{1,64}$/.test(s);
 const code = () => z.string().regex(/^[\w-]{1,64}$/);
-export const voteSchema = z.object({ optionId: code(), via: z.string().max(64).nullish().transform((v) => (isCode(v) ? v : null)), human: z.string().max(4096).nullish() });
+export const voteSchema = z.object({ optionId: code(), picks: z.array(code()).max(10).optional(), via: z.string().max(64).nullish().transform((v) => (isCode(v) ? v : null)), human: z.string().max(4096).nullish() });
 export const guessSchema = z.object({ choice: code() });
 export const reportSchema = z.object({ reason: z.string().min(1).max(20) });
 export const adminSchema = z.object({ key: z.string().min(1).max(200), action: z.enum(['hide', 'show', 'approve']) });

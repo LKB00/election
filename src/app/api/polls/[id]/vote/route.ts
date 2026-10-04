@@ -26,7 +26,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const db = await getDb();
   const voterId = await getOrCreateVoterId();
-  const result = await castVote(db, id, parsed.data.optionId, voterId, parsed.data.via);
+  const result = await castVote(db, id, parsed.data.optionId, voterId, parsed.data.via, parsed.data.picks ?? []);
 
   if (result !== 'ok' && result !== 'changed') {
     const status = result === 'not_found' ? 404 : result === 'already_voted' ? 409 : 400;

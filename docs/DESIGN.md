@@ -505,3 +505,28 @@ The first new question type. A rating poll is stored as a normal poll with five 
 | After voting: the average big ("3.8 out of 5" with its face), "Average of N votes · You said: 🙂 Good", then one bar per face (yours lime) | Poll | P1 at that moment | You vs everyone, at a glance. No 50% line (it means nothing for a rating). |
 | Tiles say "Rate it · 😖 to 😍"; My votes says "😍 5/5" and "Average so far: 4.5 / 5" with a bar | Polls, My votes | P3 | Rating polls are recognisable in lists. |
 | Share images show the five faces; an open link says "I voted for 😍" | Share | P2 | Same share flow as other polls. |
+
+## Phase 2: Pick several
+
+One vote per person stays (the `votes` row and its unique index); the ticked choices are stored next to it in `vote_picks` and go with it (undo, delete my votes).
+
+| Element | Screen | Priority | Job |
+|---|---|---|---|
+| "✅ Pick several" in the kind switch | Create | P2 | Same rows as Choices; hint "Tick every choice you like, then Vote." |
+| Rows with "Tick / Ticked" (instead of Vote); tapped rows turn your colour with a ✓ | Poll | P1 | Choose as many as you like before anything is saved. |
+| Ink button under the rows: "Tick your choices" (off) → "Vote · 2 picked" | Poll | P1 action | The one main step; one vote carries all ticks. |
+| Results: each bar = % of voters who ticked it, with the note "the bars add up to more than 100%" | Poll | P1 at that moment | Honest maths for multi-answer polls. No race line, counting rounds or swing (they follow single votes). |
+| Verdict and Guess the crowd use the most-ticked choice | Poll | P2 | "You're with the crowd" if any of your ticks leads. |
+| Tiles "Pick several: A, B, C"; My votes "You picked A, B" | Polls, My votes | P3 | Recognisable in lists. |
+
+## Phase 2: Rank
+
+Ballots keep one vote per person; each place is stored in `vote_picks.rank`. Points: with N choices, 1st place earns N−1, last earns 0. A choice's bar is its points as a share of the best possible score (every voter putting it first); "average place" is shown under it.
+
+| Element | Screen | Priority | Job |
+|---|---|---|---|
+| "🔢 Rank" in the kind switch; hint "Tap the choices in order: your favourite first." | Create | P2 | Same rows as Choices. |
+| Rows show "Tap", then their place (#1, #2…) in the number circle and on the key; tap again to take it out | Poll | P1 | Ordering by tapping works on every phone (no dragging). |
+| Ink button "2 of 3 placed" (off) → "Vote · my order is ready"; "Start again" link | Poll | P1 action | Every choice must be placed before voting. |
+| Results: score %, bar, "average place 1.3"; the leader is marked; note "1st place earns the most points…" | Poll | P1 at that moment | The crowd's order at a glance; no 50% line (it means nothing here). |
+| My votes "1. A, 2. B, 3. C" and "A leading · 88%" | My votes | P3 | Your order and the crowd's leader. |
