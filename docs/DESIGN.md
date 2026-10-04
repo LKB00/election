@@ -700,3 +700,33 @@ Every screen read top to bottom, each element asked: is it needed first, later, 
 | Polls | "All polls" was one list of up to 60 rows | First 12 (the ones you can still vote on come first), then "Show 45 more polls" | Show a little, reveal on request |
 | Create | Six settings chips over three lines before the main button | Upfront: "Results after voting" and "Topic"; the rest behind "More options". Anything switched on or filled in always shows | Most-used first; nothing you set is ever hidden |
 | My votes | Reads well: title, your pick, where it stands, what changed | Kept | — |
+
+## UX copy and information audit (owner: "audit UX copy and make it better · what information is in each component and what it should be")
+
+Copy rules we now hold to: say what happens in plain words, one idea per line, no game words (score, points, dare), kind words when you are "wrong", the same word for the same thing in all three languages.
+
+| Where | Was | Now | Why |
+|---|---|---|---|
+| Under the ballot | "Secret ballot · one vote each · results open after you vote · a fun poll, not official" | "Secret vote · results open after you vote · just for fun, not official" | Four facts → three; "one vote each" is enforced, not something to read |
+| Crowd guess result | "Your crowd guess was right / wrong." | "You read the crowd right!" / "The crowd surprised you." | "Wrong" felt like a test mark |
+| Swing line | "Swing in 24 h: Chai ▲ 3 pts" (Hindi "अंक" = points) | "Last 24 hours: Chai ▲ 3%" | "pts" read as game points |
+| Rank note | "1st place earns the most points … best possible score" | "Higher places count more. A full bar = everyone put it first." | No points or scores |
+| My votes summary | "… Your crowd guesses: 3 of 5 right …" | Polls voted + friends from your link only | A running right/wrong tally is a score |
+| Friend link label, banner, leads | "A friend dared you", "Dare a friend", "dare your friends", "answered your dare" | "A friend voted. Your turn", "See where you stand", "ask your friends", "voted from your link" | Dare = game tone; asking is kinder and clearer |
+| Share switch note | "Friends must vote to see your pick. More of them vote." | "Friends see your pick only after they vote, so more of them vote." | The second sentence did not make sense alone |
+| Install invite | "Tomorrow in one tap." | "Open Election in one tap." | Said what it does |
+| Counting ticker tie | "level" | "tied" | Plain word |
+| Hindi server errors | "मुकाबला" (duel) | "पोल" | Leftover from the duel days |
+| 16 unused texts | (dead keys) | removed | Less to translate and keep in step |
+
+What each component shows, and what changed:
+
+| Component | Shows now | Change |
+|---|---|---|
+| Poll header line | open/closed · votes · time left · last hour | With no votes: "Polling open · be the first" (was "0 votes cast · be the first") |
+| Today's question card (Home) | chip · question · one fact · one action | Choice names only when the question does not already say them ("Chai or coffee?" no longer repeats "Chai vs Coffee"); 0 votes says "Be the first to vote." |
+| Poll rows | faces · question · choices (unless repeated) · status · count | Closed polls say "Ended" (was "Polling closed": too long for a row) |
+| Result bar | verdict · friend line · Share · Next | Wording only (kinder guess result) |
+| My votes | summary · your pick · where it stands · since last look | Summary without the guess score |
+
+Kept on purpose: "Polling open/closed", "Vote cast. Your finger is inked" and "Result declared" (the signature booth words); the internal key names `duels`/`moreDuels` (code only, never shown).

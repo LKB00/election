@@ -76,7 +76,7 @@ export default function DuelTiles({ polls, votedIds = [], noCreate = false, limi
                 {done ? (
                   <span className="al-row__done"><Check size={14} strokeWidth={2.25} aria-hidden /> {t.voted}</span>
                 ) : p.closed ? (
-                  <span>{t.pollingClosed}</span>
+                  <span>{t.ended}</span>
                 ) : (
                   <span>{total === 0 ? t.newPoll : t.votes(total)}</span>
                 )}

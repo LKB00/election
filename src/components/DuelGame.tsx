@@ -756,11 +756,12 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
         )}
         <h1 key={poll.id} className="display duel-q">{poll.title}</h1>
         <p className="small muted">
-          {poll.closed ? t.pollingClosed : <><span className="live-dot" aria-hidden /> {t.pollingOpen}</>} · <span key={poll.participants} className="tick">{poll.participants.toLocaleString('en-IN')}</span> {t.votesCast(poll.participants)}
+          {poll.closed ? t.pollingClosed : <><span className="live-dot" aria-hidden /> {t.pollingOpen}</>}
+          {/* No votes yet: "be the first" says it (not "0 votes cast · be the first"). */}
+          {poll.participants === 0 && !poll.closed ? ` · ${t.beFirst}` : <> · <span key={poll.participants} className="tick">{poll.participants.toLocaleString('en-IN')}</span> {t.votesCast(poll.participants)}</>}
           {/* Time left depends on the clock, so the server's and the phone's text can differ by a minute: that is fine. */}
           {!poll.closed && poll.endsAt && <span suppressHydrationWarning>{` · ${t.closes(closesIn(t, poll.endsAt))}`}</span>}
           {!revealed && poll.pulse.lastHour > 0 && poll.pulse.lastHour < poll.participants && ` · ${t.inLastHour(poll.pulse.lastHour)}`}
-          {poll.participants === 0 && !poll.closed && ` · ${t.beFirst}`}
           {fresh && fresh.id === poll.id && <span className="duel-fresh"> · {t.newVotes(fresh.n)}</span>}
         </p>
       </div>
@@ -944,7 +945,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
             {poll.swing ? (
               <>
                 <strong className="duel-swing-name">{t.swing24}</strong> {poll.options.find((o) => o.id === poll.swing!.optionId)?.label}{' '}
-                <span className={poll.swing.points > 0 ? 'txt-good' : 'txt-bad'}>{poll.swing.points > 0 ? '▲' : '▼'} {Math.abs(poll.swing.points)} {t.pts}</span>
+                <span className={poll.swing.points > 0 ? 'txt-good' : 'txt-bad'}>{poll.swing.points > 0 ? '▲' : '▼'} {Math.abs(poll.swing.points)}{t.pts}</span>
                 {' · '}
               </>
             ) : poll.trend.length > 2 && sparkOpt ? (
