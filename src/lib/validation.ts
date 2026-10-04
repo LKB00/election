@@ -65,7 +65,7 @@ export const createPollSchema = z.object({
     .datetime()
     .optional()
     .refine((v) => !v || new Date(v).getTime() > Date.now(), 'The end time must be in the future.'),
-}).refine((p) => !hasBlockedWord(p.title, p.description, ...p.options), 'Please remove the abusive words.')
+}).refine((p) => !hasBlockedWord(p.title, p.description, ...p.options, ...p.emojis), 'Please remove the abusive words.')
   .refine((p) => p.photoConsent || !p.photos.some(Boolean), 'Tick "I am 18+" to add photos.');
 export type CreatePollInput = z.infer<typeof createPollSchema>;
 

@@ -1021,3 +1021,13 @@ describe('owner-deleted polls', () => {
     expect(await db.select().from(schema.votes).where(eq(schema.votes.pollId, 'fxt5mpm3'))).toEqual([]);
   });
 });
+
+describe('abusive emoji', () => {
+  it('refuses 🖕 in the question, a choice or a choice picture, in any skin tone', () => {
+    expect(hasBlockedWord('Who wins 🖕')).toBe(true);
+    expect(hasBlockedWord('🖕🏽')).toBe(true);
+    expect(hasBlockedWord('Chai or coffee? ☕')).toBe(false);
+    expect(createPollSchema.safeParse({ title: 'Gunda vs Bhatiya', options: ['Gunda', 'Bhatiya'], emojis: ['💪', '🖕'] }).success).toBe(false);
+    expect(createPollSchema.safeParse({ title: 'Tea or coffee', options: ['Tea', 'Coffee 🖕'] }).success).toBe(false);
+  });
+});
