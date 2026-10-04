@@ -162,3 +162,25 @@ export const packs = pgTable(
   },
   (t) => [index('packs_starts_idx').on(t.startsAt)],
 );
+
+// "Tell me the result" (web push, opt-in per poll): the phone's push address (from the browser; no name or number)
+// and the polls it asked about. A want is deleted once its one alert is sent.
+export const pushSubs = pgTable('push_subs', {
+  endpoint: text('endpoint').primaryKey(),
+  p256dh: text('p256dh').notNull(),
+  auth: text('auth').notNull(),
+  voterKey: text('voter_key').notNull(),
+  lastSentAt: timestamp('last_sent_at', { withTimezone: true }),
+  // The language the alert is written in (the one on screen when they asked).
+  lang: text('lang').notNull().default('en'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+export const pushWants = pgTable(
+  'push_wants',
+  {
+    pollId: text('poll_id').notNull().references(() => polls.id, { onDelete: 'cascade' }),
+    endpoint: text('endpoint').notNull().references(() => pushSubs.endpoint, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.pollId, t.endpoint] })],
+);

@@ -913,3 +913,30 @@ describe('packs', () => {
     expect(await setOutcome(db, pollIds[1], pack.views[1].options[0].id, 'pack-key')).toBe('ok');
   });
 });
+
+describe('result alerts', () => {
+  it('sends one alert per phone when results are in, then forgets the wants; gone phones are removed', async () => {
+    const { wantResult, sendResultAlerts, duePolls } = await import('@/lib/push');
+    const a = await make({ title: 'Alert poll A' });
+    const b = await make({ title: 'Alert poll B' });
+    const sub = (n: string) => ({ endpoint: `https://push.example/${n}`, keys: { p256dh: 'k', auth: 'a' } });
+    await wantResult(db, 'phone1', sub('one'), a, 'en');
+    await wantResult(db, 'phone1', sub('one'), b, 'en');
+    await wantResult(db, 'phone2', sub('two'), a, 'hi');
+    const sent: { endpoint: string; payload: string }[] = [];
+    const n = await sendResultAlerts(db, [a, b], async (s, payload) => {
+      sent.push({ endpoint: s.endpoint, payload });
+      return { gone: s.endpoint.endsWith('two') };
+    });
+    expect(n).toBe(1);
+    expect(sent).toHaveLength(2);
+    const one = JSON.parse(sent.find((x) => x.endpoint.endsWith('one'))!.payload);
+    expect(one.title).toBe('2 results are in');
+    expect(JSON.parse(sent.find((x) => x.endpoint.endsWith('two'))!.payload).body).toContain('नतीजा');
+    // Nothing left to send.
+    expect(await sendResultAlerts(db, [a, b], async () => ({ gone: false }))).toBe(0);
+    // Not due before the poll has ended.
+    await wantResult(db, 'phone1', sub('one'), a, 'en');
+    expect(await duePolls(db)).not.toContain(a);
+  });
+});

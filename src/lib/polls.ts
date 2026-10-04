@@ -1003,6 +1003,8 @@ export async function setPollFlags(db: Db, id: string, flags: { hidden?: boolean
 export async function deleteVoterData(db: Db, voterId: string): Promise<number> {
   await db.delete(reactions).where(eq(reactions.voterKey, voterId));
   await db.delete(reports).where(eq(reports.voterKey, voterId));
+  // Push addresses (and so every "tell me the result" on them) go too.
+  await db.delete(schema.pushSubs).where(eq(schema.pushSubs.voterKey, voterId));
   const removed = await db.delete(votes).where(eq(votes.voterKey, voterId)).returning({ id: votes.id });
   return removed.length;
 }
