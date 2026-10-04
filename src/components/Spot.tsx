@@ -1,75 +1,160 @@
-// Small drawn pictures for the moments that used to be only a line of text (docs/DESIGN.md, "Empty states").
-// Each empty page gets its own picture that says what will fill it (owner: "there should be specific illustrations"):
-// invite = Home on an empty site (asking friends), list = a list of polls, finger = My votes (your inked votes),
-// search = nothing found, lost = poll not found, done = nothing to review. Flat shapes in the Arogya palette.
-// Inline SVG (a few hundred bytes each), no images to download; decorative, so hidden from screen readers.
-type Kind = 'ballot' | 'search' | 'lost' | 'done' | 'invite' | 'list' | 'finger';
+import { handSvg } from '@/lib/inkHand';
 
-export default function Spot({ kind, size = 132 }: { kind: Kind; size?: number }) {
-  const ink = 'var(--ink)';
+// Empty-page pictures (docs/DESIGN.md, "Empty states"). One family, built around the ballot box the owner liked: a white
+// lid with the slot, an indigo box, a yellow label (yellow = you), thick ink outlines, a soft ground shadow and a few
+// yellow sparkles. Each page tells its own little story with it, so no two empty pages look alike:
+//   invite = Home on an empty site: a chat bubble holding a poll, and a slip going into the box (ask your friends)
+//   list   = a list of polls: slips fanned over the box, the middle one an empty "+" (the first poll goes here)
+//   topic  = a topic: the box in the topic's colour with the topic's icon on its front (TopicSpot adds the icon)
+//   finger = My votes: the inked finger (the same drawing as the vote moment) beside the box and an empty slip
+//   search = nothing found: slips and a magnifier;  lost = poll not found: a "?" slip;  done = nothing to review: a tick
+// Inline SVG, no downloads; decorative, so hidden from screen readers.
+export type SpotKind = 'invite' | 'list' | 'topic' | 'finger' | 'search' | 'lost' | 'done';
+
+const INK = 'var(--ink)';
+const W = 2.5;
+
+function Ground() {
+  return <ellipse cx="100" cy="140" rx="80" ry="7" fill="var(--line)" />;
+}
+function Sparkle({ x, y, r }: { x: number; y: number; r: number }) {
   return (
-    <svg className="spot" width={size} height={(size * 3) / 4} viewBox="0 0 160 120" aria-hidden focusable="false">
-      {/* the ground shadow */}
-      <ellipse cx="80" cy="112" rx="58" ry="6" fill="var(--line)" opacity=".7" />
-      {kind === 'invite' ? (
-        <>
-          {/* a chat bubble holding a little poll, and a friend's reply: ask your friends anything */}
-          <path d="M22 16h82a12 12 0 0 1 12 12v40a12 12 0 0 1-12 12H44l-14 12v-12h-8a12 12 0 0 1-12-12V28a12 12 0 0 1 12-12z" fill="#fff" stroke={ink} strokeWidth="2.5" strokeLinejoin="round" />
-          <rect x="24" y="27" width="56" height="6" rx="3" fill={ink} opacity=".75" />
-          <rect x="24" y="41" width="72" height="12" rx="6" fill="var(--p-input)" stroke={ink} strokeWidth="2" />
-          <rect x="24" y="41" width="46" height="12" rx="6" fill="var(--lime)" stroke={ink} strokeWidth="2" />
-          <rect x="24" y="59" width="72" height="12" rx="6" fill="var(--p-input)" stroke={ink} strokeWidth="2" />
-          <path d="M150 62v22a10 10 0 0 1-10 10h-4v9l-11-9h-15a10 10 0 0 1-10-10V62a10 10 0 0 1 10-10h30a10 10 0 0 1 10 10z" fill="var(--p-control)" stroke={ink} strokeWidth="2.5" strokeLinejoin="round" />
-          <circle cx="118" cy="73" r="3" fill={ink} /><circle cx="128" cy="73" r="3" fill={ink} /><circle cx="138" cy="73" r="3" fill={ink} />
-        </>
-      ) : kind === 'list' ? (
-        <>
-          {/* poll rows waiting to be filled, the last one an empty "+" row: polls will show up here */}
-          {[{ y: 12, tone: 'var(--p-input)' }, { y: 44, tone: 'var(--p-feedback)' }].map((r) => (
-            <g key={r.y}>
-              <rect x="22" y={r.y} width="116" height="26" rx="10" fill="#fff" stroke={ink} strokeWidth="2.5" />
-              <circle cx="37" cy={r.y + 13} r="7" fill={r.tone} stroke={ink} strokeWidth="2" />
-              <rect x="50" y={r.y + 10} width="54" height="6" rx="3" fill={ink} opacity=".3" />
-              <rect x="114" y={r.y + 10} width="14" height="6" rx="3" fill={ink} opacity=".2" />
-            </g>
-          ))}
-          <rect x="22" y="76" width="116" height="26" rx="10" fill="none" stroke={ink} strokeWidth="2.5" strokeDasharray="5 5" />
-          <circle cx="37" cy="89" r="8" fill="var(--lime)" stroke={ink} strokeWidth="2" />
-          <path d="M37 85v8M33 89h8" stroke={ink} strokeWidth="2.25" strokeLinecap="round" />
-        </>
-      ) : kind === 'finger' ? (
-        <>
-          {/* a raised finger with the ink mark, beside an empty slip: your inked votes will show here */}
-          <rect x="44" y="58" width="50" height="46" rx="16" fill="#f6caa4" stroke={ink} strokeWidth="2.5" />
-          <rect x="58" y="12" width="22" height="58" rx="11" fill="#f6caa4" stroke={ink} strokeWidth="2.5" />
-          <path d="M44 74h50M44 88h50" stroke={ink} strokeWidth="2" opacity=".35" strokeLinecap="round" />
-          <rect x="65" y="16" width="8" height="15" rx="4" fill="#5b4bd6" />
-          <rect x="106" y="34" width="34" height="46" rx="6" fill="#fff" stroke={ink} strokeWidth="2.5" strokeDasharray="5 4" transform="rotate(6 123 57)" />
-          <circle cx="123" cy="52" r="7" fill="none" stroke={ink} strokeWidth="2" transform="rotate(6 123 57)" />
-          <rect x="113" y="64" width="22" height="5" rx="2.5" fill={ink} opacity=".25" transform="rotate(6 123 57)" />
-        </>
-      ) : kind === 'search' ? (
-        <>
-          {/* two slips and a magnifying glass: looking for a poll that is not there yet */}
-          <rect x="34" y="26" width="52" height="68" rx="8" fill="var(--p-feedback)" stroke={ink} strokeWidth="2.5" transform="rotate(-8 60 60)" />
-          <rect x="56" y="22" width="52" height="68" rx="8" fill="#fff" stroke={ink} strokeWidth="2.5" />
-          <path d="M66 40h32M66 52h24M66 64h28" stroke={ink} strokeWidth="2.5" strokeLinecap="round" opacity=".35" />
-          <circle cx="108" cy="72" r="18" fill="var(--lime)" fillOpacity=".55" stroke={ink} strokeWidth="3" />
-          <path d="M121 85l14 14" stroke={ink} strokeWidth="6" strokeLinecap="round" />
-        </>
+    <path
+      d={`M${x} ${y - r} Q${x} ${y} ${x + r} ${y} Q${x} ${y} ${x} ${y + r} Q${x} ${y} ${x - r} ${y} Q${x} ${y} ${x} ${y - r}Z`}
+      fill="var(--lime)"
+      stroke={INK}
+      strokeWidth="1.5"
+      strokeLinejoin="round"
+    />
+  );
+}
+/** The ballot box: body, lid with its slot, and the front label (or a badge for a topic's icon). */
+function Box({ dx = 0, tone = 'var(--p-input)', front = 'label' }: { dx?: number; tone?: string; front?: 'label' | 'tick' | 'badge' }) {
+  return (
+    <g transform={`translate(${dx} 0)`}>
+      <rect x="50" y="74" width="100" height="58" rx="12" fill={tone} stroke={INK} strokeWidth={W} />
+      <path d="M58 82h84" stroke="#fff" strokeOpacity=".55" strokeWidth="3" strokeLinecap="round" />
+      <rect x="42" y="62" width="116" height="18" rx="9" fill="#fff" stroke={INK} strokeWidth={W} />
+      <rect x="80" y="67.5" width="40" height="6" rx="3" fill={INK} />
+      {front === 'badge' ? (
+        <circle cx="100" cy="104" r="17" fill="#fff" stroke={INK} strokeWidth={W} />
       ) : (
         <>
-          {/* the ballot box: lid, slot, and a slip going in */}
-          <rect x="68" y={kind === 'lost' ? 4 : 10} width="26" height="36" rx="4" fill="#fff" stroke={ink} strokeWidth="2.5" transform={`rotate(${kind === 'lost' ? 24 : -6} 81 28)`} />
-          {(kind === 'ballot' || kind === 'done') && <circle cx="81" cy="24" r="7" fill="var(--lime)" stroke={ink} strokeWidth="2" />}
-          {(kind === 'ballot' || kind === 'done') && <path d="M77.5 24l2.5 2.5 4.5-5" fill="none" stroke={ink} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />}
-          {kind === 'lost' && <text x="88" y="33" textAnchor="middle" fontSize="18" fontWeight="800" fill={ink} transform="rotate(24 81 28)">?</text>}
-          <rect x="30" y="52" width="100" height="56" rx="10" fill="var(--p-input)" stroke={ink} strokeWidth="2.5" />
-          <rect x="24" y="42" width="112" height="16" rx="8" fill="#fff" stroke={ink} strokeWidth="2.5" />
-          <rect x="62" y="47" width="36" height="5" rx="2.5" fill={ink} />
-          {/* a yellow label on the front (yellow = you); "done" puts a tick on it */}
-          <rect x="58" y="72" width="44" height="18" rx="9" fill="var(--lime)" stroke={ink} strokeWidth="2" />
-          {kind === 'done' && <path d="M72 81l5 5 10-10" fill="none" stroke={ink} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />}
+          <rect x="76" y="95" width="48" height="20" rx="10" fill="var(--lime)" stroke={INK} strokeWidth="2" />
+          {front === 'tick' && <path d="M91 105l5 5 10-10" fill="none" stroke={INK} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />}
+        </>
+      )}
+    </g>
+  );
+}
+/** A ballot slip, drawn around its own centre so it can tilt. */
+function Slip({ cx, cy, rot = 0, dashed = false, mark = 'tick' }: { cx: number; cy: number; rot?: number; dashed?: boolean; mark?: 'tick' | 'plus' | 'row' | 'q' | 'none' }) {
+  return (
+    <g transform={`translate(${cx} ${cy}) rotate(${rot})`}>
+      <rect x="-15" y="-20" width="30" height="40" rx="5" fill={dashed ? 'var(--card, #fff)' : '#fff'} stroke={INK} strokeWidth={W} strokeDasharray={dashed ? '5 4' : undefined} />
+      {mark === 'tick' && (
+        <>
+          <circle cx="0" cy="-5" r="8" fill="var(--lime)" stroke={INK} strokeWidth="2" />
+          <path d="M-3.5 -5l2.5 2.5 5-5" fill="none" stroke={INK} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <rect x="-9" y="9" width="18" height="4" rx="2" fill={INK} opacity=".25" />
+        </>
+      )}
+      {mark === 'plus' && (
+        <>
+          <circle cx="0" cy="0" r="9" fill="var(--lime)" stroke={INK} strokeWidth="2" />
+          <path d="M0 -4.5v9M-4.5 0h9" stroke={INK} strokeWidth="2.25" strokeLinecap="round" />
+        </>
+      )}
+      {mark === 'row' && (
+        <>
+          <circle cx="0" cy="-7" r="6" fill="var(--p-feedback)" stroke={INK} strokeWidth="2" />
+          <rect x="-9" y="4" width="18" height="4" rx="2" fill={INK} opacity=".3" />
+          <rect x="-9" y="11" width="12" height="4" rx="2" fill={INK} opacity=".2" />
+        </>
+      )}
+      {mark === 'q' && <text x="0" y="7" textAnchor="middle" fontSize="20" fontWeight="800" fill={INK} fontFamily="var(--sans)">?</text>}
+    </g>
+  );
+}
+
+export default function Spot({ kind, tone, size = 176 }: { kind: SpotKind; tone?: string; size?: number }) {
+  return (
+    <svg className="spot" width={size} height={(size * 3) / 4} viewBox="0 0 200 150" aria-hidden focusable="false">
+      <Ground />
+      {kind === 'invite' && (
+        <>
+          {/* the box on the right; a chat bubble with a poll inside, its tail pointing at the box */}
+          <Box dx={26} />
+          <path d="M20 8h70a14 14 0 0 1 14 14v34a14 14 0 0 1-14 14H64l-6 14-10-14H20A14 14 0 0 1 6 56V22A14 14 0 0 1 20 8z" fill="#fff" stroke={INK} strokeWidth={W} strokeLinejoin="round" />
+          <rect x="18" y="19" width="50" height="6" rx="3" fill={INK} opacity=".75" />
+          <rect x="18" y="32" width="74" height="12" rx="6" fill="var(--p-input)" stroke={INK} strokeWidth="2" />
+          <rect x="18" y="32" width="48" height="12" rx="6" fill="var(--lime)" stroke={INK} strokeWidth="2" />
+          <rect x="18" y="50" width="74" height="12" rx="6" fill="var(--p-input)" stroke={INK} strokeWidth="2" />
+          <rect x="18" y="50" width="26" height="12" rx="6" fill="var(--p-feedback)" stroke={INK} strokeWidth="2" />
+          <Slip cx={136} cy={40} rot={-10} />
+          <Sparkle x={178} y={24} r={7} />
+          <Sparkle x={24} y={104} r={6} />
+          <Sparkle x={168} y={58} r={4} />
+        </>
+      )}
+      {kind === 'list' && (
+        <>
+          {/* slips fanned over the box like cards; the middle one is the empty "+": the first poll goes here */}
+          <Box />
+          <Slip cx={72} cy={42} rot={-18} mark="row" />
+          <Slip cx={128} cy={42} rot={18} mark="row" />
+          <Slip cx={100} cy={32} dashed mark="plus" />
+          <Sparkle x={34} y={40} r={7} />
+          <Sparkle x={170} y={34} r={6} />
+          <Sparkle x={160} y={110} r={4} />
+        </>
+      )}
+      {kind === 'topic' && (
+        <>
+          {/* the box in the topic's colour; TopicSpot puts the topic's icon in the white badge */}
+          <Box tone={tone} front="badge" />
+          <Slip cx={100} cy={34} rot={-8} />
+          <Sparkle x={52} y={40} r={7} />
+          <Sparkle x={152} y={30} r={6} />
+          <Sparkle x={170} y={104} r={4} />
+        </>
+      )}
+      {kind === 'finger' && (
+        <>
+          {/* the inked finger (the vote moment's own drawing) beside the box, and an empty slip waiting above the slot */}
+          <Box dx={34} />
+          <g transform="translate(6 44)" dangerouslySetInnerHTML={{ __html: handSvg('spot', 70) }} />
+          <Slip cx={134} cy={36} rot={8} dashed mark="none" />
+          <Sparkle x={70} y={40} r={6} />
+          <Sparkle x={182} y={22} r={7} />
+          <Sparkle x={193} y={112} r={4} />
+        </>
+      )}
+      {kind === 'search' && (
+        <>
+          {/* slips with a magnifier: looking for a poll that is not there yet */}
+          <Slip cx={78} cy={70} rot={-10} mark="row" />
+          <Slip cx={110} cy={66} rot={6} mark="row" />
+          <circle cx="132" cy="92" r="24" fill="var(--lime)" fillOpacity=".5" stroke={INK} strokeWidth="3.5" />
+          <path d="M149 109l20 20" stroke={INK} strokeWidth="8" strokeLinecap="round" />
+          <Sparkle x={44} y={34} r={7} />
+          <Sparkle x={170} y={44} r={5} />
+        </>
+      )}
+      {kind === 'lost' && (
+        <>
+          <Box />
+          <Slip cx={110} cy={36} rot={22} mark="q" />
+          <Sparkle x={48} y={36} r={6} />
+          <Sparkle x={160} y={28} r={5} />
+        </>
+      )}
+      {kind === 'done' && (
+        <>
+          <Box front="tick" />
+          <Sparkle x={48} y={40} r={7} />
+          <Sparkle x={154} y={34} r={6} />
+          <Sparkle x={168} y={96} r={4} />
         </>
       )}
     </svg>

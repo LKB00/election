@@ -1,14 +1,14 @@
 import { topicIcon, topicTone } from '@/lib/topicIcons';
+import Spot from './Spot';
 
-// The empty state of a topic page: that topic's own picture in its colour, in front of two empty poll cards
-// (so Cricket, Movies and Food each look like themselves, not like every other empty page).
+// A topic page's empty picture: the ballot box in the topic's colour, with the topic's own icon (trophy, film reel,
+// plate…) in the white badge on its front, so Cricket, Movies and Food each look like themselves.
 export default function TopicSpot({ category }: { category: string }) {
   const Icon = topicIcon(category);
   return (
     <span className="topic-spot" aria-hidden>
-      <span className="topic-spot__card" />
-      <span className="topic-spot__card" />
-      <span className="topic-spot__tile" style={{ '--tone': topicTone(category) } as React.CSSProperties}><Icon size={44} strokeWidth={1.75} /></span>
+      <Spot kind="topic" tone={topicTone(category)} />
+      <Icon className="topic-spot__icon" size={22} strokeWidth={2} />
     </span>
   );
 }

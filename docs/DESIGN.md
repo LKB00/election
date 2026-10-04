@@ -848,3 +848,5 @@ The picture says what will fill the page, so no two empty pages look alike:
 | Search, nothing found | slips and a magnifier |
 | Poll not found | a box with a "?" slip |
 | Admin, nothing to review | a box with a tick |
+
+**Redrawn as one family (owner: "the previous [ballot box] was nice, put serious effort"):** every empty picture is now built around that same ballot box (white lid with slot, indigo box, yellow label, thick ink outline, ground shadow, yellow sparkles), each telling its page's story: Home = a chat bubble holding a poll and a slip going in; lists = slips fanned over the box, the middle one an empty "+"; a topic = the box in the topic's colour with its icon on the front badge; My votes = the inked finger (the vote moment's own drawing) beside the box and an empty slip; plus search (slips + magnifier), not found ("?" slip) and nothing to review (tick label). Code: `src/components/Spot.tsx`, `TopicSpot.tsx`.
