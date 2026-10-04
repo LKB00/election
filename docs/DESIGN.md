@@ -372,3 +372,24 @@ Now: **one scene in the middle of the screen**, the real booth in order. P1 at t
 - **Reduce motion**: no scene; the beep, your pick and the small ink record show at once.
 - **No photos** (owner: "I don't like those fingers… create one, don't use photos"). The hand is our own drawing (`src/lib/inkHand.ts`): soft shading, no thick outlines, so it is not cartoonish; a kurta-blue sleeve. One drawing for the vote moment, the small ink record, "You voted in every live duel" and both share images. No photo credit needed any more. The finger photos and `public/ink/` are removed.
 - The small ink record (56 px photo, voter ID) stays on the page after the scene, as before.
+
+## Mobile (owner: "make the mobile behaviour better and mobile friendly")
+
+Checked on 320×568 (small iPhone), 360×640 (common Android), 390×844, and a phone held sideways (740×360). Every rule below fixes something found there.
+
+| Change | Why |
+|---|---|
+| Bottom bar: 4 equal tabs | It was laid out for 5, so a gap sat on the right. |
+| Share panel and vote moment open on top of everything (portal to the page root) | The bottom bar was drawn over them: the Story image and Copy link buttons could not be tapped on small phones. |
+| Panels never taller than the screen; they scroll inside | The share panel's top (close button) and bottom were cut off at 320×568. |
+| The page behind stays still while a panel or the vote moment is open | Scrolling underneath felt broken. |
+| Phone Back button closes the share panel (stays on the duel) | Back used to leave the duel. |
+| Vote moment shrinks on short screens (and sideways) | The VVPAT machine was cut off at 360px tall. |
+| Text boxes and the language menu use 16px text on touch screens | Smaller text makes iPhones zoom the whole page when you tap a box. |
+| Tap targets at least 40–44px (top-bar buttons, chips, text links, logo, back) | Several were 20–30px: easy to miss with a thumb. |
+| Language button shows a short code (EN · हिं · Hing); the phone's menu still lists the full names | The wide "English" pill pushed the app name off small phones. The name now shows at 320px too. |
+| Ballot rows on phones under 400px: smaller circle, name 15px, no red light in the row | Long names ran into the light; the light still shows in the vote moment. |
+| Create: Enter moves to the next box (keyboard says Next / Go); capitalisation suited to questions and names | Enter used to send a half-filled form and show errors. |
+| Create: the bottom bar steps aside while you type | It floated above the keyboard and covered the boxes. |
+| No grey tap flash, no text-selection bubble on long-press of cards and buttons, no double-tap zoom wait | Taps feel like an app, not a web page. |
+| Safe areas: notch, rounded corners and home bar respected, also sideways (`viewport-fit=cover`) | Content could sit under the notch. |

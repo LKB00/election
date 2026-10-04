@@ -1,6 +1,8 @@
 'use client';
 import { Check, Download, EyeOff, Link2, MessageCircle, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { useOverlay } from '@/lib/useOverlay';
 import type { PollOption, PollView } from '@/lib/polls';
 import { useLang, useT } from '@/lib/lang';
 
@@ -26,6 +28,9 @@ export default function ShareSheet({ poll, pick, shareCode, onClose }: { poll: P
   const mark = poll.myGuess ? ` · ${t.exitMark(poll.myGuess.correct)}` : '';
   const message = secret ? t.msgSecret(poll.title, mark) : t.msgOpen(poll.title, last, mark);
   const text = () => `${message} ${link()}`;
+
+  // Phones: the page behind stays still, and the Back button closes the sheet (not the page).
+  useOverlay(onClose, { back: true });
 
   // Close with Escape, like any sheet.
   useEffect(() => {
@@ -65,7 +70,8 @@ export default function ShareSheet({ poll, pick, shareCode, onClose }: { poll: P
     setBusy(false);
   }
 
-  return (
+  // Rendered at the top of the page, so the bottom bar never covers its buttons.
+  return createPortal(
     <div className="sheet-backdrop" onClick={onClose}>
       <section className="sheet" role="dialog" aria-modal="true" aria-label={t.showInk} onClick={(e) => e.stopPropagation()}>
         <button type="button" className="icon-btn sheet-close" onClick={onClose} aria-label={t.close}><X size={16} strokeWidth={1.75} aria-hidden /></button>
@@ -99,6 +105,7 @@ export default function ShareSheet({ poll, pick, shareCode, onClose }: { poll: P
           </button>
         </div>
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }

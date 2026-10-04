@@ -6,6 +6,8 @@ export const LANGS: Lang[] = ['en', 'hi', 'hg'];
 export const isLang = (v: unknown): v is Lang => v === 'en' || v === 'hi' || v === 'hg';
 /** Each language's name in its own script, for the language menu. */
 export const LANG_NAMES: Record<Lang, string> = { en: 'English', hi: 'हिंदी', hg: 'Hinglish' };
+/** Short form on the top-bar button (the full names show when the menu opens). */
+export const LANG_SHORT: Record<Lang, string> = { en: 'EN', hi: 'हिं', hg: 'Hing' };
 
 const plural = (n: number, one: string, many: string) => `${n.toLocaleString('en-IN')} ${n === 1 ? one : many}`;
 

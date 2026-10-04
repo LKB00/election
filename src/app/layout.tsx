@@ -19,6 +19,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
+  // Use the whole screen on phones with a notch or a home bar; the bars add the safe-area space themselves.
+  viewportFit: 'cover',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#fbfbf7' },
     { media: '(prefers-color-scheme: dark)', color: '#161819' },
