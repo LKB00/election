@@ -442,3 +442,9 @@ Found by testing every screen and API with odd inputs. Rules that came out of it
 | Keyboard / screen reader: focus lost after the vote moment, undo, or opening Share | Focus goes to the exit poll question or Next, back to the ballot after undo, and into the share panel (and back out). The vote moment is announced once, not 40 times. |
 | Sounds silent after an app switch on iPhone | Sound wakes up again on the next tap. |
 | Hindi typed into a duel drawn broken on share images | The image renderer cannot join Hindi letters, so such text is left out of images (the ballot numbers show instead). |
+
+## Temporary: "Reset this phone" (owner: "add a temporary reset content button")
+
+| Element | Screen | Priority | Job |
+|---|---|---|---|
+| "Testing · Reset this phone" (dashed box, last on the page) | My votes | P3 | The owner tests the site as a first-time visitor again. Removes this phone's votes, exit poll calls and reactions (same as "Delete my votes") and clears what the browser remembered, then opens Home. Never touches other people's votes or the duels. Remove before a public launch: `src/components/ResetFresh.tsx` and its line in `src/app/me/page.tsx`. |

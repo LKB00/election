@@ -6,6 +6,7 @@ import { getMyVotes, getVoterStats, type Standing } from '@/lib/polls';
 import type { Dict } from '@/lib/i18n';
 import { readVoterId, voterKeyForLink } from '@/lib/voter';
 import KeepVotes from '@/components/KeepVotes';
+import ResetFresh from '@/components/ResetFresh';
 import { getT } from '@/lib/lang-server';
 
 export const dynamic = 'force-dynamic';
@@ -77,6 +78,8 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
         <p className="small muted block-tight">{t.deviceOnly}</p>
       </section>
       {mine.length > 0 && <KeepVotes voterKey={voterKey} />}
+      {/* TEMPORARY: the owner's "start fresh" for testing (remove before a public launch). */}
+      <ResetFresh />
       <p className="small block">
         <Link href="/privacy" className="text-link">{t.privacyLink}</Link>
       </p>
