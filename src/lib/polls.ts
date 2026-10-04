@@ -772,7 +772,7 @@ export type Standing =
   | { kind: 'leading' | 'won'; name: string; percent: number }
   | { kind: 'rating'; average: number }
   | { kind: 'tie' | 'tied' | 'guess' | 'sealed' | 'none' };
-export type MyVote = { pollId: string; title: string; pick: string; at: string; standing: Standing };
+export type MyVote = { pollId: string; title: string; pick: string; at: string; standing: Standing; voters: number };
 
 /** The duels this voter took part in, newest first, with how each one stands now. */
 export async function getMyVotes(db: Db, voterId: string | null, limit = 50): Promise<MyVote[]> {
@@ -844,7 +844,7 @@ export async function getMyVotes(db: Db, voterId: string | null, limit = 50): Pr
       : r.pollKind === 'rank' ? myTicks.filter((x) => x.pollId === r.pollId).map((x) => `${x.rank}. ${x.label}`).join(', ') || r.pick
       : multi ? myTicks.filter((x) => x.pollId === r.pollId).map((x) => x.label).join(', ') || r.pick
       : r.pick;
-    return { pollId: r.pollId, title: r.title, pick, at: r.at.toISOString(), standing };
+    return { pollId: r.pollId, title: r.title, pick, at: r.at.toISOString(), standing, voters: total };
   });
 }
 

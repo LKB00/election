@@ -7,6 +7,7 @@ import type { Dict } from '@/lib/i18n';
 import { readVoterId, voterKeyForLink } from '@/lib/voter';
 import KeepVotes from '@/components/KeepVotes';
 import ResetFresh from '@/components/ResetFresh';
+import SinceLastLook from '@/components/SinceLastLook';
 import { getT } from '@/lib/lang-server';
 
 export const dynamic = 'force-dynamic';
@@ -64,6 +65,8 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
                   <span className="index-sum">{t.youPicked(v.pick)}</span>
                   {/* Where it stands now: a reason to come back (same visibility rules as the duel itself). */}
                   {standingText(t, v.standing) && <span className="index-standing">{standingText(t, v.standing)}</span>}
+                  {/* What changed since you last looked (this phone only): the reason to come back here. */}
+                  <SinceLastLook pollId={v.pollId} voters={v.voters} lead={v.standing.kind === 'leading' || v.standing.kind === 'won' ? v.standing.name : null} />
                   {/* A small bar: how far ahead the leader is. Lime (= you) when your pick is the one in front. */}
                   {v.standing.kind === 'rating' && (
                     <span className="index-meter" aria-hidden><span style={{ width: `${v.standing.average * 20}%` }} /></span>
