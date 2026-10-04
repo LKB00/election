@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { CATEGORIES } from './categories';
 import { hasBlockedWord } from './moderation';
+import { MAX_PHOTO_CHARS } from './limits';
 
 /** One emoji (flags, skin tones and joined emoji like 👨‍👩‍👧 count as one). */
 export const isEmoji = (s: string) =>
@@ -22,6 +23,14 @@ export const cleanText = (s: string) =>
     .trim();
 /** "Rahul", "rahul." and "RAHUL " are the same choice (letters and numbers only; an emoji-only choice as it is). */
 export const sameKey = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '') || s;
+/** Photos: JPEG only (every phone browser can make one, and the share-image renderer can draw it), at most ~110 KB. */
+export { MAX_PHOTO_CHARS };
+export function isPhoto(dataUrl: string): boolean {
+  const m = /^data:image\/jpeg;base64,([A-Za-z0-9+/]+={0,2})$/.exec(dataUrl);
+  if (!m) return false;
+  const head = atob(m[1].slice(0, 8));
+  return head.charCodeAt(0) === 0xff && head.charCodeAt(1) === 0xd8 && head.charCodeAt(2) === 0xff;
+}
 /** Has something you can see: a letter, a number or an emoji (not only joiners and dots). */
 const visible = (s: string) => /[\p{L}\p{N}\p{Extended_Pictographic}]/u.test(s);
 const text = () => z.string().max(1000).transform(cleanText);
@@ -39,6 +48,8 @@ export const createPollSchema = z.object({
     .refine((a) => new Set(a.map(sameKey)).size === a.length, 'Two choices are the same. Make each one different.'),
   // One optional emoji per choice, in the same order as the choices ('' = none).
   emojis: z.array(z.string().max(16).refine((e) => e === '' || isEmoji(e), 'Pick one emoji per choice.')).max(10).default([]),
+  // One optional photo per choice, in the same order ('' = none): a small JPEG made on the phone, as a data URL.
+  photos: z.array(z.string().max(MAX_PHOTO_CHARS).refine((p) => p === '' || isPhoto(p), 'That photo could not be used. Try another one.')).max(10).default([]),
   hideUntilVoted: z.boolean().default(true),
   allowChange: z.boolean().default(false),
   endsAt: z

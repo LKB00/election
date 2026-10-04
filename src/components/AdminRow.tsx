@@ -23,6 +23,12 @@ export default function AdminRow({ item, adminKey }: { item: ReviewItem; adminKe
     <div className="review-row">
       <Link href={`/p/${item.id}`} className="text-link"><strong>{item.title}</strong></Link>
       <p className="small">{item.options.join(' · ')}</p>
+      {item.photos.length > 0 && (
+        <span className="row wrap review-photos">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {item.photos.map((src) => <img key={src} src={src} alt="" width={56} height={70} />)}
+        </span>
+      )}
       <p className="small muted">
         {t.categories[item.category] ?? item.category}
         {item.reports > 0 && <> · <span className="txt-bad">{t.adminReports(item.reports)}</span>: {item.reasons.map((r) => t.reportReasons[r] ?? r).join(', ')}</>}

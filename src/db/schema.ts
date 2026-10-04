@@ -18,6 +18,8 @@ export const polls = pgTable(
     hidden: boolean('hidden').notNull().default(false),
     // Checked by the owner. Only reviewed duels go into search, and only reviewed politics duels are listed.
     reviewed: boolean('reviewed').notNull().default(false),
+    // The creator added photos from their phone: the duel stays out of public lists until the owner has looked.
+    hasPhotos: boolean('has_photos').notNull().default(false),
     endsAt: timestamp('ends_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -89,4 +91,17 @@ export const reports = pgTable(
   },
   // One report per person per duel, so one person cannot take a duel down alone.
   (t) => [primaryKey({ columns: [t.pollId, t.voterKey] })],
+);
+
+// Photos people add to their choices (from their phone). Small JPEGs (made smaller on the phone first), kept as base64
+// next to the duel, so no extra storage service is needed. Served by /api/img/[id].
+export const photos = pgTable(
+  'photos',
+  {
+    id: text('id').primaryKey(),
+    pollId: text('poll_id').notNull().references(() => polls.id, { onDelete: 'cascade' }),
+    data: text('data').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('photos_poll_idx').on(t.pollId)],
 );

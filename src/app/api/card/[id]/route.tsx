@@ -61,7 +61,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={abs(o.imageUrl)} width={300} height={375} style={{ borderRadius: 20, objectFit: 'cover' }} alt="" />
                 ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 300, height: 300, borderRadius: 150, background: CARD.tints[n], fontSize: 110, fontWeight: 700 }}>{faces[n]}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 300, height: 300, borderRadius: 150, background: CARD.tints[n], fontSize: o.emoji ? 150 : 110, fontWeight: 700 }}>{faces[n]}</div>
                 )}
                 {drawable(o.label) && <div style={{ display: 'flex', marginTop: 20, fontSize: 44, fontWeight: 700 }}>{clip(o.label, 18)}</div>}
                 {mine && <div style={{ display: 'flex', marginTop: 8, fontSize: 32, fontWeight: 700, color: CARD.green, letterSpacing: 2 }}>{t.cardMyVote}</div>}
