@@ -73,6 +73,7 @@ CREATE TABLE IF NOT EXISTS reports (
 -- Who reported, as a hashed network address: clearing cookies does not make one person count as three.
 ALTER TABLE reports ADD COLUMN IF NOT EXISTS ip_hash text;
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS has_photos boolean NOT NULL DEFAULT false;
+ALTER TABLE polls ADD COLUMN IF NOT EXISTS election_mode boolean NOT NULL DEFAULT false;
 CREATE TABLE IF NOT EXISTS photos (
   id text PRIMARY KEY,
   poll_id text NOT NULL REFERENCES polls(id) ON DELETE CASCADE,

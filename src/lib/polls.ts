@@ -68,6 +68,8 @@ export type PollView = {
   myGuess: { optionId: string; correct: boolean } | null;
   /** Code for your share link, and how the friends who used it voted. */
   myShareCode: string | null;
+  /** The full booth ritual (EVM, VVPAT slip, voter ID, counting day). Always on for politics and the flagship. */
+  electionMode: boolean;
   /** Lets an open (not secret) share link show your pick on its preview image. */
   myShareProof: string | null;
   friends: { agree: number; disagree: number };
@@ -94,6 +96,7 @@ export async function createPoll(db: Db, input: CreatePollInput): Promise<string
   await db.transaction(async (tx) => {
   await tx.insert(polls).values({
     hasPhotos,
+    electionMode: input.electionMode,
     id,
     title: input.title,
     description: input.description,
@@ -254,6 +257,7 @@ export async function getPoll(
       // Sealed: "your exit poll was right" would tell who leads.
       !sealed && mine[0]?.prediction && mine[0].prediction !== 'skip' && mine[0].prediction !== 'alone' ? { optionId: mine[0].prediction, correct: !!mine[0].predictionCorrect } : null,
     myShareCode,
+    electionMode: poll.electionMode || poll.category === 'politics' || poll.featured,
     myShareProof: myShareCode ? shareProof(myShareCode) : null,
     // How your friends voted tells who leads, so it waits for the results too.
     friends: !resultsVisible ? { agree: 0, disagree: 0 } : { agree: friendRows[0]?.agree ?? 0, disagree: (friendRows[0]?.all ?? 0) - (friendRows[0]?.agree ?? 0) },

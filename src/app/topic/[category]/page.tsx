@@ -14,7 +14,7 @@ const isCategory = (c: string): c is (typeof CATEGORIES)[number] => (CATEGORIES 
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { category } = await params;
-  if (!isCategory(category)) return { title: 'Duel not found' };
+  if (!isCategory(category)) return { title: 'Poll not found' };
   const t = await getT();
   return { title: t.topicTitle(t.categories[category] ?? category), alternates: { canonical: `/topic/${category}` } };
 }

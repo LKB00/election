@@ -12,7 +12,8 @@ import { handSvg } from '@/lib/inkHand';
 // 3. Ink: a drawn hand rises; the polling officer's rod draws the ink line down from your nail; your voter ID counts up.
 // One scene in the middle of the screen (it used to be three small pieces spread down the page).
 // Tap anywhere to move on. Shorter after the first vote of a visit. Not shown when the phone asks for less motion.
-type Props = { t: Dict; number: number; name: string; party: string | null; voterNo: number | null; short: boolean; onDone: () => void };
+// Election mode off (most polls): only the ink, quick and light; the EVM, VVPAT slip and voter ID are for Election mode.
+type Props = { t: Dict; number: number; name: string; party: string | null; voterNo: number | null; short: boolean; light?: boolean; onDone: () => void };
 
 // The drawn hand, made once: the voter ID counting up re-renders this scene many times, and a fresh copy of the
 // drawing would restart its ink animation (it never got drawn).
@@ -25,10 +26,12 @@ const HandArt = memo(function HandArt() {
 const TIMES = {
   full: { vv: 0.5, drop: 2.3, ink: 2.75, end: 5.0 },
   short: { vv: 0.1, drop: 1.1, ink: 1.45, end: 3.3 },
+  light: { vv: 0, drop: 0, ink: 0, end: 2.4 },
 };
 
-export default function CastVote({ t, number, name, party, voterNo, short, onDone }: Props) {
-  const time = short ? TIMES.short : TIMES.full;
+export default function CastVote({ t, number, name, party, voterNo, short, light = false, onDone }: Props) {
+  const time = light ? TIMES.light : short ? TIMES.short : TIMES.full;
+  if (light) voterNo = null;
   const [count, setCount] = useState(0);
   // The page re-renders while this plays (live numbers); keep the timers running from the first render.
   const done = useRef(onDone);
@@ -40,7 +43,7 @@ export default function CastVote({ t, number, name, party, voterNo, short, onDon
   useEffect(() => {
     const end = () => done.current();
     const buzz = (p: number | number[]) => navigator.vibrate?.(p);
-    const timers = [
+    const timers = light ? [setTimeout(() => buzz([8, 40, 8]), 1300), setTimeout(end, time.end * 1000)] : [
       // The printer feeding the slip: 7 steps, in time with the picture (steps(7) over 0.7 s in election.css).
       ...Array.from({ length: 7 }, (_, k) => setTimeout(printTick, (time.vv + 0.15 + k * 0.1) * 1000)),
       // The slip lands in the box: a thud you hear and feel.
@@ -68,12 +71,12 @@ export default function CastVote({ t, number, name, party, voterNo, short, onDon
       cancelAnimationFrame(raf);
       window.removeEventListener('keydown', onKey);
     };
-  }, [time, voterNo]);
+  }, [time, voterNo, light]);
 
   const vars = { '--t-vv': time.vv, '--t-drop': time.drop, '--t-ink': time.ink } as React.CSSProperties;
   // Rendered at the top of the page, so the bottom bar never sits on top of the scene.
   return createPortal(
-    <div className="cast-backdrop" style={vars} onClick={finish} title={t.tapToSkip}>
+    <div className={"cast-backdrop" + (light ? " is-light" : "")} style={vars} onClick={finish} title={t.tapToSkip}>
       {/* One short line for screen readers (the counting voter number below would be read out forty times). */}
       <p className="sr-only" role="status">{t.inked}.{voterNo ? ` ${t.voterId} EL-${String(voterNo).padStart(6, '0')}` : ''}</p>
       <div className="cast-stage">

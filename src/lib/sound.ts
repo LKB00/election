@@ -94,3 +94,5 @@ function blip(type: OscillatorType, from: number, to: number, ms: number, vol: n
 export const keyClick = () => blip('square', 900, 500, 30, 0.035);
 /** The VVPAT printer feeding the slip: one tiny tick per step. */
 export const printTick = () => blip('square', 2600, 2200, 12, 0.012);
+/** A vote saved, outside Election mode: one soft rising "pop" (the EVM beep is for Election mode). */
+export const votePop = () => blip('sine', 520, 880, 140, 0.06);

@@ -3,7 +3,7 @@ import Link from 'next/link';
 import CreateForm from '@/components/CreateForm';
 import { getT } from '@/lib/lang-server';
 
-export const metadata: Metadata = { title: 'Start a duel' };
+export const metadata: Metadata = { title: 'Start a poll' };
 
 export default async function CreatePage() {
   const t = await getT();

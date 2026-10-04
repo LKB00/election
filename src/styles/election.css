@@ -504,3 +504,11 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 @media (prefers-reduced-motion: reduce) { .builder-row:not(.is-new) { animation: none; } }
 /* Small phones (up to 360 px): the name gets the room; the Vote key in the builder is only decoration. */
 @media (max-width: 360px) { .builder-row .evm-btn { display: none; } }
+
+/* ---- Election mode (docs/DESIGN.md, "Election mode") ---- */
+/* Off (most polls): the vote moment is just the inked finger; no EVM, no VVPAT slip, no voter ID. */
+.cast-backdrop.is-light .cast-booth { display: none; }
+.cast-backdrop.is-light .cast-ink { animation-delay: 0s; }
+/* Off: the ballot rows keep the blue Vote key but not the EVM's red light. */
+.duel.is-light .evm-led { display: none; }
+.builder-note { margin: -8px 0 0; }

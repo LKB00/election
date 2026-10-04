@@ -29,7 +29,7 @@ export default function TopBar() {
           <span className="logo-text"><span className="logo-full">Election</span></span>
         </Link>
         <nav className="topnav-links" aria-label="Main">
-          <Link href="/duels" className={path.startsWith('/duels') ? 'active' : ''}>{t.duels}</Link>
+          <Link href="/polls" className={path.startsWith('/polls') ? 'active' : ''}>{t.duels}</Link>
           <Link href="/create" className={path === '/create' ? 'active' : ''}>{t.create}</Link>
           <Link href="/me" className={path === '/me' ? 'active' : ''}>{t.myVotes}</Link>
         </nav>

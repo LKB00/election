@@ -18,7 +18,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   // The sender's language (from their link), so the chat preview reads like their message.
   const lang = isLang(l) ? l : 'en';
   const poll = await getPoll(await getDb(), id, null);
-  if (!poll) return { title: 'Duel not found' };
+  if (!poll) return { title: 'Poll not found' };
   const names = poll.options.map((o) => o.label).join(' vs ');
   // The preview image says what the sender picked (from their share code), never the split.
   const image = `/api/og/${poll.id}${f ? `?f=${encodeURIComponent(f)}${s === '1' || !o ? '&s=1' : `&o=${encodeURIComponent(o)}`}${lang !== 'en' ? `&l=${lang}` : ''}` : ''}`;
@@ -28,7 +28,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     // Search engines only get duels the owner has checked (and never someone's personal share link).
     robots: poll.reviewed && !f ? undefined : { index: false, follow: true },
     alternates: { canonical: `/p/${poll.id}` },
-    description: `${names}. Who would you pick? Tap to vote.`,
+    description: `${names}. What do you think? Tap to vote.`,
     openGraph: { title, description: `${names}. Vote in one tap and see where everyone stands.`, images: [{ url: image, width: 1200, height: 630 }] },
     twitter: { card: 'summary_large_image', images: [image] },
   };

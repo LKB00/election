@@ -1,14 +1,14 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { House, Plus, Swords, Vote } from 'lucide-react';
+import { ChartNoAxesColumn, House, Plus, Vote } from 'lucide-react';
 import { useT } from '@/lib/lang';
 import type { Dict } from '@/lib/i18n';
 
 // Phone only (hidden on bigger screens by CSS), like patricka.
 const tabs = [
   { to: '/', label: 'home' as const, icon: House, match: (p: string) => p === '/' || p.startsWith('/p/') },
-  { to: '/duels', label: 'duels' as const, icon: Swords, match: (p: string) => p.startsWith('/duels') },
+  { to: '/polls', label: 'duels' as const, icon: ChartNoAxesColumn, match: (p: string) => p.startsWith('/polls') },
   { to: '/create', label: 'create' as const, icon: Plus, match: (p: string) => p === '/create' },
   { to: '/me', label: 'myVotes' as const, icon: Vote, match: (p: string) => p.startsWith('/me') },
 ];

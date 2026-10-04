@@ -16,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const images = featured ? [{ url: `/api/og/${featured}`, width: 1200, height: 630 }] : undefined;
   return {
     alternates: { canonical: '/' },
-    openGraph: { title: 'Election · Who would you pick?', description: 'Vote in one tap and see where everyone stands. Just for fun.', images },
+    openGraph: { title: 'Election · What does everyone think?', description: 'Ask anything. Vote in one tap, then see what everyone thinks. Just for fun.', images },
     twitter: { card: 'summary_large_image', images: images?.map((i) => i.url) },
   };
 }
@@ -41,7 +41,7 @@ export default async function Home() {
       <section className="block">
         <div className="row space-between">
           <h2>{t.moreDuels}</h2>
-          <Link href="/duels" className="text-link">{t.allDuels} <ArrowRight size={14} strokeWidth={1.75} aria-hidden /></Link>
+          <Link href="/polls" className="text-link">{t.allDuels} <ArrowRight size={14} strokeWidth={1.75} aria-hidden /></Link>
         </div>
         <DuelTiles polls={polls} votedIds={voted} />
       </section>

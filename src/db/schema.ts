@@ -20,6 +20,8 @@ export const polls = pgTable(
     reviewed: boolean('reviewed').notNull().default(false),
     // The creator added photos from their phone: the duel stays out of public lists until the owner has looked.
     hasPhotos: boolean('has_photos').notNull().default(false),
+    // Election mode: the full booth ritual (EVM, VVPAT slip, voter ID, counting day). Politics polls always have it.
+    electionMode: boolean('election_mode').notNull().default(false),
     endsAt: timestamp('ends_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },

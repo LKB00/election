@@ -5,3 +5,7 @@ node_modules
 .data
 *.tsbuildinfo
 next-env.d.ts
+
+# Research notes and reports (working files; the final report is sent to the owner)
+research_notes/
+reports/
