@@ -745,3 +745,48 @@ describe('flood guard', () => {
     expect(await checkFlow(db, id, 'home-wifi', 'politics')).toBe('ok');
   });
 });
+
+describe("today's set and sides", () => {
+  it('says which side you are on, with "rare take" for small clubs, and never for a lone vote', async () => {
+    const { sideOf, sideEmoji } = await import('@/lib/sides');
+    const opts = (ps: number[]) => ps.map((percent) => ({ percent }));
+    const poll = (ps: number[], totalVotes = 100) => ({ totalVotes, kind: 'choice' as const, options: opts(ps) as never });
+    expect(sideOf(poll([63, 37]), { percent: 63 })).toEqual({ kind: 'crowd', pct: 63 });
+    expect(sideOf(poll([63, 37]), { percent: 37 })).toEqual({ kind: 'minority', pct: 37 });
+    expect(sideOf(poll([88, 12]), { percent: 12 })).toEqual({ kind: 'rare', oneIn: 8 });
+    expect(sideOf(poll([51, 49]), { percent: 51 })).toEqual({ kind: 'neck' });
+    expect(sideOf(poll([100], 1), { percent: 100 })).toEqual({ kind: 'first' });
+    expect([sideEmoji({ kind: 'crowd', pct: 60 }), sideEmoji({ kind: 'rare', oneIn: 8 }), sideEmoji(null)]).toEqual(['🟩', '🟪', '⬜']);
+  });
+
+  it('is the same all day for everyone, today\'s question first, older polls only, and new tomorrow', async () => {
+    const { getTodaySet, indiaDay, SET_SIZE } = await import('@/lib/polls');
+    const old = [];
+    for (let k = 0; k < 8; k++) old.push(await make({ title: `Old set poll ${k}`, category: ['food', 'tech', 'movies', 'cricket'][k % 4] }));
+    await db.update(schema.polls).set({ createdAt: new Date(Date.now() - 3 * 86400_000) }).where(sql`${schema.polls.id} in (${sql.join(old.map((id) => sql`${id}`), sql`, `)})`);
+    const today = await make({ title: 'Made today, not in the set' });
+    const a = await getTodaySet(db, 'set-a');
+    const b = await getTodaySet(db, 'set-b');
+    expect(a.map((p) => p.id)).toEqual(b.map((p) => p.id));
+    expect(a.length).toBe(SET_SIZE);
+    expect(a[0].id).toBe(await getFeaturedId(db));
+    expect(a.some((p) => p.id === today)).toBe(false);
+    expect(new Set(a.map((p) => p.id)).size).toBe(a.length);
+    expect(indiaDay(Date.UTC(2026, 9, 4, 19, 0)).label).toBe('2026-10-05'); // 00:30 in India
+  });
+
+  it('keeps one trending spot for a new poll once the shelf is full', async () => {
+    const { trendingPolls } = await import('@/lib/polls');
+    const hot = [];
+    for (let k = 0; k < 3; k++) {
+      const id = await make({ title: `Hot poll ${k}` });
+      const p = (await getPoll(db, id, null))!;
+      for (let v = 0; v < 3; v++) await castVote(db, id, p.options[0].id, `hot${k}-${v}`);
+      hot.push(id);
+    }
+    const fresh = await make({ title: 'Brand new, no votes' });
+    const shelf = await trendingPolls(db, 3);
+    expect(shelf.length).toBe(3);
+    expect(shelf[2].id).toBe(fresh);
+  });
+});

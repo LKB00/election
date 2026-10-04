@@ -589,3 +589,18 @@ Rules live in `src/lib/flood.ts`. A scrambled network code (never the address, n
 | Resume voting (and Approve also resumes) | /admin row | P1 for paused rows | The owner looked: voting opens again. |
 | Acted rows dim with "Done ✓"; the Today's question picker sits below the queue | /admin | – | The next one to look at stands out; what needs you comes first. |
 | Vote buttons off while paused | Poll | – | No tap that can only fail. |
+
+## Engagement: a daily ritual, not a game (research: `docs/ENGAGEMENT.md`)
+
+The research says Election already has the right loop (guess → vote → reveal → compare). What it lacked was a shape for the day: a small set, a clear end, and a share that teases without telling.
+
+| Element | Where | Priority | Job |
+|---|---|---|---|
+| Today's set: today's question + 4 more, the same for everyone all day (only polls from before midnight, shuffled by the day, one per topic first) | Home game | P1 | A shared daily moment (Wordle) with a reason to come back tomorrow. Shuffled by the day, not by votes, so new polls get a turn. |
+| "Today's question · 4 left today" / "Today's set · 2 left today" in the label line | Home game | P3 | A plain-words head start and goal (endowed progress, goal gradient). **Never dots or a stepper** (CLAUDE.md), and it starts again each day: nothing counts across days, so it is not a streak. |
+| End card "That's today's set. New set tomorrow." + "Your day vs everyone" (one row per poll: 🟩 with the 63% · 🟪 rare take: 1 in 8 · 🟨 neck and neck) | Home, after the set | P1 | A natural stopping point that ends on a high (peak-end), and the comparison people came for. One poll per row, **never a total** (that would be a score). Shown again when you come back the same day. |
+| Ink "Share your day" (WhatsApp text: emoji line + legend + link) | End card | P1 action | Wordle's spoiler-free grid: shows which side you were on, never what you picked, so friends must vote to find out. Plain text, light on data. |
+| Ghost "More polls" | End card | P2 | More only if you ask (no autoplay, no endless feed). Adds the rest of the deck in place. |
+| Result lines: "You're with the 63%." · "Against the crowd. Only 38% picked this." · "Rare take. Only 1 in 8 picked this." · "Everyone agrees so far." (all votes on one side) | Result bar | P1 at that moment | Most people expect to be in the majority (false consensus), so real numbers and "rare take" make the reveal a surprise worth sharing. Numbers only for pick-one and pick-several; words for rank and rating. |
+| "Your polls · 37 votes so far" (this phone's own list, newest 3) | Home, under the game | P2 | People value what they made (IKEA effect); group admins who come back to check are the ones who make the next poll. |
+| One trending spot for the newest poll with few votes | Trending shelf | – | Fair discovery: counts make winners win more (MusicLab). |

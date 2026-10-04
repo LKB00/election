@@ -12,6 +12,7 @@ import ShareSheet from './ShareSheet';
 import { evmBeep, keyClick, votePop } from '@/lib/sound';
 import { ratingAverage, ratingEmoji } from '@/lib/rating';
 import { humanToken, prepareHumanCheck } from '@/lib/turnstile-client';
+import { sideEmoji, sideOf, type Side } from '@/lib/sides';
 import { useLang, useT } from '@/lib/lang';
 import { apiMsg, reasonLabel, type Dict, type Lang } from '@/lib/i18n';
 import { faceLabels } from '@/lib/labels';
@@ -38,13 +39,34 @@ function rounded(opts: PollOption[], total: number, counts?: Record<string, numb
   return out;
 }
 
-function verdict(t: Dict, poll: PollView, mine: PollOption) {
-  if (poll.totalVotes <= 1) return t.firstVote;
-  const top = Math.max(...poll.options.map((o) => o.percent));
-  const p = mine.percent;
-  if (Math.abs(top - p) < 0.01 && poll.options.filter((o) => Math.abs(o.percent - top) < 3).length > 1) return t.neck;
-  if (Math.abs(top - p) < 0.01) return t.crowd(mine.label);
-  return t.bold;
+function verdict(t: Dict, poll: PollView, mine: PollOption): [string, string] {
+  // Numbers only where a share of voters means something (pick one, pick several); words for rank and rating.
+  const side = sideOf(poll, mine);
+  const numbers = poll.kind === 'choice' || poll.kind === 'multi';
+  if (side.kind === 'first') return t.firstVote;
+  if (side.kind === 'neck') return t.neck;
+  if (side.kind === 'crowd' && side.pct >= 100) return t.allAgree(mine.label);
+  if (side.kind === 'crowd') return numbers ? t.crowdPct(side.pct, mine.label) : t.crowd(mine.label);
+  if (side.kind === 'rare') return t.rare(side.oneIn);
+  return numbers ? t.minorityPct(side.pct) : t.bold;
+}
+
+// Where you stood on one poll of today's set (null = you cannot see its result yet).
+function daySide(p: PollView): Side | null {
+  if (p.myVote === null || !p.resultsVisible || p.sealedUntil) return null;
+  const picks = p.options.filter((o) => p.myPicks.includes(o.id));
+  // Pick several: your best-placed tick, as in the result line.
+  const mine = (p.kind === 'multi' ? picks.sort((a, b) => b.votes - a.votes)[0] : null) ?? p.options.find((o) => o.id === p.myVote);
+  return mine ? sideOf(p, mine) : null;
+}
+function sideWords(t: Dict, side: Side | null, kind: PollView['kind']) {
+  if (!side) return t.sideLater;
+  if (side.kind === 'first') return t.sideFirst;
+  if (side.kind === 'neck') return t.sideNeck;
+  if (side.kind === 'rare') return t.sideRare(side.oneIn);
+  // Rank and rating shares are not "people who picked this", so they get words, not a number.
+  if (kind === 'rank' || kind === 'rating') return side.kind === 'crowd' ? t.sideCrowdWord : t.sideAgainst;
+  return side.kind === 'crowd' ? t.sideCrowd(side.pct) : t.sideMinority(side.pct);
 }
 
 function timeAgo(iso: string | null) {
@@ -182,10 +204,26 @@ function Sparkline({ points, label, aria }: { points: number[]; label: string; a
 
 // start: given for a shared link (always open that duel, even if it ended or you voted).
 // Not given (Home): the first live duel you have not voted in, or "all caught up".
-export default function DuelGame({ deck: initialDeck, start, via, todayId }: { deck: PollView[]; start?: number; via?: string | null; todayId?: string | null }) {
+export default function DuelGame({ deck: initialDeck, start, via, todayId, daily = false, more: initialMore = [] }: {
+  deck: PollView[];
+  start?: number;
+  via?: string | null;
+  todayId?: string | null;
+  /** Home: the deck is today's set (a few polls, the same for everyone), with "N left today" and an end card. */
+  daily?: boolean;
+  /** Home: the polls offered after today's set, only when you ask for more (never pushed). */
+  more?: PollView[];
+}) {
   const t = useT();
   const lang = useLang();
   const [deck, setDeck] = useState(initialDeck);
+  const [more, setMore] = useState(initialMore);
+  // Today's set never changes while you play, even after "More polls" adds to the deck.
+  const [setIds] = useState(() => new Set(daily ? initialDeck.map((p) => p.id) : []));
+  const setLeft = daily ? deck.filter((p) => setIds.has(p.id) && isOpen(p)).length : 0;
+  // The site address for the day's share text (known only on the phone, after the page has loaded).
+  const [origin, setOrigin] = useState('');
+  useEffect(() => setOrigin(window.location.origin), []);
   const firstOpen = initialDeck.findIndex(isOpen);
   const [i, setI] = useState(start ?? Math.max(firstOpen, 0));
   const [busy, setBusy] = useState<string | null>(null);
@@ -588,6 +626,52 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId }: { d
 
   if (!poll) return null;
 
+  if (over && daily) {
+    // The end of today's set (P1): a clear stopping point that ends on a high, where you stood on each poll, and one
+    // spoiler-free line to share (which side, never which choice). More polls only if you ask.
+    const rows = deck.filter((p) => setIds.has(p.id)).map((p) => ({ p, side: daySide(p) }));
+    const grid = rows.map((r) => sideEmoji(r.side)).join('');
+    const text = `${t.dayShareText(grid)} ${origin}/`;
+    const keepGoing = () => {
+      const fresh = more.filter((m) => !deck.some((d) => d.id === m.id) && isOpen(m));
+      if (!fresh.length) return;
+      setDeck([...deck, ...fresh]);
+      setMore([]);
+      setI(deck.length);
+      setOver(false);
+    };
+    return (
+      <div className="tot tot-over day-end" ref={topRef}>
+        <InkFinger size={64} />
+        <h1 className="display duel-q">{t.setDone}</h1>
+        <p className="tot-verdict">{t.setDoneNote}</p>
+        <div className="day-vs">
+          <p className="label">{t.dayVs}</p>
+          <ul>
+            {rows.map(({ p, side }) => (
+              <li key={p.id}>
+                <span aria-hidden>{sideEmoji(side)}</span>
+                <Link href={`/p/${p.id}`} className="day-q">{p.title}</Link>
+                <span className="small muted">{sideWords(t, side, p.kind)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="row wrap center">
+          <a className="btn btn-primary btn-lg" href={`https://wa.me/?text=${encodeURIComponent(text)}`} target="_blank" rel="noopener noreferrer">
+            <Share2 size={15} strokeWidth={1.75} aria-hidden /> {t.shareDay}
+          </a>
+          {more.some((m) => isOpen(m) && !deck.some((d) => d.id === m.id)) ? (
+            <button type="button" className="btn btn-ghost btn-lg" onClick={keepGoing}>{t.morePolls} <ArrowRight size={14} strokeWidth={1.75} aria-hidden /></button>
+          ) : (
+            <Link href="/polls" className="btn btn-ghost btn-lg">{t.morePolls} <ArrowRight size={14} strokeWidth={1.75} aria-hidden /></Link>
+          )}
+        </div>
+        <p className="small"><Link href="/create" className="text-link"><Plus size={13} strokeWidth={1.75} aria-hidden /> {t.startOwn}</Link></p>
+      </div>
+    );
+  }
+
   if (over) {
     return (
       <div className="tot tot-over" ref={topRef}>
@@ -616,7 +700,13 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId }: { d
 
       <div className="tot-q">
         {/* The owner's pick for the top of Home (P2): says why this poll is first. */}
-        {todayId === poll.id && <p className="label duel-today">{t.todaysQuestion}</p>}
+        {/* Today's set (P3): plain words, never dots or a stepper, and it starts again tomorrow (not a streak). */}
+        {(todayId === poll.id || (daily && setIds.has(poll.id) && setLeft > 0)) && (
+          <p className="label duel-today">
+            {todayId === poll.id ? t.todaysQuestion : t.setLabel}
+            {daily && setIds.has(poll.id) && setLeft > 0 && <span className="duel-set"> · {t.setLeft(setLeft)}</span>}
+          </p>
+        )}
         <h1 key={poll.id} className="display duel-q">{poll.title}</h1>
         <p className="small muted">
           {poll.closed ? t.pollingClosed : <><span className="live-dot" aria-hidden /> {t.pollingOpen}</>} · <span key={poll.participants} className="tick">{poll.participants.toLocaleString('en-IN')}</span> {t.votesCast(poll.participants)}
