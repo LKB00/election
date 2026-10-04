@@ -898,6 +898,22 @@ null
       {/* P3, optional: after the pinned bar, so the bar never covers it. */}
       {(revealed || sealed) && mine && (
         <div className="duel-after">
+          {/* P2: your group (you + friends from your link) vs everyone, for your pick. Lime = you. */}
+          {revealed && poll.group && (
+            <div className="duel-group group-vs">
+              <p className="label">{t.groupTitle(mine.label)}</p>
+              {[
+                { name: t.groupMine(poll.group.size), pct: poll.group.mine, you: true },
+                { name: t.groupAll, pct: poll.group.everyone, you: false },
+              ].map((r) => (
+                <div key={r.name} className={'group-row' + (r.you ? ' is-you' : '')}>
+                  <span className="small"><strong>{r.name}</strong><span>{r.pct}%</span></span>
+                  <span className="group-bar" aria-hidden><span style={{ width: `${r.pct}%` }} /></span>
+                </div>
+              ))}
+              <p className="small muted">{t.groupNote}</p>
+            </div>
+          )}
           {poll.endsAt && !poll.closed && (
             <p className="small">
               <a className="text-link" href={`/api/polls/${poll.id}/ics`} download>

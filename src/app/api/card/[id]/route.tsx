@@ -5,7 +5,7 @@ import { getDb } from '@/db';
 import { CARD, cardFonts, faceLabels, friendsFromCode, pickFromCode } from '@/lib/cards';
 import { clip, drawable } from '@/lib/labels';
 import { isShareProof } from '@/lib/secret';
-import { getPoll } from '@/lib/polls';
+import { getPoll, groupSplit } from '@/lib/polls';
 import { cardDict, isLang } from '@/lib/i18n';
 
 export const dynamic = 'force-dynamic';
@@ -39,6 +39,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const pick = shown.find((o) => o.id === pickId);
   // The social line (P2): how many friends came through your link and agree with you. No spoiler of who leads.
   const friends = await friendsFromCode(db, id, f, pickId);
+  // My group vs everyone, only where the result is already public to anyone (results not hidden, or the poll ended;
+  // getPoll with no voter says so) and your pick shows: then the image gives nothing away.
+  const picked = poll.options.find((o) => o.id === pickId);
+  const group =
+    showPick && poll.resultsVisible && poll.kind === 'choice' && picked && drawable(picked.label)
+      ? groupSplit(friends.all, friends.agree, picked.votes, poll.totalVotes)
+      : null;
 
   return new ImageResponse(
     (
@@ -76,9 +83,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         <div style={{ display: 'flex', marginTop: 40, fontSize: 60, fontWeight: 700 }}>
           {showPick && pick ? t.cardPicked(rating ? pick.emoji ?? pick.label : drawable(pick.label) ? pick.label : String(poll.options.indexOf(pick) + 1)) : t.cardGuess}
         </div>
-        {friends.all > 0 && (
+        {(group || friends.all > 0) && (
           <div style={{ display: 'flex', marginTop: 24, padding: '14px 28px', borderRadius: 999, background: CARD.lime, fontSize: 36, fontWeight: 700 }}>
-            {t.cardFriends(friends.all, friends.agree)}
+            {group && picked ? t.cardGroup(group.mine, clip(picked.label, 18), group.everyone) : t.cardFriends(friends.all, friends.agree)}
           </div>
         )}
 

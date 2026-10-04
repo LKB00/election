@@ -555,3 +555,12 @@ Ballots keep one vote per person; each place is stored in `vote_picks.rank`. Poi
 | "Polls about “…”" + matching tiles | Polls, while searching | P1 | The only thing on the page while you search: Today's banner and Trending step away. Today's question is found like any other poll. |
 | "Nothing yet. Be the first to ask." + ink "Ask it yourself" | Polls, no match | P1 | A dead end becomes a new poll: it opens Create with your words already in the question. |
 | "Clear search" link | Polls, while searching | P3 | Back to the normal page. |
+
+## Phase 3: My group vs everyone
+
+"Your group" = you + the friends who voted from your share link. Pick-one polls only.
+
+| Element | Where | Priority | Job |
+|---|---|---|---|
+| "Who picked Pani puri, like you": Your group (4) 75% (lime bar) vs Everyone 56% (grey bar) | Poll, after the vote (first thing under the pinned bar) | P2 | The question people actually argue about in a group chat: "are we different from everyone?" Lime = you. Only once results are open to you, and only with at least 3 friends (`GROUP_MIN`), so no single friend's vote can be worked out. |
+| Story card line "75% of my group picked Pani puri · 56% of everyone" | Status / Story image | P2 | Replaces the friends line, only when the poll's result is already public to everyone (results not hidden, or the poll ended), the link is open (pick shown) and there are 3+ friends. Otherwise the spoiler-free friends line stays. |

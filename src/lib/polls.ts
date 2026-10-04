@@ -80,6 +80,9 @@ export type PollView = {
   /** Lets an open (not secret) share link show your pick on its preview image. */
   myShareProof: string | null;
   friends: { agree: number; disagree: number };
+  /** My group vs everyone (pick-one polls, results visible, at least GROUP_MIN friends from your link): the share of your
+   *  group (you + those friends) and of everyone who picked what you picked, in whole percent. */
+  group: { size: number; mine: number; everyone: number } | null;
   /** Opened from a friend's link: whether that friend exists, and their pick once you can see results. */
   friend: { known: boolean; optionId: string | null };
   options: PollOption[];
@@ -92,6 +95,15 @@ function parseReasons(raw: string): string[] {
   } catch {
     return [];
   }
+}
+
+/** Friends needed before "your group vs everyone" shows, so no single friend's vote can be worked out from it. */
+export const GROUP_MIN = 3;
+
+/** Whole-percent share of your group (you + friends) and of everyone who picked your choice. */
+export function groupSplit(friendsAll: number, friendsAgree: number, everyoneMine: number, everyoneTotal: number) {
+  if (friendsAll < GROUP_MIN || !everyoneTotal) return null;
+  return { size: friendsAll + 1, mine: Math.round(((friendsAgree + 1) / (friendsAll + 1)) * 100), everyone: Math.round((everyoneMine / everyoneTotal) * 100) };
 }
 
 export async function createPoll(db: Db, raw: CreatePollInput): Promise<string> {
@@ -313,6 +325,10 @@ export async function getPoll(
     myShareProof: myShareCode ? shareProof(myShareCode) : null,
     // How your friends voted tells who leads, so it waits for the results too.
     friends: !resultsVisible ? { agree: 0, disagree: 0 } : { agree: friendRows[0]?.agree ?? 0, disagree: (friendRows[0]?.all ?? 0) - (friendRows[0]?.agree ?? 0) },
+    group:
+      resultsVisible && myVote !== null && !picksKind && poll.kind !== 'rating'
+        ? groupSplit(friendRows[0]?.all ?? 0, friendRows[0]?.agree ?? 0, byOption.get(myVote) ?? 0, total)
+        : null,
     // The friend's pick stays a surprise until you have voted (and guessed).
     friend: { known: friendKnown, optionId: friendKnown && myVote !== null && resultsVisible ? friendVote!.optionId : null },
     options: opts.map((o) => {
