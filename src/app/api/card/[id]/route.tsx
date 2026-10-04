@@ -49,7 +49,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   return new ImageResponse(
     (
-      <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '96px 72px 72px', background: CARD.paper, color: CARD.ink, fontFamily: 'Lato' }}>
+      <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '96px 72px 72px', background: CARD.paper, color: CARD.ink, fontFamily: 'Figtree' }}>
         <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center', fontSize: 40, fontWeight: 700 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <div style={{ display: 'flex', width: 40, height: 40, borderRadius: 20, background: CARD.ink, border: `10px solid ${CARD.lime}` }} />

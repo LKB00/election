@@ -3,9 +3,7 @@ import type { Metadata, Viewport } from 'next';
 import BottomNav from '@/components/BottomNav';
 import TopBar from '@/components/TopBar';
 import OfflineBar from '@/components/OfflineBar';
-import '@fontsource-variable/bricolage-grotesque/standard.css';
-import '@fontsource/lato/400.css';
-import '@fontsource/lato/700.css';
+import '@fontsource-variable/figtree/index.css';
 import '@fontsource/noto-sans-devanagari/400.css';
 import '@fontsource/noto-sans-devanagari/700.css';
 import { getLang } from '@/lib/lang-server';
@@ -23,8 +21,8 @@ export const viewport: Viewport = {
   // Use the whole screen on phones with a notch or a home bar; the bars add the safe-area space themselves.
   viewportFit: 'cover',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#fbfbf7' },
-    { media: '(prefers-color-scheme: dark)', color: '#161819' },
+    { media: '(prefers-color-scheme: light)', color: '#fbf9f6' },
+    { media: '(prefers-color-scheme: dark)', color: '#fbf9f6' },
   ],
 };
 

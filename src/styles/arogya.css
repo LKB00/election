@@ -1,0 +1,118 @@
+/*
+ * The Arogya Line look (owner, Oct 2026: "make the Election website look visually like Arogya Line").
+ * Values copied from the Arogya Line prototype (LKB00/arogya-line, src/styles/tokens.css): Figtree, a warm off-white
+ * ground, white cards with thin warm borders, ink actions, soft indigo containers, its yellow as the brand accent, and
+ * its pink / marigold / green signals. Loaded LAST, after gb/ and election.css: gb/ stays untouched, and every screen
+ * keeps its layout and behaviour; only the look changes here.
+ *
+ * Arogya Line has one light look, so this does too (also on phones set to dark mode).
+ * "Lime = you" is now "yellow = you": --lime carries Arogya's brand yellow.
+ */
+
+/* :not(#arogya) outweighs gb's dark-mode blocks, so the light Arogya values always win. */
+:root:not(#arogya) {
+  color-scheme: light;
+
+  /* Ground, cards, lines, text (Arogya's ASHA palette) */
+  --paper: #fbf9f6;
+  --sand: #f5f2ed;
+  --sand-dark: #efebe5;
+  --card: #ffffff;
+  --ink: #1d1b18;
+  --ink-hover: #000000;
+  --ink-2: #5e5a53;
+  --ink-3: #736e66;
+  --line: #e7e2da;
+  --divider: #efebe5;
+  --on-ink: #ffffff;
+
+  /* Signals: Arogya's green, pink and marigold */
+  --positive: #2f7d4f;
+  --positive-soft: #ddf1e3;
+  --negative: #b42b5e;
+  --negative-soft: #fce4ec;
+  --attention: #6b4e00;
+  --attention-soft: #fdf4df;
+  --caution: #34449a;
+  --caution-soft: #e0e3ff;
+
+  /* "You" and the brand: Arogya's yellow */
+  --lime: #fcd12a;
+  --lime-badge: #fef6d6;
+
+  /* Choice tones (soft containers) and their stronger partners */
+  --p-input: #e0e3ff;
+  --p-output: #fef6d6;
+  --p-control: #ddf1e3;
+  --p-trust: #fdf4df;
+  --p-feedback: #fce4ec;
+  --p-agents: #f5f2ed;
+  --d-input: #c5cbf6;
+  --d-output: #f6dc74;
+  --d-control: #9fd0ae;
+  --d-trust: #f0c86a;
+  --d-feedback: #eeaac3;
+  --d-agents: #d8d2c8;
+
+  /* Arogya's soft indigo, for the vote keys and "selected" states */
+  --indigo: #34449a;
+  --indigo-soft: #e0e3ff;
+  --on-indigo-soft: #13205e;
+
+  /* One typeface, like Arogya Line: Figtree (Hindi letters fall back to Noto Sans Devanagari) */
+  --sans: 'Figtree Variable', 'Noto Sans Devanagari', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --display: 'Figtree Variable', 'Noto Sans Devanagari', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --hair: 1px;
+  --radius-card: 18px;
+  --shadow-card: 0 1px 2px rgba(29, 27, 24, 0.04);
+  --shadow-raised: 0 4px 12px rgba(29, 27, 24, 0.14), 0 1px 3px rgba(29, 27, 24, 0.12);
+}
+
+body { background: var(--paper); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+
+/* Titles: Figtree semibold, pulled in at large sizes (Arogya's screen titles) */
+.display, h1, h2, h3, .duel-q { font-family: var(--display); letter-spacing: -0.02em; }
+.display, .duel-q { font-weight: 600; }
+h2 { font-weight: 600; }
+.label { letter-spacing: 0.06em; font-weight: 600; color: var(--ink-2); }
+
+/* Cards: white, thin warm border, 18px corners, a whisper of shadow */
+.tot-option, .duel-created, .search-none, .day-vs li, .my-polls li, .rules-note, .duel-guess, .guess-card,
+.review-row, .card, .today-card, .sheet, .cast-stage {
+  border-radius: var(--radius-card);
+}
+.tot-option, .guess-card, .day-vs li, .my-polls li, .duel-created, .duel-guess {
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-card);
+}
+.tot-option:not(:disabled):hover { transform: none; box-shadow: var(--shadow-raised); }
+.duel-option.is-mine { border-color: transparent; }
+
+/* Buttons: pills; the one main action is ink (as in Arogya), secondary is white with a border */
+.btn { border-radius: 9999px; font-weight: 600; letter-spacing: 0; }
+.btn-lg { min-height: 48px; }
+.btn-ghost { border: 1px solid var(--line); }
+
+/* Vote keys: Arogya's soft indigo container ("Check someone"), ink text */
+.evm-btn { background: var(--indigo-soft); color: var(--on-indigo-soft); box-shadow: none; font-weight: 600; }
+.duel-option:not(:disabled):active .evm-btn { background: #cdd3fb; box-shadow: none; }
+
+/* Chips: pills with a thin border; on = soft indigo (Arogya's selected filter) */
+.chip { border: 1px solid var(--line); font-weight: 500; }
+.chip-on, .chip[aria-checked='true'], .chip[aria-pressed='true'] { background: var(--indigo-soft); border-color: transparent; color: var(--on-indigo-soft); }
+
+
+/* Poll tiles: Arogya keeps cards white and puts colour in a small round icon (its "Later today" rows).
+   The tone that used to fill the tile now fills only the circle behind the topic icon. */
+.game { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-card); box-shadow: var(--shadow-card); padding: 16px; }
+.game:hover { transform: none; box-shadow: var(--shadow-raised); }
+.game > svg:first-child { box-sizing: content-box; width: 20px; height: 20px; padding: 10px; margin-bottom: 8px; border-radius: 50%; background: var(--sand); color: var(--ink); }
+.game.game-a > svg:first-child { background: var(--p-output); }
+.game.game-b > svg:first-child { background: var(--p-control); }
+.game.game-c > svg:first-child { background: var(--p-trust); }
+.game.game-d > svg:first-child { background: var(--p-agents); }
+.game.game-e > svg:first-child { background: var(--p-input); }
+.game.game-f > svg:first-child { background: var(--p-feedback); }
+.game strong { font-family: var(--display); font-size: 17px; line-height: 1.3; font-weight: 600; letter-spacing: -0.01em; }
+.game-meta { font-weight: 600; color: var(--ink-2); }

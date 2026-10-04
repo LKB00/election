@@ -8,8 +8,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'Ask anything. Vote in one tap, see what everyone thinks. Just for fun, not official.',
     start_url: '/',
     display: 'standalone',
-    background_color: '#fbfbf7',
-    theme_color: '#fbfbf7',
+    background_color: '#fbf9f6',
+    theme_color: '#fbf9f6',
     icons: [
       { src: '/icon', sizes: '512x512', type: 'image/png', purpose: 'any' },
       { src: '/icon', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
