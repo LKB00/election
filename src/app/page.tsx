@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import DuelGame from '@/components/DuelGame';
+import EmptyState from '@/components/EmptyState';
 import MyPolls from '@/components/MyPolls';
 import RulesNotice from '@/components/RulesNotice';
 import DuelTiles from '@/components/DuelTiles';
@@ -57,6 +58,12 @@ export default async function Home() {
       {deck.length > 0 && (
         <section className="home-game duel-first" aria-label="Duel">
           <DuelGame deck={deck} todayId={todayId} daily more={more} />
+        </section>
+      )}
+      {/* Empty: nothing open today (a new site, or a quiet day). */}
+      {deck.length === 0 && (
+        <section className="block">
+          <EmptyState title={t.emptyHome} line={t.emptyHomeLine} action={{ href: '/create', label: t.startDuel }} />
         </section>
       )}
       <MyPolls />

@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { Check, ChevronRight, Plus } from 'lucide-react';
 import { topicIcon } from '@/lib/topicIcons';
+import EmptyState from './EmptyState';
 import { useEffect, useState } from 'react';
 import type { PollSummary } from '@/lib/polls';
 import { useT } from '@/lib/lang';
@@ -28,7 +29,7 @@ function repeatsTitle(p: PollSummary): boolean {
   return p.options.every((o) => title.includes(o.toLocaleLowerCase().trim()));
 }
 
-export default function DuelTiles({ polls, votedIds = [], noCreate = false, limit }: { polls: PollSummary[]; votedIds?: string[]; noCreate?: boolean; limit?: number }) {
+export default function DuelTiles({ polls, votedIds = [], noCreate = false, limit, topic }: { polls: PollSummary[]; votedIds?: string[]; noCreate?: boolean; limit?: number; /** Topic page: the empty state names it and Create starts in it. */ topic?: string }) {
   const t = useT();
   const [voted, setVoted] = useState<string[]>(votedIds);
   const [counts, setCounts] = useState<Record<string, number>>({});
@@ -50,6 +51,11 @@ export default function DuelTiles({ polls, votedIds = [], noCreate = false, limi
   const shown = limit && !all ? sorted.slice(0, limit) : sorted;
   const hiddenN = sorted.length - shown.length;
 
+  // Empty list: a picture, one line and the one next step (start the first poll), instead of a lone "Start" row.
+  if (!polls.length && !noCreate) {
+    const name = topic ? t.categories[topic] ?? topic : '';
+    return <EmptyState title={topic ? t.emptyTopic(name) : t.emptyHome} line={topic ? t.emptyTopicLine : t.emptyHomeLine} action={{ href: topic ? `/create?topic=${topic}` : '/create', label: t.startDuel }} />;
+  }
   return (
     <>
     <ul className="al-listcard">

@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { ArrowRight, CalendarPlus, Check, Flag, Lock, Plus, Share2, Users } from 'lucide-react';
+import { ArrowRight, CalendarPlus, Check, Flag, Lock, Plus, Share2, Target, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type { PollOption, PollView } from '@/lib/polls';
@@ -874,6 +874,8 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
                     {/* The line at 50% is the majority mark, as on counting-day tallies. */}
                     <span className="meter duel-meter" aria-hidden><span style={{ width: `${pcts[n]}%` }} /></span>
                     <span className="small muted">{ranking ? (o.avgPlace != null ? t.rankAvg(o.avgPlace.toFixed(1)) : '') : <Tween value={votesOf(o)} render={(v) => t.votes(v)} />}</span>
+                    {/* Your crowd guess, drawn on the real result: you see at once how close you were. */}
+                    {poll.myGuess?.optionId === o.id && <span className="guess-tag"><Target size={12} strokeWidth={2} aria-hidden /> {t.yourGuess}</span>}
                   </span>
                 )}
                 {!revealed && !poll.closed && (
