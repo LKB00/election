@@ -1,3 +1,4 @@
+import { SITE_URL } from '@/lib/site';
 import type { MetadataRoute } from 'next';
 import { getDb } from '@/db';
 import { CATEGORIES } from '@/lib/categories';
@@ -7,7 +8,7 @@ import { getFeaturedId, listPolls } from '@/lib/polls';
 export const dynamic = 'force-dynamic';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const site = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+  const site = SITE_URL;
   const db = await getDb();
   const [featured, polls] = await Promise.all([getFeaturedId(db), listPolls(db, 1000, { reviewedOnly: true })]);
   const now = new Date();

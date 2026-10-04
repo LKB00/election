@@ -1,5 +1,7 @@
-import { and, desc, eq, inArray, ne, or, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, ne, or, sql } from 'drizzle-orm';
 import { nanoid, customAlphabet } from 'nanoid';
+import { shareProof } from './secret';
+import { isCode } from './validation';
 import { schema, type Db } from '@/db';
 import type { CreatePollInput } from './validation';
 import { namesPolitics } from './moderation';
@@ -66,6 +68,8 @@ export type PollView = {
   myGuess: { optionId: string; correct: boolean } | null;
   /** Code for your share link, and how the friends who used it voted. */
   myShareCode: string | null;
+  /** Lets an open (not secret) share link show your pick on its preview image. */
+  myShareProof: string | null;
   friends: { agree: number; disagree: number };
   /** Opened from a friend's link: whether that friend exists, and their pick once you can see results. */
   friend: { known: boolean; optionId: string | null };
@@ -83,7 +87,9 @@ function parseReasons(raw: string): string[] {
 
 export async function createPoll(db: Db, input: CreatePollInput): Promise<string> {
   const id = pollId();
-  await db.insert(polls).values({
+  // One transaction: a duel is never saved without its choices.
+  await db.transaction(async (tx) => {
+  await tx.insert(polls).values({
     id,
     title: input.title,
     description: input.description,
@@ -93,7 +99,8 @@ export async function createPoll(db: Db, input: CreatePollInput): Promise<string
     allowChange: input.allowChange,
     endsAt: input.endsAt ? new Date(input.endsAt) : null,
   });
-  await db.insert(options).values(input.options.map((label, position) => ({ id: nanoid(10), pollId: id, label, position, emoji: input.emojis[position] || null })));
+  await tx.insert(options).values(input.options.map((label, position) => ({ id: nanoid(10), pollId: id, label, position, emoji: input.emojis[position] || null })));
+  });
   return id;
 }
 
@@ -174,6 +181,7 @@ export async function getPoll(
         .from(votes)
         .where(and(eq(votes.pollId, id), eq(votes.via, myShareCode)))
     : [];
+  if (!isCode(via)) via = null;
   const friendVote = via
     ? (await db.select({ optionId: votes.optionId, voterKey: votes.voterKey }).from(votes).where(and(eq(votes.pollId, id), eq(votes.shareCode, via))).limit(1))[0]
     : undefined;
@@ -227,7 +235,9 @@ export async function getPoll(
       // Sealed: "your exit poll was right" would tell who leads.
       !sealed && mine[0]?.prediction && mine[0].prediction !== 'skip' ? { optionId: mine[0].prediction, correct: !!mine[0].predictionCorrect } : null,
     myShareCode,
-    friends: { agree: friendRows[0]?.agree ?? 0, disagree: (friendRows[0]?.all ?? 0) - (friendRows[0]?.agree ?? 0) },
+    myShareProof: myShareCode ? shareProof(myShareCode) : null,
+    // How your friends voted tells who leads, so it waits for the results too.
+    friends: !resultsVisible ? { agree: 0, disagree: 0 } : { agree: friendRows[0]?.agree ?? 0, disagree: (friendRows[0]?.all ?? 0) - (friendRows[0]?.agree ?? 0) },
     // The friend's pick stays a surprise until you have voted (and guessed).
     friend: { known: friendKnown, optionId: friendKnown && myVote !== null && resultsVisible ? friendVote!.optionId : null },
     options: opts.map((o) => {
@@ -320,7 +330,7 @@ export async function castVote(db: Db, id: string, optionId: string, voterId: st
 
   // Only keep "via" when it is a real share code for this duel from someone else.
   let viaCode: string | null = null;
-  if (via) {
+  if (isCode(via)) {
     const [ref] = await db.select({ voterKey: votes.voterKey }).from(votes).where(and(eq(votes.pollId, id), eq(votes.shareCode, via))).limit(1);
     if (ref && ref.voterKey !== voterId) viaCode = via;
   }
@@ -345,9 +355,16 @@ export async function castVote(db: Db, id: string, optionId: string, voterId: st
 }
 
 /** "Who's winning right now?": checked against the live count (your vote included) at the moment you answer. */
-export async function guessLeader(db: Db, id: string, voterId: string, choice: string): Promise<'ok' | 'not_allowed' | 'bad_option'> {
-  const [poll] = await db.select({ category: polls.category }).from(polls).where(eq(polls.id, id)).limit(1);
-  if (!poll || sealedUntil(poll.category)) return 'not_allowed';
+export async function guessLeader(db: Db, id: string, voterId: string, choice: string): Promise<'ok' | 'not_found' | 'not_allowed' | 'bad_option'> {
+  const [poll] = await db
+    .select({ category: polls.category, hidden: polls.hidden, hideUntilVoted: polls.hideUntilVoted, endsAt: polls.endsAt })
+    .from(polls)
+    .where(eq(polls.id, id))
+    .limit(1);
+  if (!poll || poll.hidden) return 'not_found';
+  // Only while the numbers are still hidden: a "guess" made while looking at the results is not a guess.
+  const closed = !!poll.endsAt && poll.endsAt.getTime() <= Date.now();
+  if (sealedUntil(poll.category) || !poll.hideUntilVoted || closed) return 'not_allowed';
   const [v] = await db
     .select({ prediction: votes.prediction })
     .from(votes)
@@ -425,7 +442,7 @@ export async function getFeaturedId(db: Db): Promise<string | null> {
 
 /** Saves the voter's one-tap "why". Only allowed answers, only for a vote they already cast. */
 export async function setReason(db: Db, id: string, voterId: string, reason: string): Promise<boolean> {
-  const [poll] = await db.select({ reasons: polls.reasons }).from(polls).where(eq(polls.id, id)).limit(1);
+  const [poll] = await db.select({ reasons: polls.reasons }).from(polls).where(and(eq(polls.id, id), eq(polls.hidden, false))).limit(1);
   if (!poll || !parseReasons(poll.reasons).includes(reason)) return false;
   const updated = await db
     .update(votes)
@@ -438,6 +455,7 @@ export async function setReason(db: Db, id: string, voterId: string, reason: str
 /** Adds or removes one emoji reaction. Only people who voted can react. */
 export async function toggleReaction(db: Db, id: string, voterId: string, emoji: string): Promise<boolean> {
   if (!(REACTIONS as readonly string[]).includes(emoji)) return false;
+  if (!(await isVisible(db, id))) return false;
   const [v] = await db.select({ id: votes.id }).from(votes).where(and(eq(votes.pollId, id), eq(votes.voterKey, voterId))).limit(1);
   if (!v) return false;
   const removed = await db
@@ -458,7 +476,7 @@ export async function getVoterStats(db: Db, voterId: string | null): Promise<Vot
   const [mineRow] = await db
     .select({
       votes: sql<number>`count(*)::int`,
-      today: sql<number>`count(*) filter (where ${votes.createdAt} >= date_trunc('day', now()))::int`,
+      today: sql<number>`count(*) filter (where ${votes.createdAt} >= (date_trunc('day', now() at time zone 'Asia/Kolkata') at time zone 'Asia/Kolkata'))::int`,
       guesses: sql<number>`count(*) filter (where ${votes.predictionCorrect} is not null)::int`,
       correct: sql<number>`count(*) filter (where ${votes.predictionCorrect})::int`,
     })
@@ -526,11 +544,15 @@ export async function getMyVotes(db: Db, voterId: string | null, limit = 50): Pr
   });
 }
 
+const isVisible = async (db: Db, id: string) =>
+  (await db.select({ id: polls.id }).from(polls).where(and(eq(polls.id, id), eq(polls.hidden, false))).limit(1)).length > 0;
+
 /** How long after voting you can still take it back (an accidental tap). */
 export const UNDO_SECONDS = 30;
 
 /** Removes your vote (and its reactions) if you cast it in the last few seconds. */
 export async function undoVote(db: Db, id: string, voterId: string): Promise<boolean> {
+  if (!(await isVisible(db, id))) return false;
   const removed = await db
     .delete(votes)
     .where(
@@ -538,6 +560,8 @@ export async function undoVote(db: Db, id: string, voterId: string): Promise<boo
         eq(votes.pollId, id),
         eq(votes.voterKey, voterId),
         sql`${votes.createdAt} > now() - make_interval(secs => ${UNDO_SECONDS})`,
+        // Not after the exit poll: by then you have seen the numbers, and could vote again for the leader.
+        isNull(votes.prediction),
       ),
     )
     .returning({ id: votes.id });
@@ -553,13 +577,17 @@ export const REPORT_REASONS = ['hate', 'false', 'private', 'spam', 'other'] as c
 export const AUTO_HIDE_REPORTS = 3;
 
 /** One report per person per duel. An unreviewed duel with enough reports is hidden at once. */
-export async function reportPoll(db: Db, id: string, voterId: string, reason: string): Promise<boolean> {
+export async function reportPoll(db: Db, id: string, voterId: string, reason: string, ipHash: string | null = null): Promise<boolean> {
   if (!(REPORT_REASONS as readonly string[]).includes(reason)) return false;
   const [poll] = await db.select({ id: polls.id, reviewed: polls.reviewed }).from(polls).where(and(eq(polls.id, id), eq(polls.hidden, false))).limit(1);
   if (!poll) return false;
-  await db.insert(reports).values({ pollId: id, voterKey: voterId, reason }).onConflictDoNothing();
+  await db.insert(reports).values({ pollId: id, voterKey: voterId, reason, ipHash }).onConflictDoNothing();
   if (!poll.reviewed) {
-    const [{ n }] = await db.select({ n: sql<number>`count(*)::int` }).from(reports).where(eq(reports.pollId, id));
+    // Distinct people: one network clearing its cookies three times still counts once.
+    const [{ n }] = await db
+      .select({ n: sql<number>`count(distinct coalesce(${reports.ipHash}, ${reports.voterKey}))::int` })
+      .from(reports)
+      .where(eq(reports.pollId, id));
     if (n >= AUTO_HIDE_REPORTS) await db.update(polls).set({ hidden: true }).where(eq(polls.id, id));
   }
   return true;

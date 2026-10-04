@@ -48,6 +48,7 @@ export async function rateLimit(key: string, max: number, windowMs: number): Pro
 
 /** A short hash of the visitor's IP. Mobile networks put many people behind one IP, so limits using it stay loose. */
 export function clientIp(req: Request): string {
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  // x-real-ip is set by the host (Vercel, most proxies) and cannot be faked by the visitor; x-forwarded-for is the fallback.
+  const ip = req.headers.get('x-real-ip')?.trim() || req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
   return createHash('sha256').update(`${process.env.VOTER_SECRET ?? ''}:${ip}`).digest('base64url').slice(0, 16);
 }

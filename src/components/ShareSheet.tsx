@@ -22,8 +22,11 @@ export default function ShareSheet({ poll, pick, shareCode, onClose }: { poll: P
 
   // Full name: a last name alone can be ambiguous ("Gandhi").
   const last = pick.label;
-  const link = () => `${window.location.origin}/p/${poll.id}?f=${shareCode}${secret ? '&s=1' : ''}${hi}`;
-  const card = `/api/card/${poll.id}?f=${shareCode}${secret ? '&s=1' : ''}${hi}`;
+  // An open link carries the proof (o=) that lets its preview show your pick; a secret one has none, so editing the
+  // address cannot reveal it.
+  const mode = secret || !poll.myShareProof ? '&s=1' : `&o=${poll.myShareProof}`;
+  const link = () => `${window.location.origin}/p/${poll.id}?f=${shareCode}${mode}${hi}`;
+  const card = `/api/card/${poll.id}?f=${shareCode}${mode}${hi}`;
   // Wordle lesson: a short, spoiler-free line anyone can read in a chat (and your exit poll result, if you made one).
   const mark = poll.myGuess ? ` · ${t.exitMark(poll.myGuess.correct)}` : '';
   const message = secret ? t.msgSecret(poll.title, mark) : t.msgOpen(poll.title, last, mark);
@@ -49,11 +52,32 @@ export default function ShareSheet({ poll, pick, shareCode, onClose }: { poll: P
     }
   }
 
+  // The image is fetched as soon as the panel opens (and again when the secret switch changes): iPhones only open their
+  // share menu straight from a tap, so it must be ready before the tap, not downloaded after it.
+  const [image, setImage] = useState<{ url: string; blob: Blob } | null>(null);
+  const [imageFailed, setImageFailed] = useState(false);
+  useEffect(() => {
+    let live = true;
+    fetch(card)
+      .then((r) => (r.ok ? r.blob() : Promise.reject(new Error(String(r.status)))))
+      .then((blob) => live && setImage({ url: card, blob }))
+      .catch(() => {}); // tried again on tap
+    return () => {
+      live = false;
+    };
+  }, [card]);
+
   // Phones: share the image and the message together (Status, Instagram). Otherwise: download the image.
   async function shareImage() {
     setBusy(true);
+    setImageFailed(false);
     try {
-      const blob = await (await fetch(card)).blob();
+      let blob = image?.url === card ? image.blob : null;
+      if (!blob) {
+        const res = await fetch(card);
+        if (!res.ok) throw new Error(String(res.status));
+        blob = await res.blob();
+      }
       const file = new File([blob], 'i-voted.png', { type: 'image/png' });
       if (navigator.canShare?.({ files: [file] })) {
         await navigator.share({ files: [file], text: text() });
@@ -62,10 +86,13 @@ export default function ShareSheet({ poll, pick, shareCode, onClose }: { poll: P
         a.href = URL.createObjectURL(blob);
         a.download = 'i-voted.png';
         a.click();
-        URL.revokeObjectURL(a.href);
+        // Later, not at once: Safari can cancel a download whose address is revoked straight away.
+        const href = a.href;
+        setTimeout(() => URL.revokeObjectURL(href), 10_000);
       }
-    } catch {
-      /* closed the share sheet */
+    } catch (e) {
+      // Closing the phone's share menu is not an error; anything else is.
+      if ((e as Error)?.name !== 'AbortError') setImageFailed(true);
     }
     setBusy(false);
   }
@@ -104,6 +131,7 @@ export default function ShareSheet({ poll, pick, shareCode, onClose }: { poll: P
             {copied ? <Check size={15} strokeWidth={2} aria-hidden /> : <Link2 size={15} strokeWidth={1.75} aria-hidden />} {copied ? t.copied : t.copyLink}
           </button>
         </div>
+        {imageFailed && <p className="small duel-error" role="alert">{t.imageFailed}</p>}
       </section>
     </div>,
     document.body,

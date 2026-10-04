@@ -70,6 +70,8 @@ CREATE TABLE IF NOT EXISTS reports (
   created_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (poll_id, voter_key)
 );
+-- Who reported, as a hashed network address: clearing cookies does not make one person count as three.
+ALTER TABLE reports ADD COLUMN IF NOT EXISTS ip_hash text;
 `;
 
 const g = globalThis as unknown as { __db?: Promise<Db> };

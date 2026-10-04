@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { and, eq } from 'drizzle-orm';
 import { schema, type Db } from '@/db';
+import { isCode } from './validation';
 
 // Shared by the share images (link preview and story card).
 const fontDir = path.join(process.cwd(), 'node_modules/@fontsource/lato/files');
@@ -19,7 +20,7 @@ export function cardFonts() {
 
 /** The option the sender picked, from their share code (never who they are). */
 export async function pickFromCode(db: Db, pollId: string, code: string | null) {
-  if (!code) return null;
+  if (!isCode(code)) return null;
   const [v] = await db
     .select({ optionId: schema.votes.optionId })
     .from(schema.votes)

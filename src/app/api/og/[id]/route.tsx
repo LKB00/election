@@ -2,6 +2,8 @@ import { ImageResponse } from 'next/og';
 import { handDataUri } from '@/lib/inkHand';
 import { getDb } from '@/db';
 import { CARD, cardFonts, faceLabels, pickFromCode } from '@/lib/cards';
+import { clip } from '@/lib/labels';
+import { isShareProof } from '@/lib/secret';
 import { getPoll } from '@/lib/polls';
 import { cardDict } from '@/lib/i18n';
 
@@ -14,7 +16,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const { id } = await params;
   const url = new URL(req.url);
   const f = url.searchParams.get('f');
-  const secret = url.searchParams.get('s') === '1';
+  // The pick shows only on an open link (it carries the sender's proof). Removing "&s=1" from a secret one shows nothing.
+  const secret = url.searchParams.get('s') === '1' || !isShareProof(f, url.searchParams.get('o'));
   const t = cardDict(url.searchParams.get('l')); // English or Hinglish: the image renderer cannot join Hindi letters correctly.
   const db = await getDb();
   const poll = await getPoll(db, id, null);
@@ -25,7 +28,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const pick = poll.options.find((o) => o.id === pickId);
   const abs = (src: string) => new URL(src, url.origin).toString();
   const shown = poll.options.slice(0, 2);
-  const faces = faceLabels(shown.map((o) => o.label));
+  // Same letters as on the ballot (worked out over all choices), or the creator's emoji.
+  const faces = faceLabels(poll.options.map((o) => o.label)).map((f, n) => poll.options[n].emoji ?? f);
   const headline = !voted ? t.ogAsk : showPick && pick ? t.ogPicked(pick.label) : t.ogGuess;
 
   return new ImageResponse(
@@ -43,7 +47,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
           {voted && <img src={handDataUri(150)} width={150} height={195} alt="" />}
           <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
             {voted && <div style={{ display: 'flex', fontSize: 30, fontWeight: 700, color: CARD.green, letterSpacing: 2 }}>{t.ogVoted}</div>}
-            <div style={{ display: 'flex', fontSize: 58, fontWeight: 700, letterSpacing: -1, lineHeight: 1.1 }}>{poll.title.slice(0, 50)}</div>
+            <div style={{ display: 'flex', fontSize: 58, fontWeight: 700, letterSpacing: -1, lineHeight: 1.1 }}>{clip(poll.title, 50)}</div>
             <div style={{ display: 'flex', gap: 16, marginTop: 24 }}>
               {shown.map((o, n) => {
                 const mine = showPick && o.id === pickId;
@@ -57,7 +61,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
                     )}
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       {mine && <div style={{ display: 'flex', fontSize: 20, fontWeight: 700, color: CARD.green, letterSpacing: 1 }}>{t.cardMyVote}</div>}
-                      <div style={{ display: 'flex', fontSize: 32, fontWeight: 700 }}>{o.label.slice(0, 16)}</div>
+                      <div style={{ display: 'flex', fontSize: 32, fontWeight: 700 }}>{clip(o.label, 16)}</div>
                     </div>
                   </div>
                 );
@@ -69,6 +73,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       </div>
     ),
     { width: 1200, height: 630, fonts: await cardFonts(), // Cached by Vercel's network for an hour, so WhatsApp gets the preview fast (it gives up on slow ones).
-      headers: { 'Cache-Control': 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400' } },
+      headers: { 'Cache-Control': 'public, max-age=300, s-maxage=600, stale-while-revalidate=3600' } },
   );
 }

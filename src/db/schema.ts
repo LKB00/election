@@ -84,6 +84,7 @@ export const reports = pgTable(
     pollId: text('poll_id').notNull().references(() => polls.id, { onDelete: 'cascade' }),
     voterKey: text('voter_key').notNull(),
     reason: text('reason').notNull(),
+    ipHash: text('ip_hash'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   // One report per person per duel, so one person cannot take a duel down alone.

@@ -1,3 +1,4 @@
+import { SITE_URL } from '@/lib/site';
 import type { Metadata, Viewport } from 'next';
 import BottomNav from '@/components/BottomNav';
 import TopBar from '@/components/TopBar';
@@ -13,7 +14,7 @@ import { dict } from '@/lib/i18n';
 import '@/styles/index.css';
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
+  metadataBase: new URL(SITE_URL),
   title: { default: 'Election · Who would you pick?', template: '%s · Election' },
   description: 'Quick head-to-head duels. Tap your pick, see where everyone stands. Just for fun.',
 };

@@ -5,7 +5,7 @@ import { getT } from '@/lib/lang-server';
 // "Add result day to my calendar": a calendar file with one event when the duel closes. Works on every phone,
 // with no sign-up and no notification permission. Only for duels that have an end time.
 const stamp = (d: Date) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
-const esc = (s: string) => s.replace(/[\\;,]/g, (c) => `\\${c}`).replace(/\r?\n/g, ' ');
+const esc = (s: string) => s.replace(/[\\;,]/g, (c) => `\\${c}`).replace(/[\r\n]+/g, ' ');
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -39,7 +39,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     headers: {
       'Content-Type': 'text/calendar; charset=utf-8',
       'Content-Disposition': `attachment; filename="result-${poll.id}.ics"`,
-      'Cache-Control': 'public, max-age=300',
+      'Cache-Control': 'private, max-age=300', // in the visitor's language
     },
   });
 }

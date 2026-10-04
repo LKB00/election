@@ -21,8 +21,8 @@ const standingText = (t: Dict, s: Standing): string | null =>
 export const metadata: Metadata = { title: 'My votes' };
 
 // My votes = your voting record on this phone. No levels or points: nothing here that a real election does not have.
-export default async function MyVotes({ searchParams }: { searchParams: Promise<{ restored?: string; deleted?: string }> }) {
-  const { restored, deleted } = await searchParams;
+export default async function MyVotes({ searchParams }: { searchParams: Promise<{ restored?: string; deleted?: string; swap?: string }> }) {
+  const { restored, deleted, swap } = await searchParams;
   const db = await getDb();
   const voterId = await readVoterId();
   const voterKey = await voterKeyForLink();
@@ -34,6 +34,17 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
       <header className="page-head page-head-tight">
         <h1 className="display">{t.myVotes}</h1>
         {(restored || deleted) && <p className="small duel-friend" role="status">{restored ? t.restored : t.deleted}</p>}
+        {/* A "keep my votes" link opened on a phone that has its own votes: ask before replacing them. */}
+        {swap && (
+          <form method="post" action="/api/me/restore" className="duel-group">
+            <p className="small">{t.restoreAsk}</p>
+            <input type="hidden" name="k" value={swap} />
+            <span className="row wrap">
+              <button type="submit" className="btn btn-primary">{t.restoreYes}</button>
+              <Link href="/me" className="btn btn-ghost">{t.restoreNo}</Link>
+            </span>
+          </form>
+        )}
         {stats.votes > 0 && (
           <p className="lead">{t.record(stats.votes, stats.guesses, stats.correct, stats.friends)}</p>
         )}

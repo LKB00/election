@@ -126,12 +126,22 @@ const sealedWhen = (iso: string, lang: Lang) =>
   new Date(iso).toLocaleString(lang === 'hi' ? 'hi-IN' : 'en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' });
 
 // "Report this duel" (P3, last on the screen): one tap opens the reasons, one more sends it.
-function ReportDuel({ pollId, t }: { pollId: string; t: Dict }) {
-  const [state, setState] = useState<'closed' | 'open' | 'sent'>('closed');
-  useEffect(() => setState('closed'), [pollId]);
+function ReportDuel({ pollId, t, lang }: { pollId: string; t: Dict; lang: Lang }) {
+  const [state, setState] = useState<'closed' | 'open' | 'busy' | 'sent'>('closed');
+  const [error, setError] = useState('');
+  useEffect(() => {
+    setState('closed');
+    setError('');
+  }, [pollId]);
+  // "Thanks" only once the report has really arrived; otherwise say why, and the reasons stay open to try again.
   async function send(reason: string) {
-    setState('sent');
-    await fetch(`/api/polls/${pollId}/report`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason }) }).catch(() => null);
+    setState('busy');
+    setError('');
+    const res = await fetch(`/api/polls/${pollId}/report`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason }) }).catch(() => null);
+    if (res?.ok) return setState('sent');
+    const data = await res?.json().catch(() => null);
+    setError(data?.error ? apiMsg(lang, data.error) : t.reportFail);
+    setState('open');
   }
   if (state === 'sent') return <p className="small muted duel-report" role="status">{t.reportThanks}</p>;
   if (state === 'closed') {
@@ -146,10 +156,11 @@ function ReportDuel({ pollId, t }: { pollId: string; t: Dict }) {
       <p className="label">{t.reportWhy}</p>
       <div className="row wrap">
         {Object.entries(t.reportReasons).map(([key, label]) => (
-          <button key={key} type="button" className="chip" onClick={() => send(key)}>{label}</button>
+          <button key={key} type="button" className="chip" disabled={state === 'busy'} onClick={() => send(key)}>{label}</button>
         ))}
         <button type="button" className="link-like small muted" onClick={() => setState('closed')}>{t.cancel}</button>
       </div>
+      {error && <p className="small duel-error" role="alert">{error}</p>}
     </div>
   );
 }
@@ -454,10 +465,11 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
     if (navigator.share) {
       try {
         await navigator.share({ title: poll?.title, text: shareText(), url: link() });
-        return;
-      } catch {
-        /* closed */
+      } catch (e) {
+        // Closed the phone's share menu: done. Only a real failure falls back to copying the link.
+        if ((e as Error)?.name !== 'AbortError') copy();
       }
+      return;
     }
     copy();
   }
@@ -768,7 +780,7 @@ null
         </div>
       )}
 
-      <ReportDuel pollId={poll.id} t={t} />
+      <ReportDuel pollId={poll.id} t={t} lang={lang} />
     </div>
   );
 }

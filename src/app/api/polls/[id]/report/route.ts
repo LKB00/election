@@ -13,7 +13,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const { id } = await params;
   const parsed = reportSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: 'Pick a reason.' }, { status: 400 });
-  const ok = await reportPoll(await getDb(), id, await getOrCreateVoterId(), parsed.data.reason);
+  const ok = await reportPoll(await getDb(), id, await getOrCreateVoterId(), parsed.data.reason, clientIp(req));
   if (!ok) return NextResponse.json({ error: 'Poll not found.' }, { status: 404 });
   return NextResponse.json({ ok: true });
 }

@@ -3,6 +3,8 @@ import QRCode from 'qrcode';
 import { handDataUri } from '@/lib/inkHand';
 import { getDb } from '@/db';
 import { CARD, cardFonts, faceLabels, pickFromCode } from '@/lib/cards';
+import { clip } from '@/lib/labels';
+import { isShareProof } from '@/lib/secret';
 import { getPoll } from '@/lib/polls';
 import { cardDict, isLang } from '@/lib/i18n';
 
@@ -15,7 +17,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const { id } = await params;
   const url = new URL(req.url);
   const f = url.searchParams.get('f');
-  const secret = url.searchParams.get('s') === '1';
+  // The pick shows only on an open link (it carries the sender's proof), never on a secret one.
+  const proof = url.searchParams.get('o');
+  const secret = url.searchParams.get('s') === '1' || !isShareProof(f, proof);
   // Images are English or Hinglish: the image renderer cannot join Hindi letters (the message and link title are Hindi).
   const lang = url.searchParams.get('l');
   const t = cardDict(lang);
@@ -24,11 +28,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   if (!poll) return new Response('Not found', { status: 404 });
   const pickId = await pickFromCode(db, id, f);
   const showPick = !!pickId && !secret;
-  const target = `${url.origin}/p/${id}${f ? `?f=${encodeURIComponent(f)}${secret ? '&s=1' : ''}${isLang(lang) && lang !== 'en' ? `&l=${lang}` : ''}` : ''}`;
+  const target = `${url.origin}/p/${id}${f ? `?f=${encodeURIComponent(f)}${secret ? '&s=1' : `&o=${proof}`}${isLang(lang) && lang !== 'en' ? `&l=${lang}` : ''}` : ''}`;
   const qr = await QRCode.toDataURL(target, { margin: 1, width: 300, color: { dark: CARD.ink, light: '#ffffff' } });
   const abs = (src: string) => new URL(src, url.origin).toString();
   const shown = poll.options.slice(0, 2);
-  const faces = faceLabels(shown.map((o) => o.label));
+  // Same letters as on the ballot (worked out over all choices), or the creator's emoji.
+  const faces = faceLabels(poll.options.map((o) => o.label)).map((f, n) => poll.options[n].emoji ?? f);
   const pick = shown.find((o) => o.id === pickId);
 
   return new ImageResponse(
@@ -45,7 +50,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={handDataUri(240)} width={240} height={312} style={{ marginTop: 56 }} alt="" />
         <div style={{ display: 'flex', marginTop: 40, fontSize: 132, fontWeight: 700, letterSpacing: -3 }}>{t.cardVoted}</div>
-        <div style={{ display: 'flex', marginTop: 8, fontSize: 52, color: CARD.muted, textAlign: 'center' }}>{t.cardIn(poll.title.slice(0, 40))}</div>
+        <div style={{ display: 'flex', marginTop: 8, fontSize: 52, color: CARD.muted, textAlign: 'center' }}>{t.cardIn(clip(poll.title, 40))}</div>
 
         <div style={{ display: 'flex', gap: 32, marginTop: 56, padding: 32, borderRadius: 40, background: CARD.sand }}>
           {shown.map((o, n) => {
@@ -58,7 +63,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
                 ) : (
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 300, height: 300, borderRadius: 150, background: CARD.tints[n], fontSize: 110, fontWeight: 700 }}>{faces[n]}</div>
                 )}
-                <div style={{ display: 'flex', marginTop: 20, fontSize: 44, fontWeight: 700 }}>{o.label.slice(0, 18)}</div>
+                <div style={{ display: 'flex', marginTop: 20, fontSize: 44, fontWeight: 700 }}>{clip(o.label, 18)}</div>
                 {mine && <div style={{ display: 'flex', marginTop: 8, fontSize: 32, fontWeight: 700, color: CARD.green, letterSpacing: 2 }}>{t.cardMyVote}</div>}
               </div>
             );
@@ -79,6 +84,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         </div>
       </div>
     ),
-    { width: 1080, height: 1920, fonts: await cardFonts(), headers: { 'Cache-Control': 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400' } },
+    { width: 1080, height: 1920, fonts: await cardFonts(), headers: { 'Cache-Control': 'public, max-age=300, s-maxage=600, stale-while-revalidate=3600' } },
   );
 }

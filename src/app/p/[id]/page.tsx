@@ -10,19 +10,19 @@ import { getT } from '@/lib/lang-server';
 import { dict, isLang } from '@/lib/i18n';
 
 export const dynamic = 'force-dynamic';
-type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ new?: string; f?: string; s?: string; l?: string }> };
+type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ new?: string; f?: string; s?: string; o?: string; l?: string }> };
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { id } = await params;
-  const { f, s, l } = await searchParams;
+  const { f, s, o, l } = await searchParams;
   // The sender's language (from their link), so the chat preview reads like their message.
   const lang = isLang(l) ? l : 'en';
   const poll = await getPoll(await getDb(), id, null);
   if (!poll) return { title: 'Duel not found' };
   const names = poll.options.map((o) => o.label).join(' vs ');
   // The preview image says what the sender picked (from their share code), never the split.
-  const image = `/api/og/${poll.id}${f ? `?f=${encodeURIComponent(f)}${s === '1' ? '&s=1' : ''}${lang !== 'en' ? `&l=${lang}` : ''}` : ''}`;
-  const title = f ? (s === '1' ? dict[lang].ogTitleSecret(poll.title) : dict[lang].ogTitleOpen(poll.title)) : poll.title;
+  const image = `/api/og/${poll.id}${f ? `?f=${encodeURIComponent(f)}${s === '1' || !o ? '&s=1' : `&o=${encodeURIComponent(o)}`}${lang !== 'en' ? `&l=${lang}` : ''}` : ''}`;
+  const title = f ? (s === '1' || !o ? dict[lang].ogTitleSecret(poll.title) : dict[lang].ogTitleOpen(poll.title)) : poll.title;
   return {
     title: poll.title,
     // Search engines only get duels the owner has checked (and never someone's personal share link).
