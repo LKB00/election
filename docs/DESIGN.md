@@ -620,3 +620,23 @@ The research says Election already has the right loop (guess → vote → reveal
 |---|---|---|---|
 | Date box next to each poll + "Planned days" list (Remove) | /admin, Today's question | P2 | Event programming without being online: a Diwali poll for Diwali, a cricket poll for match day. On its India day it becomes Today's question by itself (the first visit of the day switches it, no timer), with the 9 pm final count. A pick by hand that day wins. |
 | "Tomorrow in one tap. Add Election to your home screen." Add · Not now | End of today's set, once | P3 | An easier way back (Flipkart Lite: 60% of visits from the home-screen icon). Only where it works: Android Chrome's real prompt, or the two steps in words on iPhone Safari; nothing inside WhatsApp's browser, on computers, or once installed. Asked once, either answer remembered (CCPA: no nagging). |
+
+## Interaction design (owner: "interaction design will also be a selling point")
+
+**Rules for every interaction** (keep to them in new work):
+1. **The tap answers in under 100 ms**: the key goes down, a click and a short buzz, before the server replies.
+2. **Speed beats spectacle on repeat.** A big moment once per visit; after that, the short version. Election mode is the exception: its booth ritual is the point.
+3. **Motion leads the eye to "you"** (your card first, lime marks), never to decoration.
+4. **One thing moves at a time**: the old screen leaves before the new one arrives.
+5. **Gestures are shortcuts, never the only way**: every swipe has a button.
+6. **Everything stops with "Reduce motion"; every sound follows the sound switch; buzz only where phones support it.**
+7. Taps: 150–250 ms; scenes: 350–600 ms; ease out (fast start, soft landing).
+
+| Interaction | Where | Job |
+|---|---|---|
+| Quick ink: everyday polls get the full ink moment on the **first** vote of a visit, then a dab of polling ink (#5b2fa0) lands on your card's tick (0.9 s) with a double buzz, and the result shows at once | Poll | Was 2.4 s of waiting on every vote (12 s over a set of five). The signature stays; the set flows. |
+| The result builds: your bar grows first, then the others (90 ms apart); numbers rise in with their bars; "Your pick / Leading" after | Poll result | The eye lands on you first, then the comparison: the reveal reads as a story, not a table. |
+| Rare take: a lime marker stroke draws under "Rare take." | Result bar | The most surprising result gets its own small moment (lime = you). |
+| Swipe left on a result → next poll | Poll, phones | The deck feels like a deck; Next stays the button. Ignored on chips and text boxes, and while counting. |
+| Next: the old ballot leaves (0.16 s) before the new one slides in | Poll | Two questions never overlap (they used to, for a moment). |
+| End of today's set: your rows arrive one by one (70 ms apart) | Home | Like results coming in; the end feels like an arrival. |
