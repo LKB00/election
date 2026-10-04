@@ -882,7 +882,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
               <button
                 key={o.id}
                 type="button"
-                className={'tot-option duel-option' + (isMine || ticked ? ' is-mine' : '') + (maybe ? ' is-maybe' : '') + (revealed && !isMine ? ' is-other' : '') + (busy === o.id ? ' is-busy' : '')}
+                className={'tot-option duel-option' + (isMine ? ' is-mine' : ticked ? ' is-ticked' : '') + (maybe ? ' is-maybe' : '') + (revealed && !isMine ? ' is-other' : '') + (busy === o.id ? ' is-busy' : '')}
                 // --i: the order the result builds in (your pick first, then the rest), so the eye lands on you.
                 style={{ '--pc': `var(--p-${TONES[n % TONES.length]})`, '--dc': `var(--d-${TONES[n % TONES.length]})`, '--i': isMine ? 0 : n + 1 } as React.CSSProperties}
                 onClick={() => (multi ? toggleTick(o.id) : vote(o.id))}

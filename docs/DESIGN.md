@@ -926,3 +926,13 @@ One scale on phones (in `election.css`, "Mobile spacing"): 16px page sides; 24px
 - **Fill the row:** the search box stretches and its button sits at the end (both 44px tall); after voting, Share and Next split the row; on the maker's page, Share the poll (2/3) and Copy link (1/3) share one row, the four lengths are a 2 × 2 grid and End now is full width; the match-day / show-night choice splits evenly.
 - **Edge to edge:** sideways-scrolling chip rows (topics, Create's ideas) run to the screen edge instead of being cut at the page padding, with 16px between them and the search box.
 - **Poll rows:** the count ("4 votes", "Ended · 4 votes", "✓ Voted · 1 vote") moved from a right-hand column to its own line under the choices, so titles get the full width instead of breaking after two words.
+
+## Visual consistency pass (owner, Oct 2026: "check visual consistency, border, fill, colour and everything")
+
+- **One meaning per colour on choice cards:** soft **indigo** = picked but not sent yet (and the vote keys); soft **yellow** = your vote, after voting (yellow = you), for every choice and in both looks. It used to take the choice's own pastel, so your pick was pink on one poll and green on another. Your result bar is ink; other bars are quiet grey.
+- **Corners:** three tokens: `--radius-card` 18px (every card, list card, notice, the vote moment), `--radius-field` 14px (text boxes), `--radius-inner` 12px (photos, messages, picker tiles inside a card). Pills stay round. List cards were 20px; some boxes 16 or 24.
+- **Shadows:** one warm tint. `--shadow-card` (resting), `--shadow-raised` (hover), `--shadow-pop` (sheets, previews, the vote moment), `--shadow-key` / `--shadow-key-pressed` (keys you press), with dark-look values. Fifteen hand-written cool-grey shadows are gone.
+- **Colours:** the indelible ink purple is `--ink-mark` (with `-hi`/`-lo`), the switch knob `--switch-knob`; a leftover green glow from the old lime is now the brand yellow. No colour is written by hand in a rule any more (only inside the token blocks and the share-image palette).
+- **Edges:** fields, switches and face pickers have the stronger `--line-control` edge (WCAG); chips, cards and buttons keep the soft `--line`.
+- **Heights:** buttons side by side are the same height (Share the poll / Copy link 48px).
+- **Counts:** data bars are ink or grey; green is kept for good-news signals.
