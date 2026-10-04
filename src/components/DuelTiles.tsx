@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Check, ChevronRight, Plus } from 'lucide-react';
 import { topicIcon } from '@/lib/topicIcons';
 import EmptyState from './EmptyState';
+import TopicSpot from './TopicSpot';
 import { useEffect, useState } from 'react';
 import type { PollSummary } from '@/lib/polls';
 import { useT } from '@/lib/lang';
@@ -54,7 +55,7 @@ export default function DuelTiles({ polls, votedIds = [], noCreate = false, limi
   // Empty list: a picture, one line and the one next step (start the first poll), instead of a lone "Start" row.
   if (!polls.length && !noCreate) {
     const name = topic ? t.categories[topic] ?? topic : '';
-    return <EmptyState title={topic ? t.emptyTopic(name) : t.emptyHome} line={topic ? t.emptyTopicLine : t.emptyHomeLine} action={{ href: topic ? `/create?topic=${topic}` : '/create', label: t.startDuel }} />;
+    return <EmptyState kind="list" picture={topic ? <TopicSpot category={topic} /> : undefined} title={topic ? t.emptyTopic(name) : t.emptyHome} line={topic ? t.emptyTopicLine : t.emptyHomeLine} action={{ href: topic ? `/create?topic=${topic}` : '/create', label: t.startDuel }} />;
   }
   return (
     <>

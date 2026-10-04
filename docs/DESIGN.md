@@ -835,3 +835,16 @@ Walked through on an empty database (no polls at all), as a first visitor, a cre
 - **Home, nothing at all:** one empty state that says what the site is for ("Ask your friends anything. Make a poll, share the link on WhatsApp, and see what everyone thinks. It takes 30 seconds." → Start a poll). It used to show the empty state twice (again under "More polls").
 - **Home, a few polls:** each poll shows once. Trending, topic shelves and "More polls" leave out today's set, and "More polls" leaves out ended polls; the "More polls" block is hidden when it has nothing left (it used to say "No polls open right now" under a list that had one).
 - **My votes, nothing to vote on yet:** the button is "Start a poll" (it pointed to "today's poll", which did not exist).
+
+### Each empty page has its own picture (owner: "the first 4 empty states use the same illustration")
+
+The picture says what will fill the page, so no two empty pages look alike:
+| Page | Picture |
+|---|---|
+| Home, empty site | a chat bubble holding a little poll, and a friend's reply ("ask your friends") |
+| Polls / a list | poll rows waiting to be filled, the last one an empty "+" row |
+| A topic | that topic's own icon tile in its colour (trophy, film reel, plate…) over empty cards; the header tile is hidden then, so it is not shown twice |
+| My votes | a raised finger with the ink mark beside an empty ballot slip |
+| Search, nothing found | slips and a magnifier |
+| Poll not found | a box with a "?" slip |
+| Admin, nothing to review | a box with a tick |

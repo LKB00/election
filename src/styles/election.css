@@ -748,3 +748,9 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .topic-chips.topic-row { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding: 2px 16px 4px; margin: 0 -16px; }
 .topic-chips.topic-row::-webkit-scrollbar { display: none; }
 .topic-row .topic-chip { flex: none; }
+/* A topic page's own empty picture: its icon tile over two empty poll cards. */
+.topic-spot { position: relative; display: block; width: 132px; height: 99px; }
+.topic-spot__card { position: absolute; left: 30px; width: 96px; height: 34px; border-radius: 10px; border: 2px dashed var(--ink); opacity: 0.35; }
+.topic-spot__card:nth-child(1) { top: 10px; }
+.topic-spot__card:nth-child(2) { top: 52px; }
+.topic-spot__tile { position: absolute; left: 0; top: 14px; display: grid; place-items: center; width: 76px; height: 76px; border-radius: 22px; background: var(--tone); border: 2.5px solid var(--ink); color: var(--ink); transform: rotate(-6deg); }

@@ -38,8 +38,8 @@ export default async function Topic({ params }: Props) {
   return (
     <div className="page page-wide">
       <header className="page-head">
-        {/* The topic's picture, big: the page says what it is before you read. */}
-        <span className="topic-hero" style={{ '--tone': topicTone(category) } as React.CSSProperties} aria-hidden>{(() => { const I = topicIcon(category); return <I size={28} strokeWidth={1.75} />; })()}</span>
+        {/* The topic's picture, big: the page says what it is before you read (an empty topic shows it in its empty picture instead). */}
+        {polls.length > 0 && <span className="topic-hero" style={{ '--tone': topicTone(category) } as React.CSSProperties} aria-hidden>{(() => { const I = topicIcon(category); return <I size={28} strokeWidth={1.75} />; })()}</span>}
         <h1 className="display">{t.topicTitle(t.categories[category] ?? category)}</h1>
         <p className="lead">{t.topicLead}</p>
       </header>

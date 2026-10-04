@@ -67,7 +67,7 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
       <section className="block">
         {mine.length === 0 ? (
           <div className="spot-empty">
-            <Spot kind="ballot" />
+            <Spot kind="finger" />
             <p><strong>{t.noVotes}</strong> {t.spotNoVotes}</p>
             {/* Nothing to vote on yet: the next step is making the first poll. */}
             {open.length > 0 ? <Link href="/" className="btn btn-primary">{t.startToday}</Link> : <Link href="/create" className="btn btn-primary">{t.startDuel}</Link>}

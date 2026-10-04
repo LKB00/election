@@ -69,7 +69,7 @@ export default async function Home() {
       {/* Empty: nothing open today (a new site, or a quiet day). */}
       {deck.length === 0 && (
         <section className="block">
-          <EmptyState title={t.homeEmptyTitle} line={t.homeEmptyLine} action={{ href: '/create', label: t.startDuel }} />
+          <EmptyState kind="invite" title={t.homeEmptyTitle} line={t.homeEmptyLine} action={{ href: '/create', label: t.startDuel }} />
         </section>
       )}
       <MyPolls />
