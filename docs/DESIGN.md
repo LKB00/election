@@ -864,3 +864,9 @@ Follows the phone's setting (light by default). Every colour is a token in `src/
 - **Pictures:** the white parts (lid, slips, bubble) become dark surfaces with light outlines, like chalk on a slate.
 - **Unchanged on purpose:** the share images and the app icon stay light (they are pictures people send to others).
 - Things that used to be fixed colours are now named tokens (`--you-soft`, `--hero-bg`, `--on-key`, `--spot-paper`, `--switch-on`, `--backdrop`…).
+
+## Create is an action, not a tab (owner: "there should not be a page, there can be a plus button")
+
+- **Bottom bar (phones):** three places (Home, Polls, My votes) and one round **ink "+"** (48 px, raised) that opens Create. Ink = the one main action; yellow stays the marker of the tab you are on, so the two never compete. No label under the "+" (its spoken name is "Start a poll").
+- **Create opens full screen:** the bottom bar steps aside and the top bar shows **× Close**, which goes back to where you were (or Home if Create was opened from a link). Links into Create ("Ask it yourself", an empty topic's "Start a poll", packs) work as before.
+- **Bigger screens:** the top bar keeps "+ Create" as a link (there is no bottom bar there).
