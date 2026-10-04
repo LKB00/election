@@ -34,8 +34,7 @@ export default async function Duels({ searchParams }: { searchParams: Promise<{ 
   return (
     <div className="page page-wide">
       <header className="page-head">
-        <h1 className="display">{t.duels}</h1>
-        <p className="lead">{t.duelsLead}</p>
+        <h1 className="sr-only">{t.duels}</h1>
         {/* P2: search. A plain form, so it works before the page's script loads and the result has its own link. */}
         <form role="search" action="/polls" className="row poll-search">
           <label className="search">

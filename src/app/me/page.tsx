@@ -40,7 +40,7 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
   return (
     <div className="page">
       <header className="page-head page-head-tight">
-        <h1 className="display">{t.myVotes}</h1>
+        <h1 className="sr-only">{t.myVotes}</h1>
         {(restored || deleted) && <p className="small duel-friend" role="status">{restored ? t.restored : t.deleted}</p>}
         {/* A "keep my votes" link opened on a phone that has its own votes: ask before replacing them. */}
         {swap && (

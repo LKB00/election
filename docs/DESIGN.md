@@ -902,3 +902,7 @@ Follows the phone's setting (light by default). Every colour is a token in `src/
 - A 3px focus ring on everything focusable; the page keeps room above the bottom bar when moving focus (`scroll-padding-bottom`).
 - One site-wide "reduce motion" rule (covers the copied `gb/` styles without editing them).
 - Hindi (Devanagari) poll questions and choices get `lang="hi"`, so screen readers use Hindi rules. Pick-one vote buttons say "Vote for <choice>" before voting (voice control can say it).
+
+## No tab-name headings (owner, Oct 2026: "if Polls tab is selected there is no need of heading called Polls, and on the rest of the pages")
+
+The bottom bar already says where you are (the yellow tab), so Polls, My votes and You no longer show a big "Polls" / "My votes" / "You" title. Each page keeps it as a hidden heading for screen readers. Polls opens straight on search and topics; the generic line under the old title went too. Pages that are not tabs (a topic, Create, a poll, the maker's page) keep their titles: they say what you are looking at.
