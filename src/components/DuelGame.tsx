@@ -905,7 +905,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
       {!casting && voted && mine && !poll.closed && (
         // The record of the ink moment (the moment itself plays in CastVote).
         <div className={'duel-inked' + (inkedFor === poll.id ? ' is-new' : '')}>
-          <InkFinger size={56} />
+          <InkFinger size={32} />
           <p className="small">
             <strong>{t.inked}.</strong>
             {poll.electionMode && poll.myVoterNumber ? <span className="muted"> {t.voterId} EL-{String(poll.myVoterNumber).padStart(6, '0')}</span> : null}

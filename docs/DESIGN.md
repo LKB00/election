@@ -684,3 +684,19 @@ Not just its colours: Arogya Line's way of building screens. Its principles (fro
 | Status chip | `al-chip` (`is-you`, `is-good`, `is-alert`), and `.eyebrow` restyled | Poll page labels, Create, Poll of the day | Small and quiet, icon + word, never a button. Yellow when it is about you. |
 
 Note: the earlier rule "nothing above the duel on Home" gives way to Arogya's Today header; it is three short lines, and today's question still starts on the first screen of a phone.
+
+## Information hierarchy pass (owner: "fix information hierarchy · what to show upfront, what to hide · better visual representation")
+
+Every screen read top to bottom, each element asked: is it needed first, later, only on request, or not at all?
+
+| Screen | Found | Done | Rule it follows |
+|---|---|---|---|
+| Home | "5 questions today" in the header **and** "5 left today" right under it | The header now only greets (date, Namaste); the count lives once, in today's question label, where it updates as you vote | Say it once |
+| Home | The rules reminder (P3) sat between today's question and Trending, pushing the polls down | Moved to the very end of the page | P3 last |
+| Home | Trending + a topic shelf + 8 more polls: a long tail competing with today's set | "More polls" shows 5, then "All polls →" | Today's set is the P1; more is a short P3 tail |
+| Poll, after voting | A 56px inked hand repeated the ink moment you had just watched, pushing the result bar down | 32px: a small record, not a second moment | Every element earns its place |
+| Poll rows | The same "?" icon on nearly every row said nothing | The disc shows the poll's own faces (🫖☕, 🏏⚽, 😍 for a rating), from the creator's emoji or the name; the topic icon only when neither exists | Show what it is (recognise before you read) |
+| Poll rows | "Dosa or idli?" over "Dosa vs Idli": the second line repeated the title | Hidden when the question already names every choice | Every element earns its place |
+| Polls | "All polls" was one list of up to 60 rows | First 12 (the ones you can still vote on come first), then "Show 45 more polls" | Show a little, reveal on request |
+| Create | Six settings chips over three lines before the main button | Upfront: "Results after voting" and "Topic"; the rest behind "More options". Anything switched on or filled in always shows | Most-used first; nothing you set is ever hidden |
+| My votes | Reads well: title, your pick, where it stands, what changed | Kept | — |

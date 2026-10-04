@@ -1,6 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { Clock, Landmark, EyeOff, ImagePlus, Lightbulb, Repeat, Sparkles, X } from 'lucide-react';
+import { Clock, Landmark, EyeOff, ImagePlus, Lightbulb, Repeat, Sparkles, X, SlidersHorizontal } from 'lucide-react';
 import { useState } from 'react';
 import { CATEGORIES } from '@/lib/categories';
 import { useLang, useT } from '@/lib/lang';
@@ -43,6 +43,8 @@ export default function CreateForm({ initialTitle = '' }: { initialTitle?: strin
   const [fieldError, setFieldError] = useState<{ title?: string; choices?: string; end?: string }>({});
   // P3 settings are one line of chips; each opens its small box underneath, one at a time.
   const [open, setOpen] = useState<'ends' | 'topic' | 'details' | null>(null);
+  // The less-used settings (Election mode, votes can change, end time, details) wait behind "More options".
+  const [showMore, setShowMore] = useState(false);
 
   // Like a WhatsApp poll: typing in the last box adds the next empty one (up to 10), so there is no "add" step.
   const setChoice = (i: number, v: string) => {
@@ -285,26 +287,40 @@ export default function CreateForm({ initialTitle = '' }: { initialTitle?: strin
         {fieldError.choices && <p className="field-error" role="alert">{fieldError.choices}</p>}
       </section>
 
-      {/* P3 settings as one line of chips: tap to switch, or to open its small box underneath. */}
+      {/* P3 settings. Upfront: the two most people change (results after voting, topic). The rest wait behind
+          "More options"; anything already switched on or filled in always shows, so nothing set is ever hidden. */}
       <div className="builder-settings" role="group" aria-label={t.moreOptions}>
         <button type="button" className={'chip' + (hideUntilVoted ? ' chip-on' : '')} aria-pressed={hideUntilVoted} title={t.hideResultsNote} onClick={() => setHide((v) => !v)}>
           <EyeOff size={13} strokeWidth={1.75} aria-hidden /> {t.setHidden}
         </button>
-        <button type="button" className={'chip' + (electionMode ? ' chip-on' : '')} aria-pressed={electionMode} title={t.setElectionNote} onClick={() => setElectionMode((v) => !v)}>
-          <Landmark size={13} strokeWidth={1.75} aria-hidden /> {t.setElection}
-        </button>
-        <button type="button" className={'chip' + (allowChange ? ' chip-on' : '')} aria-pressed={allowChange} title={t.allowChangeNote} onClick={() => setChange((v) => !v)}>
-          <Repeat size={13} strokeWidth={1.75} aria-hidden /> {t.setChange}
-        </button>
-        <button type="button" className={'chip' + (endsAt ? ' chip-on' : '')} aria-expanded={open === 'ends'} onClick={() => toggleOpen('ends')}>
-          <Clock size={13} strokeWidth={1.75} aria-hidden /> <span suppressHydrationWarning>{endsLabel}</span>
-        </button>
         <button type="button" className="chip" aria-expanded={open === 'topic'} onClick={() => toggleOpen('topic')}>
           {t.setTopic(t.categories[category] ?? category)}
         </button>
-        <button type="button" className={'chip' + (description.trim() ? ' chip-on' : '')} aria-expanded={open === 'details'} onClick={() => toggleOpen('details')}>
-          {t.setDetails}
-        </button>
+        {(showMore || electionMode) && (
+          <button type="button" className={'chip' + (electionMode ? ' chip-on' : '')} aria-pressed={electionMode} title={t.setElectionNote} onClick={() => setElectionMode((v) => !v)}>
+            <Landmark size={13} strokeWidth={1.75} aria-hidden /> {t.setElection}
+          </button>
+        )}
+        {(showMore || allowChange) && (
+          <button type="button" className={'chip' + (allowChange ? ' chip-on' : '')} aria-pressed={allowChange} title={t.allowChangeNote} onClick={() => setChange((v) => !v)}>
+            <Repeat size={13} strokeWidth={1.75} aria-hidden /> {t.setChange}
+          </button>
+        )}
+        {(showMore || endsAt || fieldError.end) && (
+          <button type="button" className={'chip' + (endsAt ? ' chip-on' : '')} aria-expanded={open === 'ends'} onClick={() => toggleOpen('ends')}>
+            <Clock size={13} strokeWidth={1.75} aria-hidden /> <span suppressHydrationWarning>{endsLabel}</span>
+          </button>
+        )}
+        {(showMore || description.trim()) && (
+          <button type="button" className={'chip' + (description.trim() ? ' chip-on' : '')} aria-expanded={open === 'details'} onClick={() => toggleOpen('details')}>
+            {t.setDetails}
+          </button>
+        )}
+        {!showMore && !(electionMode && allowChange && endsAt && description.trim()) && (
+          <button type="button" className="chip chip-more" aria-expanded={false} onClick={() => setShowMore(true)}>
+            <SlidersHorizontal size={13} strokeWidth={1.75} aria-hidden /> {t.moreOptions}
+          </button>
+        )}
       </div>
       {electionMode && <p className="small muted builder-note">{t.setElectionNote}</p>}
       {(open === 'ends' || fieldError.end) && (
