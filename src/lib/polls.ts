@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull, ne, or, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, lt, ne, or, sql } from 'drizzle-orm';
 import { nanoid, customAlphabet } from 'nanoid';
 import { shareProof } from './secret';
 import { RATING_EMOJIS, RATING_LABELS, ratingAverage, usesPicks, type PollKind } from './rating';
@@ -48,6 +48,8 @@ export type PollView = {
   featured: boolean;
   /** Checked by the owner (only reviewed duels are offered to search engines). */
   reviewed: boolean;
+  /** Voting paused after a sudden flood of votes, until this time (results stay visible). */
+  pausedUntil: string | null;
   /** Election silence window: results of this politics duel stay sealed for everyone until this time. */
   sealedUntil: string | null;
   /** Choices for the one-tap "why?" question. Empty means the poll does not ask. */
@@ -305,6 +307,7 @@ export async function getPoll(
     featured: poll.featured,
     reviewed: poll.reviewed,
     sealedUntil: sealed,
+    pausedUntil: poll.frozenUntil && poll.frozenUntil.getTime() > Date.now() ? poll.frozenUntil.toISOString() : null,
     reasons: parseReasons(poll.reasons),
     myReason: mine[0]?.reason ?? null,
     pulse: { lastHour: pulseRows[0]?.lastHour ?? 0, lastVoteAt: lastVote ? new Date(lastVote).toISOString() : null },
@@ -412,12 +415,14 @@ async function shareOverTime(db: Db, id: string, createdAt: Date, firstOptionId:
   return points.slice(-48);
 }
 
-export type VoteResult = 'ok' | 'changed' | 'already_voted' | 'closed' | 'not_found' | 'bad_option';
+export type VoteResult = 'ok' | 'changed' | 'already_voted' | 'closed' | 'not_found' | 'bad_option' | 'frozen';
 
 export async function castVote(db: Db, id: string, optionId: string, voterId: string, via?: string | null, morePicks: string[] = []): Promise<VoteResult> {
   const [poll] = await db.select().from(polls).where(eq(polls.id, id)).limit(1);
   if (!poll || poll.hidden) return 'not_found';
   if (poll.endsAt && poll.endsAt.getTime() <= Date.now()) return 'closed';
+  // Paused after a flood of votes (src/lib/flood.ts) until the time runs out or the owner resumes it.
+  if (poll.frozenUntil && poll.frozenUntil.getTime() > Date.now()) return 'frozen';
   // "Pick several": every ticked choice must belong to this poll (the first one is the vote row's own choice).
   // "Rank": the list is the order, first = #1, and every choice must be placed.
   const picks = usesPicks(poll.kind) ? [...new Set([optionId, ...morePicks])] : [optionId];
@@ -516,7 +521,7 @@ export async function guessLeader(db: Db, id: string, voterId: string, choice: s
 export type PollSummary = { id: string; title: string; category: string; kind: PollKind; totalVotes: number; lastHour: number; options: string[]; closed: boolean };
 
 /** Public duels, newest first. Hidden duels never; unreviewed politics duels not until the owner checks them. */
-export async function listPolls(db: Db, limit = 20, filter: { category?: string; reviewedOnly?: boolean; q?: string } = {}): Promise<PollSummary[]> {
+export async function listPolls(db: Db, limit = 20, filter: { category?: string; reviewedOnly?: boolean; q?: string; before?: Date } = {}): Promise<PollSummary[]> {
   // Search: words in the question or in any choice ("chai" finds "Tea or coffee?" if a choice is Chai).
   // % and _ are typed as plain letters, not wildcards.
   const q = filter.q?.trim().slice(0, 60);
@@ -541,6 +546,7 @@ export async function listPolls(db: Db, limit = 20, filter: { category?: string;
         // Held until the owner looks: politics duels, and duels with photos from people's phones.
         filter.reviewedOnly ? eq(polls.reviewed, true) : or(eq(polls.reviewed, true), and(ne(polls.category, 'politics'), eq(polls.hasPhotos, false))),
         filter.category ? eq(polls.category, filter.category) : undefined,
+        filter.before ? lt(polls.createdAt, filter.before) : undefined,
         q ? sql`(${polls.title} ilike ${like} or exists (select 1 from options o where o.poll_id = polls.id and o.label ilike ${like}))` : undefined,
       ),
     )
@@ -653,7 +659,14 @@ export async function trendingPolls(db: Db, limit = 6): Promise<PollSummary[]> {
     .where(inArray(polls.id, ids));
   const score = (r: (typeof rows)[number]) => (Number(r.recent) / Math.pow(Number(r.hours) + 2, 1.5)) / (1 + Number(r.reports));
   const ranked = rows.filter((r) => Number(r.recent) > 0).sort((a, b) => score(b) - score(a)).slice(0, limit);
-  return ranked.map((r) => list.find((p) => p.id === r.id)!).filter(Boolean);
+  const top = ranked.map((r) => list.find((p) => p.id === r.id)!).filter(Boolean);
+  // Fair discovery: once the shelf is full of popular polls, its last spot goes to the newest poll with few votes, so
+  // the rich do not just get richer (MusicLab: showing counts makes winners win more). The list is newest first.
+  if (top.length >= 3 && top.length === limit) {
+    const fresh = list.find((p) => !p.closed && p.totalVotes < 10 && !top.some((x) => x.id === p.id));
+    if (fresh) top[top.length - 1] = fresh;
+  }
+  return top;
 }
 
 /** The duels to play through: the featured one first, then the newest. */
@@ -662,6 +675,46 @@ export async function getDeck(db: Db, voterId: string | null, limit = 12): Promi
   const ids = [...(featuredId ? [featuredId] : []), ...list.filter((p) => !p.closed).map((p) => p.id)].slice(0, limit);
   const views = await Promise.all(ids.map((id) => getPoll(db, id, voterId)));
   return views.filter((v): v is PollView => v !== null);
+}
+
+/** How many polls make "today's set". */
+export const SET_SIZE = 5;
+
+/** Midnight in India today (the day a set belongs to), and its label like "2026-10-04". */
+export function indiaDay(now = Date.now()) {
+  const ist = new Date(now + 5.5 * 3600_000);
+  const label = ist.toISOString().slice(0, 10);
+  return { label, start: new Date(`${label}T00:00:00+05:30`) };
+}
+
+// A fixed shuffle for the day: the same order for everyone, a new one tomorrow (FNV-1a hash of day + id).
+function dayHash(day: string, id: string) {
+  let h = 2166136261;
+  for (const c of `${day}:${id}`) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
+  return h >>> 0;
+}
+
+/**
+ * Today's set: today's question first, then a few more polls, the same for everyone all day (a shared moment, like
+ * Wordle's one puzzle a day) with a clear end. Only polls that existed before today's midnight, so the set never
+ * changes during the day; shuffled by the day, not by votes, so new polls get their turn (popular ones do not take
+ * every slot); one per topic first, for variety.
+ */
+export async function getTodaySet(db: Db, voterId: string | null, size = SET_SIZE): Promise<PollView[]> {
+  const day = indiaDay();
+  const [featuredId, list] = await Promise.all([getFeaturedId(db), listPolls(db, 200, { before: day.start })]);
+  const open = list.filter((p) => !p.closed && p.id !== featuredId).sort((a, b) => dayHash(day.label, a.id) - dayHash(day.label, b.id));
+  const picked: PollSummary[] = [];
+  const topics = new Set<string>();
+  for (const p of open) if (picked.length < size - (featuredId ? 1 : 0) && !topics.has(p.category)) (picked.push(p), topics.add(p.category));
+  for (const p of open) if (picked.length < size - (featuredId ? 1 : 0) && !picked.includes(p)) picked.push(p);
+  const ids = [...(featuredId ? [featuredId] : []), ...picked.map((p) => p.id)];
+  // A young site (most polls made today): top up with the newest, so there is always a set to play.
+  if (ids.length < size) {
+    for (const p of await listPolls(db, 50)) if (ids.length < size && !p.closed && !ids.includes(p.id)) ids.push(p.id);
+  }
+  const views = await Promise.all(ids.map((id) => getPoll(db, id, voterId)));
+  return views.filter((v): v is PollView => v !== null && !v.closed);
 }
 
 /** Where a duel you voted in stands now, as far as you are allowed to see (same rules as getPoll). */
@@ -821,7 +874,7 @@ export async function reportPoll(db: Db, id: string, voterId: string, reason: st
   return { title: poll.title, hidden: hide };
 }
 
-export type ReviewItem = { id: string; title: string; options: string[]; photos: string[]; category: string; hidden: boolean; reviewed: boolean; reports: number; reasons: string[]; createdAt: string };
+export type ReviewItem = { id: string; title: string; options: string[]; photos: string[]; category: string; hidden: boolean; reviewed: boolean; reports: number; reasons: string[]; createdAt: string; paused: boolean; firstReportAt: string | null };
 
 /** What the owner should look at: reported duels first, then unreviewed ones, newest first. */
 export async function getReviewQueue(db: Db, limit = 100): Promise<ReviewItem[]> {
@@ -835,12 +888,20 @@ export async function getReviewQueue(db: Db, limit = 100): Promise<ReviewItem[]>
       createdAt: polls.createdAt,
       reports: sql<number>`count(${reports.voterKey})::int`,
       reasons: sql<string | null>`string_agg(distinct ${reports.reason}, ',')`,
+      paused: sql<boolean>`coalesce(${polls.frozenUntil} > now(), false)`,
+      firstReportAt: sql<string | null>`min(${reports.createdAt})`,
     })
     .from(polls)
     .leftJoin(reports, eq(reports.pollId, polls.id))
     .groupBy(polls.id)
-    .having(sql`count(${reports.voterKey}) > 0 or not ${polls.reviewed} or ${polls.hidden}`)
-    .orderBy(sql`count(${reports.voterKey}) desc`, desc(polls.createdAt))
+    .having(sql`count(${reports.voterKey}) > 0 or not ${polls.reviewed} or ${polls.hidden} or coalesce(${polls.frozenUntil} > now(), false)`)
+    // Most urgent first: paused by a flood, then reported (photo reports first: the 2-hour rule), then the rest.
+    .orderBy(
+      sql`coalesce(${polls.frozenUntil} > now(), false) desc`,
+      sql`bool_or(${reports.reason} in ('private', 'me')) desc nulls last`,
+      sql`count(${reports.voterKey}) desc`,
+      desc(polls.createdAt),
+    )
     .limit(limit);
   const opts = rows.length
     ? await db.select({ pollId: options.pollId, label: options.label, imageUrl: options.imageUrl }).from(options).where(inArray(options.pollId, rows.map((r) => r.id))).orderBy(options.position)
@@ -852,6 +913,7 @@ export async function getReviewQueue(db: Db, limit = 100): Promise<ReviewItem[]>
     photos: opts.filter((o) => o.pollId === r.id && o.imageUrl?.startsWith('/api/img/')).map((o) => o.imageUrl!),
     reasons: r.reasons ? r.reasons.split(',') : [],
     createdAt: r.createdAt.toISOString(),
+    firstReportAt: r.firstReportAt ? new Date(r.firstReportAt).toISOString() : null,
   }));
 }
 

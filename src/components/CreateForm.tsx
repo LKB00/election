@@ -7,6 +7,7 @@ import { useLang, useT } from '@/lib/lang';
 import { apiMsg } from '@/lib/i18n';
 import { choicesFromQuestion, emojiFor } from '@/lib/createHelp';
 import { RATING_EMOJIS, RATING_LABELS, type PollKind } from '@/lib/rating';
+import { rememberMyPoll } from './MyPolls';
 import PicturePicker, { type Picture } from './PicturePicker';
 
 export default function CreateForm({ initialTitle = '' }: { initialTitle?: string }) {
@@ -142,7 +143,10 @@ export default function CreateForm({ initialTitle = '' }: { initialTitle?: strin
       }),
     }).catch(() => null);
     const data = await res?.json().catch(() => null);
-    if (res?.ok && data?.id) return router.push(`/p/${data.id}?new=1`);
+    if (res?.ok && data?.id) {
+      rememberMyPoll(data.id);
+      return router.push(`/p/${data.id}?new=1`);
+    }
     setError(data?.error ? apiMsg(lang, data.error) : t.errGeneric);
     setBusy(false);
   }

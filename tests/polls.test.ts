@@ -712,3 +712,81 @@ describe('story card friends line', () => {
     expect(await friendsFromCode(db, id, 'bad code', a.id)).toEqual({ all: 0, agree: 0 });
   });
 });
+
+describe('flood guard', () => {
+  it('limits one network per poll, pauses a one-network flood, and the owner can resume', async () => {
+    const { checkFlow, recordFlow, resumeVoting, NET_LIMIT, NET_LIMIT_POLITICS, SPIKE_MIN } = await import('@/lib/flood');
+    const id = await make({ title: 'Flood check' });
+    const p = (await getPoll(db, id, null))!;
+    // Many people from many networks: never paused.
+    for (let k = 0; k < SPIKE_MIN; k++) expect(await recordFlow(db, id, `net${k % 20}`, 'general')).toBe(false);
+    expect(await checkFlow(db, id, 'net1', 'general')).toBe('ok');
+    // A few networks send a flood (many votes each): the poll pauses, once.
+    let paused = 0;
+    for (let k = 0; k < SPIKE_MIN * 2; k++) if (await recordFlow(db, id, `bot-net${k % 3}`, 'general')) paused++;
+    expect(paused).toBe(1);
+    expect(NET_LIMIT).toBeGreaterThan(NET_LIMIT_POLITICS);
+    expect(await checkFlow(db, id, 'someone-else', 'general')).toBe('frozen');
+    expect(await castVote(db, id, p.options[0].id, 'flood-voter')).toBe('frozen');
+    expect((await getPoll(db, id, null))!.pausedUntil).not.toBeNull();
+    expect((await getReviewQueue(db))[0]).toMatchObject({ id, paused: true });
+    expect(await resumeVoting(db, id)).toBe(true);
+    expect(await checkFlow(db, id, 'bot-net0', 'general')).toBe('ok');
+    expect(await castVote(db, id, p.options[0].id, 'flood-voter')).toBe('ok');
+    expect((await getPoll(db, id, null))!.pausedUntil).toBeNull();
+  });
+
+  it('gives each network a soft limit per poll, tighter on politics', async () => {
+    const { checkFlow, recordFlow, NET_LIMIT_POLITICS } = await import('@/lib/flood');
+    const id = await make({ title: 'Network limit check', category: 'politics' });
+    for (let k = 0; k < NET_LIMIT_POLITICS; k++) await recordFlow(db, id, 'college-wifi', 'politics');
+    expect(await checkFlow(db, id, 'college-wifi', 'politics')).toBe('busy');
+    expect(await checkFlow(db, id, 'college-wifi', 'general')).toBe('ok');
+    expect(await checkFlow(db, id, 'home-wifi', 'politics')).toBe('ok');
+  });
+});
+
+describe("today's set and sides", () => {
+  it('says which side you are on, with "rare take" for small clubs, and never for a lone vote', async () => {
+    const { sideOf, sideEmoji } = await import('@/lib/sides');
+    const opts = (ps: number[]) => ps.map((percent) => ({ percent }));
+    const poll = (ps: number[], totalVotes = 100) => ({ totalVotes, kind: 'choice' as const, options: opts(ps) as never });
+    expect(sideOf(poll([63, 37]), { percent: 63 })).toEqual({ kind: 'crowd', pct: 63 });
+    expect(sideOf(poll([63, 37]), { percent: 37 })).toEqual({ kind: 'minority', pct: 37 });
+    expect(sideOf(poll([88, 12]), { percent: 12 })).toEqual({ kind: 'rare', oneIn: 8 });
+    expect(sideOf(poll([51, 49]), { percent: 51 })).toEqual({ kind: 'neck' });
+    expect(sideOf(poll([100], 1), { percent: 100 })).toEqual({ kind: 'first' });
+    expect([sideEmoji({ kind: 'crowd', pct: 60 }), sideEmoji({ kind: 'rare', oneIn: 8 }), sideEmoji(null)]).toEqual(['🟩', '🟪', '⬜']);
+  });
+
+  it('is the same all day for everyone, today\'s question first, older polls only, and new tomorrow', async () => {
+    const { getTodaySet, indiaDay, SET_SIZE } = await import('@/lib/polls');
+    const old = [];
+    for (let k = 0; k < 8; k++) old.push(await make({ title: `Old set poll ${k}`, category: ['food', 'tech', 'movies', 'cricket'][k % 4] }));
+    await db.update(schema.polls).set({ createdAt: new Date(Date.now() - 3 * 86400_000) }).where(sql`${schema.polls.id} in (${sql.join(old.map((id) => sql`${id}`), sql`, `)})`);
+    const today = await make({ title: 'Made today, not in the set' });
+    const a = await getTodaySet(db, 'set-a');
+    const b = await getTodaySet(db, 'set-b');
+    expect(a.map((p) => p.id)).toEqual(b.map((p) => p.id));
+    expect(a.length).toBe(SET_SIZE);
+    expect(a[0].id).toBe(await getFeaturedId(db));
+    expect(a.some((p) => p.id === today)).toBe(false);
+    expect(new Set(a.map((p) => p.id)).size).toBe(a.length);
+    expect(indiaDay(Date.UTC(2026, 9, 4, 19, 0)).label).toBe('2026-10-05'); // 00:30 in India
+  });
+
+  it('keeps one trending spot for a new poll once the shelf is full', async () => {
+    const { trendingPolls } = await import('@/lib/polls');
+    const hot = [];
+    for (let k = 0; k < 3; k++) {
+      const id = await make({ title: `Hot poll ${k}` });
+      const p = (await getPoll(db, id, null))!;
+      for (let v = 0; v < 3; v++) await castVote(db, id, p.options[0].id, `hot${k}-${v}`);
+      hot.push(id);
+    }
+    const fresh = await make({ title: 'Brand new, no votes' });
+    const shelf = await trendingPolls(db, 3);
+    expect(shelf.length).toBe(3);
+    expect(shelf[2].id).toBe(fresh);
+  });
+});

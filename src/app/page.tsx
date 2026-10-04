@@ -2,10 +2,11 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import DuelGame from '@/components/DuelGame';
+import MyPolls from '@/components/MyPolls';
 import RulesNotice from '@/components/RulesNotice';
 import DuelTiles from '@/components/DuelTiles';
 import { getDb } from '@/db';
-import { getDeck, getFeaturedId, listPolls, trendingPolls } from '@/lib/polls';
+import { getDeck, getFeaturedId, getTodaySet, listPolls, trendingPolls } from '@/lib/polls';
 import { readVoterId } from '@/lib/voter';
 import { getT } from '@/lib/lang-server';
 
@@ -28,8 +29,10 @@ export default async function Home() {
   const db = await getDb();
   const t = await getT();
   const voterId = await readVoterId();
-  const [deck, recent, todayId, trending] = await Promise.all([getDeck(db, voterId), listPolls(db, 40), getFeaturedId(db), trendingPolls(db, 4)]);
-  const voted = deck.filter((p) => p.myVote !== null).map((p) => p.id);
+  // Today's set (the same few polls for everyone today, with an end), then more polls only if you ask for them.
+  const [deck, extra, recent, todayId, trending] = await Promise.all([getTodaySet(db, voterId), getDeck(db, voterId), listPolls(db, 40), getFeaturedId(db), trendingPolls(db, 4)]);
+  const more = extra.filter((p) => !deck.some((d) => d.id === p.id));
+  const voted = [...deck, ...more].filter((p) => p.myVote !== null).map((p) => p.id);
   // P2 shelves under today's question: what is hot right now, then two topics with the most open polls.
   const shown = new Set(trending.map((p) => p.id));
   const byTopic = new Map<string, typeof recent>();
@@ -46,9 +49,10 @@ export default async function Home() {
     <div className="page page-wide">
       {deck.length > 0 && (
         <section className="home-game duel-first" aria-label="Duel">
-          <DuelGame deck={deck} todayId={todayId} />
+          <DuelGame deck={deck} todayId={todayId} daily more={more} />
         </section>
       )}
+      <MyPolls />
       <RulesNotice />
 
       {trending.length > 0 && (

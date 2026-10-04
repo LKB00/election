@@ -1,5 +1,8 @@
-import { NextResponse } from 'next/server';
-import { getDb } from '@/db';
+import { after, NextResponse } from 'next/server';
+import { alertOwner } from '@/lib/alert';
+import { checkFlow, recordFlow } from '@/lib/flood';
+import { eq } from 'drizzle-orm';
+import { getDb, schema } from '@/db';
 import { castVote, getPoll, undoVote } from '@/lib/polls';
 import { clientIp, rateLimit } from '@/lib/rate-limit';
 import { verifyHuman } from '@/lib/turnstile';
@@ -11,6 +14,8 @@ const MESSAGES = {
   closed: 'This poll has ended.',
   not_found: 'Poll not found.',
   bad_option: 'That choice is not in this poll.',
+  frozen: 'Voting on this poll is paused for a few minutes: we saw unusual activity. Results are still open.',
+  busy: 'Lots of votes from your network on this poll just now. Try again in a few minutes.',
 } as const;
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -26,11 +31,21 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const db = await getDb();
   const voterId = await getOrCreateVoterId();
+  // Flood guard (src/lib/flood.ts): a paused poll, or too many votes from one network on it just now.
+  const net = clientIp(req);
+  const [meta] = await db.select({ category: schema.polls.category, title: schema.polls.title }).from(schema.polls).where(eq(schema.polls.id, id)).limit(1);
+  if (meta) {
+    const flow = await checkFlow(db, id, net, meta.category);
+    if (flow !== 'ok') return NextResponse.json({ error: MESSAGES[flow], result: flow }, { status: flow === 'frozen' ? 423 : 429 });
+  }
   const result = await castVote(db, id, parsed.data.optionId, voterId, parsed.data.via, parsed.data.picks ?? []);
 
   if (result !== 'ok' && result !== 'changed') {
-    const status = result === 'not_found' ? 404 : result === 'already_voted' ? 409 : 400;
+    const status = result === 'not_found' ? 404 : result === 'already_voted' ? 409 : result === 'frozen' ? 423 : 400;
     return NextResponse.json({ error: MESSAGES[result], result }, { status });
+  }
+  if (meta && result === 'ok' && (await recordFlow(db, id, net, meta.category))) {
+    after(() => alertOwner('Poll paused: flood of votes', `"${meta.title}" /p/${id} got a sudden flood of votes and is paused. Resume it on /admin if it looks fine.`, true));
   }
   return NextResponse.json({ result, poll: await getPoll(db, id, voterId, parsed.data.via) });
 }

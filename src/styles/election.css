@@ -570,3 +570,17 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 /* The 3-monthly rules reminder on Home (P3): one quiet line, not a banner. */
 .rules-note { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-top: 24px; padding: 12px 16px; border: var(--hair) solid var(--line); border-radius: 12px; color: var(--ink-3); }
 .rules-note > span { flex: 1 1 220px; }
+/* Review page: a row you have acted on steps back so the next one stands out. */
+.review-row.is-done { opacity: 0.55; }
+
+/* Today's set: "Today's set · 3 left today" (P3, plain words, no stepper) and its end card (P1). */
+.duel-set { text-transform: none; letter-spacing: 0; font-weight: 400; }
+.day-end .day-vs { width: 100%; max-width: 480px; margin: 8px auto 16px; text-align: left; }
+.day-vs ul { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.day-vs li { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: baseline; padding: 10px 12px; border-radius: 12px; background: var(--card); border: var(--hair) solid var(--line); }
+.day-vs li > .small { grid-column: 2; }
+.day-q { color: var(--ink); font-weight: 600; text-decoration: none; }
+.day-q:hover { text-decoration: underline; }
+/* "Your polls · 37 votes so far" on Home (P2), from this phone's own list. */
+.my-polls ul { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.my-polls li { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; padding: 10px 12px; border-radius: 12px; background: var(--card); border: var(--hair) solid var(--line); }

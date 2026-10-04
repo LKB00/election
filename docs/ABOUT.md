@@ -207,3 +207,10 @@ Design, UX, UI and interaction are the selling points. The plan, with research a
 - Each report can ping the owner's phone (`REPORT_ALERT_URL`).
 - Complaints are now promised within 7 days (was 15), as the Feb 2026 IT Rules amendment asks.
 - Not legal advice: get a one-time review from an Indian tech lawyer.
+
+## Update: flood guard and review page (Oct 2026)
+
+- Each network gets a soft limit per poll (60 votes per 10 minutes, 25 on politics polls).
+- A poll pauses for 30 minutes when a flood comes from only a few networks (100+ votes in 10 minutes at 8+ per network), or on any 300+ surge on a politics poll. The owner gets an urgent phone alert (`REPORT_ALERT_URL`) and can resume it on /admin. Numbers are in `src/lib/flood.ts`.
+- /admin shows a summary, puts paused polls and photo reports first, shows how long ago the first report came, and dims rows you have acted on.
+- The invisible bot check (Turnstile) already covers every vote once its two keys are set.
