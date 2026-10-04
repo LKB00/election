@@ -109,6 +109,25 @@ CREATE INDEX IF NOT EXISTS packs_starts_idx ON packs (starts_at);
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS pack_id text;
 -- Group polls: results open for everyone once this many have voted (or when the poll ends).
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS group_size integer;
+-- Profiles (optional; needed only to make polls). A name and an avatar, signed in with a passkey (the phone's
+-- fingerprint, face or screen lock). No password, phone number or email. Votes are never linked to a profile.
+CREATE TABLE IF NOT EXISTS users (
+  id text PRIMARY KEY,
+  name text NOT NULL,
+  avatar text NOT NULL DEFAULT '🙂',
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS passkeys (
+  id text PRIMARY KEY,
+  user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  public_key text NOT NULL,
+  counter integer NOT NULL DEFAULT 0,
+  transports text NOT NULL DEFAULT '',
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS passkeys_user_idx ON passkeys (user_id);
+ALTER TABLE polls ADD COLUMN IF NOT EXISTS owner_id text;
+CREATE INDEX IF NOT EXISTS polls_owner_idx ON polls (owner_id);
 CREATE INDEX IF NOT EXISTS polls_pack_idx ON polls (pack_id);
 -- "Tell me the result": a phone's push address, and which polls it wants one alert for.
 CREATE TABLE IF NOT EXISTS push_subs (

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Check, ChevronRight, Vote } from 'lucide-react';
 import { getDb } from '@/db';
-import { getMyVotes, getVoterStats, type Standing } from '@/lib/polls';
+import { getMyVotes, getVoterStats, listPolls, type Standing } from '@/lib/polls';
 import type { Dict } from '@/lib/i18n';
 import { readVoterId, voterKeyForLink } from '@/lib/voter';
 import KeepVotes from '@/components/KeepVotes';
@@ -34,7 +34,7 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
   const db = await getDb();
   const voterId = await readVoterId();
   const voterKey = await voterKeyForLink();
-  const [stats, mine, month] = await Promise.all([getVoterStats(db, voterId), getMyVotes(db, voterId), getMonth(db, voterId)]);
+  const [stats, mine, month, open] = await Promise.all([getVoterStats(db, voterId), getMyVotes(db, voterId), getMonth(db, voterId), listPolls(db, 1)]);
   const t = await getT();
 
   return (
@@ -67,9 +67,10 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
       <section className="block">
         {mine.length === 0 ? (
           <div className="spot-empty">
-            <Spot kind="ballot" />
+            <Spot kind="finger" />
             <p><strong>{t.noVotes}</strong> {t.spotNoVotes}</p>
-            <Link href="/" className="btn btn-primary">{t.startToday}</Link>
+            {/* Nothing to vote on yet: the next step is making the first poll. */}
+            {open.length > 0 ? <Link href="/" className="btn btn-primary">{t.startToday}</Link> : <Link href="/create" className="btn btn-primary">{t.startDuel}</Link>}
           </div>
         ) : (
           <ul className="al-listcard block-tight">

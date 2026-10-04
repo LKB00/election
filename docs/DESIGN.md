@@ -828,3 +828,57 @@ On My votes, above your list, once you have voted in 3+ polls this month (India 
 ## Every poll is made by a person (owner, Oct 2026)
 
 The site no longer adds polls of its own. The "Modi or Rahul?" flagship (with its leaders' photos) and the four starter polls (Virat/Rohit/Dhoni, IPL 2027, UP 2027, Chai or coffee) are gone from the code; on a database that has them they are hidden once (votes kept; the owner can "Show again" on /admin, and they then stay shown). Today's question is always one of people's polls, picked by the owner; if none is picked, Home shows the day's set of people's polls, and with nothing open, the "Start a poll" empty state. Ideas on Create and pack templates stay: a person chooses them and the poll is theirs.
+
+## New visitor on an empty site (owner: "see how a new user uses it, with empty states")
+
+Walked through on an empty database (no polls at all), as a first visitor, a creator and a friend. Fixed:
+- **Home, nothing at all:** one empty state that says what the site is for ("Ask your friends anything. Make a poll, share the link on WhatsApp, and see what everyone thinks. It takes 30 seconds." → Start a poll). It used to show the empty state twice (again under "More polls").
+- **Home, a few polls:** each poll shows once. Trending, topic shelves and "More polls" leave out today's set, and "More polls" leaves out ended polls; the "More polls" block is hidden when it has nothing left (it used to say "No polls open right now" under a list that had one).
+- **My votes, nothing to vote on yet:** the button is "Start a poll" (it pointed to "today's poll", which did not exist).
+
+### Each empty page has its own picture (owner: "the first 4 empty states use the same illustration")
+
+The picture says what will fill the page, so no two empty pages look alike:
+| Page | Picture |
+|---|---|
+| Home, empty site | a chat bubble holding a little poll, and a friend's reply ("ask your friends") |
+| Polls / a list | poll rows waiting to be filled, the last one an empty "+" row |
+| A topic | that topic's own icon tile in its colour (trophy, film reel, plate…) over empty cards; the header tile is hidden then, so it is not shown twice |
+| My votes | a raised finger with the ink mark beside an empty ballot slip |
+| Search, nothing found | slips and a magnifier |
+| Poll not found | a box with a "?" slip |
+| Admin, nothing to review | a box with a tick |
+
+**Redrawn as one family (owner: "the previous [ballot box] was nice, put serious effort"):** every empty picture is now built around that same ballot box (white lid with slot, indigo box, yellow label, thick ink outline, ground shadow, yellow sparkles), each telling its page's story: Home = a chat bubble holding a poll and a slip going in; lists = slips fanned over the box, the middle one an empty "+"; a topic = the box in the topic's colour with its icon on the front badge; My votes = the inked finger (the vote moment's own drawing) beside the box and an empty slip; plus search (slips + magnifier), not found ("?" slip) and nothing to review (tick label). Code: `src/components/Spot.tsx`, `TopicSpot.tsx`.
+
+**Motion (owner: "subtle and delightful"):** slow, small, looping, never in the way, and off for people whose phone asks to reduce motion. The picture rises in once (0.5 s). Sparkles twinkle, each on its own beat. Slips float 4 px above the slot. The side slips on lists sway like cards in a hand. The inked finger gives a small nod every few seconds. The magnifier circles slowly. The "?" slip wobbles. The poll bars in Home's bubble fill once, like votes coming in. The admin tick draws itself once. CSS only (election.css, "Spot motion").
+
+## Dark mode (owner, Oct 2026: "design this website for dark mode")
+
+Follows the phone's setting (light by default). Every colour is a token in `src/styles/arogya.css`; the dark block only changes values, so every screen gets it at once.
+- **Ground and cards:** a warm near-black ground (#141311) and slightly lighter warm cards (#1f1d1a) with soft warm borders, so cards still read as objects.
+- **Text:** soft off-white (#f2eee7), never pure white; quiet text in warm greys.
+- **Brand yellow stays the same** (#fcd12a, "you"), with dark text and icons on it in both looks (`--on-lime`).
+- **Pastels become deep, muted versions** (indigo #262a4c, pink #3b1f2c, green #1b3325, marigold #352f18) that glow instead of glare; the vote key is a deeper indigo with light text.
+- **The main button flips:** off-white with dark text (the "ink" button in the dark look).
+- **Pictures:** the white parts (lid, slips, bubble) become dark surfaces with light outlines, like chalk on a slate.
+- **Unchanged on purpose:** the share images and the app icon stay light (they are pictures people send to others).
+- Things that used to be fixed colours are now named tokens (`--you-soft`, `--hero-bg`, `--on-key`, `--spot-paper`, `--switch-on`, `--backdrop`…).
+
+## Create is an action, not a tab (owner: "there should not be a page, there can be a plus button")
+
+- **Bottom bar (phones):** three places (Home, Polls, My votes) and one round **ink "+"** (48 px, raised) that opens Create. Ink = the one main action; yellow stays the marker of the tab you are on, so the two never compete. No label under the "+" (its spoken name is "Start a poll").
+- **Create opens full screen:** the bottom bar steps aside and the top bar shows **× Close**, which goes back to where you were (or Home if Create was opened from a link). Links into Create ("Ask it yourself", an empty topic's "Start a poll", packs) work as before.
+- **Bigger screens:** the top bar keeps "+ Create" as a link (there is no bottom bar there).
+
+**Balanced bar (owner: "the bar doesn't look balanced"):** with three tabs the "+" could never sit in the middle, so the bar now has two places on each side of it: **Home · Polls · ( + ) · My polls · My votes**. **My polls** (`/mine`) is the polls made on this phone with their live vote counts (creators come back to see how theirs is doing; every poll is made by people now). Its empty state has its own picture: a yellow pencil writing a slip above the box. The "Your polls" block left Home (one less repeat of a poll there).
+
+## Profiles (owner, Oct 2026: "their choice to log in… required only when they want to create a poll… no forced login… design it nicely… we don't read whom you vote for")
+
+- **When:** only when making a poll (Create, packs). Voting, results, sharing and My votes never ask. The form is filled first; tapping Create poll opens the profile sheet over it, and the poll is sent as soon as the profile is ready (nothing typed is lost). A small line above the button says what is next.
+- **How:** a passkey. The phone's fingerprint, face or screen lock is the key: no password, phone number or email. Passkeys sync through Google / iCloud, so the profile works on the person's other phones. Session = a signed cookie for 180 days.
+- **The screen, top to bottom:** the lock picture (the ballot box locked with a yellow padlock, a fingerprint slip above it); the title ("One quick step: your profile"; "Make your profile" on the You page; "Welcome back" for signing in); then **three promises** (P1 for trust, before anything is asked): *Your votes stay secret* (never linked to a profile, not even we can see them), *No password, phone or email*, *Only for making polls*. Then the two asks: a name (2–30 letters) and a face (16 emoji; the chosen one turns yellow = you). One ink button: "Continue with fingerprint or face". Under it "Already have a profile? Sign in" and "Just voting? You never need to sign in."
+- **Votes are never part of a profile:** the votes table is untouched; votes stay with the anonymous voter cookie. The code for profiles never reads votes (`src/lib/profiles.ts`).
+- **Polls made before signing in** join the profile on sign-in, each proven by its private key kept on the phone.
+- **You tab** (bottom bar: Home · Polls · ( + ) · My votes · You; My polls moved here, `/mine` goes to `/you`). Signed in: the face in a yellow circle and the name with Edit (P1 header), Your polls with live counts (P1), a quiet note that votes are not part of the profile with a link to My votes (P2), then Sign out and Delete profile (asked once more; polls stay up with no owner) (P3). Signed out: the profile screen itself, then "Made on this phone" if there are any.
+- **Names are not shown on polls yet** (a later choice for the owner).

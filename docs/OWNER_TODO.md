@@ -62,6 +62,9 @@ Say "continue features" and Claude picks up the next one.
 - **Today's question** is always one of people's polls that you pick on `/admin`. If you pick none, Home shows the day's set of people's polls.
 - **Early days:** with few polls, ask friends and groups to make the first ones (or make a few yourself, as a person). A match-day pack is the quickest way to get several at once.
 
+- **Profiles (sign in with fingerprint or face):** nothing to set up. Only people who make polls need one; voting never does. One thing to know: a profile belongs to the website address it was made on. If you move to your own domain later, people make their profile again once (their polls can be moved over by Claude).
+- **Names on polls:** right now a poll does not show who made it. Say "show the maker's name on polls" if you want that.
+
 ## Done
 
 - (Move items here when finished.)

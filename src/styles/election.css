@@ -82,7 +82,7 @@
 .evm-row { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 0 8px 8px; }
 .evm-led { width: 12px; height: 12px; border-radius: 50%; background: var(--sand-dark); box-shadow: inset 0 0 0 1px var(--line); }
 .evm-led.is-on { background: var(--negative); box-shadow: 0 0 0 4px var(--negative-soft); }
-.evm-btn { display: inline-flex; align-items: center; justify-content: center; min-width: 64px; height: 32px; padding: 0 16px; border-radius: 9999px; background: var(--d-input); color: #24282c; font-size: 13px; font-weight: 700; }
+.evm-btn { display: inline-flex; align-items: center; justify-content: center; min-width: 64px; height: 32px; padding: 0 16px; border-radius: 9999px; background: var(--d-input); color: var(--on-key); font-size: 13px; font-weight: 700; }
 .duel-option:not(:disabled):active .evm-btn { transform: scale(0.95); }
 
 /* VVPAT: your slip shows behind the glass, then drops into the box */
@@ -90,7 +90,7 @@
 .duel-inked svg { flex: none; }
 
 /* Share sheet */
-.sheet-backdrop { position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center; background: rgba(36, 40, 44, 0.4); animation: fade-in 0.2s ease; }
+.sheet-backdrop { position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center; background: var(--backdrop); animation: fade-in 0.2s ease; }
 @keyframes fade-in { from { opacity: 0; } }
 .sheet { position: relative; width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: 12px; padding: 24px 16px calc(16px + env(safe-area-inset-bottom, 0px)); border-radius: 20px 20px 0 0; background: var(--paper); animation: sheet-up 0.3s cubic-bezier(0.2, 0.9, 0.3, 1); }
 @keyframes sheet-up { from { transform: translateY(100%); } }
@@ -245,7 +245,7 @@ button.link-like { border: 0; background: none; padding: 8px 0; cursor: pointer;
 
 /* ---- The cast-vote moment (docs/DESIGN.md, "The cast-vote moment") ----
    One scene in the middle of the screen. Beat times come from CastVote.tsx as --t-vv, --t-drop, --t-ink (seconds; not --ink, which is the ink colour). */
-.cast-backdrop { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 16px; background: rgba(36, 40, 44, 0.55); animation: fade-in 0.2s ease; cursor: pointer; }
+.cast-backdrop { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 16px; background: var(--backdrop); animation: fade-in 0.2s ease; cursor: pointer; }
 .cast-stage { width: min(340px, 100%); display: grid; justify-items: center; gap: 16px; padding: 24px 16px 16px; border-radius: 20px; background: var(--paper); box-shadow: 0 24px 64px rgba(36, 40, 44, 0.3); animation: cast-in 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
 @keyframes cast-in { from { transform: scale(0.94); opacity: 0; } }
 .cast-booth, .cast-ink { grid-area: 1 / 1; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; }
@@ -306,7 +306,7 @@ button.link-like { border: 0; background: none; padding: 8px 0; cursor: pointer;
 
 /* ---- Phones (docs/DESIGN.md, "Mobile") ---- */
 /* Four tabs, four equal columns (the bar had room for five, so a gap sat on the right). */
-.bottomnav { grid-template-columns: repeat(4, 1fr); }
+.bottomnav { grid-template-columns: repeat(5, 1fr); }
 /* Notch and rounded corners, also when the phone is held sideways (viewport-fit=cover in layout.tsx). */
 body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
 .bottomnav { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
@@ -683,8 +683,8 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 /* ---- Packs (docs/DESIGN.md, "Packs") ---- */
 .pack-form { display: flex; flex-direction: column; gap: 16px; }
 .pack-form .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.pack-form .input { width: 100%; border: var(--hair) solid var(--line); border-radius: 14px; background: var(--card); padding: 12px 14px; font: inherit; font-size: 16px; color: var(--ink); resize: vertical; }
-.pack-form .input:focus { outline: 2px solid var(--ink); outline-offset: 1px; }
+.pack-form .input, .signin .input, .profile-card .input { width: 100%; box-sizing: border-box; border: var(--hair) solid var(--line); border-radius: 14px; background: var(--card); padding: 12px 14px; font: inherit; font-size: 16px; color: var(--ink); resize: vertical; }
+.pack-form .input:focus, .signin .input:focus, .profile-card .input:focus { outline: 2px solid var(--ink); outline-offset: 1px; }
 .pack-teams { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 8px; }
 .pack-vs { font-weight: 800; padding-bottom: 14px; }
 .pack-preview { border: var(--hair) solid var(--line); border-radius: 18px; background: var(--card); padding: 14px 16px; }
@@ -739,12 +739,86 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .create-type:hover { background: var(--sand); }
 .create-type.is-on:hover { background: var(--p-input); }
 /* On/off switch (with the row's words; the disc turns yellow when on). */
-.switch { flex: none; position: relative; width: 44px; height: 26px; border-radius: 999px; background: var(--line); transition: background-color 0.15s ease; }
+.switch { flex: none; position: relative; width: 44px; height: 26px; border-radius: 999px; background: var(--switch-off); transition: background-color 0.15s ease; }
 .switch > span { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform 0.15s ease; }
-.switch.is-on { background: var(--ink); }
+.switch.is-on { background: var(--switch-on); }
+.switch.is-on > span { background: var(--switch-knob-on); }
 .switch.is-on > span { transform: translateX(18px); }
 @media (max-width: 380px) { .create-panel { padding-left: 16px; } }
 /* Topics on the Polls page: one scrolling row under search. */
 .topic-chips.topic-row { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding: 2px 16px 4px; margin: 0 -16px; }
 .topic-chips.topic-row::-webkit-scrollbar { display: none; }
 .topic-row .topic-chip { flex: none; }
+/* A topic page's own empty picture: the box in the topic's colour, its icon in the badge (badge centre = 50%, 69.3%). */
+.topic-spot { position: relative; display: block; width: 176px; height: 132px; }
+.topic-spot__icon { position: absolute; left: calc(50% - 11px); top: calc(69.3% - 11px); color: var(--ink); }
+
+/* ---- Spot motion: subtle, slow, never in the way (docs/DESIGN.md, "Empty states"). Off with reduced motion. ---- */
+@media (prefers-reduced-motion: no-preference) {
+  .spot { animation: spot-in 0.5s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+  .spot-twinkle { transform-box: fill-box; transform-origin: center; animation: spot-twinkle 2.6s ease-in-out infinite; }
+  .spot-bob { animation: spot-bob 3.4s ease-in-out infinite; }
+  .spot-sway { transform-box: fill-box; transform-origin: 50% 100%; animation: spot-sway 4.2s ease-in-out infinite; }
+  .spot-sway.is-right { animation-direction: reverse; }
+  .spot-nod { transform-box: fill-box; transform-origin: 40% 100%; animation: spot-nod 3.8s ease-in-out infinite; }
+  .spot-scan { animation: spot-scan 5s ease-in-out infinite; }
+  .spot-wobble { transform-box: fill-box; transform-origin: 50% 0%; animation: spot-wobble 2.8s ease-in-out infinite; }
+  .spot-draw { stroke-dasharray: 30; stroke-dashoffset: 30; animation: spot-draw 0.6s 0.45s ease-out forwards; }
+  .spot-fill { transform-box: fill-box; transform-origin: left center; animation: spot-fill 1.4s 0.3s cubic-bezier(0.2, 0.9, 0.3, 1) backwards; }
+}
+@keyframes spot-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes spot-twinkle { 0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; } 50% { transform: scale(0.55) rotate(45deg); opacity: 0.55; } }
+@keyframes spot-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes spot-sway { 0%, 100% { transform: rotate(-2.5deg); } 50% { transform: rotate(2.5deg); } }
+@keyframes spot-nod { 0%, 70%, 100% { transform: rotate(0deg); } 80% { transform: rotate(-5deg); } 90% { transform: rotate(2deg); } }
+@keyframes spot-scan { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(4px, -3px); } 50% { transform: translate(0, -5px); } 75% { transform: translate(-4px, -2px); } }
+@keyframes spot-wobble { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+@keyframes spot-draw { to { stroke-dashoffset: 0; } }
+@keyframes spot-fill { from { transform: scaleX(0.15); } to { transform: scaleX(1); } }
+
+/* Bottom bar: two places on each side of the round ink "+" (the one action), so it is balanced. Create opens full screen. */
+@media (max-width: 720px) {
+  .bottomnav { grid-template-columns: repeat(5, 1fr); }
+  .bottomnav-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .bottomnav-plus { display: grid; place-items: center; text-decoration: none; -webkit-tap-highlight-color: transparent; }
+  .bottomnav-plus > span { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: var(--ink); color: var(--on-ink); box-shadow: var(--shadow-raised); transition: transform 0.15s ease; }
+  .bottomnav-plus:active > span { transform: scale(0.92); }
+  .bottomnav-plus:focus-visible > span { outline: 3px solid var(--lime); outline-offset: 2px; }
+}
+.topnav-close { border: 0; background: none; font: inherit; color: inherit; cursor: pointer; }
+.topnav-create { display: inline-flex; align-items: center; gap: 4px; }
+@media (prefers-reduced-motion: no-preference) {
+  .spot-write { animation: spot-write 2.4s ease-in-out infinite; }
+}
+@keyframes spot-write { 0%, 100% { transform: translate(0, 0); } 20% { transform: translate(-3px, 1px); } 40% { transform: translate(1px, 2px); } 60% { transform: translate(-2px, 0); } 80% { transform: translate(2px, 1px); } }
+
+/* Profiles (docs/DESIGN.md, "Profiles"): the sign-in screen (sheet over Create, or on the You page) and the You page. */
+.signin { display: flex; flex-direction: column; gap: 12px; }
+.signin .spot { align-self: center; }
+.signin-title { margin: 0; text-align: center; font: 700 24px / 30px var(--display); letter-spacing: -0.01em; text-wrap: balance; }
+.signin-lead { margin: -4px 0 0; text-align: center; color: var(--ink-2); text-wrap: pretty; }
+.signin-promises { list-style: none; margin: 4px 0; padding: 12px; display: flex; flex-direction: column; gap: 12px; border: 1px solid var(--line); border-radius: 18px; background: var(--card); font-size: 14px; line-height: 20px; color: var(--ink-2); }
+.signin-promises li { display: grid; grid-template-columns: 36px 1fr; gap: 12px; align-items: start; }
+.signin-promises strong { display: block; color: var(--ink); font-weight: 600; }
+.signin-promise-icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--tone); color: var(--ink); }
+.signin-faces { margin: 0; padding: 0; border: 0; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; }
+.signin-faces legend { padding: 0; margin-bottom: 8px; }
+.signin-face { -webkit-tap-highlight-color: transparent; position: relative; display: grid; place-items: center; aspect-ratio: 1; border-radius: 50%; border: 1px solid var(--line); background: var(--card); font-size: 22px; cursor: pointer; transition: transform 0.15s; }
+.signin-face input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.signin-face.is-on { background: var(--you-soft); border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); transform: scale(1.06); }
+.signin-face:has(input:focus-visible) { outline: 3px solid var(--lime); outline-offset: 2px; }
+.signin-go { width: 100%; gap: 8px; margin-top: 4px; }
+.signin-switch { align-self: center; background: none; border: 0; padding: 8px; font: inherit; font-weight: 600; cursor: pointer; }
+.signin-foot { margin: 0; text-align: center; }
+.signin-sheet { padding-top: 16px; }
+.profile-card { box-sizing: border-box; width: 100%; display: flex; align-items: center; gap: 14px; padding: 16px; margin-top: 12px; border: 1px solid var(--line); border-radius: 18px; background: var(--card); }
+.profile-card.is-editing { flex-direction: column; align-items: stretch; gap: 10px; }
+.profile-face { flex: none; display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: var(--lime); box-shadow: inset 0 0 0 2px var(--ink); font-size: 30px; }
+.profile-who { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.profile-name { font: 700 20px / 26px var(--display); overflow-wrap: anywhere; }
+.you-note { display: block; }
+.you-note svg { display: inline; vertical-align: -2px; margin-right: 4px; }
+.profile-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; margin-top: 8px; }
+.profile-delete { display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; padding: 4px 0; font: inherit; font-size: 14px; color: var(--ink-3); cursor: pointer; }
+.builder-go-hint { margin: 0 0 8px; text-align: center; }
+@media (prefers-reduced-motion: reduce) { .signin-face { transition: none; } }

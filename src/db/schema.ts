@@ -39,6 +39,8 @@ export const polls = pgTable(
     packId: text('pack_id'),
     // A group poll: results stay closed for everyone until this many people have voted (or the poll ends).
     groupSize: integer('group_size'),
+    // The profile that made this poll (profiles are optional for voting; making a poll needs one).
+    ownerId: text('owner_id'),
     endsAt: timestamp('ends_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -185,4 +187,26 @@ export const pushWants = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.pollId, t.endpoint] })],
+);
+
+// Profiles: optional, needed only to make polls. Signed in with a passkey (the phone's fingerprint, face or screen lock):
+// no password, phone number or email is ever stored. Votes are NEVER linked to a profile (they stay with the anonymous
+// voter cookie), so a profile cannot tell anyone, us included, how its owner voted.
+export const users = pgTable('users', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  avatar: text('avatar').notNull().default('🙂'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+export const passkeys = pgTable(
+  'passkeys',
+  {
+    id: text('id').primaryKey(), // the credential id (base64url)
+    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    publicKey: text('public_key').notNull(), // base64url
+    counter: integer('counter').notNull().default(0),
+    transports: text('transports').notNull().default(''),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('passkeys_user_idx').on(t.userId)],
 );

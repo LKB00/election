@@ -26,8 +26,11 @@ const skeleton = (text: string) =>
     .replace(/[013457@$]/g, (c) => LEET[c]);
 
 /** Splits text into words (any script) and checks each one, so "Scunthorpe" or "class" never trip it. */
+// Abusive emoji (owner, Oct 2026, after a 🖕 poll): refused anywhere in a poll, in every skin tone.
+const BLOCKED_EMOJI = /\u{1F595}/u; // 🖕
 export function hasBlockedWord(...texts: string[]): boolean {
   return texts.some((text) =>
+    BLOCKED_EMOJI.test(text) ||
     skeleton(text)
       .split(/[^\p{L}\p{M}]+/u)
       .some((w) => w && (SET.has(w) || SET.has(w.replace(/(.)\1{2,}/gu, '$1')))),

@@ -8,6 +8,7 @@ import { apiMsg } from '@/lib/i18n';
 import { choicesFromQuestion, emojiFor } from '@/lib/createHelp';
 import { RATING_EMOJIS, RATING_LABELS, type PollKind } from '@/lib/rating';
 import { rememberMyPoll } from './MyPolls';
+import SignInSheet from './SignIn';
 import PicturePicker, { type Picture } from './PicturePicker';
 
 // One settings row: icon disc, name (+ a quiet line), the current value or a switch, and a chevron for rows that open.
@@ -29,10 +30,12 @@ const Row = ({ icon: Icon, name, note, value, on, open: isOpen, onClick, tone = 
   </button>
 );
 
-export default function CreateForm({ initialTitle = '', initialTopic }: { initialTitle?: string; initialTopic?: string }) {
+export default function CreateForm({ initialTitle = '', initialTopic, signedIn = false }: { initialTitle?: string; initialTopic?: string; signedIn?: boolean }) {
   const router = useRouter();
   const t = useT();
   const lang = useLang();
+  const [signed, setSigned] = useState(signedIn);
+  const [ask, setAsk] = useState(false);
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<string>(initialTopic ?? 'general');
@@ -154,6 +157,12 @@ export default function CreateForm({ initialTitle = '', initialTopic }: { initia
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (busy || !check()) return;
+    // Making a poll needs a profile (voting never does). The poll stays filled in behind the sign-in sheet, and is
+    // sent as soon as the profile is ready.
+    if (!signed) return setAsk(true);
+    send();
+  }
+  async function send() {
     setBusy(true);
     setError('');
     const kept = choices.map((c, i) => ({ c: c.trim(), e: emojiAt(i), p: photos[i] ?? '' })).filter((x) => x.c);
@@ -182,8 +191,13 @@ export default function CreateForm({ initialTitle = '', initialTopic }: { initia
       rememberMyPoll(data.id, data.manageKey);
       return router.push(`/p/${data.id}?new=1`);
     }
-    setError(data?.error ? apiMsg(lang, data.error) : t.errGeneric);
     setBusy(false);
+    // Signed out on another tab, or the sign-in ran out: ask again.
+    if (res?.status === 401) {
+      setSigned(false);
+      return setAsk(true);
+    }
+    setError(data?.error ? apiMsg(lang, data.error) : t.errGeneric);
   }
 
   const TONES = ['input', 'feedback', 'control', 'agents', 'output', 'trust'];
@@ -412,8 +426,19 @@ export default function CreateForm({ initialTitle = '', initialTopic }: { initia
           onConsent={setPhotoConsent}
         />
       )}
+      {ask && (
+        <SignInSheet
+          onClose={() => setAsk(false)}
+          onDone={() => {
+            setAsk(false);
+            setSigned(true);
+            send();
+          }}
+        />
+      )}
       {/* The one main step, pinned at thumb height on phones (like Next on a duel). */}
       <div className="builder-go">
+        {!signed && <p className="small muted builder-go-hint">{t.createSignHint}</p>}
         <button className={'btn btn-primary btn-lg' + (title.trim().length >= 3 && (isRating || filledCount >= 2) ? ' is-ready' : '')} disabled={busy}>{buttonText}</button>
       </div>
     </form>

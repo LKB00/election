@@ -17,7 +17,11 @@ export async function retireSeeded(db: Db) {
 
 // Polls the owner asked to delete for good (with their votes), each removed once when a server starts with this code.
 // Add an id here only when the owner asks; the marker keeps it from running twice.
-export const OWNER_DELETED_IDS = ['fxt5mpm3']; // "Gunda vs Bhatiya" (owner, Oct 2026)
+export const OWNER_DELETED_IDS = [
+  'fxt5mpm3', // "Gunda vs Bhatiya" (owner, Oct 2026)
+  'b6ckriqd', // "Test poll (safe to ignore)": a test, not a visitor's poll (owner, Oct 2026)
+  'czjzx7c2', // "Who is the best finisher": a test, not a visitor's poll (owner, Oct 2026)
+];
 
 export async function deleteOwnerRemoved(db: Db) {
   for (const id of OWNER_DELETED_IDS) {
