@@ -129,6 +129,31 @@ CREATE INDEX IF NOT EXISTS passkeys_user_idx ON passkeys (user_id);
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS owner_id text;
 CREATE INDEX IF NOT EXISTS polls_owner_idx ON polls (owner_id);
 CREATE INDEX IF NOT EXISTS polls_pack_idx ON polls (pack_id);
+-- Poll maker tools (docs/DESIGN.md, "Poll maker tools").
+-- "Ask again": the earlier poll this one repeats (its result is shown as "last time").
+ALTER TABLE polls ADD COLUMN IF NOT EXISTS previous_id text;
+-- The maker chose to show their name and face on this poll (off unless they turn it on).
+ALTER TABLE polls ADD COLUMN IF NOT EXISTS show_maker boolean NOT NULL DEFAULT false;
+-- Each voter sees the choices in their own order (fairer: no first-place advantage).
+ALTER TABLE polls ADD COLUMN IF NOT EXISTS shuffle boolean NOT NULL DEFAULT false;
+-- Voters may suggest a missing choice; it shows only after the maker approves it.
+ALTER TABLE polls ADD COLUMN IF NOT EXISTS suggestions_on boolean NOT NULL DEFAULT false;
+-- Where votes came from, counted per poll only (never per voter): wa, ig, qr, link, other.
+CREATE TABLE IF NOT EXISTS poll_sources (
+  poll_id text NOT NULL REFERENCES polls(id) ON DELETE CASCADE,
+  src text NOT NULL,
+  n integer NOT NULL DEFAULT 0,
+  PRIMARY KEY (poll_id, src)
+);
+CREATE TABLE IF NOT EXISTS suggestions (
+  id text PRIMARY KEY,
+  poll_id text NOT NULL REFERENCES polls(id) ON DELETE CASCADE,
+  label text NOT NULL,
+  emoji text,
+  n integer NOT NULL DEFAULT 1,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS suggestions_poll_label_idx ON suggestions (poll_id, lower(label));
 -- "Tell me the result": a phone's push address, and which polls it wants one alert for.
 CREATE TABLE IF NOT EXISTS push_subs (
   endpoint text PRIMARY KEY,
@@ -143,6 +168,12 @@ CREATE TABLE IF NOT EXISTS push_wants (
   poll_id text NOT NULL REFERENCES polls(id) ON DELETE CASCADE,
   endpoint text NOT NULL REFERENCES push_subs(endpoint) ON DELETE CASCADE,
   created_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (poll_id, endpoint)
+);
+-- The maker's one "your first 10 votes are in" alert.
+CREATE TABLE IF NOT EXISTS push_milestones (
+  poll_id text NOT NULL REFERENCES polls(id) ON DELETE CASCADE,
+  endpoint text NOT NULL REFERENCES push_subs(endpoint) ON DELETE CASCADE,
   PRIMARY KEY (poll_id, endpoint)
 );
 CREATE INDEX IF NOT EXISTS polls_today_on_idx ON polls (today_on);

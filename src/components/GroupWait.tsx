@@ -17,7 +17,7 @@ export default function GroupWait({ pollId, title, voted, of, mine }: { pollId: 
         if ((e as Error)?.name === 'AbortError') return;
       }
     }
-    window.open(`https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`, '_blank', 'noopener');
+    window.open(`https://wa.me/?text=${encodeURIComponent(`${text} ${url}${url.includes('?') ? '&' : '?'}src=wa`)}`, '_blank', 'noopener');
   }
   const dots = Math.min(of, 60);
   const filled = Math.round((Math.min(voted, of) / of) * dots);

@@ -1,22 +1,36 @@
 import { SITE_URL } from '@/lib/site';
 import type { MetadataRoute } from 'next';
-import { getDb } from '@/db';
+import { and, desc, eq, isNull, sql } from 'drizzle-orm';
+import { getDb, schema } from '@/db';
 import { CATEGORIES } from '@/lib/categories';
-import { getFeaturedId, listPolls } from '@/lib/polls';
+import { INDEX_MIN_VOTES } from '@/lib/polls';
 
-// Built on request (the duels live in the database). Only duels the owner has reviewed are listed.
+// Built on request (the polls live in the database). Only polls the owner has reviewed and enough people voted in are
+// listed (the same rule as the poll page's own "index" setting), each dated by its last vote, with its Hindi and
+// Hinglish addresses (hreflang).
 export const dynamic = 'force-dynamic';
+
+const langs = (url: string) => ({ languages: { en: url, hi: `${url}${url.includes('?') ? '&' : '?'}l=hi`, 'hi-Latn': `${url}${url.includes('?') ? '&' : '?'}l=hg` } });
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const site = SITE_URL;
   const db = await getDb();
-  const [featured, polls] = await Promise.all([getFeaturedId(db), listPolls(db, 1000, { reviewedOnly: true })]);
-  const now = new Date();
+  const { polls, votes } = schema;
+  const rows = await db
+    .select({ id: polls.id, created: polls.createdAt, last: sql<Date | string | null>`max(${votes.createdAt})`, n: sql<number>`count(${votes.id})::int` })
+    .from(polls)
+    .leftJoin(votes, eq(votes.pollId, polls.id))
+    .where(and(eq(polls.reviewed, true), eq(polls.hidden, false), isNull(polls.groupSize)))
+    .groupBy(polls.id)
+    .having(sql`count(${votes.id}) >= ${INDEX_MIN_VOTES}`)
+    .orderBy(desc(polls.createdAt))
+    .limit(1000);
+  const newest = rows.reduce((m, r) => Math.max(m, new Date(r.last ?? r.created).getTime()), 0);
+  const fresh = newest ? new Date(newest) : undefined;
   return [
-    { url: `${site}/`, lastModified: now, changeFrequency: 'hourly', priority: 1 },
-    { url: `${site}/polls`, lastModified: now, changeFrequency: 'hourly', priority: 0.8 },
-    ...CATEGORIES.map((c) => ({ url: `${site}/topic/${c}`, lastModified: now, changeFrequency: 'daily' as const, priority: 0.6 })),
-    ...(featured ? [{ url: `${site}/p/${featured}`, lastModified: now, changeFrequency: 'hourly' as const, priority: 0.9 }] : []),
-    ...polls.map((p) => ({ url: `${site}/p/${p.id}`, lastModified: now, changeFrequency: 'daily' as const, priority: 0.5 })),
+    { url: `${site}/`, lastModified: fresh, changeFrequency: 'daily', priority: 1, alternates: langs(`${site}/`) },
+    { url: `${site}/polls`, lastModified: fresh, changeFrequency: 'daily', priority: 0.8, alternates: langs(`${site}/polls`) },
+    ...CATEGORIES.map((c) => ({ url: `${site}/topic/${c}`, changeFrequency: 'weekly' as const, priority: 0.6, alternates: langs(`${site}/topic/${c}`) })),
+    ...rows.map((p) => ({ url: `${site}/p/${p.id}`, lastModified: new Date(p.last ?? p.created), changeFrequency: 'weekly' as const, priority: 0.5, alternates: langs(`${site}/p/${p.id}`) })),
   ];
 }

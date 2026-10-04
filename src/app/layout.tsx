@@ -15,6 +15,8 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: { default: 'Election · What does everyone think?', template: '%s · Election' },
   description: 'Ask anything. Vote in one tap, then see what everyone thinks. Just for fun, not official.',
+  // Lets Google Discover and search show the big share picture.
+  robots: { 'max-image-preview': 'large' },
 };
 
 export const viewport: Viewport = {

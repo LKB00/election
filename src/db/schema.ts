@@ -41,6 +41,14 @@ export const polls = pgTable(
     groupSize: integer('group_size'),
     // The profile that made this poll (profiles are optional for voting; making a poll needs one).
     ownerId: text('owner_id'),
+    // "Ask again": the earlier poll this one repeats.
+    previousId: text('previous_id'),
+    // The maker chose to show their name and face on this poll.
+    showMaker: boolean('show_maker').notNull().default(false),
+    // Each voter sees the choices in their own order.
+    shuffle: boolean('shuffle').notNull().default(false),
+    // Voters may suggest a missing choice; the maker approves it first.
+    suggestionsOn: boolean('suggestions_on').notNull().default(false),
     endsAt: timestamp('ends_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -209,4 +217,36 @@ export const passkeys = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('passkeys_user_idx').on(t.userId)],
+);
+
+// Where votes came from, per poll only (never per voter): wa, ig, qr, link, other.
+export const pollSources = pgTable(
+  'poll_sources',
+  {
+    pollId: text('poll_id').notNull().references(() => polls.id, { onDelete: 'cascade' }),
+    src: text('src').notNull(),
+    n: integer('n').notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.pollId, t.src] })],
+);
+
+// "Suggest a choice": waits here until the maker adds it (or deletes it). Not linked to who suggested it.
+export const suggestions = pgTable('suggestions', {
+  id: text('id').primaryKey(),
+  pollId: text('poll_id').notNull().references(() => polls.id, { onDelete: 'cascade' }),
+  label: text('label').notNull(),
+  emoji: text('emoji'),
+  // How many people suggested the same thing.
+  n: integer('n').notNull().default(1),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// The maker's one "your first 10 votes are in" alert.
+export const pushMilestones = pgTable(
+  'push_milestones',
+  {
+    pollId: text('poll_id').notNull().references(() => polls.id, { onDelete: 'cascade' }),
+    endpoint: text('endpoint').notNull().references(() => pushSubs.endpoint, { onDelete: 'cascade' }),
+  },
+  (t) => [primaryKey({ columns: [t.pollId, t.endpoint] })],
 );

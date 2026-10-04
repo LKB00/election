@@ -28,6 +28,8 @@ export type PollOption = {
   percent: number;
   /** Rank polls: the average place voters gave it (1 = first), when results are visible. */
   avgPlace: number | null;
+  /** "Which dates work?": how many said "if need be" (votes = how many said yes). */
+  maybe: number;
   /** Why this option's voters picked it (only when results are visible). */
   reasons: { reason: string; n: number }[];
 };
@@ -96,6 +98,14 @@ export type PollView = {
   outcome: string | null;
   /** Opened from a friend's link: whether that friend exists, and their pick once you can see results. */
   friend: { known: boolean; optionId: string | null };
+  /** The maker's name and face, only when they chose to show them on this poll. */
+  maker: { id: string; name: string; avatar: string } | null;
+  /** Voters may suggest a missing choice (the maker approves it first). */
+  suggestionsOn: boolean;
+  /** "Ask again": the earlier poll this one repeats, with its result when anyone may see it. */
+  previous: { id: string; title: string; leader: string | null; percent: number | null; voters: number } | null;
+  /** "Which dates work?": this voter's "if need be" dates. */
+  myMaybes: string[];
   options: PollOption[];
 };
 
@@ -138,6 +148,10 @@ export async function createPoll(db: Db, raw: CreatePollInput, manageKey?: strin
     packId: packId ?? null,
     ownerId: ownerId ?? null,
     groupSize: input.groupSize ?? null,
+    shuffle: input.shuffle && (input.kind === 'choice' || input.kind === 'multi' || input.kind === 'rank'),
+    suggestionsOn: input.suggestionsOn && (input.kind === 'choice' || input.kind === 'multi') && !input.groupSize,
+    showMaker: input.showMaker && !!ownerId,
+    previousId: input.previousId && ownerId ? input.previousId : null,
     electionMode: input.electionMode,
     kind: input.kind,
     id,
@@ -168,17 +182,33 @@ export async function createPoll(db: Db, raw: CreatePollInput, manageKey?: strin
   return id;
 }
 
+/** A voter's own fixed order for a shuffled poll: a number from the voter and the choice (same every visit). */
+const orderKey = (voterId: string, optionId: string) => parseInt(createHash('sha256').update(`${voterId}:${optionId}`).digest('hex').slice(0, 8), 16);
+
+async function makerOf(db: Db, uid: string) {
+  const [u] = await db.select({ id: schema.users.id, name: schema.users.name, avatar: schema.users.avatar }).from(schema.users).where(eq(schema.users.id, uid)).limit(1);
+  return u ?? null;
+}
+
+/** "Ask again": the earlier poll's result, only as far as anyone may see it (its leader once results are public). */
+async function previousResult(db: Db, pid: string): Promise<PollView['previous']> {
+  const p = await getPoll(db, pid, null, null, { noPrevious: true });
+  if (!p) return null;
+  const lead = p.resultsVisible && p.totalVotes ? [...p.options].sort((a, b) => b.percent - a.percent)[0] : null;
+  return { id: p.id, title: p.title, leader: lead?.label ?? null, percent: lead ? Math.round(lead.percent) : null, voters: p.participants };
+}
+
 export async function getPoll(
   db: Db,
   id: string,
   voterId: string | null,
   via?: string | null,
-  flags: { includeHidden?: boolean } = {},
+  flags: { includeHidden?: boolean; noPrevious?: boolean } = {},
 ): Promise<PollView | null> {
   const [poll] = await db.select().from(polls).where(eq(polls.id, id)).limit(1);
   if (!poll || (poll.hidden && !flags.includeHidden)) return null;
 
-  const [opts, counts, mine, reasonRows, pulseRows, reactionRows, myReactionRows] = await Promise.all([
+  const [optsInOrder, counts, mine, reasonRows, pulseRows, reactionRows, myReactionRows] = await Promise.all([
     db.select().from(options).where(eq(options.pollId, id)).orderBy(options.position),
     db
       .select({ optionId: votes.optionId, n: sql<number>`count(*)::int` })
@@ -223,9 +253,17 @@ export async function getPoll(
       : Promise.resolve([] as { emoji: string }[]),
   ]);
 
+  // Shuffled polls: each voter gets their own fixed order (the same every visit), so no choice gains from being first.
+  // Not for scales and dates (they have a natural order), nor the EVM (a ballot keeps its serial order).
+  const opts =
+    poll.shuffle && voterId && poll.kind !== 'rating' && poll.kind !== 'dates' && !poll.electionMode && poll.category !== 'politics'
+      ? [...optsInOrder].sort((a, b) => orderKey(voterId, a.id) - orderKey(voterId, b.id))
+      : optsInOrder;
   // "Pick several": a voter can count for several choices. `total` stays the number of voters (percent = share of voters).
   // "Rank": each place earns points (first of N gets N-1, last gets 0); a choice's score is its points.
-  const multi = poll.kind === 'multi';
+  // "Which dates work?": like pick several, where a date's count is its "yes" answers (rank 1); "if need be" is rank 2.
+  const dated = poll.kind === 'dates';
+  const multi = poll.kind === 'multi' || dated;
   const ranked = poll.kind === 'rank';
   const picksKind = multi || ranked;
   const pickRows = picksKind
@@ -238,7 +276,7 @@ export async function getPoll(
   const pointsOf = (optionId: string) => pickRows.filter((x) => x.optionId === optionId).reduce((sum, x) => sum + x.n * (opts.length - (x.rank ?? opts.length)), 0);
   const byOption = new Map(
     multi
-      ? opts.map((o) => [o.id, pickRows.filter((x) => x.optionId === o.id).reduce((sum, x) => sum + x.n, 0)] as const)
+      ? opts.map((o) => [o.id, pickRows.filter((x) => x.optionId === o.id && (!dated || x.rank !== 2)).reduce((sum, x) => sum + x.n, 0)] as const)
       : ranked
         ? opts.map((o) => [o.id, pointsOf(o.id)] as const)
         : counts.map((c) => [c.optionId, c.n] as const),
@@ -251,19 +289,17 @@ export async function getPoll(
     const n = rows.reduce((sum, x) => sum + x.n, 0);
     return n ? Math.round((rows.reduce((sum, x) => sum + x.n * (x.rank ?? 0), 0) / n) * 10) / 10 : null;
   };
-  const myPicks =
+  const myPickRows =
     picksKind && mine[0] && voterId
-      ? (
-          await db
-            .select({ optionId: votePicks.optionId })
-            .from(votePicks)
-            .innerJoin(votes, eq(votes.id, votePicks.voteId))
-            .where(and(eq(votes.pollId, id), eq(votes.voterKey, voterId)))
-            .orderBy(votePicks.rank)
-        ).map((x) => x.optionId)
-      : mine[0]
-        ? [mine[0].optionId]
-        : [];
+      ? await db
+          .select({ optionId: votePicks.optionId, rank: votePicks.rank })
+          .from(votePicks)
+          .innerJoin(votes, eq(votes.id, votePicks.voteId))
+          .where(and(eq(votes.pollId, id), eq(votes.voterKey, voterId)))
+          .orderBy(votePicks.rank)
+      : [];
+  const myMaybes = dated ? myPickRows.filter((x) => x.rank === 2).map((x) => x.optionId) : [];
+  const myPicks = picksKind ? myPickRows.filter((x) => !dated || x.rank !== 2).map((x) => x.optionId) : mine[0] ? [mine[0].optionId] : [];
   const closed = !!poll.endsAt && poll.endsAt.getTime() <= Date.now();
   const myVote = mine[0]?.optionId ?? null;
   // Guess first, then see: on hidden-results duels you answer "who's winning?" before the numbers show.
@@ -274,7 +310,7 @@ export async function getPoll(
   // waiting its answer would tell who leads, and once all have voted there is no crowd left to guess.
   const groupWaiting = !!poll.groupSize && !closed && total < poll.groupSize;
   // "Called it": the vote itself is the prediction, so there is no second "who's winning?" guess.
-  const needsGuess = !poll.groupSize && !poll.calledIt && !sealed && poll.hideUntilVoted && !closed && myVote !== null && mine[0]?.prediction == null && opts.length >= 2 && total >= 2;
+  const needsGuess = !poll.groupSize && !poll.calledIt && poll.kind !== 'dates' && !sealed && poll.hideUntilVoted && !closed && myVote !== null && mine[0]?.prediction == null && opts.length >= 2 && total >= 2;
   const resultsVisible = !sealed && !groupWaiting && (!poll.hideUntilVoted || closed || (myVote !== null && !needsGuess));
 
   // Your share code (made on first need, also for votes from before share codes existed).
@@ -346,7 +382,11 @@ export async function getPoll(
       !sealed && mine[0]?.prediction && mine[0].prediction !== 'skip' && mine[0].prediction !== 'alone' ? { optionId: mine[0].prediction, correct: !!mine[0].predictionCorrect } : null,
     myShareCode,
     electionMode: poll.electionMode || poll.category === 'politics',
-    kind: poll.kind === 'rating' || poll.kind === 'multi' || poll.kind === 'rank' ? poll.kind : 'choice',
+    kind: poll.kind === 'rating' || poll.kind === 'multi' || poll.kind === 'rank' || poll.kind === 'dates' ? poll.kind : 'choice',
+    myMaybes,
+    maker: poll.showMaker && poll.ownerId ? await makerOf(db, poll.ownerId) : null,
+    suggestionsOn: poll.suggestionsOn && (poll.kind === 'choice' || poll.kind === 'multi') && !poll.groupSize && !closed,
+    previous: poll.previousId && !flags.noPrevious ? await previousResult(db, poll.previousId) : null,
     myPicks,
     groupSize: poll.groupSize,
     groupWaiting,
@@ -374,6 +414,7 @@ export async function getPoll(
         // Rank: score as a share of the most points possible; others: share of voters.
         percent: resultsVisible && total ? (ranked ? (n / maxPoints) * 100 : (n / total) * 100) : 0,
         avgPlace: resultsVisible && ranked ? avgPlace(o.id) : null,
+        maybe: resultsVisible && dated ? pickRows.filter((x) => x.optionId === o.id && x.rank === 2).reduce((sum, x) => sum + x.n, 0) : 0,
         reasons: resultsVisible
           ? reasonRows.filter((r) => r.optionId === o.id && r.reason).map((r) => ({ reason: r.reason as string, n: r.n })).sort((a, b) => b.n - a.n)
           : [],
@@ -444,7 +485,7 @@ async function shareOverTime(db: Db, id: string, createdAt: Date, firstOptionId:
 
 export type VoteResult = 'ok' | 'changed' | 'already_voted' | 'closed' | 'not_found' | 'bad_option' | 'frozen';
 
-export async function castVote(db: Db, id: string, optionId: string, voterId: string, via?: string | null, morePicks: string[] = []): Promise<VoteResult> {
+export async function castVote(db: Db, id: string, optionId: string, voterId: string, via?: string | null, morePicks: string[] = [], maybes: string[] = []): Promise<VoteResult> {
   const [poll] = await db.select().from(polls).where(eq(polls.id, id)).limit(1);
   if (!poll || poll.hidden) return 'not_found';
   if (poll.endsAt && poll.endsAt.getTime() <= Date.now()) return 'closed';
@@ -452,7 +493,9 @@ export async function castVote(db: Db, id: string, optionId: string, voterId: st
   if (poll.frozenUntil && poll.frozenUntil.getTime() > Date.now()) return 'frozen';
   // "Pick several": every ticked choice must belong to this poll (the first one is the vote row's own choice).
   // "Rank": the list is the order, first = #1, and every choice must be placed.
-  const picks = usesPicks(poll.kind) ? [...new Set([optionId, ...morePicks])] : [optionId];
+  // "Which dates work?": the yes dates and the "if need be" dates (a date is one or the other).
+  const maybeSet = new Set(poll.kind === 'dates' ? maybes : []);
+  const picks = usesPicks(poll.kind) ? [...new Set([optionId, ...morePicks, ...maybeSet])] : [optionId];
   const valid = await db.select({ id: options.id }).from(options).where(and(eq(options.pollId, id), inArray(options.id, picks)));
   if (valid.length !== picks.length) return 'bad_option';
   if (poll.kind === 'rank') {
@@ -472,7 +515,7 @@ export async function castVote(db: Db, id: string, optionId: string, voterId: st
   const savePicks = async (tx: Db, voteId: string) => {
     if (!usesPicks(poll.kind)) return;
     await tx.delete(votePicks).where(eq(votePicks.voteId, voteId));
-    await tx.insert(votePicks).values(picks.map((o, k) => ({ voteId, pollId: id, optionId: o, rank: poll.kind === 'rank' ? k + 1 : null })));
+    await tx.insert(votePicks).values(picks.map((o, k) => ({ voteId, pollId: id, optionId: o, rank: poll.kind === 'rank' ? k + 1 : poll.kind === 'dates' ? (maybeSet.has(o) ? 2 : 1) : null })));
   };
 
   if (poll.allowChange) {
@@ -546,6 +589,9 @@ export async function guessLeader(db: Db, id: string, voterId: string, choice: s
     .where(and(eq(votes.pollId, id), eq(votes.voterKey, voterId), sql`${votes.prediction} is null`));
   return 'ok';
 }
+
+/** Search engines only get a poll page once this many people voted in it (thin pages look like spam). */
+export const INDEX_MIN_VOTES = 10;
 
 export type PollSummary = { id: string; title: string; category: string; kind: PollKind; totalVotes: number; lastHour: number; options: string[]; closed: boolean; /** The creator's emoji per choice ('' when none), in choice order. */ emojis: string[]; /** A "Called it" question about a real event. */ calledIt: boolean };
 

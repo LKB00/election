@@ -1,4 +1,5 @@
 'use client';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useLang, useT } from '@/lib/lang';
@@ -6,7 +7,8 @@ import { apiMsg } from '@/lib/i18n';
 import { emojiFor } from '@/lib/createHelp';
 import { RATING_EMOJIS, RATING_LABELS } from '@/lib/rating';
 import { rememberMyPoll } from './MyPolls';
-import SignInSheet from './SignIn';
+// Loaded only when someone needs to sign in.
+const SignInSheet = dynamic(() => import('./SignIn'), { ssr: false });
 
 // Match-day and show-night packs (docs/DESIGN.md, "Packs"): type the names and the start time; the pack's polls are
 // written for you, shown before you make them. Predictions ("Called it") close when it starts.

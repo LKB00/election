@@ -10,7 +10,7 @@ import { upcomingPacks } from '@/lib/packs';
 import { getDb } from '@/db';
 import { getDeck, getFeaturedId, getTodaySet, listPolls, trendingPolls } from '@/lib/polls';
 import { readVoterId } from '@/lib/voter';
-import { getLang, getT } from '@/lib/lang-server';
+import { getLang, getT, langAlternates } from '@/lib/lang-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +19,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const featured = await getFeaturedId(await getDb());
   const images = featured ? [{ url: `/api/og/${featured}`, width: 1200, height: 630 }] : undefined;
   return {
-    alternates: { canonical: '/' },
+    alternates: await langAlternates('/'),
     openGraph: { title: 'Election · What does everyone think?', description: 'Ask anything. Vote in one tap, then see what everyone thinks. Just for fun.', images },
     twitter: { card: 'summary_large_image', images: images?.map((i) => i.url) },
   };

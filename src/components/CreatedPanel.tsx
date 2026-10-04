@@ -18,7 +18,8 @@ export default function CreatedPanel({ id, title, path = `/p/${id}`, heading, te
     votePop();
     navigator.vibrate?.([10, 60, 10]);
   }, [path]);
-  const link = () => `${window.location.origin}${path}`;
+  // Tagged so the maker's page can count where votes came from (copied link vs. the share menu).
+  const link = (src = 'link') => `${window.location.origin}${path}?src=${src}`;
   async function copy() {
     try {
       await navigator.clipboard.writeText(link());
@@ -31,7 +32,7 @@ export default function CreatedPanel({ id, title, path = `/p/${id}`, heading, te
   async function share() {
     if (navigator.share) {
       try {
-        await navigator.share({ title, text: text ?? t.shareTextAsk(title), url: link() });
+        await navigator.share({ title, text: text ?? t.shareTextAsk(title), url: link('other') });
       } catch (e) {
         // Closed the phone's share menu: done. Only a real failure falls back to copying the link.
         if ((e as Error)?.name !== 'AbortError') copy();

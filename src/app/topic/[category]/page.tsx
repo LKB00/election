@@ -7,7 +7,7 @@ import { getDb } from '@/db';
 import { CATEGORIES } from '@/lib/categories';
 import { getFeaturedId, getMyVotes, getPoll, listPolls } from '@/lib/polls';
 import { readVoterId } from '@/lib/voter';
-import { getT } from '@/lib/lang-server';
+import { getT, langAlternates } from '@/lib/lang-server';
 
 export const dynamic = 'force-dynamic';
 type Props = { params: Promise<{ category: string }> };
@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { category } = await params;
   if (!isCategory(category)) return { title: 'Poll not found' };
   const t = await getT();
-  return { title: t.topicTitle(t.categories[category] ?? category), alternates: { canonical: `/topic/${category}` } };
+  return { title: t.topicTitle(t.categories[category] ?? category), description: `${t.topicTitle(t.categories[category] ?? category)}. ${t.topicLead}`, alternates: await langAlternates(`/topic/${category}`) };
 }
 
 // A topic page ("Cricket duels"): one place for people who search for a topic, and a way to browse by interest.

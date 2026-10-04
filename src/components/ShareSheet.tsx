@@ -139,7 +139,7 @@ export default function ShareSheet({ poll, pick, shareCode, onClose }: { poll: P
           <span className={'switch' + (secret ? ' is-on' : '')} aria-hidden />
         </button>
 
-        <a className="btn btn-primary btn-lg sheet-main" href={`https://wa.me/?text=${encodeURIComponent(text())}`} target="_blank" rel="noopener noreferrer">
+        <a className="btn btn-primary btn-lg sheet-main" href={`https://wa.me/?text=${encodeURIComponent(`${message} ${link()}&src=wa`)}`} target="_blank" rel="noopener noreferrer">
           <MessageCircle size={16} strokeWidth={1.75} aria-hidden /> {t.sendWhatsApp}
         </a>
         <div className="sheet-row">

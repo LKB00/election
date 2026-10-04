@@ -7,7 +7,7 @@ import { useLang, useT } from '@/lib/lang';
 // (an end time, or a "Called it" waiting for its answer). Our own line first, then the browser's question only when
 // tapped (never on arrival); one alert for this poll, then nothing. iPhone needs the site on the Home Screen first.
 const KEY = 'election-alerts';
-const PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? '';
+export const PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? '';
 const readOn = (): string[] => {
   try {
     return JSON.parse(localStorage.getItem(KEY) ?? '[]');
@@ -20,7 +20,7 @@ const writeOn = (ids: string[]) => {
     localStorage.setItem(KEY, JSON.stringify(ids.slice(-50)));
   } catch {}
 };
-function keyBytes(base64: string) {
+export function keyBytes(base64: string) {
   const s = atob((base64 + '='.repeat((4 - (base64.length % 4)) % 4)).replace(/-/g, '+').replace(/_/g, '/'));
   return Uint8Array.from(s, (c) => c.charCodeAt(0));
 }

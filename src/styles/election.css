@@ -822,3 +822,59 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .profile-delete { display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; padding: 4px 0; font: inherit; font-size: 14px; color: var(--ink-3); cursor: pointer; }
 .builder-go-hint { margin: 0 0 8px; text-align: center; }
 @media (prefers-reduced-motion: reduce) { .signin-face { transition: none; } }
+
+/* Poll maker tools (docs/DESIGN.md, "Poll maker tools") */
+.maker-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding: 12px 16px; border: 1px solid var(--line); border-radius: 18px; background: var(--card); color: var(--ink); font-weight: 600; text-decoration: none; }
+.maker-bar svg:last-child { margin-left: auto; }
+.maker-by { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 12px; color: var(--ink-2); font-size: 14px; text-decoration: none; }
+.maker-by:hover { color: var(--ink); }
+.maker-by-face { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--lime); box-shadow: inset 0 0 0 1.5px var(--ink); font-size: 16px; }
+.maker-title { overflow-wrap: anywhere; }
+.maker-stats { display: flex; flex-direction: column; gap: 10px; padding: 16px; }
+.maker-stats .label { margin: 4px 0 0; }
+.maker-hours { display: grid; grid-template-columns: repeat(24, 1fr); align-items: end; gap: 3px; height: 72px; }
+.maker-hours span { display: block; border-radius: 3px; background: var(--line); }
+.maker-hours span.is-on { background: var(--ink); }
+.maker-sources { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.maker-sources li { display: grid; grid-template-columns: 110px 1fr 36px; gap: 10px; align-items: center; font-size: 14px; }
+.maker-sources li .small { text-align: right; font-variant-numeric: tabular-nums; }
+.maker-share { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.maker-share .btn-primary { flex: 1 1 220px; gap: 8px; }
+.maker-results { display: grid; grid-template-columns: 108px 1fr; gap: 16px; align-items: center; }
+.maker-results-img { width: 108px; height: 192px; border-radius: 12px; border: 1px solid var(--line); object-fit: cover; background: var(--sand); }
+.maker-results-side { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+.maker-results-side .btn { gap: 8px; }
+.maker-lengths { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+.maker-lengths .chip svg, .maker-lengths .btn svg { vertical-align: -2px; }
+.maker-edit { display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 1px solid var(--line); border-radius: 18px; background: var(--card); }
+.maker-edit .input { width: 100%; box-sizing: border-box; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); padding: 12px 14px; font: inherit; font-size: 16px; color: var(--ink); }
+button.maker-row { width: 100%; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.maker-suggest { gap: 8px; }
+.maker-alert-on { display: flex; gap: 6px; align-items: center; padding: 12px 16px; margin: 0; }
+.suggest { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.suggest .link-like { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; }
+.suggest-form { display: flex; gap: 8px; align-items: center; }
+.suggest-form .search { flex: 1; }
+.prev-line { display: flex; gap: 6px; align-items: baseline; margin: 8px 0 0; }
+.prev-line svg { flex: none; align-self: center; }
+/* "Which dates work?": "if need be" is a dashed outline plus its own word on the key (colour never alone). */
+.duel-option.is-maybe { border-style: dashed; border-color: var(--ink-2); }
+.create-dates { display: flex; flex-direction: column; gap: 8px; }
+.create-date { display: flex; align-items: center; gap: 10px; }
+.create-date input { flex: 1; min-width: 0; }
+.create-date.is-new { opacity: 0.7; border-style: dashed; }
+.create-again { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 8px; padding: 12px 16px; border-radius: 18px; background: var(--you-soft); color: var(--on-you-soft); font-size: 14px; }
+.create-again svg { flex: none; margin-top: 2px; }
+
+/* Accessibility pass (WCAG 2.2 AA; docs/DESIGN.md, "Accessibility"). */
+/* A clear focus ring for keyboards and switch users, everywhere (2px is the floor; 3px reads in sunlight). */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.create-q:focus-visible, .builder-q:focus-visible, .builder-name:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+/* The fixed bottom bar never hides the thing you moved to. */
+html { scroll-padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); scroll-padding-top: 72px; }
+/* Edges of fields and switches you must find to use: 3:1 against the ground. */
+.input, .search, .create-q, .chip:not(.chip-on), .signin-face { border-color: var(--line-control); }
+/* People who ask their phone for less motion get none, including in the copied gb/ styles. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}

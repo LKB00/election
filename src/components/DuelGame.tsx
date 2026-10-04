@@ -1,6 +1,7 @@
 'use client';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { ArrowRight, CalendarPlus, Check, Flag, Lock, Plus, Share2, Target, Users } from 'lucide-react';
+import { ArrowRight, CalendarPlus, Check, Flag, Lock, Plus, Repeat, Share2, Target, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type { PollOption, PollView } from '@/lib/polls';
@@ -8,7 +9,8 @@ import { announceVote } from '@/lib/useStats';
 import Burst from './Burst';
 import InkFinger from './InkFinger';
 import CastVote from './CastVote';
-import ShareSheet from './ShareSheet';
+// The share panel loads when it is opened (less code before the first vote works).
+const ShareSheet = dynamic(() => import('./ShareSheet'), { ssr: false });
 import InstallInvite from './InstallInvite';
 import { evmBeep, keyClick, votePop } from '@/lib/sound';
 import { ratingAverage, ratingEmoji } from '@/lib/rating';
@@ -18,6 +20,7 @@ import { useLang, useT } from '@/lib/lang';
 import { apiMsg, reasonLabel, type Dict, type Lang } from '@/lib/i18n';
 import { faceLabels } from '@/lib/labels';
 import { manageKeyFor } from './MyPolls';
+import SuggestChoice from './SuggestChoice';
 import PeopleGrid from './PeopleGrid';
 import ResultAlert from './ResultAlert';
 import GroupWait from './GroupWait';
@@ -27,6 +30,19 @@ import GroupWait from './GroupWait';
 // Ballot serial numbers, like the EVM and the VVPAT slip (1, 2, 3…). Keys A/B… still work too.
 const LETTERS = 'ABCDEFGHIJ';
 const serial = (n: number) => String(n + 1);
+// Hindi written in Devanagari on an English page: tell screen readers, so it is read with Hindi rules.
+const hindiText = (s: string) => (/[\u0900-\u097F]/.test(s) ? 'hi' : undefined);
+// Where this vote came from, for the maker's counts (never kept with the vote): the tag on the shared link (?src=wa)
+// when this is the poll the link opened, else Instagram's own browser, else "other".
+function voteSource(pollId: string): string | undefined {
+  try {
+    const here = window.location.pathname === `/p/${pollId}`;
+    const src = here ? new URLSearchParams(window.location.search).get('src') : null;
+    if (src) return src;
+    if (/Instagram/i.test(navigator.userAgent)) return 'ig';
+  } catch {}
+  return undefined;
+}
 const TONES = ['input', 'feedback', 'control', 'agents', 'output', 'trust'];
 
 // The cast-vote moment is full length on your first vote of a visit, then shorter (a ritual, not a wait).
@@ -260,12 +276,26 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
   );
   const rating = poll?.kind === 'rating';
   // "Pick several": tick choices first (kept here until you press Vote), then one vote carries them all.
-  const multi = poll?.kind === 'multi' || poll?.kind === 'rank';
+  // "Which dates work?": like pick several, with three answers per date (works → if need be → doesn't work).
+  const dates = poll?.kind === 'dates';
+  const multi = poll?.kind === 'multi' || poll?.kind === 'rank' || dates;
   // Rank: the order you tap is your ranking (first tap = #1).
   const ranking = poll?.kind === 'rank';
   const [ticks, setTicks] = useState<string[]>([]);
-  useEffect(() => setTicks([]), [raw?.id]);
-  const toggleTick = (id: string) => setTicks((x) => (x.includes(id) ? x.filter((y) => y !== id) : [...x, id]));
+  const [maybes, setMaybes] = useState<string[]>([]);
+  useEffect(() => {
+    setTicks([]);
+    setMaybes([]);
+  }, [raw?.id]);
+  const toggleTick = (id: string) => {
+    if (!dates) return setTicks((x) => (x.includes(id) ? x.filter((y) => y !== id) : [...x, id]));
+    // Dates: works → if need be → doesn't work → works…
+    if (ticks.includes(id)) {
+      setTicks((x) => x.filter((y) => y !== id));
+      setMaybes((x) => [...x, id]);
+    } else if (maybes.includes(id)) setMaybes((x) => x.filter((y) => y !== id));
+    else setTicks((x) => [...x, id]);
+  };
   // The friend's code only belongs to the duel they shared (the first one on a shared link).
   const viaHere = poll && start !== undefined && i === start ? via ?? null : null;
   const q = viaHere ? `?f=${encodeURIComponent(viaHere)}` : '';
@@ -320,7 +350,13 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
   const castOpt = casting ? poll?.options.find((o) => o.id === casting.optionId) ?? null : null;
   // "Leading" / "won" only when one choice is clearly ahead (a tie has no leader).
   const top = pcts.length ? Math.max(...pcts) : 0;
-  const leaderIdx = revealed && poll && poll.totalVotes > 0 && pcts.filter((v) => v === top).length === 1 ? pcts.indexOf(top) : -1;
+  const bestDate = (() => {
+    if (!dates || !poll || !revealed || !poll.totalVotes) return -1;
+    const score = (o: PollOption) => o.votes * 1000 + o.maybe;
+    const best = Math.max(...poll.options.map(score));
+    return poll.options.filter((o) => score(o) === best).length === 1 ? poll.options.findIndex((o) => score(o) === best) : -1;
+  })();
+  const leaderIdx = dates ? bestDate : revealed && poll && poll.totalVotes > 0 && pcts.filter((v) => v === top).length === 1 ? pcts.indexOf(top) : -1;
   // The race line follows the choice in the swing line (else the leader). Two-choice duels only (the trend is the first choice's share).
   const sparkOpt = poll ? poll.options.find((o) => o.id === poll.swing?.optionId) ?? (leaderIdx >= 0 ? poll.options[leaderIdx] : poll.options[0]) : null;
   // Declared result: the winner and the margin over the runner-up, in votes.
@@ -403,7 +439,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
     },
     [countId],
   );
-  async function vote(optionId: string, picks: string[] = []) {
+  async function vote(optionId: string, picks: string[] = [], maybeList: string[] = []) {
     if (!poll || voted || busy || poll.closed) return;
     gen.current++;
     setBusy(optionId);
@@ -415,7 +451,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
     const res = await fetch(`/api/polls/${poll.id}/vote`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ optionId, picks, via: viaHere, human }),
+      body: JSON.stringify({ optionId, picks, maybes: maybeList, via: viaHere, human, src: voteSource(poll.id) }),
     }).catch(() => null);
     const data = await res?.json().catch(() => null);
     if (res?.ok && data?.poll) {
@@ -633,7 +669,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
       const k = e.key.toLowerCase();
       const n = /^[1-9]$/.test(k) ? Number(k) - 1 : LETTERS.toLowerCase().indexOf(k);
       if (!revealed && n >= 0 && n < poll.options.length) {
-        if (poll.kind === 'multi') toggleTick(poll.options[n].id);
+        if (poll.kind === 'multi' || poll.kind === 'dates') toggleTick(poll.options[n].id);
         else vote(poll.options[n].id);
       }
       if (e.key === 'Enter' && revealed && !counting && !t.closest('button, a')) next();
@@ -701,7 +737,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
           </ul>
         </div>
         <div className="row wrap center">
-          <a className="btn btn-primary btn-lg" href={`https://wa.me/?text=${encodeURIComponent(text)}`} target="_blank" rel="noopener noreferrer">
+          <a className="btn btn-primary btn-lg" href={`https://wa.me/?text=${encodeURIComponent(text.replace(link(), `${link()}${link().includes('?') ? '&' : '?'}src=wa`))}`} target="_blank" rel="noopener noreferrer">
             <Share2 size={15} strokeWidth={1.75} aria-hidden /> {t.shareDay}
           </a>
           {more.some((m) => isOpen(m) && !deck.some((d) => d.id === m.id)) ? (
@@ -735,7 +771,8 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
   const [vTitle, vLine] = verdictPick && revealed ? verdict(t, poll, verdictPick) : ['', ''];
   // A rare take (1 in 5 or fewer) is the most surprising result: it gets a lime highlight (lime = you).
   const rareNow = !!verdictPick && revealed && (poll.kind === 'choice' || poll.kind === 'multi') && sideOf(poll, verdictPick).kind === 'rare';
-  const letters = faceLabels(poll.options.map((o) => o.label));
+  // Dates show their day of the month ("14") in the circle; other choices their letters.
+  const letters = dates ? poll.options.map((o) => /\d{1,2}/.exec(o.label)?.[0] ?? '📅') : faceLabels(poll.options.map((o) => o.label));
   // 3 or more choices: one compact row per choice, like the real EVM ballot unit. Two choices keep the big photo cards.
   const ballot = poll.options.length >= 3;
   const happened = poll.calledIt ? poll.outcome : null;
@@ -777,7 +814,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
         {/* "Called it" (P2): says this is about a real event, answered later. */}
         {poll.groupSize && !(todayId === poll.id) && <p className="label duel-today">👥 {t.grpLabel}</p>}
         {poll.calledIt && !poll.outcome && !(todayId === poll.id || (daily && setIds.has(poll.id) && setLeft > 0)) && <p className="label duel-today">🔮 {t.calledLabel}</p>}
-        <h1 key={poll.id} className="display duel-q">{poll.title}</h1>
+        <h1 key={poll.id} className="display duel-q" lang={hindiText(poll.title)}>{poll.title}</h1>
         {/* The creator's "Details" line (and a pack's "Fan poll, not the official vote"). */}
         {poll.description && <p className="small muted duel-desc">{poll.description}</p>}
         <p className="small muted">
@@ -839,18 +876,19 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
           {poll.options.map((o, n) => {
             const isMine = multi ? poll.myPicks.includes(o.id) : poll.myVote === o.id;
             const ticked = multi && !voted && ticks.includes(o.id);
+            const maybe = dates && (voted ? poll.myMaybes.includes(o.id) : maybes.includes(o.id));
             const lead = n === leaderIdx;
             return (
               <button
                 key={o.id}
                 type="button"
-                className={'tot-option duel-option' + (isMine || ticked ? ' is-mine' : '') + (revealed && !isMine ? ' is-other' : '') + (busy === o.id ? ' is-busy' : '')}
+                className={'tot-option duel-option' + (isMine || ticked ? ' is-mine' : '') + (maybe ? ' is-maybe' : '') + (revealed && !isMine ? ' is-other' : '') + (busy === o.id ? ' is-busy' : '')}
                 // --i: the order the result builds in (your pick first, then the rest), so the eye lands on you.
                 style={{ '--pc': `var(--p-${TONES[n % TONES.length]})`, '--dc': `var(--d-${TONES[n % TONES.length]})`, '--i': isMine ? 0 : n + 1 } as React.CSSProperties}
                 onClick={() => (multi ? toggleTick(o.id) : vote(o.id))}
                 disabled={voted || !!busy || poll.closed || !!poll.pausedUntil}
-                aria-pressed={multi && !voted ? ticked : undefined}
-                aria-label={`${o.label}${revealed ? `, ${t.percent(pcts[n])}` : ''}`}
+                aria-pressed={multi && !voted && !dates ? ticked : undefined}
+                aria-label={dates && !voted ? `${o.label}: ${ticked ? t.datesWorks : maybe ? t.datesMaybe : t.datesNo}` : `${voted || multi || revealed ? o.label : t.voteFor(o.label)}${revealed ? `, ${t.percent(pcts[n])}` : ''}`}
               >
                 {/* Serial numbers belong to the EVM (Election mode); a Rank poll shows your order. Elsewhere they add nothing. */}
                 {numbered && !(ranking && !ticked && !isMine) && (
@@ -861,8 +899,8 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
                 {revealed && (lead || (isMine && !ranking) || poll.friend.optionId === o.id || happened === o.id) && (
                   <span className="tot-caption">
                     {/* "Called it": what happened is the answer; the most-picked choice is only "most called". */}
-                    {isMine && !ranking ? t.yourPick : happened === o.id ? `✓ ${t.calledHappened}` : lead ? (poll.calledIt ? t.calledCrowd : poll.closed && !counting ? t.won : t.leading) : t.friendsPick}
-                    {isMine && happened === o.id ? ` · ✓ ${t.calledHappened}` : isMine && !ranking && lead && !poll.calledIt ? ` · ${poll.closed && !counting ? t.wonLower : t.leadingLower}` : ''}
+                    {isMine && !ranking && !dates ? t.yourPick : dates && lead ? t.bestDate : happened === o.id ? `✓ ${t.calledHappened}` : lead ? (poll.calledIt ? t.calledCrowd : poll.closed && !counting ? t.won : t.leading) : t.friendsPick}
+                    {isMine && happened === o.id ? ` · ✓ ${t.calledHappened}` : isMine && !ranking && !dates && lead && !poll.calledIt ? ` · ${poll.closed && !counting ? t.wonLower : t.leadingLower}` : ''}
                     {poll.friend.optionId === o.id && (isMine || lead) ? ` · ${t.friendsPickLower}` : ''}
                   </span>
                 )}
@@ -870,7 +908,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
                   <Face o={o} tone={TONES[n % TONES.length]} letters={letters[n]} />
                   <span className="duel-text">
                     {o.subtitle && <span className="label">{o.subtitle}</span>}
-                    <span className="duel-name">{o.label}</span>
+                    <span className="duel-name" lang={hindiText(o.label)}>{o.label}</span>
                   </span>
                 </span>
                 {revealed && (
@@ -878,7 +916,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
                     <span className="duel-pct"><Tween value={pcts[n]} render={(v) => `${v}%`} /></span>
                     {/* The line at 50% is the majority mark, as on counting-day tallies. */}
                     <span className="meter duel-meter" aria-hidden><span style={{ width: `${pcts[n]}%` }} /></span>
-                    <span className="small muted">{ranking ? (o.avgPlace != null ? t.rankAvg(o.avgPlace.toFixed(1)) : '') : <Tween value={votesOf(o)} render={(v) => t.votes(v)} />}</span>
+                    <span className="small muted">{ranking ? (o.avgPlace != null ? t.rankAvg(o.avgPlace.toFixed(1)) : '') : dates ? t.datesResult(o.votes, o.maybe) : <Tween value={votesOf(o)} render={(v) => t.votes(v)} />}</span>
                     {/* Your crowd guess, drawn on the real result: you see at once how close you were. */}
                     {poll.myGuess?.optionId === o.id && <span className="guess-tag"><Target size={12} strokeWidth={2} aria-hidden /> {t.yourGuess}</span>}
                   </span>
@@ -886,7 +924,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
                 {!revealed && !poll.closed && (
                   <span className="evm-row" aria-hidden>
                     <span className={'evm-led' + (isMine || ticked ? ' is-on' : '')} />
-                    <span className="evm-btn">{multi && !voted ? (ranking ? (ticked ? t.rankRemove : t.rankNext(ticks.length + 1)) : ticked ? t.multiTicked : t.multiTick) : isMine ? t.voted : t.vote}</span>
+                    <span className="evm-btn">{dates && !voted ? (ticked ? t.datesWorks : maybe ? t.datesMaybe : t.datesNo) : multi && !voted ? (ranking ? (ticked ? t.rankRemove : t.rankNext(ticks.length + 1)) : ticked ? t.multiTicked : t.multiTick) : isMine ? t.voted : t.vote}</span>
                   </span>
                 )}
                 {justVoted === o.id && !counting && <Burst />}
@@ -917,20 +955,27 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
               {ticks.map((id, k) => `${k + 1}. ${poll.options.find((o) => o.id === id)?.label ?? ''}`).join(' · ')}
             </p>
           ) : (
-            <p className="small muted">{ranking ? t.rankHint : t.multiHint}</p>
+            <p className="small muted">{ranking ? t.rankHint : dates ? t.datesHint : t.multiHint}</p>
           )}
           <button
             type="button"
             className="btn btn-primary btn-lg"
-            disabled={(ranking ? ticks.length !== poll.options.length : !ticks.length) || !!busy || !!poll.pausedUntil}
-            onClick={() => vote(ticks[0], ticks.slice(1))}
+            disabled={(ranking ? ticks.length !== poll.options.length : dates ? !ticks.length && !maybes.length : !ticks.length) || !!busy || !!poll.pausedUntil}
+            onClick={() => (dates ? vote([...ticks, ...maybes][0], ticks.slice(ticks.length ? 1 : 0), maybes) : vote(ticks[0], ticks.slice(1)))}
           >
-            {ranking ? t.rankCast(ticks.length, poll.options.length) : t.multiCast(ticks.length)}
+            {ranking ? t.rankCast(ticks.length, poll.options.length) : dates ? t.datesCast : t.multiCast(ticks.length)}
           </button>
           {ranking && ticks.length > 0 && <button type="button" className="link-like small muted" onClick={() => setTicks([])}>{t.rankClear}</button>}
         </div>
       )}
-      {multi && revealed && <p className="small muted">{ranking ? t.rankNote : t.multiNote}</p>}
+      {multi && revealed && <p className="small muted">{ranking ? t.rankNote : dates ? t.datesNote : t.multiNote}</p>}
+      {/* "Ask again": how the same question went last time (only as far as anyone may see it). */}
+      {revealed && poll.previous && (
+        <p className="small muted prev-line">
+          <Repeat size={14} strokeWidth={2} aria-hidden /> {poll.previous.leader && poll.previous.percent != null ? t.lastTime(poll.previous.leader, poll.previous.percent, poll.previous.voters) : t.lastTimeHidden(poll.previous.voters)}
+        </p>
+      )}
+      {voted && poll.suggestionsOn && !counting && <SuggestChoice pollId={poll.id} />}
 
       {!voted && !poll.closed && (
         <p className="small muted duel-hint" data-hint>{t.ballotHint}</p>

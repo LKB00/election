@@ -1,6 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { AlignLeft, Check, ChevronDown, CircleDot, Clock, EyeOff, ImagePlus, Landmark, Lightbulb, ListChecks, ListOrdered, Repeat, SlidersHorizontal, Smile, Sparkles, Tag, Users, WandSparkles, X } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import { AlignLeft, CalendarDays, Check, ChevronDown, CircleDot, Clock, EyeOff, ImagePlus, Landmark, Lightbulb, ListChecks, ListOrdered, MessageSquarePlus, Repeat, Shuffle, SlidersHorizontal, Smile, Sparkles, Tag, UserRound, Users, WandSparkles, X } from 'lucide-react';
 import { useState } from 'react';
 import { CATEGORIES } from '@/lib/categories';
 import { useLang, useT } from '@/lib/lang';
@@ -8,8 +9,10 @@ import { apiMsg } from '@/lib/i18n';
 import { choicesFromQuestion, emojiFor } from '@/lib/createHelp';
 import { RATING_EMOJIS, RATING_LABELS, type PollKind } from '@/lib/rating';
 import { rememberMyPoll } from './MyPolls';
-import SignInSheet from './SignIn';
-import PicturePicker, { type Picture } from './PicturePicker';
+import type { Picture } from './PicturePicker';
+// Loaded only when opened (less code for cheap phones to download before the form works).
+const SignInSheet = dynamic(() => import('./SignIn'), { ssr: false });
+const PicturePicker = dynamic(() => import('./PicturePicker'), { ssr: false });
 
 // One settings row: icon disc, name (+ a quiet line), the current value or a switch, and a chevron for rows that open.
 const Row = ({ icon: Icon, name, note, value, on, open: isOpen, onClick, tone = 'var(--sand)' }: { icon: typeof Clock; name: string; note?: string; value?: string; on?: boolean; open?: boolean; onClick: () => void; tone?: string }) => (
@@ -30,22 +33,36 @@ const Row = ({ icon: Icon, name, note, value, on, open: isOpen, onClick, tone = 
   </button>
 );
 
-export default function CreateForm({ initialTitle = '', initialTopic, signedIn = false }: { initialTitle?: string; initialTopic?: string; signedIn?: boolean }) {
+/** "Ask again": the earlier poll's question, choices and type, filled in (the new poll links back to it). */
+export type AskAgain = { id: string; title: string; options: string[]; emojis: string[]; kind: PollKind; calledIt: boolean; category: string; showMaker: boolean };
+
+export default function CreateForm({ initialTitle = '', initialTopic, signedIn = false, again }: { initialTitle?: string; initialTopic?: string; signedIn?: boolean; again?: AskAgain }) {
   const router = useRouter();
   const t = useT();
   const lang = useLang();
   const [signed, setSigned] = useState(signedIn);
   const [ask, setAsk] = useState(false);
-  const [title, setTitle] = useState(initialTitle);
+  const [title, setTitle] = useState(again?.title ?? initialTitle);
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState<string>(initialTopic ?? 'general');
-  const [choices, setChoices] = useState(['', '']);
+  const [category, setCategory] = useState<string>(again?.category ?? initialTopic ?? 'general');
+  const startChoices = again && again.kind !== 'rating' && again.kind !== 'dates' ? [...again.options, ...(again.options.length < 10 ? [''] : [])] : ['', ''];
+  const [choices, setChoices] = useState(startChoices);
   // One optional emoji per choice, kept in step with the choices.
-  const [emojis, setEmojis] = useState(['', '']);
+  const [emojis, setEmojis] = useState(startChoices.map((_, n) => again?.emojis[n] ?? ''));
   // An emoji box you have not touched shows a fitting emoji for the name ("Chai" → 🍵); once you type in it, yours wins.
-  const [touched, setTouched] = useState([false, false]);
+  const [touched, setTouched] = useState(startChoices.map((_, n) => !!again?.emojis[n]));
   // One optional photo per choice (a small JPEG made on the phone); a photo shows instead of the emoji.
-  const [photos, setPhotos] = useState(['', '']);
+  const [photos, setPhotos] = useState(startChoices.map(() => ''));
+  // "Which dates work?": the dates as the phone's date picker gives them (2026-10-12), growing like the choices.
+  const [dateVals, setDateVals] = useState(['', '']);
+  const setDate = (i: number, v: string) => setDateVals((d) => [...d.map((x, j) => (j === i ? v : x)), ...(i === d.length - 1 && v && d.length < 10 ? [''] : [])]);
+  const dateLabel = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString(lang === 'hi' ? 'hi-IN' : 'en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+  const filledDates = [...new Set(dateVals.filter(Boolean))].sort();
+  // Fairer, and more ways in: each voter's own order, and "suggest a choice" (the maker adds it first).
+  const [shuffle, setShuffle] = useState(false);
+  const [suggestionsOn, setSuggestionsOn] = useState(true);
+  // The maker's name on the poll: their choice, off unless they turn it on.
+  const [showMaker, setShowMaker] = useState(again?.showMaker ?? false);
   // Which choice's picture sheet is open.
   const [picking, setPicking] = useState<number | null>(null);
   const emojiAt = (i: number) => (touched[i] ? emojis[i] ?? '' : emojis[i] || emojiFor(choices[i] ?? ''));
@@ -61,10 +78,11 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   // "I am 18+, and these photos are me or people who said yes": ticked once in the picture sheet, before any photo.
   const [photoConsent, setPhotoConsent] = useState(false);
   // What kind of question: pick one of your choices, or rate it 1–5 with faces.
-  const [kind, setKind] = useState<PollKind>('choice');
+  const [kind, setKind] = useState<PollKind>(again?.kind ?? 'choice');
   const isRating = kind === 'rating';
+  const isDates = kind === 'dates';
   // "Called it": a pick-one question about a real event; you mark what happened later.
-  const [calledIt, setCalledIt] = useState(false);
+  const [calledIt, setCalledIt] = useState(again?.calledIt ?? false);
   const pickKind = (k: PollKind, called = false) => {
     setKind(k);
     setCalledIt(called);
@@ -124,8 +142,8 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   }
   const typedChoices = choices.some((c) => c.trim());
   // "Virat, Rohit or Dhoni?" → offer those three as the choices (until you type your own).
-  const fromQuestion = typedChoices || kind === 'rating' ? null : choicesFromQuestion(title);
-  const filledCount = choices.filter((c) => c.trim()).length;
+  const fromQuestion = typedChoices || kind === 'rating' || kind === 'dates' ? null : choicesFromQuestion(title);
+  const filledCount = isDates ? filledDates.length : choices.filter((c) => c.trim()).length;
   // The main button says what is still missing, then "Create duel".
   const buttonText = busy ? t.creating : title.trim().length < 3 ? t.needQuestion : !isRating && filledCount < 2 ? t.needChoices(2 - filledCount) : t.createDuel;
   // The end time as the phone shows it (local time, no seconds), for the picker's earliest allowed value.
@@ -140,6 +158,8 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
     if (title.trim().length < 3) errs.title = t.errTitle;
     if (isRating) {
       /* a rating poll has its five faces already */
+    } else if (isDates) {
+      if (filledDates.length < 2) errs.choices = t.errChoices;
     } else if (filled.length < 2) errs.choices = t.errChoices;
     else if (new Set(filled.map((c) => c.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '') || c)).size !== filled.length) errs.choices = t.errSame;
     if (endsAt && !(new Date(endsAt).getTime() > Date.now())) errs.end = t.errEnd;
@@ -175,9 +195,13 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
         category,
         kind,
         calledIt,
-        options: isRating ? RATING_LABELS : kept.map((x) => x.c),
-        emojis: isRating ? RATING_EMOJIS : kept.map((x) => x.e),
-        photos: isRating ? [] : kept.map((x) => x.p),
+        options: isRating ? RATING_LABELS : isDates ? filledDates.map(dateLabel) : kept.map((x) => x.c),
+        emojis: isRating ? RATING_EMOJIS : isDates ? [] : kept.map((x) => x.e),
+        photos: isRating || isDates ? [] : kept.map((x) => x.p),
+        shuffle: shuffle && !isDates && !isRating,
+        suggestionsOn: suggestionsOn && (kind === 'choice' || kind === 'multi'),
+        showMaker,
+        previousId: again?.id,
         hideUntilVoted,
         allowChange,
         electionMode,
@@ -212,11 +236,18 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
     { k: 'multi', Icon: ListChecks, name: t.formatMulti, desc: t.typeDesc.multi, pick: () => pickKind('multi') },
     { k: 'rank', Icon: ListOrdered, name: t.formatRank, desc: t.typeDesc.rank, pick: () => pickKind('rank') },
     { k: 'rating', Icon: Smile, name: t.formatRate, desc: t.typeDesc.rating, pick: () => pickKind('rating') },
+    { k: 'dates', Icon: CalendarDays, name: t.formatDates, desc: t.typeDesc.dates, pick: () => pickKind('dates') },
   ];
   const current = TYPES.find((x) => x.k === (calledIt ? 'called' : kind)) ?? TYPES[0];
 
   return (
     <form className="builder create" onSubmit={submit}>
+      {again && (
+        <p className="create-again" role="status">
+          <Repeat size={16} strokeWidth={2} aria-hidden />
+          <span><strong>{t.askingAgain(again.title)}</strong> <span className="muted">{t.askingAgainLine}</span></span>
+        </p>
+      )}
       {/* 1. The question (P1): a real box, so it is clear where to type. */}
       <section className="create-block">
         <label htmlFor="title" className="create-label">{t.yourQuestion}</label>
@@ -267,8 +298,24 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
 
       {/* 2. The choices: a picture and a name each; typing in the last row adds the next one. */}
       <section className="create-block">
-        <p className="create-label">{isRating ? t.formatRate : t.choicesTitle}</p>
-        {isRating ? (
+        <p className="create-label">{isRating ? t.formatRate : isDates ? t.formatDates : t.choicesTitle}</p>
+        {isDates ? (
+          <div className="create-dates">
+            {dateVals.map((d, i) => (
+              <span key={i} className={'search create-date' + (!d && i === dateVals.length - 1 && i >= 2 ? ' is-new' : '')}>
+                <CalendarDays size={16} strokeWidth={1.75} aria-hidden />
+                <input id={`choice-${i}`} data-choice type="date" min={localNow().slice(0, 10)} value={d} aria-label={t.dateN(i + 1)} onChange={(e) => { setDate(i, e.target.value); setFieldError((f) => ({ ...f, choices: undefined })); }} />
+                {d && <span className="small muted">{dateLabel(d)}</span>}
+                {dateVals.length > 2 && d && (
+                  <button type="button" className="icon-btn builder-remove" aria-label={t.removeChoice(i + 1)} onClick={() => setDateVals((x) => x.filter((_, j) => j !== i))}>
+                    <X size={14} strokeWidth={1.75} aria-hidden />
+                  </button>
+                )}
+              </span>
+            ))}
+            <p className="small muted">{t.datesHint}</p>
+          </div>
+        ) : isRating ? (
           <>
             <div className="rate-scale is-preview" aria-hidden>
               {RATING_EMOJIS.map((e, n) => (
@@ -355,6 +402,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
             )}
           </li>
           <li><Row icon={EyeOff} name={t.setHidden} note={t.hideResultsNote} on={hideUntilVoted} onClick={() => setHide((v) => !v)} /></li>
+          <li><Row icon={UserRound} name={t.setShowMe} note={t.setShowMeNote} on={showMaker} onClick={() => setShowMaker((v) => !v)} /></li>
           <li>
             <Row icon={Tag} name={t.category} value={t.categories[category] ?? category} open={open === 'topic'} onClick={() => toggleOpen('topic')} />
             {open === 'topic' && (
@@ -367,7 +415,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
               </div>
             )}
           </li>
-          {showMore || endsAt || isGroup || allowChange || electionMode || description.trim() || fieldError.end ? (
+          {showMore || endsAt || isGroup || allowChange || electionMode || shuffle || description.trim() || fieldError.end ? (
             <>
               <li>
                 <Row icon={Clock} name={t.setEnds} value={endsAt ? endsLabel : t.offWord} open={open === 'ends' || !!fieldError.end} onClick={() => toggleOpen('ends')} />
@@ -395,6 +443,8 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
                 )}
               </li>
               <li><Row icon={Repeat} name={t.setChange} note={t.allowChangeNote} on={allowChange} onClick={() => setChange((v) => !v)} /></li>
+              {(kind === 'choice' || kind === 'multi') && <li><Row icon={MessageSquarePlus} name={t.setSuggest} note={t.setSuggestNote} on={suggestionsOn} onClick={() => setSuggestionsOn((v) => !v)} /></li>}
+              {(kind === 'choice' || kind === 'multi' || kind === 'rank') && !electionMode && <li><Row icon={Shuffle} name={t.setShuffle} note={t.setShuffleNote} on={shuffle} onClick={() => setShuffle((v) => !v)} /></li>}
               <li><Row icon={Landmark} name={t.setElection} note={t.setElectionShort} on={electionMode} onClick={() => setElectionMode((v) => !v)} /></li>
               <li>
                 <Row icon={AlignLeft} name={t.setDetails} value={description.trim() ? '✓' : t.offWord} open={open === 'details'} onClick={() => toggleOpen('details')} />

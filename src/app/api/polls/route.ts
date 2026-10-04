@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { NextResponse } from 'next/server';
-import { getDb } from '@/db';
+import { eq } from 'drizzle-orm';
+import { getDb, schema } from '@/db';
 import { currentUser } from '@/lib/auth';
 import { createPoll } from '@/lib/polls';
 import { clientIp, rateLimit } from '@/lib/rate-limit';
@@ -21,6 +22,12 @@ export async function POST(req: Request) {
   }
   // The creator's private key: stays on their phone and lets them mark a "Called it" result later.
   const manageKey = randomBytes(18).toString('base64url');
-  const id = await createPoll(db, parsed.data, manageKey, undefined, user.id);
+  // "Ask again" only links an earlier poll by the same person.
+  const input = parsed.data;
+  if (input.previousId) {
+    const [prev] = await db.select({ ownerId: schema.polls.ownerId }).from(schema.polls).where(eq(schema.polls.id, input.previousId)).limit(1);
+    if (prev?.ownerId !== user.id) input.previousId = undefined;
+  }
+  const id = await createPoll(db, input, manageKey, undefined, user.id);
   return NextResponse.json({ id, manageKey }, { status: 201 });
 }

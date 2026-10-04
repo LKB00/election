@@ -55,6 +55,17 @@ Say "continue features" and Claude picks up the next one.
 - [x] "Tell me the result" alert: built. **It needs 4 settings on Vercel to switch on** (see section 1).
 - [x] Group polls that reveal together: Create → More options → Group poll. Good for office lunch, class trips, family plans.
 - [x] "Your month in opinions" card (on My votes after 3+ votes in a month). Idea: on the 1st of each month, post "Share your month" in your WhatsApp Channel.
+- [x] Round 2: poll maker page (votes per hour, where votes came from, end now, lengths, fix a typo, ask again, results picture, first-10-votes alert), "Which dates work?" polls, suggest a choice, mix the order, show my name + maker page, Hindi/Hinglish pages for Google, accessibility pass. The first-10-votes alert needs the same alert keys as "Tell me the result" (section 1).
+
+## 6b. From the round 2 research (needs you)
+
+- [ ] **Move to Mumbai, both parts on the same day:** Vercel → Settings → Functions → Region → **Mumbai (bom1)**, and in Neon make a new project in **Singapore** and move the data (Claude can do the moving with you; say "move the database"). Doing only one makes pages slower, not faster.
+- [ ] **Google Search Console** (free, 10 minutes): search.google.com/search-console → Add property → your site address → verify (Vercel lets you add the TXT record) → Sitemaps → submit `sitemap.xml`. It shows which searches find you. Hindi and Hinglish pages are now offered to Google too.
+- [ ] **Test on an old Android phone inside WhatsApp:** send yourself a poll link, check the preview picture shows, open it, time how long until you can vote.
+- [ ] **Two decisions:** (1) should private planning polls (like "Which dates work?") ever be allowed to show voters' names? Today: never. (2) should results ever be split by groups people choose (city, team)? Today: no.
+- [ ] **Invite small fan pages and college meme pages** to make polls with "Show my name" on (never paid). Their page `/u/…` lists their polls.
+- [ ] **IPL 2027:** when the schedule is out (about Jan–Feb 2027), plan match-day packs; Claude can make the batch.
+- [ ] **Tamil and Telugu:** find one reviewer for each before Claude adds them.
 
 ## 7. Good to know
 
@@ -63,7 +74,7 @@ Say "continue features" and Claude picks up the next one.
 - **Early days:** with few polls, ask friends and groups to make the first ones (or make a few yourself, as a person). A match-day pack is the quickest way to get several at once.
 
 - **Profiles (sign in with fingerprint or face):** nothing to set up. Only people who make polls need one; voting never does. One thing to know: a profile belongs to the website address it was made on. If you move to your own domain later, people make their profile again once (their polls can be moved over by Claude).
-- **Names on polls:** right now a poll does not show who made it. Say "show the maker's name on polls" if you want that.
+- **Names on polls:** each poll maker chooses ("Show my name", off by default).
 
 ## Done
 

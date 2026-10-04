@@ -8,11 +8,13 @@ import DuelTiles from '@/components/DuelTiles';
 import { getDb } from '@/db';
 import { getFeaturedId, getMyVotes, getPoll, listPolls, trendingPolls } from '@/lib/polls';
 import { readVoterId } from '@/lib/voter';
-import { getT } from '@/lib/lang-server';
+import { getT, langAlternates } from '@/lib/lang-server';
 import { CATEGORIES } from '@/lib/categories';
 
 export const dynamic = 'force-dynamic';
-export const metadata: Metadata = { title: 'Polls' };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: 'Polls', alternates: await langAlternates('/polls') };
+}
 
 // P1: the duel of the day (dark banner). P2: browse the tiles. While searching, only the matches (P1) show.
 export default async function Duels({ searchParams }: { searchParams: Promise<{ q?: string | string[] }> }) {

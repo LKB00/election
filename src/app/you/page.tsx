@@ -48,7 +48,7 @@ export default async function YouPage({ searchParams }: { searchParams: Promise<
           <ul className="al-listcard">
             {polls.map((p) => (
               <li key={p.id}>
-                <Link href={`/p/${p.id}`} className="al-row">
+                <Link href={`/p/${p.id}/manage`} className="al-row">
                   <span className="al-row__disc" style={{ '--tone': 'var(--lime-badge)' } as React.CSSProperties}><PenLine size={20} strokeWidth={1.75} aria-hidden /></span>
                   <span className="al-row__main">
                     <span className="al-row__title">{p.title}</span>

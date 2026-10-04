@@ -882,3 +882,23 @@ Follows the phone's setting (light by default). Every colour is a token in `src/
 - **Polls made before signing in** join the profile on sign-in, each proven by its private key kept on the phone.
 - **You tab** (bottom bar: Home · Polls · ( + ) · My votes · You; My polls moved here, `/mine` goes to `/you`). Signed in: the face in a yellow circle and the name with Edit (P1 header), Your polls with live counts (P1), a quiet note that votes are not part of the profile with a link to My votes (P2), then Sign out and Delete profile (asked once more; polls stay up with no owner) (P3). Signed out: the profile screen itself, then "Made on this phone" if there are any.
 - **Names are not shown on polls yet** (a later choice for the owner).
+
+## Poll maker tools, round 2 research (owner, Oct 2026: "build all you can"; research: reports/Next features for Election 2.md)
+
+- **Maker's page `/p/<id>/manage`** (only the profile that made the poll; You → your polls opens it; the poll page shows "Manage your poll" to its maker). Top to bottom:
+  - **How it's going (P1):** votes, a 24-bar "votes in the last 24 hours" strip, and "where votes came from" (WhatsApp / Instagram / QR code / Copied link / Other). Counted for the whole poll in `poll_sources`, never kept with a vote. One main action: **Share the poll** (WhatsApp; Copy link next to it). Share links carry `?src=wa|link|qr|other`; Instagram's own browser counts as Instagram.
+  - **Results are in: post it back:** the story picture `/api/results/<id>` (question, "62% said Chai" / "Best date" / the average face, top five bars, people voted, QR). Only once anyone may see the result (open results, or the poll ended); hidden, sealed, politics and group-waiting results never make a picture.
+  - **Suggested choices:** Add (becomes a real choice at the end) or Delete. Same suggestion twice counts "2 people asked".
+  - **How long it runs:** 1 hour / Tonight 9 pm (India time) / 3 days / 1 week, and **End now** (asked once more; final; sends "tell me the result" alerts).
+  - **Fix a typo** (question, details, choice words) only until the first vote, so nobody's vote changes meaning. **Ask again** opens Create filled in; the new poll shows "Last time: Chai led with 62% (40 voted)" after voting, only as far as the old result is public. **Tell me when 10 people have voted**: one push, once (only when phone alerts are switched on).
+- **Which dates work?** (new poll type): the maker picks dates with the phone's date picker; voters tap each date through Works → If need be → Doesn't work (the word is on the key; "if need be" also has a dashed edge: colour never alone). Result: yes share bar, "2 yes · 1 if need be", and **Best date** = most yes, then most "if need be". No crowd guess for dates. The circle shows the day of the month.
+- **Mix the order** (More options; pick one / several / rank, not the EVM): each voter gets their own fixed order. **Voters can suggest a choice** (on by default for pick one / several; nothing shows until the maker adds it). **Show my name** (off by default): "Asked by 🦁 Name" on the poll, linking to `/u/<id>`, a page of only the polls they put their name on (no counts of followers, no rankings).
+- **Search:** each page has an English, Hindi (`?l=hi`) and Hinglish (`?l=hg`) address with hreflang; the address language wins for anyone who has not picked one (Google never has). Poll pages are indexed only when reviewed **and** 10+ votes; the sitemap lists the same, dated by the last vote. Poll pages carry structured data (question and choices; the vote count only when results are public). `max-image-preview: large` for Discover. Share text now says "Secret vote: nobody in the group sees your pick."
+- **Lighter first load:** the sign-in sheet, share panel and picture picker load only when opened.
+
+## Accessibility (WCAG 2.2 AA pass)
+
+- Faint grey `--ink-3` and green `--positive` darkened to 4.5:1 on their grounds. New `--line-control` token: edges of fields, chips and face pickers at 3:1; off switches at 3:1 (`--switch-off`). Card borders stay soft (they are not controls).
+- A 3px focus ring on everything focusable; the page keeps room above the bottom bar when moving focus (`scroll-padding-bottom`).
+- One site-wide "reduce motion" rule (covers the copied `gb/` styles without editing them).
+- Hindi (Devanagari) poll questions and choices get `lang="hi"`, so screen readers use Hindi rules. Pick-one vote buttons say "Vote for <choice>" before voting (voice control can say it).
