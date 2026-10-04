@@ -77,16 +77,16 @@ export default function DuelTiles({ polls, votedIds = [], noCreate = false, limi
                 {!repeatsTitle(p) && <span className="al-row__meta">
                   {p.kind === 'rating' ? t.tileRate : <>{p.calledIt ? `🔮 ${t.tileCalled}: ` : p.kind === 'multi' ? `${t.tileMulti}: ` : p.kind === 'rank' ? `${t.tileRank}: ` : ''}{p.options.slice(0, 3).join(p.kind === 'multi' || p.kind === 'rank' ? ', ' : ' vs ')}{p.options.length > 3 && ` +${p.options.length - 3}`}</>}
                 </span>}
-              </span>
-              <span className="al-row__when">
-                {done ? (
-                  <span className="al-row__done"><Check size={14} strokeWidth={2.25} aria-hidden /> {t.voted}</span>
-                ) : p.closed ? (
-                  <span>{t.ended}</span>
-                ) : (
-                  <span>{total === 0 ? t.newPoll : t.votes(total)}</span>
-                )}
-                {(done || p.closed) && <span className="al-row__time">{t.votes(total)}</span>}
+                {/* Where it stands, on its own line under the title (a side column squeezed titles on phones). */}
+                <span className="al-row__status">
+                  {done ? (
+                    <span className="al-row__done"><Check size={14} strokeWidth={2.25} aria-hidden /> {t.voted}</span>
+                  ) : p.closed ? (
+                    <span>{t.ended}</span>
+                  ) : null}
+                  {(done || p.closed) && <span aria-hidden> · </span>}
+                  <span>{!done && !p.closed && total === 0 ? t.newPoll : t.votes(total)}</span>
+                </span>
               </span>
               <ChevronRight size={18} strokeWidth={1.75} className="al-row__chevron" aria-hidden />
             </Link>

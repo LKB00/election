@@ -1133,7 +1133,7 @@ null
               )}
             </p>
             {upNext && <span className="small muted duel-upnext">{t.upNext(upNext.title)}</span>}
-            <span className="row">
+            <span className="row duel-actions">
               <button type="button" className="btn btn-ghost" onClick={() => (mine && poll.myShareCode ? setSharing(true) : share())}>
                 <Share2 size={14} strokeWidth={1.75} aria-hidden /> {copied ? t.linkCopied : poll.closed ? t.shareResult : t.shareInk}
               </button>

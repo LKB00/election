@@ -882,3 +882,39 @@ html { scroll-padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); scr
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
+
+/* Mobile spacing (owner, Oct 2026: "check consistency and padding, margin, spacing… it should use the whole space").
+   One scale on phones: 16px page sides, 24px under a page head, 32px between sections, 16px inside a section.
+   Rows and fields stretch to the full width; sideways-scrolling chip rows run to the screen edge. */
+.al-row__status { display: flex; flex-wrap: wrap; align-items: center; gap: 0 2px; margin-top: 4px; color: var(--ink-3); font: 500 13px / 18px var(--sans); font-variant-numeric: tabular-nums; }
+.al-row__status .al-row__done { display: inline-flex; align-items: center; gap: 4px; color: var(--ink-2); }
+.poll-search { display: flex; width: 100%; }
+.poll-search .search { flex: 1; max-width: none; height: 44px; }
+.poll-search .btn { flex: none; height: 44px; }
+.topic-chips.topic-row { margin: 16px -16px 0; }
+@media (max-width: 720px) {
+  .page-head { margin-bottom: 24px; }
+  .block { margin-top: 32px; }
+  .block-tight { margin-top: 16px; }
+  .al-block { margin-top: 32px; }
+  .create .create-ideas { margin: 0 -16px; padding: 2px 16px 4px; }
+  .search { max-width: none; }
+  .row.wrap > .btn { flex: 1 1 auto; }
+}
+@media (max-width: 720px) {
+  /* After voting: Share and Next share the row (the thumb reaches both; no empty space on the left). */
+  .duel .tot-result.is-shown .duel-actions { width: 100%; justify-content: stretch; }
+  .duel .tot-result.is-shown .duel-actions .btn { flex: 1 1 0; justify-content: center; }
+  /* The maker's page: Share and Copy link on one row; the four lengths as a 2 x 2 grid; End now full width. */
+  .maker-share { flex-wrap: nowrap; }
+  .maker-share .btn-primary { flex: 2 1 0; }
+  .maker-share .btn-ghost { flex: 1 1 0; }
+  .maker-lengths { align-items: stretch; }
+  .maker-lengths > .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .maker-lengths .chip { justify-content: center; }
+  .maker-lengths > .btn { justify-content: center; }
+  .maker-results-side .btn { align-self: stretch; justify-content: center; }
+  /* Two-way choices (match-day / show night) split the row evenly. */
+  .pack-form .builder-kind .chip { flex: 1 1 0; justify-content: center; }
+  .prose-block h2 { margin-top: 16px; }
+}

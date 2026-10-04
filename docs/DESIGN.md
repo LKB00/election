@@ -919,3 +919,10 @@ What an empty page no longer shows, because there is nothing for it to act on:
 - **My votes (no votes):** no "saved on this device" note, no keep-my-votes, no Reset (TEMPORARY) box, no rules links.
 - **You (signed out):** the lock picture, "Make your profile", one line of promises (only for making polls, votes stay secret, no password/phone/email), one button; the name, faces and the full promises open in the sheet only when tapped. "Already have a profile? Sign in" is the quiet link.
 - **Poll not found:** the same shape.
+
+## Mobile spacing and full-width rows (owner, Oct 2026: "check consistency and padding, margin, spacing… the search box and CTA leave space on the right; it should use the whole space")
+
+One scale on phones (in `election.css`, "Mobile spacing"): 16px page sides; 24px under a page head; 32px between sections (it was a mix of 64, 40, 32 and 24); 16px for a tight gap.
+- **Fill the row:** the search box stretches and its button sits at the end (both 44px tall); after voting, Share and Next split the row; on the maker's page, Share the poll (2/3) and Copy link (1/3) share one row, the four lengths are a 2 × 2 grid and End now is full width; the match-day / show-night choice splits evenly.
+- **Edge to edge:** sideways-scrolling chip rows (topics, Create's ideas) run to the screen edge instead of being cut at the page padding, with 16px between them and the search box.
+- **Poll rows:** the count ("4 votes", "Ended · 4 votes", "✓ Voted · 1 vote") moved from a right-hand column to its own line under the choices, so titles get the full width instead of breaking after two words.
