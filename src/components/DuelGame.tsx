@@ -471,23 +471,36 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
   });
   const [guessBusy, setGuessBusy] = useState(false);
   const [justGuessed, setJustGuessed] = useState(false);
+  // The guess you just tapped, held for a short "checking the count…" beat before the reveal (the suspense is the fun).
+  const [guessing, setGuessing] = useState<string | null>(null);
   async function guess(choice: string) {
     if (!poll || guessBusy) return;
     gen.current++;
     setGuessBusy(true);
     navigator.vibrate?.(10);
-    const res = await fetch(`/api/polls/${poll.id}/guess${q}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ choice }),
-    }).catch(() => null);
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (choice !== 'skip') setGuessing(choice);
+    const [res] = await Promise.all([
+      fetch(`/api/polls/${poll.id}/guess${q}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ choice }),
+      }).catch(() => null),
+      // A short beat of suspense: long enough to feel, short enough not to wait (none for "skip" or Reduce motion).
+      new Promise((r) => setTimeout(r, choice === 'skip' || reduce ? 0 : 700)),
+    ]);
+    setGuessing(null);
     const data = await res?.json().catch(() => null);
     if (res?.ok && data?.poll) {
       replace(data.poll);
       setJustGuessed(choice !== 'skip');
       // After the crowd guess you have seen the numbers, so undo is over (the first, lone voter excepted).
       if (data.poll.participants > 1) setUndoUntil(0);
-      if (data.poll.myGuess?.correct) setJustVoted(poll.myVote);
+      // Right: the confetti goes off on the choice you guessed (the one that leads), with a happy double buzz.
+      if (data.poll.myGuess?.correct) {
+        setJustVoted(choice);
+        navigator.vibrate?.([10, 60, 10]);
+      }
       focusAfter.current = true;
     } else {
       setMsg(data?.error ? apiMsg(lang, data.error) : t.saveFail2);
@@ -899,13 +912,15 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
           {/* Each choice as a small card with its face (photo, emoji or letters): you recognise before you read. */}
           <div className={'duel-guess-options' + (poll.options.length > 4 ? ' is-many' : '')}>
             {poll.options.map((o, n) => (
-              <button key={o.id} type="button" className="guess-card" disabled={guessBusy} onClick={() => guess(o.id)}
+              <button key={o.id} type="button" className={'guess-card' + (guessing === o.id ? ' is-guessed' : guessing ? ' is-dim' : '')} disabled={guessBusy} onClick={() => guess(o.id)}
+                aria-pressed={guessing === o.id}
                 style={{ '--pc': `var(--p-${TONES[n % TONES.length]})` } as React.CSSProperties}>
                 <Face o={o} tone={TONES[n % TONES.length]} letters={letters[n]} />
                 <span className="guess-name">{o.label}</span>
               </button>
             ))}
           </div>
+          {guessing && <p className="small guess-checking" role="status"><span className="live-dot" aria-hidden /> {t.guessChecking}</p>}
           <p className="small muted">
             <button type="button" className="link-like duel-undo" onClick={() => guess('skip')} disabled={guessBusy}>{t.skipShow}</button>
             {undoUntil > 0 && <> · <button type="button" className="link-like duel-undo" onClick={undo}>{t.undoVote}</button></>}

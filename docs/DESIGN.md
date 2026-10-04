@@ -640,3 +640,4 @@ The research says Election already has the right loop (guess → vote → reveal
 | Swipe left on a result → next poll | Poll, phones | The deck feels like a deck; Next stays the button. Ignored on chips and text boxes, and while counting. |
 | Next: the old ballot leaves (0.16 s) before the new one slides in | Poll | Two questions never overlap (they used to, for a moment). |
 | End of today's set: your rows arrive one by one (70 ms apart) | Home | Like results coming in; the end feels like an arrival. |
+| Guess the crowd: the card you tap keeps an ink ring, the others step back, "Checking the count…" with the live dot for 0.7 s, then the reveal; right → confetti on the card you guessed and a happy double buzz | Poll, guess step | The suspense is the fun of a guess; before, the result jumped in at once and nothing showed which card you chose. No wait for "Skip" or with Reduce motion. |
