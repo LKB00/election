@@ -530,3 +530,12 @@ Ballots keep one vote per person; each place is stored in `vote_picks.rank`. Poi
 | Ink button "2 of 3 placed" (off) → "Vote · my order is ready"; "Start again" link | Poll | P1 action | Every choice must be placed before voting. |
 | Results: score %, bar, "average place 1.3"; the leader is marked; note "1st place earns the most points…" | Poll | P1 at that moment | The crowd's order at a glance; no 50% line (it means nothing here). |
 | My votes "1. A, 2. B, 3. C" and "A leading · 88%" | My votes | P3 | Your order and the crowd's leader. |
+
+## Phase 3: discovery (Today's question, Trending now, topic shelves)
+
+| Element | Screen | Priority | Job |
+|---|---|---|---|
+| "Today's question" label above the first poll | Home | P2 | Says why this poll is first. The owner picks it on /admin ("Make today's question"); one at a time; picking it also marks it reviewed. Modi vs Rahul is no longer forced: it stays in Election mode but is just another poll once replaced. |
+| "Today's question" section on /admin: current pick + the newest open polls, one button each | Admin | P1 on that section | Change the top of Home in one tap. |
+| **Trending now** (up to 4 tiles on Home, 3 on Polls) | Home, Polls | P2 | Score = votes in the last 24 h ÷ (hours since start + 2)^1.5, divided by (1 + reports). Fresh activity rises, old polls sink, reported ones sink faster. Only polls with votes in the last day. Replaces "Most watched". |
+| Topic shelves (the two topics with the most open polls, 2–4 tiles each, "All polls →" to the topic page) | Home | P3 | Browse by interest without searching. Polls already shown in Trending are not repeated. |

@@ -307,7 +307,7 @@ export async function getPoll(
       // Sealed: "your exit poll was right" would tell who leads.
       !sealed && mine[0]?.prediction && mine[0].prediction !== 'skip' && mine[0].prediction !== 'alone' ? { optionId: mine[0].prediction, correct: !!mine[0].predictionCorrect } : null,
     myShareCode,
-    electionMode: poll.electionMode || poll.category === 'politics' || poll.featured,
+    electionMode: poll.electionMode || poll.category === 'politics',
     kind: poll.kind === 'rating' || poll.kind === 'multi' || poll.kind === 'rank' ? poll.kind : 'choice',
     myPicks,
     myShareProof: myShareCode ? shareProof(myShareCode) : null,
@@ -596,6 +596,42 @@ export async function getVoterStats(db: Db, voterId: string | null): Promise<Vot
     .from(votes)
     .where(sql`${votes.via} in (select v2.share_code from votes v2 where v2.voter_key = ${voterId} and v2.share_code is not null)`);
   return { ...EMPTY_STATS, ...mineRow, friends: friendRow?.n ?? 0 };
+}
+
+/** "Today's question": the owner picks one poll for the top of Home (the old one steps down). Hidden polls cannot be picked. */
+export async function setToday(db: Db, id: string): Promise<boolean> {
+  return db.transaction(async (tx) => {
+    const [row] = await tx.select({ id: polls.id }).from(polls).where(and(eq(polls.id, id), eq(polls.hidden, false))).limit(1);
+    if (!row) return false;
+    await tx.update(polls).set({ featured: false }).where(eq(polls.featured, true));
+    await tx.update(polls).set({ featured: true, reviewed: true }).where(eq(polls.id, id));
+    return true;
+  });
+}
+
+/**
+ * "Trending now": recent votes count most, and every poll slowly sinks as it ages (the open Hacker News idea):
+ * score = votes in the last 24 hours / (hours since it started + 2)^1.5. Polls with reports sink faster.
+ * Same public rules as listPolls (no hidden, held or closed polls; not today's question).
+ */
+export async function trendingPolls(db: Db, limit = 6): Promise<PollSummary[]> {
+  const list = await listPolls(db, 200);
+  if (!list.length) return [];
+  const ids = list.filter((p) => !p.closed).map((p) => p.id);
+  if (!ids.length) return [];
+  const rows = await db
+    .select({
+      id: polls.id,
+      // Written out in full: inside a sub-select a bare "id" would mean the vote's id, not the poll's.
+      recent: sql<number>`(select count(*)::int from votes v where v.poll_id = polls.id and v.created_at > now() - interval '24 hours')`,
+      hours: sql<number>`extract(epoch from (now() - polls.created_at)) / 3600`,
+      reports: sql<number>`(select count(*)::int from reports r where r.poll_id = polls.id)`,
+    })
+    .from(polls)
+    .where(inArray(polls.id, ids));
+  const score = (r: (typeof rows)[number]) => (Number(r.recent) / Math.pow(Number(r.hours) + 2, 1.5)) / (1 + Number(r.reports));
+  const ranked = rows.filter((r) => Number(r.recent) > 0).sort((a, b) => score(b) - score(a)).slice(0, limit);
+  return ranked.map((r) => list.find((p) => p.id === r.id)!).filter(Boolean);
 }
 
 /** The duels to play through: the featured one first, then the newest. */

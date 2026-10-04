@@ -3,7 +3,7 @@ import Link from 'next/link';
 import DuelBanner from '@/components/DuelBanner';
 import DuelTiles from '@/components/DuelTiles';
 import { getDb } from '@/db';
-import { getFeaturedId, getMyVotes, getPoll, listPolls } from '@/lib/polls';
+import { getFeaturedId, getMyVotes, getPoll, listPolls, trendingPolls } from '@/lib/polls';
 import { readVoterId } from '@/lib/voter';
 import { getT } from '@/lib/lang-server';
 import { CATEGORIES } from '@/lib/categories';
@@ -17,13 +17,13 @@ export default async function Duels() {
   const t = await getT();
   const voterId = await readVoterId();
   const featuredId = await getFeaturedId(db);
-  const [featured, polls, mine] = await Promise.all([
+  const [featured, polls, mine, hot] = await Promise.all([
     featuredId ? getPoll(db, featuredId, voterId) : Promise.resolve(null),
     listPolls(db, 60),
     getMyVotes(db, voterId, 200),
+    trendingPolls(db, 3),
   ]);
-  const hot = polls.filter((p) => !p.closed && p.lastHour > 0).sort((a, b) => b.lastHour - a.lastHour).slice(0, 3);
-  const rest = polls.filter((p) => !hot.includes(p));
+  const rest = polls.filter((p) => !hot.some((h) => h.id === p.id));
   return (
     <div className="page page-wide">
       <header className="page-head">
@@ -39,7 +39,7 @@ export default async function Duels() {
       {/* P2: the duels with the most votes in the last hour, like TV's "hot seats". Not repeated in the list below. */}
       {hot.length > 0 && (
         <section className="block">
-          <h2>{t.mostWatched}</h2>
+          <h2>{t.trendingNow}</h2>
           <DuelTiles polls={hot} votedIds={mine.map((v) => v.pollId)} noCreate />
         </section>
       )}

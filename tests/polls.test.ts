@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
   AUTO_HIDE_REPORTS, castVote, createPoll, deleteVoterData, getDeck, getFeaturedId, getMyVotes, getPoll, getReviewQueue, getVoterStats, guessLeader, listPolls,
-  reportPoll, setPollFlags, setReason, toggleReaction, undoVote,
+  reportPoll, setPollFlags, setReason, setToday, toggleReaction, undoVote,
 } from '@/lib/polls';
 import { hasBlockedWord, namesPolitics } from '@/lib/moderation';
 import { activeSilence } from '@/lib/silence';
@@ -625,5 +625,29 @@ describe('rank', () => {
     expect(p.options.map((o) => Math.round(o.percent))).toEqual([83, 50, 17]);
     expect(p.options[0].avgPlace).toBe(1.3);
     expect((await getMyVotes(db, 'k1')).find((v) => v.pollId === id)).toMatchObject({ pick: '1. Dhoni, 2. Kohli, 3. Rohit', standing: { kind: 'leading', name: 'Dhoni', percent: 83 } });
+  });
+});
+
+describe("today's question and trending", () => {
+  it('the owner can make any visible poll today\'s question, and only one is', async () => {
+    const id = await make({ title: 'Today pick test' });
+    expect(await setToday(db, id)).toBe(true);
+    expect(await getFeaturedId(db)).toBe(id);
+    const other = await make({ title: 'Today pick two' });
+    await setToday(db, other);
+    const featured = await db.select({ id: schema.polls.id }).from(schema.polls).where(eq(schema.polls.featured, true));
+    expect(featured.map((r) => r.id)).toEqual([other]);
+    expect(await setToday(db, 'no-such-poll')).toBe(false);
+    await setToday(db, 'modi-vs-rahul'); // put the flagship back for the other tests
+  });
+  it('trending ranks polls with recent votes, newest activity first', async () => {
+    const { trendingPolls } = await import('@/lib/polls');
+    const quiet = await make({ title: 'Quiet poll' });
+    const busy = await make({ title: 'Busy poll' });
+    const [o] = (await getPoll(db, busy, null))!.options;
+    for (const v of ['t1', 't2', 't3']) await castVote(db, busy, o.id, v);
+    const list = await trendingPolls(db, 50);
+    expect(list.some((p) => p.id === busy)).toBe(true);
+    expect(list.some((p) => p.id === quiet)).toBe(false);
   });
 });
