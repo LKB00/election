@@ -721,6 +721,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
   const letters = faceLabels(poll.options.map((o) => o.label));
   // 3 or more choices: one compact row per choice, like the real EVM ballot unit. Two choices keep the big photo cards.
   const ballot = poll.options.length >= 3;
+  const numbered = poll.electionMode || ranking;
   // The duel that Next will open (the same rule as goNext): named in the bar, so Next is an invitation, not a guess.
   const upNext = deck.length > 1 ? [...deck.keys()].map((k) => deck[(i + 1 + k) % deck.length]).find((p) => p.id !== poll.id && isOpen(p)) ?? null : null;
 
@@ -810,7 +811,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
           </div>
         )
       ) : (
-      <div className={'tot-options duel-options n-' + poll.options.length + (ballot ? ' is-ballot' : '') + (nudge && !voted ? ' is-nudge' : '')}>
+      <div className={'tot-options duel-options n-' + poll.options.length + (ballot ? ' is-ballot' : '') + (numbered ? '' : ' no-num') + (nudge && !voted ? ' is-nudge' : '')}>
           {poll.options.map((o, n) => {
             const isMine = multi ? poll.myPicks.includes(o.id) : poll.myVote === o.id;
             const ticked = multi && !voted && ticks.includes(o.id);
@@ -827,9 +828,12 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
                 aria-pressed={multi && !voted ? ticked : undefined}
                 aria-label={`${o.label}${revealed ? `, ${t.percent(pcts[n])}` : ''}`}
               >
-                <span className="tot-letter">
-                  {ranking && (ticked || isMine) ? `#${(voted ? poll.myPicks : ticks).indexOf(o.id) + 1}` : isMine || ticked ? <Check size={13} strokeWidth={2.5} aria-hidden /> : serial(n)}
-                </span>
+                {/* Serial numbers belong to the EVM (Election mode); a Rank poll shows your order. Elsewhere they add nothing. */}
+                {numbered && !(ranking && !ticked && !isMine) && (
+                  <span className="tot-letter">
+                    {ranking && (ticked || isMine) ? `#${(voted ? poll.myPicks : ticks).indexOf(o.id) + 1}` : isMine || ticked ? <Check size={13} strokeWidth={2.5} aria-hidden /> : serial(n)}
+                  </span>
+                )}
                 {revealed && (lead || (isMine && !ranking) || poll.friend.optionId === o.id) && (
                   <span className="tot-caption">
                     {isMine && !ranking ? t.yourPick : lead ? (poll.closed && !counting ? t.won : t.leading) : t.friendsPick}

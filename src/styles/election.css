@@ -649,3 +649,7 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 @media (prefers-reduced-motion: no-preference) { .duel-friend-line { display: inline; animation: pct-rise 0.4s 0.15s ease backwards; } }
 /* Rank: "Your order: 1. DDLJ · 2. Sholay" above the Vote button, as it builds. */
 .rank-order { margin: 0; }
+
+/* No serial numbers outside Election mode (docs/DESIGN.md, "Choice numbers"): the ballot row drops its number column. */
+.is-ballot.no-num .duel-option { grid-template-columns: 1fr auto; grid-template-areas: "body side" "result result"; }
+.duel-options.no-num:not(.is-ballot) .tot-caption { left: 12px; }

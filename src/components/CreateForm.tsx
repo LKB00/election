@@ -226,7 +226,7 @@ export default function CreateForm({ initialTitle = '' }: { initialTitle?: strin
             <p className="small muted builder-hint">{t.rateHint}</p>
           </>
         ) : (
-        <div className="tot-options duel-options is-ballot builder-rows">
+        <div className={'tot-options duel-options is-ballot builder-rows' + (electionMode ? '' : ' no-num')}>
           {choices.map((c, i) => {
             const isNew = i === choices.length - 1 && !c.trim() && choices.length > 2;
             return (
@@ -235,7 +235,7 @@ export default function CreateForm({ initialTitle = '' }: { initialTitle?: strin
                 className={'tot-option duel-option builder-row' + (isNew ? ' is-new' : '')}
                 style={{ '--pc': `var(--p-${TONES[i % TONES.length]})` } as React.CSSProperties}
               >
-                <span className="tot-letter">{i + 1}</span>
+                {electionMode && <span className="tot-letter">{i + 1}</span>}
                 <span className="duel-body">
                   {/* The choice's picture: tap for emoji suggestions, popular emoji, or a photo from the phone. */}
                   <button
