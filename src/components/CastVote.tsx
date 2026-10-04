@@ -3,7 +3,7 @@ import { memo, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useOverlay } from '@/lib/useOverlay';
 import type { Dict } from '@/lib/i18n';
-import { vvpatThud } from '@/lib/sound';
+import { printTick, vvpatThud } from '@/lib/sound';
 import { handSvg } from '@/lib/inkHand';
 
 // The "vote cast" moment, the way it happens in a real booth (docs/DESIGN.md, "The cast-vote moment"):
@@ -39,8 +39,17 @@ export default function CastVote({ t, number, name, party, voterNo, short, onDon
 
   useEffect(() => {
     const end = () => done.current();
+    const buzz = (p: number | number[]) => navigator.vibrate?.(p);
     const timers = [
-      setTimeout(vvpatThud, (time.drop + 0.3) * 1000), // the slip lands in the box
+      // The printer feeding the slip: 7 steps, in time with the picture (steps(7) over 0.7 s in election.css).
+      ...Array.from({ length: 7 }, (_, k) => setTimeout(printTick, (time.vv + 0.15 + k * 0.1) * 1000)),
+      // The slip lands in the box: a thud you hear and feel.
+      setTimeout(() => {
+        vvpatThud();
+        buzz(18);
+      }, (time.drop + 0.3) * 1000),
+      // The ink line is drawn: a light double tap on phones that can vibrate.
+      setTimeout(() => buzz([8, 40, 8]), (time.ink + 1.3) * 1000),
       setTimeout(end, time.end * 1000),
     ];
     // Voter ID counts up while the ink dries.

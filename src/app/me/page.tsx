@@ -51,6 +51,12 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
                   <span className="index-sum">{t.youPicked(v.pick)}</span>
                   {/* Where it stands now: a reason to come back (same visibility rules as the duel itself). */}
                   {standingText(t, v.standing) && <span className="index-standing">{standingText(t, v.standing)}</span>}
+                  {/* A small bar: how far ahead the leader is. Lime (= you) when your pick is the one in front. */}
+                  {(v.standing.kind === 'leading' || v.standing.kind === 'won') && (
+                    <span className={'index-meter' + (v.standing.name === v.pick ? ' is-mine' : '')} aria-hidden>
+                      <span style={{ width: `${v.standing.percent}%` }} />
+                    </span>
+                  )}
                   <ChevronRight size={16} strokeWidth={1.75} className="index-chev" aria-hidden />
                 </Link>
               </li>

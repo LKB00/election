@@ -9,7 +9,7 @@ import Burst from './Burst';
 import InkFinger from './InkFinger';
 import CastVote from './CastVote';
 import ShareSheet from './ShareSheet';
-import { evmBeep } from '@/lib/sound';
+import { evmBeep, keyClick } from '@/lib/sound';
 import { humanToken, prepareHumanCheck } from '@/lib/turnstile-client';
 import { useLang, useT } from '@/lib/lang';
 import { apiMsg, reasonLabel, type Dict, type Lang } from '@/lib/i18n';
@@ -93,6 +93,33 @@ function closesIn(t: Dict, iso: string) {
 }
 
 const isOpen = (p: PollView) => p.myVote === null && !p.closed;
+
+// Numbers count up to their new value, like the tally on TV counting day (instant when the phone asks for less motion).
+function Tween({ value, render }: { value: number; render: (v: number) => string }) {
+  const [shown, setShown] = useState(value);
+  const from = useRef(value);
+  useEffect(() => {
+    const start = from.current;
+    if (start === value) return;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      from.current = value;
+      setShown(value);
+      return;
+    }
+    let raf = 0;
+    const t0 = performance.now();
+    const step = (now: number) => {
+      const k = Math.min(1, (now - t0) / 550);
+      const v = Math.round(start + (value - start) * (1 - (1 - k) ** 3));
+      from.current = v;
+      setShown(v);
+      if (k < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [value]);
+  return <>{render(shown)}</>;
+}
 
 // "Sealed till 5 Feb, 6:00 pm": India time, so the server page and the phone print the same.
 const sealedWhen = (iso: string, lang: Lang) =>
@@ -230,11 +257,23 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
 
   const replace = (p: PollView) => setDeck((d) => d.map((x) => (x.id === p.id ? p : x)));
 
+  // "3 new votes just now": votes from other people that arrive while you watch (shown for a few seconds).
+  const [fresh, setFresh] = useState<{ id: string; n: number } | null>(null);
+  useEffect(() => {
+    if (!fresh) return;
+    const timer = setTimeout(() => setFresh(null), 5000);
+    return () => clearTimeout(timer);
+  }, [fresh]);
+
   // Live numbers for the open duel.
   const refresh = useCallback(async () => {
     if (!poll) return;
     const res = await fetch(`/api/polls/${poll.id}${q}`, { cache: 'no-store' }).catch(() => null);
-    if (res?.ok) replace(await res.json());
+    if (!res?.ok) return;
+    const next: PollView = await res.json();
+    const gained = next.participants - poll.participants;
+    if (gained > 0 && next.myVote === poll.myVote) setFresh({ id: next.id, n: gained });
+    replace(next);
   }, [poll, q]);
   useEffect(() => {
     const t = setInterval(() => document.visibilityState === 'visible' && !busy && !casting && refresh(), 8000);
@@ -245,6 +284,8 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
     if (!poll || voted || busy || poll.closed) return;
     setBusy(optionId);
     setMsg('');
+    // Feedback the instant you press (the beep and the scene follow once the vote is saved).
+    keyClick();
     navigator.vibrate?.(12);
     const human = await humanToken();
     const res = await fetch(`/api/polls/${poll.id}/vote`, {
@@ -327,6 +368,27 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
     const timer = setTimeout(() => guessRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' }), 300);
     return () => clearTimeout(timer);
   }, [poll, casting, inkedFor]);
+
+  // A first-timer who has not tapped for a few seconds: the blue Vote keys pulse softly, a few times, then stop.
+  const [nudge, setNudge] = useState(false);
+  const nudgeable = !!poll && poll.myVote === null && !poll.closed;
+  const pollId = poll?.id;
+  useEffect(() => {
+    setNudge(false);
+    if (!nudgeable) return;
+    const timer = setTimeout(() => setNudge(true), 5000);
+    const stop = () => {
+      clearTimeout(timer);
+      setNudge(false);
+    };
+    window.addEventListener('pointerdown', stop, { once: true });
+    window.addEventListener('scroll', stop, { once: true, passive: true });
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('pointerdown', stop);
+      window.removeEventListener('scroll', stop);
+    };
+  }, [pollId, nudgeable]);
 
   // The undo link hides itself when its time is up.
   useEffect(() => {
@@ -429,6 +491,8 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
   const letters = faceLabels(poll.options.map((o) => o.label));
   // 3 or more choices: one compact row per choice, like the real EVM ballot unit. Two choices keep the big photo cards.
   const ballot = poll.options.length >= 3;
+  // The duel that Next will open (the same rule as goNext): named in the bar, so Next is an invitation, not a guess.
+  const upNext = deck.length > 1 ? [...deck.keys()].map((k) => deck[(i + 1 + k) % deck.length]).find((p) => p.id !== poll.id && isOpen(p)) ?? null : null;
 
   return (
     <div className={'tot duel' + (revealed ? ' is-revealed' : '')} ref={topRef} style={{ viewTransitionName: 'ballot' } as React.CSSProperties}>
@@ -440,6 +504,7 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
           {!poll.closed && poll.endsAt && ` · ${t.closes(closesIn(t, poll.endsAt))}`}
           {!revealed && poll.pulse.lastHour > 0 && poll.pulse.lastHour < poll.participants && ` · ${t.inLastHour(poll.pulse.lastHour)}`}
           {poll.participants === 0 && !poll.closed && ` · ${t.beFirst}`}
+          {fresh && fresh.id === poll.id && <span className="duel-fresh"> · {t.newVotes(fresh.n)}</span>}
         </p>
       </div>
 
@@ -447,7 +512,7 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
         <p className="small duel-friend"><Users size={14} strokeWidth={1.75} aria-hidden /> {t.friendSealed}</p>
       )}
 
-      <div className={'tot-options duel-options n-' + poll.options.length + (ballot ? ' is-ballot' : '')}>
+      <div className={'tot-options duel-options n-' + poll.options.length + (ballot ? ' is-ballot' : '') + (nudge && !voted ? ' is-nudge' : '')}>
         {poll.options.map((o, n) => {
           const isMine = poll.myVote === o.id;
           const lead = n === leaderIdx;
@@ -477,10 +542,10 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
               </span>
               {revealed && (
                 <span className="duel-result">
-                  <span className="duel-pct">{pcts[n]}%</span>
+                  <span className="duel-pct"><Tween value={pcts[n]} render={(v) => `${v}%`} /></span>
                   {/* The line at 50% is the majority mark, as on counting-day tallies. */}
                   <span className="meter duel-meter" aria-hidden><span style={{ width: `${pcts[n]}%` }} /></span>
-                  <span className="small muted">{t.votes(votesOf(o))}</span>
+                  <span className="small muted"><Tween value={votesOf(o)} render={(v) => t.votes(v)} /></span>
                 </span>
               )}
               {!revealed && !poll.closed && (
@@ -519,10 +584,13 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
           <p className="label">{t.exitPoll}</p>
           <h2>{t.whoWinning}</h2>
           <p className="small muted">{t.exitPollNote}</p>
-          <div className="duel-guess-options">
+          {/* Each choice as a small card with its face (photo, emoji or letters): you recognise before you read. */}
+          <div className={'duel-guess-options' + (poll.options.length > 4 ? ' is-many' : '')}>
             {poll.options.map((o, n) => (
-              <button key={o.id} type="button" className="btn btn-ghost btn-lg" disabled={guessBusy} onClick={() => guess(o.id)}>
-                <span className="duel-guess-letter">{serial(n)}</span> {o.label}
+              <button key={o.id} type="button" className="guess-card" disabled={guessBusy} onClick={() => guess(o.id)}
+                style={{ '--pc': `var(--p-${TONES[n % TONES.length]})` } as React.CSSProperties}>
+                <Face o={o} tone={TONES[n % TONES.length]} letters={letters[n]} />
+                <span className="guess-name">{o.label}</span>
               </button>
             ))}
           </div>
@@ -613,6 +681,7 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
 null
               )}
             </p>
+            {upNext && <span className="small muted duel-upnext">{t.upNext(upNext.title)}</span>}
             <span className="row">
               <button type="button" className="btn btn-ghost" onClick={() => (mine && poll.myShareCode ? setSharing(true) : share())}>
                 <Share2 size={14} strokeWidth={1.75} aria-hidden /> {copied ? t.linkCopied : poll.closed ? t.shareResult : t.shareInk}

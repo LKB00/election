@@ -393,3 +393,18 @@ Checked on 320×568 (small iPhone), 360×640 (common Android), 390×844, and a p
 | Create: the bottom bar steps aside while you type | It floated above the keyboard and covered the boxes. |
 | No grey tap flash, no text-selection bubble on long-press of cards and buttons, no double-tap zoom wait | Taps feel like an app, not a web page. |
 | Safe areas: notch, rounded corners and home bar respected, also sideways (`viewport-fit=cover`) | Content could sit under the notch. |
+
+## Delight (owner: "more intuitive, more engaging… design first, delightful interaction")
+
+Small touches, each tied to a real election moment; nothing from games (no points, streaks, levels). All motion stops with "Reduce motion"; all sounds follow the sound switch.
+
+| Element | Screen | Priority | Job |
+|---|---|---|---|
+| Key click + short buzz the instant you press Vote | Duel | P1 (part of the Vote key) | The press feels real before the server answers; the EVM beep follows. |
+| Printer ticks while the VVPAT slip prints; a buzz when it drops; a double buzz on the ink | Vote moment | P2 | The scene is felt, not only seen (buzz only on phones that support it). |
+| Numbers count up to the new value (percent and votes) | Duel results | P2 | You see the change happen, like a counting-day board. |
+| Exit poll: one card per choice with its face, letters or emoji (5+ choices: one row each) | Duel, after voting | P1 at that moment | You recognise a face before you read a name; big thumb targets. |
+| "· 3 new votes just now" (green, goes away after 5 s) | Duel, polling line | P3 | The poll feels alive; a reason to stay. |
+| "Up next: <question>" above Share / Next | Duel result bar | P3 | You know what Next brings, so pressing it is an easy yes. |
+| Idle nudge: after 5 s with no touch or scroll, the blue Vote keys rise gently 3 times | Duel, before voting | P3 | Shows first-time visitors what to press; stops at the first touch. |
+| Small bar under each duel: the leader's share; lime when your pick leads | My votes | P2 | "Where does my pick stand?" at a glance; lime = you. |

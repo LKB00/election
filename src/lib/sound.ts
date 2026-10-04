@@ -60,3 +60,32 @@ export function evmBeep() {
     /* sound is a bonus, never an error */
   }
 }
+
+// One short synthesized sound (no audio files). All of them respect the beep on/off switch.
+function blip(type: OscillatorType, from: number, to: number, ms: number, vol: number) {
+  if (!soundOn()) return;
+  try {
+    const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AC) return;
+    ctx ??= new AC();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const end = ctx.currentTime + ms / 1000;
+    osc.type = type;
+    osc.frequency.setValueAtTime(from, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(to, end);
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(vol, ctx.currentTime + 0.004);
+    gain.gain.exponentialRampToValueAtTime(0.0001, end);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start();
+    osc.stop(end + 0.02);
+  } catch {
+    /* sound is a bonus, never an error */
+  }
+}
+
+/** The EVM key going down: plays the instant you press, before the server answers (the beep follows). */
+export const keyClick = () => blip('square', 900, 500, 30, 0.035);
+/** The VVPAT printer feeding the slip: one tiny tick per step. */
+export const printTick = () => blip('square', 2600, 2200, 12, 0.012);
