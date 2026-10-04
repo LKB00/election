@@ -140,8 +140,9 @@
 
 /* ---- Batch 4: feels like an app ---- */
 /* Next duel: the old ballot slides out to the left, the new one comes in from the right. */
-::view-transition-old(ballot) { animation: ballot-out 0.25s ease-in both; }
-::view-transition-new(ballot) { animation: ballot-in 0.3s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+/* The old ballot leaves before the new one arrives, so two questions never sit on top of each other. */
+::view-transition-old(ballot) { animation: ballot-out 0.16s ease-in both; }
+::view-transition-new(ballot) { animation: ballot-in 0.3s 0.12s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
 @keyframes ballot-out { to { transform: translateX(-24px); opacity: 0; } }
 @keyframes ballot-in { from { transform: translateX(32px); opacity: 0; } }
 /* Offline bar and the loading placeholder */
@@ -591,3 +592,36 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .today-date { width: auto; max-width: 170px; }
 .today-date input { font-size: 14px; }
 .install-invite { width: 100%; max-width: 480px; margin: 16px auto 0; text-align: left; }
+
+/* ---- Interaction round (owner: "interaction design will also be a selling point") ----
+   Each motion has a job: show that your tap counted, lead the eye to you, and keep a set of polls flowing.
+   All of it stops with "Reduce motion". */
+@media (prefers-reduced-motion: no-preference) {
+  /* The result builds: your pick's bar first, then the others (--i is the order), numbers rise in with them. */
+  .duel-option .duel-meter > span { transform-origin: left center; animation: bar-grow 0.6s calc(var(--i, 0) * 90ms) cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+  .duel-option .duel-pct { display: inline-block; animation: pct-rise 0.4s calc(var(--i, 0) * 90ms) cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+  .duel-option .tot-caption { animation: pct-rise 0.35s 0.25s ease backwards; }
+  @keyframes bar-grow { from { transform: scaleX(0); } }
+  @keyframes pct-rise { from { opacity: 0; transform: translateY(6px); } }
+
+  /* Quick ink (everyday polls after the first vote of a visit): a dab of polling ink lands on your card's tick. */
+  .ink-stamp { position: absolute; top: 10px; left: 10px; width: 28px; height: 28px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #7a4cc4, #5b2fa0 60%, #45207d); pointer-events: none; animation: ink-dab 0.9s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
+  @keyframes ink-dab {
+    0% { transform: scale(2.2); opacity: 0; }
+    25% { transform: scale(0.9); opacity: 0.95; }
+    40% { transform: scale(1.05); opacity: 0.9; }
+    100% { transform: scale(1.25); opacity: 0; }
+  }
+
+  /* Rare take: a lime marker stroke draws under the line (lime = you), once. */
+  .is-rare { background: linear-gradient(var(--lime), var(--lime)) no-repeat 0 85% / 0% 40%; animation: rare-mark 0.6s 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+  @keyframes rare-mark { to { background-size: 100% 40%; } }
+
+  /* End of today's set: the rows of your day arrive one by one, like results coming in. */
+  .day-vs li { animation: pct-rise 0.35s calc(var(--i, 0) * 70ms + 0.15s) cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ink-stamp { display: none; }
+  .is-rare { background: linear-gradient(var(--lime), var(--lime)) no-repeat 0 85% / 100% 40%; }
+}
+.is-ballot .ink-stamp { top: calc(50% - 14px); left: 9px; }

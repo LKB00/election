@@ -236,6 +236,10 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
   const [reasonSaved, setReasonSaved] = useState(false);
   // The cast-vote moment (EVM, VVPAT slip, ink) plays over the page; results wait until it is done.
   const [casting, setCasting] = useState<{ optionId: string; short: boolean } | null>(null);
+  // The quick ink stamp (everyday polls, after the first vote of a visit) on the card you just picked.
+  const [stamped, setStamped] = useState<string | null>(null);
+  // Swipe left on a result to go to the next poll (phones): where the finger went down.
+  const swipe = useRef<{ x: number; y: number } | null>(null);
   const [sharing, setSharing] = useState(false);
   // Which duel you just voted in (plays the ink animation once).
   const [inkedFor, setInkedFor] = useState<string | null>(null);
@@ -406,7 +410,14 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
       announceVote(poll.id, 1);
       const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
       if (reduce) castDone(optionId, data.poll.needsGuess);
-      else setCasting({ optionId, short: votesThisVisit++ > 0 });
+      // Everyday polls: the full ink moment once per visit (the signature); after that a quick ink stamp on the card you
+      // picked and the result straight away, so a set of polls flows. Election mode always keeps its booth.
+      else if (!poll.electionMode && votesThisVisit > 0) {
+        votesThisVisit++;
+        setStamped(optionId);
+        navigator.vibrate?.([8, 40, 8]);
+        castDone(optionId, data.poll.needsGuess);
+      } else setCasting({ optionId, short: votesThisVisit++ > 0 });
     } else if (!res && !navigator.onLine) {
       // No internet: keep the choice and send it by itself when the phone is back online.
       // The keys stay pressed (busy) until then, so a second tap cannot queue a second vote.
@@ -569,6 +580,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
     requestAnimationFrame(() => topRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }));
   }
   function goNext() {
+    setStamped(null);
     setCasting(null);
     setSharing(false);
     setJustVoted(null);
@@ -649,8 +661,8 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
         <div className="day-vs">
           <p className="label">{t.dayVs}</p>
           <ul>
-            {rows.map(({ p, side }) => (
-              <li key={p.id}>
+            {rows.map(({ p, side }, n) => (
+              <li key={p.id} style={{ '--i': n } as React.CSSProperties}>
                 <span aria-hidden>{sideEmoji(side)}</span>
                 <Link href={`/p/${p.id}`} className="day-q">{p.title}</Link>
                 <span className="small muted">{p.myVote === null && p.closed ? t.sideClosed : sideWords(t, side, p.kind)}</span>
@@ -691,6 +703,8 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
   // Pick several: judge by your best-placed tick (you are "with the crowd" if any tick leads).
   const verdictPick = multi ? poll.options.filter((o) => poll.myPicks.includes(o.id)).sort((a, b) => b.votes - a.votes)[0] ?? mine : mine;
   const [vTitle, vLine] = verdictPick && revealed ? verdict(t, poll, verdictPick) : ['', ''];
+  // A rare take (1 in 5 or fewer) is the most surprising result: it gets a lime highlight (lime = you).
+  const rareNow = !!verdictPick && revealed && (poll.kind === 'choice' || poll.kind === 'multi') && sideOf(poll, verdictPick).kind === 'rare';
   const letters = faceLabels(poll.options.map((o) => o.label));
   // 3 or more choices: one compact row per choice, like the real EVM ballot unit. Two choices keep the big photo cards.
   const ballot = poll.options.length >= 3;
@@ -698,7 +712,24 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
   const upNext = deck.length > 1 ? [...deck.keys()].map((k) => deck[(i + 1 + k) % deck.length]).find((p) => p.id !== poll.id && isOpen(p)) ?? null : null;
 
   return (
-    <div className={'tot duel' + (revealed ? ' is-revealed' : '') + (poll.electionMode ? '' : ' is-light')} ref={topRef} style={{ viewTransitionName: 'ballot' } as React.CSSProperties}>
+    <div
+      className={'tot duel' + (revealed ? ' is-revealed' : '') + (poll.electionMode ? '' : ' is-light')}
+      ref={topRef}
+      style={{ viewTransitionName: 'ballot' } as React.CSSProperties}
+      // Phones: once the result is in, a swipe to the left goes to the next poll (like a deck). Next stays the button.
+      onTouchStart={(e) => {
+        const el = e.target as HTMLElement;
+        swipe.current = barOn && !counting && !el.closest('input, textarea, .row.wrap, .create-ideas, .topic-chips') ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
+      }}
+      onTouchEnd={(e) => {
+        const from = swipe.current;
+        swipe.current = null;
+        if (!from || !barOn || counting || sharing) return;
+        const dx = e.changedTouches[0].clientX - from.x;
+        const dy = e.changedTouches[0].clientY - from.y;
+        if (dx < -70 && Math.abs(dy) < Math.abs(dx) * 0.6) next();
+      }}
+    >
 
       <div className="tot-q">
         {/* The owner's pick for the top of Home (P2): says why this poll is first. */}
@@ -775,7 +806,8 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
                 key={o.id}
                 type="button"
                 className={'tot-option duel-option' + (isMine || ticked ? ' is-mine' : '') + (revealed && !isMine ? ' is-other' : '') + (busy === o.id ? ' is-busy' : '')}
-                style={{ '--pc': `var(--p-${TONES[n % TONES.length]})`, '--dc': `var(--d-${TONES[n % TONES.length]})` } as React.CSSProperties}
+                // --i: the order the result builds in (your pick first, then the rest), so the eye lands on you.
+                style={{ '--pc': `var(--p-${TONES[n % TONES.length]})`, '--dc': `var(--d-${TONES[n % TONES.length]})`, '--i': isMine ? 0 : n + 1 } as React.CSSProperties}
                 onClick={() => (multi ? toggleTick(o.id) : vote(o.id))}
                 disabled={voted || !!busy || poll.closed || !!poll.pausedUntil}
                 aria-pressed={multi && !voted ? ticked : undefined}
@@ -812,6 +844,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
                   </span>
                 )}
                 {justVoted === o.id && !counting && <Burst />}
+                {stamped === o.id && <span className="ink-stamp" aria-hidden />}
               </button>
             );
           })}
@@ -940,7 +973,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
                       <br />
                     </span>
                   )}
-                  <strong>{vTitle}</strong> {vLine}
+                  <strong className={rareNow ? 'is-rare' : undefined}>{vTitle}</strong> {vLine}
                   {poll.friend.optionId && (
                     <span className="duel-friend-line">
                       {' '}<Users size={13} strokeWidth={1.75} aria-hidden /> {t.friendPicked(poll.options.find((o) => o.id === poll.friend.optionId)?.label ?? '')}
