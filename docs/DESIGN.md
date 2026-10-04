@@ -88,6 +88,17 @@ Promise: **30 seconds**. So:
 | **Create duel** (ink button) | P1 action | One primary button. |
 | Details, category, end time, two switches | P3, folded under "More options" | Useful but optional. Showing them all made a 30-second job look like a form to fill. |
 
+### Create: easier start (owner: "create flow and UI need to be better, intuitive and engaging")
+
+| Element | Level | Job / why |
+|---|---|---|
+| "Need an idea? Tap one" chips (only while the form is empty; swipe sideways on phones) | P3 | A blank page is the hardest part. One tap fills a question and its choices; you can edit everything. Yes / No is one of them. Replaced the "3 choices / 4 choices" chips. |
+| "Use these as the choices: Virat · Rohit · Dhoni" (under the question, only while no choice is typed) | P2 | Most questions already name the choices ("Virat, Rohit or Dhoni?", "Chai ya coffee?"). One tap instead of typing them twice. |
+| Choice boxes that grow by themselves (like a WhatsApp poll) | P1 | Typing in the last box adds the next one, up to 10. The "Add a choice" button is gone; the empty last box has no ×. |
+| Emoji picked for you (🫖 Chai, ☕ Coffee, 🍕 Pizza…), slightly lighter until you change it | P3 | The ballot looks finished without extra work. Tap the box to pick your own; clear it for none. |
+| The main button says what is missing: "Write your question" → "Add 1 more choice" → "Create duel" | P1 action | You always know the next step; it is still the one ink button. |
+| "20 left" under the question near the 120-letter limit | P3 | No surprise cut-off. |
+
 ## Flow 4: coming back (`/me` = My votes)
 
 | Element | Level | Job / why |
