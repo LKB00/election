@@ -500,7 +500,11 @@ export async function guessLeader(db: Db, id: string, voterId: string, choice: s
 export type PollSummary = { id: string; title: string; category: string; kind: PollKind; totalVotes: number; lastHour: number; options: string[]; closed: boolean };
 
 /** Public duels, newest first. Hidden duels never; unreviewed politics duels not until the owner checks them. */
-export async function listPolls(db: Db, limit = 20, filter: { category?: string; reviewedOnly?: boolean } = {}): Promise<PollSummary[]> {
+export async function listPolls(db: Db, limit = 20, filter: { category?: string; reviewedOnly?: boolean; q?: string } = {}): Promise<PollSummary[]> {
+  // Search: words in the question or in any choice ("chai" finds "Tea or coffee?" if a choice is Chai).
+  // % and _ are typed as plain letters, not wildcards.
+  const q = filter.q?.trim().slice(0, 60);
+  const like = q ? `%${q.replace(/[\\%_]/g, (c) => '\\' + c)}%` : '';
   const rows = await db
     .select({
       id: polls.id,
@@ -515,11 +519,13 @@ export async function listPolls(db: Db, limit = 20, filter: { category?: string;
     .leftJoin(votes, eq(votes.pollId, polls.id))
     .where(
       and(
-        eq(polls.featured, false),
+        // Today's question has its own banner, so the list leaves it out; a search finds it like any other.
+        q ? undefined : eq(polls.featured, false),
         eq(polls.hidden, false),
         // Held until the owner looks: politics duels, and duels with photos from people's phones.
         filter.reviewedOnly ? eq(polls.reviewed, true) : or(eq(polls.reviewed, true), and(ne(polls.category, 'politics'), eq(polls.hasPhotos, false))),
         filter.category ? eq(polls.category, filter.category) : undefined,
+        q ? sql`(${polls.title} ilike ${like} or exists (select 1 from options o where o.poll_id = polls.id and o.label ilike ${like}))` : undefined,
       ),
     )
     .groupBy(polls.id)

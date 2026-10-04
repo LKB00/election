@@ -9,11 +9,11 @@ import { choicesFromQuestion, emojiFor } from '@/lib/createHelp';
 import { RATING_EMOJIS, RATING_LABELS, type PollKind } from '@/lib/rating';
 import PicturePicker, { type Picture } from './PicturePicker';
 
-export default function CreateForm() {
+export default function CreateForm({ initialTitle = '' }: { initialTitle?: string }) {
   const router = useRouter();
   const t = useT();
   const lang = useLang();
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<string>('general');
   const [choices, setChoices] = useState(['', '']);
