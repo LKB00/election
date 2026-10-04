@@ -1,11 +1,12 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { ChevronDown, Clock, EyeOff, Plus, Repeat, X } from 'lucide-react';
+import { ChevronDown, Clock, EyeOff, Lightbulb, Repeat, Sparkles, X } from 'lucide-react';
 import { useState } from 'react';
 import { CATEGORIES } from '@/lib/categories';
 import { useLang, useT } from '@/lib/lang';
 import { apiMsg } from '@/lib/i18n';
 import { faceLabels } from '@/lib/labels';
+import { choicesFromQuestion, emojiFor } from '@/lib/createHelp';
 
 export default function CreateForm() {
   const router = useRouter();
@@ -17,6 +18,9 @@ export default function CreateForm() {
   const [choices, setChoices] = useState(['', '']);
   // One optional emoji per choice, kept in step with the choices.
   const [emojis, setEmojis] = useState(['', '']);
+  // An emoji box you have not touched shows a fitting emoji for the name ("Chai" → 🍵); once you type in it, yours wins.
+  const [touched, setTouched] = useState([false, false]);
+  const emojiAt = (i: number) => (touched[i] ? emojis[i] ?? '' : emojis[i] || emojiFor(choices[i] ?? ''));
   const [endsAt, setEndsAt] = useState('');
   const [hideUntilVoted, setHide] = useState(true); // on by default: guess first, then see (the guess game)
   const [allowChange, setChange] = useState(false);
@@ -27,22 +31,39 @@ export default function CreateForm() {
   // P3 settings stay folded: the promise is "30 seconds" (docs/DESIGN.md, Flow 3).
   const [more, setMore] = useState(false);
 
-  const setChoice = (i: number, v: string) => setChoices((c) => c.map((x, j) => (j === i ? v : x)));
-  const setEmoji = (i: number, v: string) => setEmojis((e) => e.map((x, j) => (j === i ? v.trim() : x)));
+  // Like a WhatsApp poll: typing in the last box adds the next empty one (up to 10), so there is no "add" step.
+  const setChoice = (i: number, v: string) => {
+    const grow = i === choices.length - 1 && v.trim() !== '' && choices.length < 10;
+    setChoices((c) => [...c.map((x, j) => (j === i ? v : x)), ...(grow ? [''] : [])]);
+    if (grow) {
+      setEmojis((e) => [...e, '']);
+      setTouched((d) => [...d, false]);
+    }
+  };
+  const setEmoji = (i: number, v: string) => {
+    setEmojis((e) => e.map((x, j) => (j === i ? v.trim() : x)));
+    setTouched((d) => d.map((x, j) => (j === i ? true : x)));
+  };
   const removeChoice = (i: number) => {
     setChoices((x) => x.filter((_, j) => j !== i));
     setEmojis((x) => x.filter((_, j) => j !== i));
+    setTouched((x) => x.filter((_, j) => j !== i));
   };
-  // Quick start: fill the shape of a common duel, then the person only types the question (and names).
-  // A number chip never removes a choice you already typed (5 filled + "3 choices" keeps all 5).
-  function starter(kind: 'yesno' | 3 | 4) {
-    const lastFilled = choices.reduce((m, c, i) => (c.trim() ? i : m), -1);
-    const next = kind === 'yesno' ? [t.yes, t.no] : Array.from({ length: Math.max(kind, lastFilled + 1) }, (_, i) => choices[i] ?? '');
-    setChoices(next);
-    setEmojis(kind === 'yesno' ? ['👍', '👎'] : next.map((_, i) => emojis[i] ?? ''));
+  const fill = (next: string[]) => {
+    const list = [...next, ...(next.length < 10 ? [''] : [])];
+    setChoices(list);
+    setEmojis(list.map(() => ''));
+    setTouched(list.map(() => false));
     setFieldError({});
-    document.getElementById(kind === 'yesno' ? 'title' : 'choice-0')?.focus();
+  };
+  // A ready-made idea: question and choices in one tap (only offered while the form is empty).
+  function idea(n: number) {
+    const it = t.ideas[n];
+    setTitle(it.q);
+    fill(it.c);
+    setTimeout(() => document.querySelector('.create-preview')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
   }
+  // Quick start: fill the shape of a common duel, then the person only types the question (and names).
   // Phone keyboards: Enter moves to the next box (it used to send a half-filled form); on the last choice it creates the duel.
   function onEnter(e: React.KeyboardEvent<HTMLInputElement>, next: string | null) {
     if (e.key !== 'Enter' || !next) return;
@@ -50,12 +71,17 @@ export default function CreateForm() {
     document.getElementById(next)?.focus();
   }
   const typedChoices = choices.some((c) => c.trim());
+  // "Virat, Rohit or Dhoni?" → offer those three as the choices (until you type your own).
+  const fromQuestion = typedChoices ? null : choicesFromQuestion(title);
+  const filledCount = choices.filter((c) => c.trim()).length;
+  // The main button says what is still missing, then "Create duel".
+  const buttonText = busy ? t.creating : title.trim().length < 3 ? t.needQuestion : filledCount < 2 ? t.needChoices(2 - filledCount) : t.createDuel;
   // The end time as the phone shows it (local time, no seconds), for the picker's earliest allowed value.
   const localNow = () => {
     const d = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000);
     return d.toISOString().slice(0, 16);
   };
-  const filledChoices = choices.map((c, i) => ({ label: c.trim(), emoji: emojis[i] })).filter((c) => c.label);
+  const filledChoices = choices.map((c, i) => ({ label: c.trim(), emoji: emojiAt(i) })).filter((c) => c.label);
 
   function check() {
     const filled = choices.map((c) => c.trim().replace(/\s+/g, ' ')).filter(Boolean);
@@ -80,7 +106,7 @@ export default function CreateForm() {
     if (busy || !check()) return;
     setBusy(true);
     setError('');
-    const kept = choices.map((c, i) => ({ c: c.trim(), e: emojis[i] ?? '' })).filter((x) => x.c);
+    const kept = choices.map((c, i) => ({ c: c.trim(), e: emojiAt(i) })).filter((x) => x.c);
     const res = await fetch('/api/polls', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -109,19 +135,28 @@ export default function CreateForm() {
         <span className="search">
           <input id="title" enterKeyHint="next" autoCapitalize="sentences" autoComplete="off" onKeyDown={(e) => onEnter(e, 'choice-0')} value={title} maxLength={120} placeholder={t.questionPh} aria-invalid={!!fieldError.title} onChange={(e) => { setTitle(e.target.value); setFieldError((f) => ({ ...f, title: undefined })); }} />
         </span>
+        {title.length >= 100 && <p className="small muted create-count" aria-live="polite">{t.charsLeft(120 - title.length)}</p>}
         {fieldError.title && <p className="field-error" role="alert">{fieldError.title}</p>}
+        {fromQuestion && (
+          <button type="button" className="create-suggest" onClick={() => fill(fromQuestion)}>
+            <Sparkles size={14} strokeWidth={1.75} aria-hidden />
+            <span><strong>{t.useAsChoices}</strong> <span className="muted">{fromQuestion.join(' · ')}</span></span>
+          </button>
+        )}
       </div>
 
-      {/* P3: quick start chips (the shape of a common duel). */}
-      <div className="duel-group">
-        <span className="label">{t.quickStart}</span>
-        <div className="row wrap">
-          {/* Yes / No would replace what you typed, so it only shows while the choices are empty. */}
-          {!typedChoices && <button type="button" className="chip" onClick={() => starter('yesno')}>{t.starterYesNo}</button>}
-          <button type="button" className="chip" onClick={() => starter(3)}>{t.starterN(3)}</button>
-          <button type="button" className="chip" onClick={() => starter(4)}>{t.starterN(4)}</button>
+      {/* P3: ideas, only on an empty form (a blank page is the hardest part). */}
+      {!title.trim() && !typedChoices && (
+        <div className="duel-group">
+          <span className="label"><Lightbulb size={12} strokeWidth={1.75} aria-hidden /> {t.ideasLabel}</span>
+          <div className="create-ideas">
+            {t.ideas.map((it, n) => (
+              <button key={n} type="button" className="chip" onClick={() => idea(n)}>{it.q}</button>
+            ))}
+            <button type="button" className="chip" onClick={() => fill([t.yes, t.no])}>{t.starterYesNo}</button>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="duel-group">
         <span className="label">{t.choicesLabel}</span>
@@ -129,12 +164,12 @@ export default function CreateForm() {
           <div className="row" key={i}>
             {/* Optional emoji, shown in the choice's circle (phones open the emoji keyboard). */}
             <span className="search emoji-in">
-              <input value={emojis[i] ?? ''} maxLength={16} placeholder="🙂" aria-label={t.emojiN(i + 1)} enterKeyHint="next" onKeyDown={(e) => onEnter(e, `choice-${i}`)} onChange={(e) => setEmoji(i, e.target.value)} />
+              <input value={emojiAt(i)} maxLength={16} placeholder="🙂" aria-label={t.emojiN(i + 1)} title={!touched[i] && emojiAt(i) ? t.emojiAuto : undefined} className={!touched[i] && emojiAt(i) ? 'is-auto' : undefined} enterKeyHint="next" onKeyDown={(e) => onEnter(e, `choice-${i}`)} onFocus={(e) => e.target.select()} onChange={(e) => setEmoji(i, e.target.value)} />
             </span>
             <span className="search">
               <input id={`choice-${i}`} enterKeyHint={i < choices.length - 1 ? 'next' : 'go'} autoCapitalize="words" autoComplete="off" onKeyDown={(e) => onEnter(e, i < choices.length - 1 ? `choice-${i + 1}` : null)} data-choice value={c} maxLength={60} aria-label={t.choiceN(i + 1)} placeholder={t.choiceN(i + 1)} aria-invalid={!!fieldError.choices} onChange={(e) => { setChoice(i, e.target.value); setFieldError((f) => ({ ...f, choices: undefined })); }} />
             </span>
-            {choices.length > 2 && (
+            {choices.length > 2 && !(i === choices.length - 1 && !c.trim()) && (
               <button type="button" className="icon-btn" aria-label={t.removeChoice(i + 1)} onClick={() => removeChoice(i)}>
                 <X size={16} strokeWidth={1.75} aria-hidden />
               </button>
@@ -142,11 +177,6 @@ export default function CreateForm() {
           </div>
         ))}
         {fieldError.choices && <p className="field-error" role="alert">{fieldError.choices}</p>}
-        {choices.length < 10 && (
-          <button type="button" className="chip duel-add" onClick={() => { setChoices((x) => [...x, '']); setEmojis((x) => [...x, '']); }}>
-            <Plus size={14} strokeWidth={1.75} aria-hidden /> {t.addChoice}
-          </button>
-        )}
       </div>
 
       <button type="button" className="chip duel-add" aria-expanded={more} onClick={() => setMore((m) => !m)}>
@@ -221,7 +251,7 @@ export default function CreateForm() {
 
       {error && <p className="duel-error" role="alert">{error}</p>}
       <div className="row">
-        <button className="btn btn-primary btn-lg" disabled={busy}>{busy ? t.creating : t.createDuel}</button>
+        <button className="btn btn-primary btn-lg" disabled={busy}>{buttonText}</button>
       </div>
     </form>
   );
