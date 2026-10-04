@@ -8,11 +8,12 @@ import { handSvg } from '@/lib/inkHand';
 //   topic  = a topic: the box in the topic's colour with the topic's icon on its front (TopicSpot adds the icon)
 //   pen    = My polls: a yellow pencil writing a question on a slip above the box (your first poll starts here)
 //   finger = My votes: the inked finger (the same drawing as the vote moment) beside the box and an empty slip
+//   lock   = profiles: the box locked with a yellow padlock, a fingerprint slip above it (your votes stay locked away)
 //   search = nothing found: slips and a magnifier;  lost = poll not found: a "?" slip;  done = nothing to review: a tick
 // Inline SVG, no downloads; decorative, so hidden from screen readers. Subtle motion (election.css, "Spot motion"):
 // sparkles twinkle, slips float, side slips sway, the finger nods, the magnifier circles, the "?" wobbles, the tick draws
 // itself once. Nothing moves for people who ask their phone to reduce motion.
-export type SpotKind = 'invite' | 'list' | 'topic' | 'finger' | 'pen' | 'search' | 'lost' | 'done';
+export type SpotKind = 'invite' | 'list' | 'topic' | 'finger' | 'pen' | 'lock' | 'search' | 'lost' | 'done';
 
 const INK = 'var(--ink)';
 const W = 2.5;
@@ -35,7 +36,7 @@ function Sparkle({ x, y, r }: { x: number; y: number; r: number }) {
   );
 }
 /** The ballot box: body, lid with its slot, and the front label (or a badge for a topic's icon). */
-function Box({ dx = 0, tone = 'var(--p-input)', front = 'label' }: { dx?: number; tone?: string; front?: 'label' | 'tick' | 'badge' }) {
+function Box({ dx = 0, tone = 'var(--p-input)', front = 'label' }: { dx?: number; tone?: string; front?: 'label' | 'tick' | 'badge' | 'lock' }) {
   return (
     <g transform={`translate(${dx} 0)`}>
       <rect x="50" y="74" width="100" height="58" rx="12" fill={tone} stroke={INK} strokeWidth={W} />
@@ -44,6 +45,13 @@ function Box({ dx = 0, tone = 'var(--p-input)', front = 'label' }: { dx?: number
       <rect x="80" y="67.5" width="40" height="6" rx="3" fill={INK} />
       {front === 'badge' ? (
         <circle cx="100" cy="104" r="17" fill="var(--spot-paper)" stroke={INK} strokeWidth={W} />
+      ) : front === 'lock' ? (
+        <>
+          <path d="M92 101v-6a8 8 0 0 1 16 0v6" fill="none" stroke={INK} strokeWidth="3" strokeLinecap="round" />
+          <rect x="86" y="100" width="28" height="22" rx="6" fill="var(--lime)" stroke={INK} strokeWidth={W} />
+          <circle cx="100" cy="109" r="3" fill={INK} />
+          <path d="M100 110v6" stroke={INK} strokeWidth="2.5" strokeLinecap="round" />
+        </>
       ) : (
         <>
           <rect x="76" y="95" width="48" height="20" rx="10" fill="var(--lime)" stroke={INK} strokeWidth="2" />
@@ -54,7 +62,7 @@ function Box({ dx = 0, tone = 'var(--p-input)', front = 'label' }: { dx?: number
   );
 }
 /** A ballot slip, drawn around its own centre so it can tilt. */
-function Slip({ cx, cy, rot = 0, dashed = false, mark = 'tick' }: { cx: number; cy: number; rot?: number; dashed?: boolean; mark?: 'tick' | 'plus' | 'row' | 'q' | 'none' }) {
+function Slip({ cx, cy, rot = 0, dashed = false, mark = 'tick' }: { cx: number; cy: number; rot?: number; dashed?: boolean; mark?: 'tick' | 'plus' | 'row' | 'q' | 'print' | 'none' }) {
   return (
     <g transform={`translate(${cx} ${cy}) rotate(${rot})`}>
       <rect x="-15" y="-20" width="30" height="40" rx="5" fill={dashed ? 'var(--spot-paper)' : 'var(--spot-paper)'} stroke={INK} strokeWidth={W} strokeDasharray={dashed ? '5 4' : undefined} />
@@ -77,6 +85,14 @@ function Slip({ cx, cy, rot = 0, dashed = false, mark = 'tick' }: { cx: number; 
           <rect x="-9" y="4" width="18" height="4" rx="2" fill={INK} opacity=".3" />
           <rect x="-9" y="11" width="12" height="4" rx="2" fill={INK} opacity=".2" />
         </>
+      )}
+      {mark === 'print' && (
+        <g fill="none" stroke={INK} strokeWidth="1.8" strokeLinecap="round">
+          <path d="M-10 9v-5a10 10 0 0 1 20 0v7" />
+          <path d="M-5.5 13v-9a5.5 5.5 0 0 1 11 0v9" />
+          <path d="M0 3v12" />
+          <path d="M-8 -11a12 12 0 0 1 16 0" opacity=".6" />
+        </g>
       )}
       {mark === 'q' && <text x="0" y="7" textAnchor="middle" fontSize="20" fontWeight="800" fill={INK} fontFamily="var(--sans)">?</text>}
     </g>
@@ -158,6 +174,16 @@ export default function Spot({ kind, tone, size = 176 }: { kind: SpotKind; tone?
           <Sparkle x={40} y={34} r={7} />
           <Sparkle x={170} y={66} r={5} />
           <Sparkle x={164} y={18} r={4} />
+        </>
+      )}
+      {kind === 'lock' && (
+        <>
+          {/* the box locked with a yellow padlock (your votes stay inside, secret) and a fingerprint slip: the key */}
+          <Box front="lock" />
+          <g className="spot-bob"><Slip cx={100} cy={30} rot={-6} mark="print" /></g>
+          <Sparkle x={50} y={38} r={7} />
+          <Sparkle x={152} y={28} r={6} />
+          <Sparkle x={170} y={104} r={4} />
         </>
       )}
       {kind === 'search' && (

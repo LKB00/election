@@ -32,8 +32,18 @@ export function manageKeyFor(id: string): string | null {
   }
 }
 
-/** `page`: the My polls page (all of them, with an empty state); otherwise a short block of the newest three. */
-export default function MyPolls({ page = false }: { page?: boolean }) {
+/** Every poll made on this phone with its private key: after signing in, these join the profile. */
+export function localPollKeys(): { id: string; key: string }[] {
+  try {
+    return Object.entries(JSON.parse(localStorage.getItem(MANAGE) ?? '{}') as Record<string, string>).map(([id, key]) => ({ id, key }));
+  } catch {
+    return [];
+  }
+}
+
+/** `page`: the My polls page (all of them, with an empty state); `title`: all of them under that title, nothing when
+ * there are none (the You page, signed out); otherwise a short block of the newest three. */
+export default function MyPolls({ page = false, title, line }: { page?: boolean; title?: string; line?: string }) {
   const t = useT();
   const [rows, setRows] = useState<{ id: string; title: string; votes: number }[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -41,7 +51,7 @@ export default function MyPolls({ page = false }: { page?: boolean }) {
     let live = true;
     let ids: string[] = [];
     try {
-      ids = (JSON.parse(localStorage.getItem(KEY) ?? '[]') as unknown[]).filter((x): x is string => typeof x === 'string' && /^[\w-]{1,40}$/.test(x)).slice(0, page ? 20 : 3);
+      ids = (JSON.parse(localStorage.getItem(KEY) ?? '[]') as unknown[]).filter((x): x is string => typeof x === 'string' && /^[\w-]{1,40}$/.test(x)).slice(0, page || title ? 20 : 3);
     } catch {}
     if (!ids.length) return setLoaded(true);
     Promise.all(ids.map((id) => fetch(`/api/polls/${id}`).then((r) => (r.ok ? r.json() : null)).catch(() => null))).then((polls) => {
@@ -58,8 +68,9 @@ export default function MyPolls({ page = false }: { page?: boolean }) {
     return page && loaded ? <EmptyState kind="pen" title={t.myPollsEmpty} line={t.myPollsEmptyLine} action={{ href: '/create', label: t.startDuel }} /> : null;
   }
   return (
-    <section className="al-block" aria-label={t.yourPolls}>
-      {!page && <h2 className="al-block__title">{t.yourPolls}</h2>}
+    <section className="al-block" aria-label={title ?? t.yourPolls}>
+      {!page && <h2 className="al-block__title">{title ?? t.yourPolls}</h2>}
+      {line && <p className="small muted">{line}</p>}
       <ul className="al-listcard">
         {rows.map((r) => (
           <li key={r.id}>

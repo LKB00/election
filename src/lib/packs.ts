@@ -14,12 +14,12 @@ export type PackSummary = { id: string; kind: PackKind; title: string; startsAt:
 export type PackView = PackSummary & { views: PollView[] };
 
 /** Makes the pack and its polls (in order). The same private key marks every "Called it" result in it. */
-export async function createPack(db: Db, p: { kind: PackKind; title: string; startsAt: string }, items: CreatePollInput[], manageKey: string) {
+export async function createPack(db: Db, p: { kind: PackKind; title: string; startsAt: string }, items: CreatePollInput[], manageKey: string, ownerId?: string) {
   const id = packId();
   await db.insert(packs).values({ id, kind: p.kind, title: p.title, startsAt: new Date(p.startsAt) });
   const pollIds: string[] = [];
   // One after another, so their order (by creation time) is the pack's order.
-  for (const item of items) pollIds.push(await createPoll(db, item, manageKey, id));
+  for (const item of items) pollIds.push(await createPoll(db, item, manageKey, id, ownerId));
   return { id, pollIds };
 }
 

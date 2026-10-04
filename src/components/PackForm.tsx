@@ -6,13 +6,16 @@ import { apiMsg } from '@/lib/i18n';
 import { emojiFor } from '@/lib/createHelp';
 import { RATING_EMOJIS, RATING_LABELS } from '@/lib/rating';
 import { rememberMyPoll } from './MyPolls';
+import SignInSheet from './SignIn';
 
 // Match-day and show-night packs (docs/DESIGN.md, "Packs"): type the names and the start time; the pack's polls are
 // written for you, shown before you make them. Predictions ("Called it") close when it starts.
 const HOUR = 3_600_000;
-export default function PackForm({ initialKind = 'match' }: { initialKind?: 'match' | 'show' }) {
+export default function PackForm({ initialKind = 'match', signedIn = false }: { initialKind?: 'match' | 'show'; signedIn?: boolean }) {
   const t = useT();
   const lang = useLang();
+  const [signed, setSigned] = useState(signedIn);
+  const [ask, setAsk] = useState(false);
   const router = useRouter();
   const [kind, setKind] = useState<'match' | 'show'>(initialKind);
   const [a, setA] = useState('');
@@ -60,6 +63,10 @@ export default function PackForm({ initialKind = 'match' }: { initialKind?: 'mat
     e.preventDefault();
     const p = problem();
     if (p) return setError(p);
+    if (!signed) return setAsk(true);
+    send();
+  }
+  async function send() {
     setBusy(true);
     setError('');
     const res = await fetch('/api/packs', {
@@ -73,8 +80,13 @@ export default function PackForm({ initialKind = 'match' }: { initialKind?: 'mat
       for (const id of data.pollIds as string[]) rememberMyPoll(id, data.manageKey);
       return router.push(`/pack/${data.id}?new=1`);
     }
-    setError(data?.error ? apiMsg(lang, data.error) : t.errGeneric);
     setBusy(false);
+    // Signed out on another tab, or the sign-in ran out: ask again.
+    if (res?.status === 401) {
+      setSigned(false);
+      return setAsk(true);
+    }
+    setError(data?.error ? apiMsg(lang, data.error) : t.errGeneric);
   }
 
   const minLocal = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
@@ -107,6 +119,17 @@ export default function PackForm({ initialKind = 'match' }: { initialKind?: 'mat
         </div>
       )}
       {error && <p className="field-error" role="alert">{error}</p>}
+      {ask && (
+        <SignInSheet
+          onClose={() => setAsk(false)}
+          onDone={() => {
+            setAsk(false);
+            setSigned(true);
+            send();
+          }}
+        />
+      )}
+      {!signed && <p className="small muted">{t.createSignHint}</p>}
       <button className="btn btn-primary btn-lg" disabled={busy}>{busy ? t.packMaking : t.packMake}</button>
     </form>
   );

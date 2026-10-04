@@ -4,6 +4,8 @@ import { ChevronRight, Timer } from 'lucide-react';
 import { CATEGORIES } from '@/lib/categories';
 import CreateForm from '@/components/CreateForm';
 import { getT } from '@/lib/lang-server';
+import { getDb } from '@/db';
+import { currentUser } from '@/lib/auth';
 
 export const metadata: Metadata = { title: 'Start a poll' };
 
@@ -16,6 +18,7 @@ export default async function CreatePage({ searchParams }: { searchParams: Promi
   const topic = (CATEGORIES as readonly string[]).includes(topicRaw ?? '') ? topicRaw : undefined;
   const title = (Array.isArray(raw) ? raw[0] : raw ?? '').trim().slice(0, 120);
   const t = await getT();
+  const user = await currentUser(await getDb());
   return (
     <div className="page">
       <header className="page-head">
@@ -24,7 +27,7 @@ export default async function CreatePage({ searchParams }: { searchParams: Promi
         <p className="lead">{t.createLead}</p>
       </header>
       <section className="block block-tight">
-        <CreateForm initialTitle={title} initialTopic={topic} />
+        <CreateForm initialTitle={title} initialTopic={topic} signedIn={!!user} />
       </section>
       {/* P3, after the form: a pack (a few polls around a match or a show night, made in one go). */}
       <section className="al-block">

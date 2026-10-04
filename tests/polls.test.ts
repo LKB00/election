@@ -1031,3 +1031,37 @@ describe('abusive emoji', () => {
     expect(createPollSchema.safeParse({ title: 'Tea or coffee', options: ['Tea', 'Coffee 🖕'] }).success).toBe(false);
   });
 });
+
+describe('profiles', () => {
+  it('cleans names: 2 to 30 letters, no abuse', async () => {
+    const { cleanName } = await import('@/lib/profiles');
+    expect(cleanName('  Lokesh  ')).toBe('Lokesh');
+    expect(cleanName('L')).toBeNull();
+    expect(cleanName('x'.repeat(50))).toHaveLength(30);
+    expect(cleanName(undefined)).toBeNull();
+  });
+
+  it('keeps who made a poll, claims phone polls only with their key, and never touches votes', async () => {
+    const { createUser, claimPolls, pollsByOwner, deleteProfile } = await import('@/lib/profiles');
+    const uid = 'user-' + Math.random().toString(36).slice(2, 8);
+    await createUser(db, { id: uid, name: 'Asha', avatar: '🦁' }, { id: 'cred-' + uid, publicKey: 'pk', counter: 0, transports: ['internal'] });
+    const owned = await createPoll(db, createPollSchema.parse({ title: 'Owned poll', options: ['A', 'B'] }), 'k-owned', undefined, uid);
+    const phone = await createPoll(db, createPollSchema.parse({ title: 'Phone poll', options: ['A', 'B'] }), 'k-phone');
+    const p = (await getPoll(db, phone, null))!;
+    await castVote(db, phone, p.options[0].id, 'voter-asha');
+    // A wrong key claims nothing; the right one joins the profile once.
+    expect(await claimPolls(db, uid, [{ id: phone, key: 'wrong' }])).toBe(0);
+    expect(await claimPolls(db, uid, [{ id: phone, key: 'k-phone' }])).toBe(1);
+    expect(await claimPolls(db, 'someone-else', [{ id: phone, key: 'k-phone' }])).toBe(0);
+    const mine = await pollsByOwner(db, uid);
+    expect(mine.map((x) => x.id).sort()).toEqual([owned, phone].sort());
+    expect(mine.find((x) => x.id === phone)?.votes).toBe(1);
+    // Deleting the profile keeps the polls (with no owner) and their votes.
+    await deleteProfile(db, uid);
+    expect(await pollsByOwner(db, uid)).toEqual([]);
+    const [row] = await db.select({ ownerId: schema.polls.ownerId }).from(schema.polls).where(eq(schema.polls.id, owned));
+    expect(row.ownerId).toBeNull();
+    expect((await getPoll(db, phone, 'voter-asha'))!.participants).toBe(1);
+    expect(await db.select().from(schema.passkeys).where(eq(schema.passkeys.userId, uid))).toEqual([]);
+  });
+});

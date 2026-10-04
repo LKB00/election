@@ -1,11 +1,11 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ChartNoAxesColumn, House, PenLine, Plus, Vote } from 'lucide-react';
+import { ChartNoAxesColumn, House, Plus, UserRound, Vote } from 'lucide-react';
 import { useT } from '@/lib/lang';
 
 // Phone only (hidden on bigger screens by CSS). Two places on each side of one action, so the bar is balanced:
-// Home · Polls · ( + ) · My polls · My votes. The round ink "+" opens Create full screen (owner: "there should not be a
+// Home · Polls · ( + ) · My votes · You (your profile and the polls you made). The round ink "+" opens Create full screen (owner: "there should not be a
 // page [tab], there can be a plus button"). Ink is the colour of the one main action; yellow marks the tab you are on.
 export default function BottomNav() {
   const path = usePathname();
@@ -24,8 +24,8 @@ export default function BottomNav() {
       <Link href="/create" className="bottomnav-plus" aria-label={t.startDuel}>
         <span><Plus size={24} strokeWidth={2.25} aria-hidden /></span>
       </Link>
-      {tab('/mine', t.myPolls, PenLine, path.startsWith('/mine'))}
-      {tab('/me', t.myVotes, Vote, path.startsWith('/me'))}
+      {tab('/me', t.myVotes, Vote, path === '/me')}
+      {tab('/you', t.you, UserRound, path.startsWith('/you') || path.startsWith('/mine'))}
     </nav>
   );
 }
