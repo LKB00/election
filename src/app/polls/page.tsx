@@ -9,7 +9,7 @@ import { getT } from '@/lib/lang-server';
 import { CATEGORIES } from '@/lib/categories';
 
 export const dynamic = 'force-dynamic';
-export const metadata: Metadata = { title: 'Duels' };
+export const metadata: Metadata = { title: 'Polls' };
 
 // P1: the duel of the day (dark banner). P2: browse the tiles.
 export default async function Duels() {

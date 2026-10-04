@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 export default {
+  // Duels became polls: old links keep working.
+  async redirects() {
+    return [{ source: '/duels', destination: '/polls', permanent: true }];
+  },
   serverExternalPackages: ['@electric-sql/pglite'],
   // The share image reads the Lato font files at runtime; ship them with that route.
   outputFileTracingIncludes: {

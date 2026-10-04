@@ -4,9 +4,11 @@ The look comes from patricka (Good Bot, Bad Bot): its tokens, type scale and com
 This file is about **what each element is for** and **how much attention it gets**.
 Rule: if an element has no clear job on that screen, it is removed.
 
-## The election rule (owner, most important)
+## The opinions rule (owner, most important; replaces "the election rule")
 
-**Only things a real election has.** Every element must exist in a real Indian election or in news coverage of one: ballot numbers, the EVM button and beep, the VVPAT slip, the inked finger, the voter ID, "polling open/closed", turnout, exit polls, "leading / won", sharing that you voted.
+**Election is a place to see what people think about anything.** Every poll keeps the parts of a fair vote that make it trustworthy and fun: ballot numbers, a secret ballot, one vote each, results only after you vote, the inked finger (our signature on every poll), "Guess the crowd", "leading / won", sharing that you voted.
+**Election mode** adds the full booth ritual on top: the EVM beep, the VVPAT slip, the voter ID number, counting day (3 rounds) and "Result declared". It is always on for politics polls and the flagship, and a creator can switch it on for any poll ("Election mode" chip on Create). Everything else gets a short ink moment and the result straight away.
+The words "exit poll" are not used anywhere (legal risk; see docs/OPINIONS.md). Polls are "polls", not "duels".
 Quiz and game parts from patricka are **not used**:
 - no progress steppers or pips
 - no score bubbles (✓ 1, 🎯 0)
@@ -14,7 +16,7 @@ Quiz and game parts from patricka are **not used**:
 - no levels, XP bars or trophies
 - no streaks
 
-If an element can't be explained in election words, remove it.
+If an element has no job in a fair, fun vote, remove it. No money, coins or prizes, ever (Online Gaming Act 2025).
 We still use patricka's **look** (type, spacing, colours, cards, buttons), but not its game mechanics.
 
 ## Priority levels (used on every screen)
@@ -481,3 +483,13 @@ No form fields any more: you make the ballot itself, and it looks the way voters
 | One line of setting chips under the ballot: Results after voting (on), Votes can change, End time, Topic, Add details | P3 | Each switches on tap or opens its small box underneath; dark = on. Replaces "More options" and its switches. |
 | Ink button, full width on phones: "Write your question" → "Add 1 more choice" → "Create duel" | P1 action | Unchanged rule: one ink button that says the next step. |
 | Ideas, "Use these as the choices", pictures, auto emoji | – | As before (sections above). |
+
+## Phase 1: opinions about anything (owner: "it's a platform where people can check people's opinions about anything")
+
+| Change | Why |
+|---|---|
+| "Duel/duels" → "poll/polls" everywhere (Hindi पोल, Hinglish poll); the Duels tab and page are now **Polls** at `/polls` (old `/duels` links redirect) | The site is for any question, not only head-to-heads. |
+| "Exit poll" → **Guess the crowd** (Hindi सबका अंदाज़ा, Hinglish Bheed ka andaaza); "Your crowd guess was right!" | Same engagement, no legal risk from the words "exit poll" (RP Act s.126A). |
+| Site title and preview: "Election · What does everyone think?"; "Ask anything. Vote in one tap, then see what everyone thinks." | Says what the site is now. |
+| **Election mode** (per poll; chip on Create, P3) | On: EVM row light and beep, VVPAT slip, voter ID, counting day, "Result declared". Off: blue Vote key, a soft "pop", a 2-second ink moment, the result straight away, "Final result". Always on for politics polls and the flagship. |
+| Sealed note: "no poll results while a real election is voting" | Same rule, plainer words. |

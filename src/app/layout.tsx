@@ -15,8 +15,8 @@ import '@/styles/index.css';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: 'Election · Who would you pick?', template: '%s · Election' },
-  description: 'Quick head-to-head duels. Tap your pick, see where everyone stands. Just for fun.',
+  title: { default: 'Election · What does everyone think?', template: '%s · Election' },
+  description: 'Ask anything. Vote in one tap, then see what everyone thinks. Just for fun, not official.',
 };
 
 export const viewport: Viewport = {

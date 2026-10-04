@@ -553,3 +553,15 @@ describe('photos from the phone', () => {
     expect(createPollSchema.safeParse({ title: 'Huge photo', options: ['A', 'B'], photos: ['data:image/jpeg;base64,/9j/' + 'A'.repeat(200_000), ''] }).success).toBe(false);
   });
 });
+
+describe('election mode', () => {
+  it('is off for everyday polls, on when chosen, and always on for politics and the flagship', async () => {
+    const plain = await make({ title: 'Mode off' });
+    expect((await getPoll(db, plain, null))!.electionMode).toBe(false);
+    const chosen = await make({ title: 'Mode on', electionMode: true });
+    expect((await getPoll(db, chosen, null))!.electionMode).toBe(true);
+    const politics = await make({ title: 'Modi or Kejriwal?' });
+    expect((await getPoll(db, politics, null))!.electionMode).toBe(true);
+    expect((await getPoll(db, 'modi-vs-rahul', null))!.electionMode).toBe(true);
+  });
+});

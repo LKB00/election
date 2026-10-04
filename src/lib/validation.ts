@@ -52,6 +52,7 @@ export const createPollSchema = z.object({
   photos: z.array(z.string().max(MAX_PHOTO_CHARS).refine((p) => p === '' || isPhoto(p), 'That photo could not be used. Try another one.')).max(10).default([]),
   hideUntilVoted: z.boolean().default(true),
   allowChange: z.boolean().default(false),
+  electionMode: z.boolean().default(false),
   endsAt: z
     .string()
     .datetime()

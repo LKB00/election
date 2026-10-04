@@ -1,6 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { Clock, EyeOff, ImagePlus, Lightbulb, Repeat, Sparkles, X } from 'lucide-react';
+import { Clock, Landmark, EyeOff, ImagePlus, Lightbulb, Repeat, Sparkles, X } from 'lucide-react';
 import { useState } from 'react';
 import { CATEGORIES } from '@/lib/categories';
 import { useLang, useT } from '@/lib/lang';
@@ -28,6 +28,8 @@ export default function CreateForm() {
   const [endsAt, setEndsAt] = useState('');
   const [hideUntilVoted, setHide] = useState(true); // on by default: guess first, then see (the guess game)
   const [allowChange, setChange] = useState(false);
+  // Election mode: the full booth ritual for this poll. Politics polls get it anyway (the server decides that).
+  const [electionMode, setElectionMode] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   // Errors show under the field they belong to, and focus moves there.
@@ -125,6 +127,7 @@ export default function CreateForm() {
         photos: kept.map((x) => x.p),
         hideUntilVoted,
         allowChange,
+        electionMode,
         endsAt: endsAt ? new Date(endsAt).toISOString() : undefined,
       }),
     }).catch(() => null);
@@ -253,6 +256,9 @@ export default function CreateForm() {
         <button type="button" className={'chip' + (hideUntilVoted ? ' chip-on' : '')} aria-pressed={hideUntilVoted} title={t.hideResultsNote} onClick={() => setHide((v) => !v)}>
           <EyeOff size={13} strokeWidth={1.75} aria-hidden /> {t.setHidden}
         </button>
+        <button type="button" className={'chip' + (electionMode ? ' chip-on' : '')} aria-pressed={electionMode} title={t.setElectionNote} onClick={() => setElectionMode((v) => !v)}>
+          <Landmark size={13} strokeWidth={1.75} aria-hidden /> {t.setElection}
+        </button>
         <button type="button" className={'chip' + (allowChange ? ' chip-on' : '')} aria-pressed={allowChange} title={t.allowChangeNote} onClick={() => setChange((v) => !v)}>
           <Repeat size={13} strokeWidth={1.75} aria-hidden /> {t.setChange}
         </button>
@@ -266,6 +272,7 @@ export default function CreateForm() {
           {t.setDetails}
         </button>
       </div>
+      {electionMode && <p className="small muted builder-note">{t.setElectionNote}</p>}
       {(open === 'ends' || fieldError.end) && (
         <div className="duel-group">
           <span className="search">

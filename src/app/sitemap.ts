@@ -14,7 +14,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   return [
     { url: `${site}/`, lastModified: now, changeFrequency: 'hourly', priority: 1 },
-    { url: `${site}/duels`, lastModified: now, changeFrequency: 'hourly', priority: 0.8 },
+    { url: `${site}/polls`, lastModified: now, changeFrequency: 'hourly', priority: 0.8 },
     ...CATEGORIES.map((c) => ({ url: `${site}/topic/${c}`, lastModified: now, changeFrequency: 'daily' as const, priority: 0.6 })),
     ...(featured ? [{ url: `${site}/p/${featured}`, lastModified: now, changeFrequency: 'hourly' as const, priority: 0.9 }] : []),
     ...polls.map((p) => ({ url: `${site}/p/${p.id}`, lastModified: now, changeFrequency: 'daily' as const, priority: 0.5 })),

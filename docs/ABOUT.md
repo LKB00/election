@@ -1,5 +1,7 @@
 # About Election
 
+> **Update (Phase 1, opinions about anything):** Election is now a place to see what people think about *anything*. Polls are "polls" (not "duels"), the exit poll is "Guess the crowd", and the full booth ritual (EVM, VVPAT, voter ID, counting day) is **Election mode**: always on for politics and the flagship, optional for everything else. The plan and research are in `docs/OPINIONS.md`; the rules are in `CLAUDE.md` and `docs/DESIGN.md`. Older sections below still describe the election-first version.
+
 This is the one-page reference for the project: what it is, who it is for, what is built, and why.
 For the reasons behind each screen and element, see [DESIGN.md](DESIGN.md). For research and the improvement plan, see [UX-RESEARCH.md](UX-RESEARCH.md). To run the app, see the [README](../README.md).
 

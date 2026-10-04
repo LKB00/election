@@ -9,7 +9,7 @@ import Burst from './Burst';
 import InkFinger from './InkFinger';
 import CastVote from './CastVote';
 import ShareSheet from './ShareSheet';
-import { evmBeep, keyClick } from '@/lib/sound';
+import { evmBeep, keyClick, votePop } from '@/lib/sound';
 import { humanToken, prepareHumanCheck } from '@/lib/turnstile-client';
 import { useLang, useT } from '@/lib/lang';
 import { apiMsg, reasonLabel, type Dict, type Lang } from '@/lib/i18n';
@@ -221,7 +221,8 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
   // Runs on the duel and on "revealed" only: new data arriving mid-count (a reaction, a refresh) must not stop the
   // count halfway, which used to leave the bar stuck on "round 1 of 3" with no Next button.
   const countId = poll?.id;
-  const countRounds = poll?.rounds.length ?? 0;
+  // Counting day (3 rounds) belongs to Election mode; other polls show the result straight away.
+  const countRounds = poll?.electionMode ? poll.rounds.length : 0;
   useEffect(() => {
     if (!countId) return;
     const before = wasRevealed.current;
@@ -340,7 +341,8 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
     }).catch(() => null);
     const data = await res?.json().catch(() => null);
     if (res?.ok && data?.poll) {
-      evmBeep();
+      if (poll.electionMode) evmBeep();
+      else votePop();
       setInkedFor(poll.id);
       replace(data.poll);
       setReasonSaved(false);
@@ -585,7 +587,7 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
   const upNext = deck.length > 1 ? [...deck.keys()].map((k) => deck[(i + 1 + k) % deck.length]).find((p) => p.id !== poll.id && isOpen(p)) ?? null : null;
 
   return (
-    <div className={'tot duel' + (revealed ? ' is-revealed' : '')} ref={topRef} style={{ viewTransitionName: 'ballot' } as React.CSSProperties}>
+    <div className={'tot duel' + (revealed ? ' is-revealed' : '') + (poll.electionMode ? '' : ' is-light')} ref={topRef} style={{ viewTransitionName: 'ballot' } as React.CSSProperties}>
 
       <div className="tot-q">
         <h1 key={poll.id} className="display duel-q">{poll.title}</h1>
@@ -665,7 +667,7 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
           <InkFinger size={56} />
           <p className="small">
             <strong>{t.inked}.</strong>
-            {poll.myVoterNumber ? <span className="muted"> {t.voterId} EL-{String(poll.myVoterNumber).padStart(6, '0')}</span> : null}
+            {poll.electionMode && poll.myVoterNumber ? <span className="muted"> {t.voterId} EL-{String(poll.myVoterNumber).padStart(6, '0')}</span> : null}
           </p>
         </div>
       )}
@@ -730,7 +732,7 @@ export default function DuelGame({ deck: initialDeck, start, via }: { deck: Poll
               )}
               {revealed && poll.closed && (
                 <>
-                  <strong>{t.declared}</strong>{' '}
+                  <strong>{poll.electionMode ? t.declared : t.finalResult}</strong>{' '}
                   {leaderIdx >= 0
                     ? t.winsBy(poll.options[leaderIdx].label, margin)
                     : poll.totalVotes
@@ -789,6 +791,7 @@ null
 
       {casting && castOpt && (
         <CastVote
+          light={!poll.electionMode}
           t={t}
           number={poll.options.findIndex((o) => o.id === casting.optionId) + 1}
           name={castOpt.label}
