@@ -8,6 +8,8 @@ import { readVoterId, voterKeyForLink } from '@/lib/voter';
 import KeepVotes from '@/components/KeepVotes';
 import ResetFresh from '@/components/ResetFresh';
 import SinceLastLook from '@/components/SinceLastLook';
+import MonthCard from '@/components/MonthCard';
+import { getMonth } from '@/lib/month';
 import Spot from '@/components/Spot';
 import { getT } from '@/lib/lang-server';
 
@@ -32,7 +34,7 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
   const db = await getDb();
   const voterId = await readVoterId();
   const voterKey = await voterKeyForLink();
-  const [stats, mine] = await Promise.all([getVoterStats(db, voterId), getMyVotes(db, voterId)]);
+  const [stats, mine, month] = await Promise.all([getVoterStats(db, voterId), getMyVotes(db, voterId), getMonth(db, voterId)]);
   const t = await getT();
 
   return (
@@ -56,6 +58,12 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
         )}
       </header>
 
+      {/* P2: your month, described (3+ votes this month). */}
+      {month && month.polls >= 3 && (
+        <section className="block block-tight">
+          <MonthCard m={month} />
+        </section>
+      )}
       <section className="block">
         {mine.length === 0 ? (
           <div className="spot-empty">

@@ -804,3 +804,11 @@ For a friend group, class or office: Create → More options → **👥 Group po
 - **Link-only:** group polls never appear in public lists, Trending, topics or search.
 - **No crowd guess** on group polls (or "Called it" polls): while waiting it would tell who leads, and once everyone has voted there is no crowd left to guess.
 - **"Tell me the result"** works here too: the alert goes out the moment the last person votes.
+
+## Month card: "Your October in opinions" (research: reports/Next features for Election, #5)
+
+On My votes, above your list, once you have voted in 3+ polls this month (India time). A soft yellow card (yellow = you):
+- **P1, a type word with one line:** "Crowd-pleaser · You usually side with most people" (with the crowd on 70%+ of judged polls), "Free thinker · You often go your own way" (40% or less), or "Balanced · Some with the crowd, some against it". Only once 3+ polls can be judged.
+- **P2, what it rests on:** a row of 🟩/🟪 squares (with the crowd / against it, oldest first), "7 polls voted", "With the crowd on 5 of 7", "Rarest take: Dhoni (20%) in …" (polls with 5+ voters), "Mostly Food" (the topic's icon).
+- **Share my month** (WhatsApp first): the type, the count and the squares, never what you picked.
+- **Describes, never ranks:** no score, no percentile, no comparison with other people, nothing saved. Made fresh each time from this phone's votes; politics polls are left out; only polls whose results you can already see count (never a hidden number, never a group poll still waiting).
