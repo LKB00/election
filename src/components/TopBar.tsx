@@ -39,6 +39,7 @@ export default function TopBar() {
         <nav className="topnav-links" aria-label="Main">
           <Link href="/polls" className={path.startsWith('/polls') ? 'active' : ''}>{t.duels}</Link>
           <Link href="/create" className={'topnav-create' + (creating ? ' active' : '')}><Plus size={15} strokeWidth={2.25} aria-hidden /> {t.create}</Link>
+          <Link href="/mine" className={path === '/mine' ? 'active' : ''}>{t.myPolls}</Link>
           <Link href="/me" className={path === '/me' ? 'active' : ''}>{t.myVotes}</Link>
         </nav>
         <div className="topnav-right">

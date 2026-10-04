@@ -306,7 +306,7 @@ button.link-like { border: 0; background: none; padding: 8px 0; cursor: pointer;
 
 /* ---- Phones (docs/DESIGN.md, "Mobile") ---- */
 /* Four tabs, four equal columns (the bar had room for five, so a gap sat on the right). */
-.bottomnav { grid-template-columns: repeat(4, 1fr); }
+.bottomnav { grid-template-columns: repeat(5, 1fr); }
 /* Notch and rounded corners, also when the phone is held sideways (viewport-fit=cover in layout.tsx). */
 body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
 .bottomnav { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
@@ -776,9 +776,10 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 @keyframes spot-draw { to { stroke-dashoffset: 0; } }
 @keyframes spot-fill { from { transform: scaleX(0.15); } to { transform: scaleX(1); } }
 
-/* Bottom bar: three places and the round ink "+" (the one action). Create opens full screen, so there is no tab for it. */
+/* Bottom bar: two places on each side of the round ink "+" (the one action), so it is balanced. Create opens full screen. */
 @media (max-width: 720px) {
-  .bottomnav { grid-template-columns: repeat(4, 1fr); }
+  .bottomnav { grid-template-columns: repeat(5, 1fr); }
+  .bottomnav-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
   .bottomnav-plus { display: grid; place-items: center; text-decoration: none; -webkit-tap-highlight-color: transparent; }
   .bottomnav-plus > span { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: var(--ink); color: var(--on-ink); box-shadow: var(--shadow-raised); transition: transform 0.15s ease; }
   .bottomnav-plus:active > span { transform: scale(0.92); }
@@ -786,3 +787,7 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 }
 .topnav-close { border: 0; background: none; font: inherit; color: inherit; cursor: pointer; }
 .topnav-create { display: inline-flex; align-items: center; gap: 4px; }
+@media (prefers-reduced-motion: no-preference) {
+  .spot-write { animation: spot-write 2.4s ease-in-out infinite; }
+}
+@keyframes spot-write { 0%, 100% { transform: translate(0, 0); } 20% { transform: translate(-3px, 1px); } 40% { transform: translate(1px, 2px); } 60% { transform: translate(-2px, 0); } 80% { transform: translate(2px, 1px); } }

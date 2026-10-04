@@ -6,12 +6,13 @@ import { handSvg } from '@/lib/inkHand';
 //   invite = Home on an empty site: a chat bubble holding a poll, and a slip going into the box (ask your friends)
 //   list   = a list of polls: slips fanned over the box, the middle one an empty "+" (the first poll goes here)
 //   topic  = a topic: the box in the topic's colour with the topic's icon on its front (TopicSpot adds the icon)
+//   pen    = My polls: a yellow pencil writing a question on a slip above the box (your first poll starts here)
 //   finger = My votes: the inked finger (the same drawing as the vote moment) beside the box and an empty slip
 //   search = nothing found: slips and a magnifier;  lost = poll not found: a "?" slip;  done = nothing to review: a tick
 // Inline SVG, no downloads; decorative, so hidden from screen readers. Subtle motion (election.css, "Spot motion"):
 // sparkles twinkle, slips float, side slips sway, the finger nods, the magnifier circles, the "?" wobbles, the tick draws
 // itself once. Nothing moves for people who ask their phone to reduce motion.
-export type SpotKind = 'invite' | 'list' | 'topic' | 'finger' | 'search' | 'lost' | 'done';
+export type SpotKind = 'invite' | 'list' | 'topic' | 'finger' | 'pen' | 'search' | 'lost' | 'done';
 
 const INK = 'var(--ink)';
 const W = 2.5;
@@ -133,6 +134,30 @@ export default function Spot({ kind, tone, size = 176 }: { kind: SpotKind; tone?
           <Sparkle x={70} y={40} r={6} />
           <Sparkle x={182} y={22} r={7} />
           <Sparkle x={193} y={112} r={4} />
+        </>
+      )}
+      {kind === 'pen' && (
+        <>
+          {/* a slip being written on, and a yellow pencil writing it: your first poll starts here */}
+          <Box />
+          <g transform="translate(92 34) rotate(-6)">
+            <rect x="-24" y="-26" width="48" height="52" rx="6" fill="var(--spot-paper)" stroke={INK} strokeWidth={W} />
+            <rect x="-15" y="-15" width="30" height="5" rx="2.5" fill={INK} opacity=".75" />
+            <rect x="-15" y="-4" width="22" height="5" rx="2.5" fill={INK} opacity=".3" />
+            <circle cx="-11" cy="12" r="4.5" fill="var(--p-input)" stroke={INK} strokeWidth="2" />
+            <circle cx="3" cy="12" r="4.5" fill="var(--p-feedback)" stroke={INK} strokeWidth="2" />
+          </g>
+          <g className="spot-write">
+            <g transform="translate(126 30) rotate(38)">
+              <rect x="-6" y="-30" width="12" height="44" rx="2" fill="var(--lime)" stroke={INK} strokeWidth={W} />
+              <rect x="-6" y="-38" width="12" height="9" rx="3" fill="var(--p-feedback)" stroke={INK} strokeWidth={W} />
+              <path d="M-6 14 L0 26 L6 14 Z" fill="var(--spot-paper)" stroke={INK} strokeWidth={W} strokeLinejoin="round" />
+              <path d="M-2 22 L0 26 L2 22 Z" fill={INK} />
+            </g>
+          </g>
+          <Sparkle x={40} y={34} r={7} />
+          <Sparkle x={170} y={66} r={5} />
+          <Sparkle x={164} y={18} r={4} />
         </>
       )}
       {kind === 'search' && (

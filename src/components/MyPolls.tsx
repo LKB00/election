@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ChevronRight, PenLine } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useT } from '@/lib/lang';
+import EmptyState from './EmptyState';
 
 // "Your polls · 37 votes so far" (P2): people value what they made (the IKEA effect), and group admins who come back
 // to check their poll are the ones who make the next one. The list lives only on this phone (no login); counts are real.
@@ -31,27 +32,34 @@ export function manageKeyFor(id: string): string | null {
   }
 }
 
-export default function MyPolls() {
+/** `page`: the My polls page (all of them, with an empty state); otherwise a short block of the newest three. */
+export default function MyPolls({ page = false }: { page?: boolean }) {
   const t = useT();
   const [rows, setRows] = useState<{ id: string; title: string; votes: number }[]>([]);
+  const [loaded, setLoaded] = useState(false);
   useEffect(() => {
     let live = true;
     let ids: string[] = [];
     try {
-      ids = (JSON.parse(localStorage.getItem(KEY) ?? '[]') as unknown[]).filter((x): x is string => typeof x === 'string' && /^[\w-]{1,40}$/.test(x)).slice(0, 3);
+      ids = (JSON.parse(localStorage.getItem(KEY) ?? '[]') as unknown[]).filter((x): x is string => typeof x === 'string' && /^[\w-]{1,40}$/.test(x)).slice(0, page ? 20 : 3);
     } catch {}
-    if (!ids.length) return;
+    if (!ids.length) return setLoaded(true);
     Promise.all(ids.map((id) => fetch(`/api/polls/${id}`).then((r) => (r.ok ? r.json() : null)).catch(() => null))).then((polls) => {
-      if (live) setRows(polls.filter(Boolean).map((p) => ({ id: p.id, title: p.title, votes: p.participants })));
+      if (!live) return;
+      setRows(polls.filter(Boolean).map((p) => ({ id: p.id, title: p.title, votes: p.participants })));
+      setLoaded(true);
     });
     return () => {
       live = false;
     };
   }, []);
-  if (!rows.length) return null;
+  if (!rows.length) {
+    // The page's empty state waits until this phone's list has been read (no flash of "none yet").
+    return page && loaded ? <EmptyState kind="pen" title={t.myPollsEmpty} line={t.myPollsEmptyLine} action={{ href: '/create', label: t.startDuel }} /> : null;
+  }
   return (
     <section className="al-block" aria-label={t.yourPolls}>
-      <h2 className="al-block__title">{t.yourPolls}</h2>
+      {!page && <h2 className="al-block__title">{t.yourPolls}</h2>}
       <ul className="al-listcard">
         {rows.map((r) => (
           <li key={r.id}>

@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import DuelGame from '@/components/DuelGame';
 import EmptyState from '@/components/EmptyState';
-import MyPolls from '@/components/MyPolls';
 import RulesNotice from '@/components/RulesNotice';
 import DuelTiles from '@/components/DuelTiles';
 import PackRows from '@/components/PackRows';
@@ -72,7 +71,6 @@ export default async function Home() {
           <EmptyState kind="invite" title={t.homeEmptyTitle} line={t.homeEmptyLine} action={{ href: '/create', label: t.startDuel }} />
         </section>
       )}
-      <MyPolls />
 
       {/* P2: tonight's match-day and show-night packs, before predictions close. */}
       {tonight.length > 0 && (
