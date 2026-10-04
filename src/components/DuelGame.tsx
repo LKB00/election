@@ -18,6 +18,7 @@ import { useLang, useT } from '@/lib/lang';
 import { apiMsg, reasonLabel, type Dict, type Lang } from '@/lib/i18n';
 import { faceLabels } from '@/lib/labels';
 import { manageKeyFor } from './MyPolls';
+import PeopleGrid from './PeopleGrid';
 
 // Duels, played like patricka's "This or That": tap a card, see the result on the
 // cards, then "Next duel". Results stay hidden until you vote.
@@ -887,6 +888,11 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
             );
           })}
         </div>
+      )}
+
+      {/* Where you stand, as people (P2): 100 dots, yours in yellow. Pick-one polls once there is a crowd to stand in. */}
+      {revealed && !counting && mine && poll.kind === 'choice' && poll.totalVotes >= 2 && (
+        <PeopleGrid pct={pcts[poll.options.indexOf(mine)]} label={t.gridLabel} caption={t.gridMine(mine.label)} />
       )}
 
       {/* Pick several: the one main step is the Vote button under the ticks; it says how many you picked. */}

@@ -653,3 +653,26 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 /* No serial numbers outside Election mode (docs/DESIGN.md, "Choice numbers"): the ballot row drops its number column. */
 .is-ballot.no-num .duel-option { grid-template-columns: 1fr auto; grid-template-areas: "body side" "result result"; }
 .duel-options.no-num:not(.is-ballot) .tot-caption { left: 12px; }
+
+/* ---- Visual communication (docs/DESIGN.md, "Visual communication") ---- */
+/* People grid: 100 dots, yours in yellow with an ink ring on your own dot. */
+.people-grid { margin: 4px 0 0; display: flex; flex-direction: column; gap: 8px; }
+.people-grid__dots { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; max-width: 360px; }
+.people-grid__dot { aspect-ratio: 1; border-radius: 50%; background: var(--line); }
+.people-grid__dot.is-mine { background: var(--lime); }
+.people-grid__dot.is-you { box-shadow: 0 0 0 2px var(--ink); }
+.people-grid figcaption { font-size: 15px; line-height: 22px; }
+.people-grid__big { font-size: 28px; line-height: 32px; font-weight: 800; margin-right: 2px; }
+@media (prefers-reduced-motion: no-preference) {
+  .people-grid__dot.is-mine { animation: dot-in 0.3s calc(var(--n) * 6ms) ease backwards; }
+}
+@keyframes dot-in { from { transform: scale(0); } to { transform: scale(1); } }
+/* Spot pictures on empty pages: picture, one line, one action. */
+.spot { display: block; }
+.spot-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.spot-empty p { margin: 0; max-width: 40ch; }
+/* Topic chips with their picture; the topic page's big picture. */
+.topic-chip { display: inline-flex; align-items: center; gap: 8px; padding-left: 6px; }
+.topic-chip__disc { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--tone); color: var(--ink); }
+.topic-hero { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 18px; background: var(--tone); color: var(--ink); margin-bottom: 12px; }
+.al-hero__faces { margin: 4px 0 0; font-size: 40px; line-height: 48px; letter-spacing: 4px; }

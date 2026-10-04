@@ -746,3 +746,16 @@ A question about something that has not happened yet (a match, a film's Friday, 
 - **After:** the answer's card says "✓ What happened"; the most-picked one says "Most called" (not "Won"). The result bar says "Result is in: CSK." then "You called it, like 38% of people." (green) or "Not this time. 38% called it." My votes shows "Result: CSK · you called it" with the yellow tick disc.
 - **Not a score:** each poll stands alone. No running "7 of 12", no streak, no ranking of people.
 - Pick-one polls only; never politics (the server switches it off for politics).
+
+## Visual communication (owner, Oct 2026: "lack of visual communication design"; research: research_notes/Visual communication design/)
+
+Rule: pictures alongside words, never instead of them (people remember pictures better, but icons alone are misread). Every picture has a job:
+| Where | Was | Now | Why (research) |
+|---|---|---|---|
+| Poll result (pick-one, 2+ votes) | "You're with the 85%" as text | **People grid**: 100 dots, the ones who picked your choice in yellow (yellow = you), your own dot ringed in ink, and a big number: "**85** of every 100 picked Rain, like you." | Icon arrays ("85 of 100") are read more accurately than percentages, most of all by people who find numbers hard (Galesic, Garcia-Retamero); words say it too (colour never alone) |
+| Empty My votes, search with no results, page not found | one line of text | a small drawn picture (ballot box with a slip, slips with a magnifier, a box with a "?") + one line + one action | Simple drawn pictures help first-time and low-literacy users more than text (Microsoft Research India); empty states are the first impression |
+| Topic chips (Polls page) | words only | the topic's icon in its colour disc + the word | icon + label: recognised first, read to confirm |
+| Topic page | title only | big topic picture above the title | says what the page is before you read |
+| Up next card (Polls, topics) | question + text | the choices' own emoji, big ("🍵 ☕"), above the question | seen before read |
+
+Pictures are inline SVG in the Arogya palette (a few hundred bytes each, no downloads). The dots grow in once; with reduced motion they just appear. Kept out on purpose: saffron, flag green, party symbols, the ECI logo, red/green for won/lost (Indian political and legal sensitivity).

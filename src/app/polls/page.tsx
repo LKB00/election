@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import Spot from '@/components/Spot';
+import { topicIcon, topicTone } from '@/lib/topicIcons';
 import { Search } from 'lucide-react';
 import DuelBanner from '@/components/DuelBanner';
 import DuelTiles from '@/components/DuelTiles';
@@ -47,7 +49,8 @@ export default async function Duels({ searchParams }: { searchParams: Promise<{ 
           {polls.length > 0 ? (
             <DuelTiles polls={polls} votedIds={mine.map((v) => v.pollId)} noCreate />
           ) : (
-            <div className="search-none">
+            <div className="search-none spot-empty">
+              <Spot kind="search" />
               <p>{t.searchNone}</p>
               <Link href={`/create?title=${encodeURIComponent(q)}`} className="btn btn-primary">{t.searchAsk}</Link>
             </div>
@@ -85,7 +88,11 @@ export default async function Duels({ searchParams }: { searchParams: Promise<{ 
         <h2 className="al-block__title">{t.topics}</h2>
         <nav className="topic-chips block-tight" aria-label={t.topics}>
           {CATEGORIES.map((c) => (
-            <Link key={c} href={`/topic/${c}`} className="chip">{t.categories[c] ?? c}</Link>
+            <Link key={c} href={`/topic/${c}`} className="chip topic-chip">
+              {/* The topic's picture and colour, the same as on its poll rows. */}
+              <span className="topic-chip__disc" style={{ '--tone': topicTone(c) } as React.CSSProperties} aria-hidden>{(() => { const I = topicIcon(c); return <I size={14} strokeWidth={1.75} />; })()}</span>
+              {t.categories[c] ?? c}
+            </Link>
           ))}
         </nav>
       </section>

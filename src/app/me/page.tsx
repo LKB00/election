@@ -8,6 +8,7 @@ import { readVoterId, voterKeyForLink } from '@/lib/voter';
 import KeepVotes from '@/components/KeepVotes';
 import ResetFresh from '@/components/ResetFresh';
 import SinceLastLook from '@/components/SinceLastLook';
+import Spot from '@/components/Spot';
 import { getT } from '@/lib/lang-server';
 
 export const dynamic = 'force-dynamic';
@@ -56,7 +57,11 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
 
       <section className="block">
         {mine.length === 0 ? (
-          <p className="muted">{t.noVotes} <Link href="/" className="text-link">{t.startToday}</Link></p>
+          <div className="spot-empty">
+            <Spot kind="ballot" />
+            <p><strong>{t.noVotes}</strong> {t.spotNoVotes}</p>
+            <Link href="/" className="btn btn-primary">{t.startToday}</Link>
+          </div>
         ) : (
           <ul className="al-listcard block-tight">
             {mine.map((v) => {

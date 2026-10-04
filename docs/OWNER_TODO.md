@@ -44,6 +44,15 @@ Where: Vercel → your project **election** → Settings → Environment Variabl
 - [ ] **Name and domain:** the research suggested a broader name than "Election" one day. You chose to keep it for now; revisit when you are ready.
 - [ ] **Watch one number weekly:** "returning voters" at the bottom of `/admin` (people who voted on 2 or more days this week). Aim for 20–25% or more of the week's voters.
 
+## 6. Features waiting (from the research, in order)
+
+Say "continue features" and Claude picks up the next one.
+- [x] "Called it" polls (live)
+- [ ] Match-day and show-night packs: 3 short polls around a match or show, each closing at a set time
+- [ ] "Tell me the result" alert (one phone notification when the 9 pm result is ready)
+- [ ] Group polls that reveal together ("9 of 12 voted")
+- [ ] "Your month in opinions" card
+
 ## Done
 
 - (Move items here when finished.)
