@@ -854,7 +854,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
                 {!revealed && !poll.closed && (
                   <span className="evm-row" aria-hidden>
                     <span className={'evm-led' + (isMine || ticked ? ' is-on' : '')} />
-                    <span className="evm-btn">{multi && !voted ? (ranking ? (ticked ? `#${ticks.indexOf(o.id) + 1}` : t.rankTap) : ticked ? t.multiTicked : t.multiTick) : isMine ? t.voted : t.vote}</span>
+                    <span className="evm-btn">{multi && !voted ? (ranking ? (ticked ? t.rankRemove : t.rankNext(ticks.length + 1)) : ticked ? t.multiTicked : t.multiTick) : isMine ? t.voted : t.vote}</span>
                   </span>
                 )}
                 {justVoted === o.id && !counting && <Burst />}
@@ -868,7 +868,15 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
       {/* Pick several: the one main step is the Vote button under the ticks; it says how many you picked. */}
       {multi && !voted && !poll.closed && (
         <div className="multi-cast">
-          <p className="small muted">{ranking ? t.rankHint : t.multiHint}</p>
+          {/* Rank: your order written out as it builds, so you can check it before you vote. */}
+          {ranking && ticks.length > 0 ? (
+            <p className="small rank-order">
+              <strong>{t.rankYourOrder}</strong>{' '}
+              {ticks.map((id, k) => `${k + 1}. ${poll.options.find((o) => o.id === id)?.label ?? ''}`).join(' · ')}
+            </p>
+          ) : (
+            <p className="small muted">{ranking ? t.rankHint : t.multiHint}</p>
+          )}
           <button
             type="button"
             className="btn btn-primary btn-lg"
