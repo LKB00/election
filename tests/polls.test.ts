@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
   AUTO_HIDE_REPORTS, castVote, createPoll, deleteVoterData, getDeck, getFeaturedId, getMyVotes, getPoll, getReviewQueue, getVoterStats, guessLeader, listPolls,
-  reportPoll, setPollFlags, setReason, setToday, toggleReaction, undoVote,
+  GROUP_MIN, groupSplit, reportPoll, setPollFlags, setReason, setToday, toggleReaction, undoVote,
 } from '@/lib/polls';
 import { hasBlockedWord, namesPolitics } from '@/lib/moderation';
 import { activeSilence } from '@/lib/silence';
@@ -293,6 +293,29 @@ describe('friends', () => {
     expect((await getPoll(db, id, 'sharer'))!.friends).toEqual({ agree: 1, disagree: 1 });
     expect((await getVoterStats(db, 'sharer')).friends).toBe(2);
     expect((await getPoll(db, id, 'sharer', code))!.friend.known).toBe(false);
+  });
+
+  it('shows my group vs everyone only with enough friends, and never before results', async () => {
+    const id = await make({ title: 'Group check', options: ['A', 'B'] });
+    const [a, b] = (await getPoll(db, id, null))!.options;
+    await castVote(db, id, a.id, 'g-sharer');
+    const code = (await getPoll(db, id, 'g-sharer'))!.myShareCode!;
+    await castVote(db, id, a.id, 'g1', code);
+    await castVote(db, id, b.id, 'g2', code);
+    expect(GROUP_MIN).toBe(3);
+    expect((await getPoll(db, id, 'g-sharer'))!.group).toBeNull(); // 2 friends: too few
+    await castVote(db, id, a.id, 'g3', code);
+    for (const v of ['o1', 'o2', 'o3', 'o4']) await castVote(db, id, b.id, v);
+    // Group: me + g1 + g3 picked A of 4 = 75%. Everyone: 3 of 8 picked A = 38%.
+    expect((await getPoll(db, id, 'g-sharer'))!.group).toEqual({ size: 4, mine: 75, everyone: 38 });
+    expect(groupSplit(5, 0, 0, 0)).toBeNull();
+
+    const hidden = await make({ title: 'Group hidden', options: ['A', 'B'], hideUntilVoted: true });
+    const [ha] = (await getPoll(db, hidden, null))!.options;
+    await castVote(db, hidden, ha.id, 'h-sharer');
+    const hcode = (await getPoll(db, hidden, 'h-sharer'))!.myShareCode!;
+    for (const v of ['h1', 'h2', 'h3']) await castVote(db, hidden, ha.id, v, hcode);
+    expect((await getPoll(db, hidden, 'h-sharer'))!.group).toBeNull(); // has not guessed yet: results still hidden
   });
 });
 

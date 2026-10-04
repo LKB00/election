@@ -74,6 +74,10 @@ const en = {
   friendPicked: (name: string) => `Your friend picked ${name}`,
   agree: ': you agree!',
   disagree: ': you disagree!',
+  groupTitle: (label: string) => `Who picked ${label}, like you`,
+  groupMine: (n: number) => `Your group (${n})`,
+  groupAll: 'Everyone',
+  groupNote: 'You and the friends who voted from your link.',
   dares: (total: number, a: number, d: number) =>
     `${plural(total, 'friend', 'friends')} answered your dare: ${a} agree, ${d} ${d === 1 ? 'disagrees' : 'disagree'}.`,
   linkCopied: 'Link copied',
@@ -334,6 +338,7 @@ const en = {
   cardGuess: 'Guess who I picked?',
   cardScan: 'Scan to vote',
   cardFriends: (all: number, agree: number) => `${all} ${all === 1 ? 'friend' : 'friends'} voted from my link · ${agree} agree with me`,
+  cardGroup: (mine: number, label: string, all: number) => `${mine}% of my group picked ${label} · ${all}% of everyone`,
   ogAsk: 'Who would you pick? Tap to vote',
   ogPicked: (name: string) => `I voted for ${name}. Who would you pick?`,
   ogGuess: 'I voted. Guess who I picked?',
@@ -346,7 +351,7 @@ const en = {
 };
 
 export type Dict = Omit<typeof en, CardKeys>;
-type CardKeys = 'cardFun' | 'cardVoted' | 'cardIn' | 'cardMyVote' | 'cardPicked' | 'cardGuess' | 'cardScan' | 'cardFriends' | 'ogAsk' | 'ogPicked' | 'ogGuess' | 'ogVoted';
+type CardKeys = 'cardFun' | 'cardVoted' | 'cardIn' | 'cardMyVote' | 'cardPicked' | 'cardGuess' | 'cardScan' | 'cardFriends' | 'cardGroup' | 'ogAsk' | 'ogPicked' | 'ogGuess' | 'ogVoted';
 
 const hi: Dict = {
   home: 'होम',
@@ -409,6 +414,10 @@ const hi: Dict = {
   friendPicked: (name: string) => `आपके दोस्त ने ${name} को चुना`,
   agree: ': आप सहमत हैं!',
   disagree: ': आप असहमत हैं!',
+  groupTitle: (label: string) => `आपकी तरह ${label} किसने चुना`,
+  groupMine: (n: number) => `आपका ग्रुप (${n})`,
+  groupAll: 'सब लोग',
+  groupNote: 'आप और वे दोस्त जिन्होंने आपके लिंक से वोट किया।',
   dares: (total: number, a: number, d: number) => `${total} दोस्तों ने आपकी चुनौती का जवाब दिया: ${a} सहमत, ${d} असहमत।`,
   linkCopied: 'लिंक कॉपी हुआ',
   shareResult: 'नतीजा शेयर करें',
@@ -723,6 +732,10 @@ const hg: typeof en = {
   friendPicked: (name: string) => `Aapke dost ne ${name} ko chuna`,
   agree: ': aap sahmat ho!',
   disagree: ': aap asahmat ho!',
+  groupTitle: (label: string) => `Aapki tarah ${label} kisne chuna`,
+  groupMine: (n: number) => `Aapka group (${n})`,
+  groupAll: 'Sab log',
+  groupNote: 'Aap aur woh dost jinhone aapke link se vote kiya.',
   dares: (total: number, a: number, d: number) => `${total} doston ne aapki chunauti ka jawab diya: ${a} sahmat, ${d} asahmat.`,
   linkCopied: 'Link copy hua',
   shareResult: 'Nateeja share karo',
@@ -973,6 +986,7 @@ const hg: typeof en = {
   cardGuess: 'Batao maine kise chuna?',
   cardScan: 'Scan karke vote karo',
   cardFriends: (all: number, agree: number) => `Mere link se ${all} dost vote kar chuke · ${agree} mujhse sehmat`,
+  cardGroup: (mine: number, label: string, all: number) => `Mere group ke ${mine}% ne ${label} chuna · sabke ${all}%`,
   ogAsk: 'Aap kise chunoge? Tap karke vote karo',
   ogPicked: (name: string) => `Maine ${name} ko vote diya. Aap kise chunoge?`,
   ogGuess: 'Maine vote kiya. Batao kise chuna?',
