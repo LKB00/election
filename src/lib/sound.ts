@@ -1,6 +1,14 @@
 'use client';
 // The EVM beep: one long tone after you press the button. Short and soft, synthesized (no audio file).
 let ctx: AudioContext | null = null;
+// iPhones suspend sound after an app switch or a call; wake it up on every sound (they run from a tap).
+function audio(): AudioContext | null {
+  const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+  if (!AC) return null;
+  ctx ??= new AC();
+  if (ctx.state !== 'running') void ctx.resume().catch(() => {});
+  return ctx;
+}
 // People often vote in public: the beep can be switched off (top bar), and the choice is remembered on this phone.
 export function soundOn() {
   try {
@@ -20,9 +28,8 @@ export function setSound(on: boolean) {
 export function vvpatThud() {
   if (!soundOn()) return;
   try {
-    const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    if (!AC) return;
-    ctx ??= new AC();
+    const ctx = audio();
+    if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'sine';
@@ -42,9 +49,8 @@ export function vvpatThud() {
 export function evmBeep() {
   if (!soundOn()) return;
   try {
-    const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    if (!AC) return;
-    ctx ??= new AC();
+    const ctx = audio();
+    if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'square';
@@ -65,9 +71,8 @@ export function evmBeep() {
 function blip(type: OscillatorType, from: number, to: number, ms: number, vol: number) {
   if (!soundOn()) return;
   try {
-    const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    if (!AC) return;
-    ctx ??= new AC();
+    const ctx = audio();
+    if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     const end = ctx.currentTime + ms / 1000;

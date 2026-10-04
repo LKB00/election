@@ -19,5 +19,5 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!(await toggleReaction(db, id, voterId, parsed.data.emoji))) {
     return NextResponse.json({ error: 'Could not save that reaction.' }, { status: 400 });
   }
-  return NextResponse.json({ poll: await getPoll(db, id, voterId) });
+  return NextResponse.json({ poll: await getPoll(db, id, voterId, new URL(req.url).searchParams.get('f')) });
 }

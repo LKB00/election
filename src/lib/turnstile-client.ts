@@ -58,7 +58,8 @@ export async function humanToken(): Promise<string | null> {
     setTimeout(() => resolve(null), 8000);
   }));
   token = null;
-  // Each token works once: start the next one for the next vote.
-  if (widget) ts()?.reset(widget);
+  // Each token works once: start the next one for the next vote. Not after a timeout: that would wipe a check the
+  // person is still solving.
+  if (t && widget) ts()?.reset(widget);
   return t;
 }

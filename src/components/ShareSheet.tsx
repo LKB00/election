@@ -1,6 +1,6 @@
 'use client';
 import { Check, Download, EyeOff, Link2, MessageCircle, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useOverlay } from '@/lib/useOverlay';
 import type { PollOption, PollView } from '@/lib/polls';
@@ -35,9 +35,28 @@ export default function ShareSheet({ poll, pick, shareCode, onClose }: { poll: P
   // Phones: the page behind stays still, and the Back button closes the sheet (not the page).
   useOverlay(onClose, { back: true });
 
-  // Close with Escape, like any sheet.
+  // Like any sheet: Escape closes it, focus moves into it, Tab stays inside, and focus goes back to the Share button after.
+  const sheetRef = useRef<HTMLElement>(null);
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    const before = document.activeElement as HTMLElement | null;
+    sheetRef.current?.querySelector<HTMLElement>('button, a')?.focus({ preventScroll: true });
+    return () => before?.focus?.({ preventScroll: true });
+  }, []);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') return onClose();
+      if (e.key !== 'Tab' || !sheetRef.current) return;
+      const items = [...sheetRef.current.querySelectorAll<HTMLElement>('button:not(:disabled), a[href]')];
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last?.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first?.focus();
+      }
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
@@ -100,7 +119,7 @@ export default function ShareSheet({ poll, pick, shareCode, onClose }: { poll: P
   // Rendered at the top of the page, so the bottom bar never covers its buttons.
   return createPortal(
     <div className="sheet-backdrop" onClick={onClose}>
-      <section className="sheet" role="dialog" aria-modal="true" aria-label={t.showInk} onClick={(e) => e.stopPropagation()}>
+      <section ref={sheetRef} className="sheet" role="dialog" aria-modal="true" aria-label={t.showInk} onClick={(e) => e.stopPropagation()}>
         <button type="button" className="icon-btn sheet-close" onClick={onClose} aria-label={t.close}><X size={16} strokeWidth={1.75} aria-hidden /></button>
         <p className="label">{t.showInk}</p>
         <h2>{t.tellFriends}</h2>

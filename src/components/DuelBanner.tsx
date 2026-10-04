@@ -4,6 +4,7 @@ import { ArrowRight, Landmark } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { PollView } from '@/lib/polls';
 import { useT } from '@/lib/lang';
+import type { VotedEvent } from '@/lib/useStats';
 
 // The duel of the day, as patricka's dark Daily banner. Updates the moment you vote in it.
 export default function DuelBanner({ poll }: { poll: PollView }) {
@@ -12,10 +13,10 @@ export default function DuelBanner({ poll }: { poll: PollView }) {
   const [count, setCount] = useState(poll.participants);
   useEffect(() => {
     const on = (e: Event) => {
-      if ((e as CustomEvent).detail === poll.id && !done) {
-        setDone(true);
-        setCount((c) => c + 1);
-      }
+      const { id, delta } = (e as CustomEvent<VotedEvent>).detail ?? {};
+      if (id !== poll.id || (delta > 0) === done) return;
+      setDone(delta > 0);
+      setCount((c) => c + delta);
     };
     window.addEventListener('voted', on);
     return () => window.removeEventListener('voted', on);

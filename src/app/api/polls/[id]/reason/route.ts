@@ -20,5 +20,5 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!(await setReason(db, id, voterId, parsed.data.reason))) {
     return NextResponse.json({ error: 'Could not save that reason.' }, { status: 400 });
   }
-  return NextResponse.json({ poll: await getPoll(db, id, voterId) });
+  return NextResponse.json({ poll: await getPoll(db, id, voterId, new URL(req.url).searchParams.get('f')) });
 }
