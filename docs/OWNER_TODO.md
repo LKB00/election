@@ -35,7 +35,7 @@ Where: Vercel → your project **election** → Settings → Environment Variabl
 ## 4. Law and safety
 
 - [ ] **One review by an Indian tech lawyer** of the Rules page, Privacy page and the 18+ photo tick (the research is not legal advice).
-- [ ] **Election silence windows:** when the Election Commission announces poll dates, add them as `SILENCE_WINDOWS` on Vercel (example in `.env.example`), or ask Claude to add them. Politics results are then sealed in those windows.
+- [ ] **Election silence windows:** when the Election Commission announces poll dates, add them as `SILENCE_WINDOWS` on Vercel (example in `.env.example`), or ask Claude to add them. Politics results are then sealed in those windows. Cover the **whole voting period** (from the first phase's voting day to 30 minutes after the last phase ends), not just the last 48 hours: the Election Commission says predictions by "any person" in that period go against the law.
 - [ ] Every 3 months the site reminds people of the rules by itself. If you change the rules, ask Claude to update them (the "last updated" date changes with them).
 
 ## 5. Decisions waiting for you

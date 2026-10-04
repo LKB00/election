@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { getDb } from '@/db';
 import { createPoll } from '@/lib/polls';
@@ -13,6 +14,8 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Invalid poll' }, { status: 400 });
   }
-  const id = await createPoll(await getDb(), parsed.data);
-  return NextResponse.json({ id }, { status: 201 });
+  // The creator's private key: stays on their phone and lets them mark a "Called it" result later.
+  const manageKey = randomBytes(18).toString('base64url');
+  const id = await createPoll(await getDb(), parsed.data, manageKey);
+  return NextResponse.json({ id, manageKey }, { status: 201 });
 }

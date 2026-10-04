@@ -737,3 +737,12 @@ The 1, 2, 3 badges on choices came from the EVM, where each candidate has a seri
 - **Election mode** (politics, flagship, or when the creator turns it on): serial numbers stay, matching the EVM and the VVPAT slip.
 - **Rank polls**: no badge until you place a choice, then its place (#1, #2…).
 - **Everything else**: no number. Your pick is shown by its colour plus the "Your pick" caption (colour never alone). The Create preview follows the same rule.
+
+## "Called it" polls (research: reports/Next features for Election, #1)
+
+A question about something that has not happened yet (a match, a film's Friday, a show's eviction). Made on Create with the 🔮 Called it chip.
+- **Voters:** vote as usual. There is no "Guess the crowd" step, because the vote itself is the guess. Above the question, the label "🔮 Called it · answer when it happens" says why the poll is different (P2).
+- **Creator:** the phone that made the poll keeps a private key (localStorage; only its hash is stored). On that phone, the poll shows "Did it happen? Mark the answer" with one chip per choice (P1 for the creator), behind a confirm. Marking closes voting and cannot be changed. The owner's ADMIN_SECRET also works as the key.
+- **After:** the answer's card says "✓ What happened"; the most-picked one says "Most called" (not "Won"). The result bar says "Result is in: CSK." then "You called it, like 38% of people." (green) or "Not this time. 38% called it." My votes shows "Result: CSK · you called it" with the yellow tick disc.
+- **Not a score:** each poll stands alone. No running "7 of 12", no streak, no ranking of people.
+- Pick-one polls only; never politics (the server switches it off for politics).

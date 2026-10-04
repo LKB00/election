@@ -24,7 +24,7 @@ function faces(p: PollSummary): string {
 }
 // Every element earns its place: the choices line goes when the question already names every choice ("Dosa or idli?").
 function repeatsTitle(p: PollSummary): boolean {
-  if (p.kind !== 'choice') return false;
+  if (p.kind !== 'choice' || p.calledIt) return false;
   const title = p.title.toLocaleLowerCase();
   return p.options.every((o) => title.includes(o.toLocaleLowerCase().trim()));
 }
@@ -69,7 +69,7 @@ export default function DuelTiles({ polls, votedIds = [], noCreate = false, limi
                 <span className="al-row__title">{p.title}</span>
                 {/* Long polls (IPL's 10 teams) show the first three and how many more. */}
                 {!repeatsTitle(p) && <span className="al-row__meta">
-                  {p.kind === 'rating' ? t.tileRate : <>{p.kind === 'multi' ? `${t.tileMulti}: ` : p.kind === 'rank' ? `${t.tileRank}: ` : ''}{p.options.slice(0, 3).join(p.kind === 'multi' || p.kind === 'rank' ? ', ' : ' vs ')}{p.options.length > 3 && ` +${p.options.length - 3}`}</>}
+                  {p.kind === 'rating' ? t.tileRate : <>{p.calledIt ? `🔮 ${t.tileCalled}: ` : p.kind === 'multi' ? `${t.tileMulti}: ` : p.kind === 'rank' ? `${t.tileRank}: ` : ''}{p.options.slice(0, 3).join(p.kind === 'multi' || p.kind === 'rank' ? ', ' : ' vs ')}{p.options.length > 3 && ` +${p.options.length - 3}`}</>}
                 </span>}
               </span>
               <span className="al-row__when">

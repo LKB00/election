@@ -28,6 +28,13 @@ export const polls = pgTable(
     electionMode: boolean('election_mode').notNull().default(false),
     // What kind of question: 'choice' (pick one) or 'rating' (a 1–5 scale of faces). See src/lib/rating.ts.
     kind: text('kind').notNull().default('choice'),
+    // "Called it": a question about something that will happen. When it does, the creator marks the choice that came
+    // true (outcome = an option id) and every voter sees whether they called it. No score is kept across polls.
+    calledIt: boolean('called_it').notNull().default(false),
+    outcome: text('outcome'),
+    outcomeAt: timestamp('outcome_at', { withTimezone: true }),
+    // SHA-256 of the creator's private key (kept on their phone), which lets them mark the outcome.
+    manageHash: text('manage_hash'),
     endsAt: timestamp('ends_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
