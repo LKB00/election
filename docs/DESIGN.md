@@ -468,3 +468,16 @@ Found by testing every screen and API with odd inputs. Rules that came out of it
 | Picture sheet: big preview, "Photo from your phone" (ink, the sheet's one main action), the suggested emoji first (outlined), 30 popular emoji, "Or type any emoji", "No picture", "Done" | P2 | Emoji in one tap, a photo in two (camera or gallery). Back / Escape / tapping outside closes it. |
 | Photos are cut to the ballot's 4:5 shape, made small (480×600 JPEG, under ~110 KB) and re-drawn on the phone | – | Fast on Indian mobile data; the photo's hidden details (like where it was taken) are dropped before it leaves the phone. |
 | "Duels with photos appear in public lists after a quick check. Your own link works straight away." | P3 | People's photos are held like politics duels: they show in Home / Duels lists after the owner approves them on /admin (thumbnails shown there). The share link works at once. |
+
+### Create: build the ballot (owner: "the create feature looks like a form; it needs to be intuitive")
+
+No form fields any more: you make the ballot itself, and it looks the way voters will see it (the separate preview is gone).
+
+| Element | Level | Job / why |
+|---|---|---|
+| "Your ballot" card: the question typed as the big title (dashed line under it while empty, "Virat, Rohit or Dhoni?" as the example) | P1 | The first thing to do, in the place it will be shown. Enter moves to the first choice. |
+| Choice rows = real ballot rows: number, picture circle, the name typed straight into the row, the blue Vote key (faded, it is not pressable here) | P1 | Making the ballot, not filling a form. × removes a row (3+ choices). On phones up to 360 px wide the Vote key hides so long names fit. |
+| The next empty row, dashed: "+ Add a choice" | P2 | Grows by itself when you type in it (up to 10). |
+| One line of setting chips under the ballot: Results after voting (on), Votes can change, End time, Topic, Add details | P3 | Each switches on tap or opens its small box underneath; dark = on. Replaces "More options" and its switches. |
+| Ink button, full width on phones: "Write your question" → "Add 1 more choice" → "Create duel" | P1 action | Unchanged rule: one ink button that says the next step. |
+| Ideas, "Use these as the choices", pictures, auto emoji | – | As before (sections above). |

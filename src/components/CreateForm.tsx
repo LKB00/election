@@ -1,11 +1,10 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { ChevronDown, Clock, EyeOff, ImagePlus, Lightbulb, Repeat, Sparkles, X } from 'lucide-react';
+import { Clock, EyeOff, ImagePlus, Lightbulb, Repeat, Sparkles, X } from 'lucide-react';
 import { useState } from 'react';
 import { CATEGORIES } from '@/lib/categories';
 import { useLang, useT } from '@/lib/lang';
 import { apiMsg } from '@/lib/i18n';
-import { faceLabels } from '@/lib/labels';
 import { choicesFromQuestion, emojiFor } from '@/lib/createHelp';
 import PicturePicker, { type Picture } from './PicturePicker';
 
@@ -33,8 +32,8 @@ export default function CreateForm() {
   const [error, setError] = useState('');
   // Errors show under the field they belong to, and focus moves there.
   const [fieldError, setFieldError] = useState<{ title?: string; choices?: string; end?: string }>({});
-  // P3 settings stay folded: the promise is "30 seconds" (docs/DESIGN.md, Flow 3).
-  const [more, setMore] = useState(false);
+  // P3 settings are one line of chips; each opens its small box underneath, one at a time.
+  const [open, setOpen] = useState<'ends' | 'topic' | 'details' | null>(null);
 
   // Like a WhatsApp poll: typing in the last box adds the next empty one (up to 10), so there is no "add" step.
   const setChoice = (i: number, v: string) => {
@@ -70,7 +69,6 @@ export default function CreateForm() {
     const it = t.ideas[n];
     setTitle(it.q);
     fill(it.c);
-    setTimeout(() => document.querySelector('.create-preview')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
   }
   // Quick start: fill the shape of a common duel, then the person only types the question (and names).
   // Phone keyboards: Enter moves to the next box (it used to send a half-filled form); on the last choice it creates the duel.
@@ -90,7 +88,6 @@ export default function CreateForm() {
     const d = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000);
     return d.toISOString().slice(0, 16);
   };
-  const filledChoices = choices.map((c, i) => ({ label: c.trim(), emoji: emojiAt(i), photo: photos[i] ?? '' })).filter((c) => c.label);
 
   function check() {
     const filled = choices.map((c) => c.trim().replace(/\s+/g, ' ')).filter(Boolean);
@@ -104,7 +101,7 @@ export default function CreateForm() {
     else if (errs.choices) document.querySelector<HTMLInputElement>('input[data-choice]')?.focus();
     else if (errs.end) {
       // The end time sits under "More options": open it so the message is seen.
-      setMore(true);
+      setOpen('ends');
       setTimeout(() => document.getElementById('end')?.focus(), 0);
     }
     return !errs.title && !errs.choices && !errs.end;
@@ -137,25 +134,15 @@ export default function CreateForm() {
     setBusy(false);
   }
 
-  // Built only from patricka parts: .search fields, .chip choices, .me-row + .switch settings.
-  return (
-    <form className="me-stack" onSubmit={submit}>
-      <div className="duel-group">
-        <label className="label" htmlFor="title">{t.yourQuestion}</label>
-        <span className="search">
-          <input id="title" enterKeyHint="next" autoCapitalize="sentences" autoComplete="off" onKeyDown={(e) => onEnter(e, 'choice-0')} value={title} maxLength={120} placeholder={t.questionPh} aria-invalid={!!fieldError.title} onChange={(e) => { setTitle(e.target.value); setFieldError((f) => ({ ...f, title: undefined })); }} />
-        </span>
-        {title.length >= 100 && <p className="small muted create-count" aria-live="polite">{t.charsLeft(120 - title.length)}</p>}
-        {fieldError.title && <p className="field-error" role="alert">{fieldError.title}</p>}
-        {fromQuestion && (
-          <button type="button" className="create-suggest" onClick={() => fill(fromQuestion)}>
-            <Sparkles size={14} strokeWidth={1.75} aria-hidden />
-            <span><strong>{t.useAsChoices}</strong> <span className="muted">{fromQuestion.join(' · ')}</span></span>
-          </button>
-        )}
-      </div>
+  const TONES = ['input', 'feedback', 'control', 'agents', 'output', 'trust'];
+  const toggleOpen = (k: 'ends' | 'topic' | 'details') => setOpen((o) => (o === k ? null : k));
+  const endsLabel = endsAt ? new Date(endsAt).toLocaleString(lang === 'hi' ? 'hi-IN' : 'en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : t.setEnds;
 
-      {/* P3: ideas, only on an empty form (a blank page is the hardest part). */}
+  // Not a form: you build the ballot itself (docs/DESIGN.md, "Create: build the ballot"). The question is the big title,
+  // each choice is a ballot row (number, picture, name, the blue Vote key); what you see is what voters get.
+  return (
+    <form className="builder" onSubmit={submit}>
+      {/* P3: ideas, only on an empty ballot (a blank page is the hardest part). */}
       {!title.trim() && !typedChoices && (
         <div className="duel-group">
           <span className="label"><Lightbulb size={12} strokeWidth={1.75} aria-hidden /> {t.ideasLabel}</span>
@@ -168,107 +155,140 @@ export default function CreateForm() {
         </div>
       )}
 
-      <div className="duel-group">
-        <span className="label">{t.choicesLabel}</span>
-        {choices.map((c, i) => (
-          <div className="row" key={i}>
-            {/* The choice's picture: tap for the sheet (emoji suggestions, popular emoji, or a photo from the phone). */}
-            <button
-              type="button"
-              className={'face-pick' + (photos[i] ? ' has-photo' : emojiAt(i) ? (touched[i] ? ' has-emoji' : ' has-emoji is-auto') : '')}
-              aria-label={t.pictureN(i + 1)}
-              title={!touched[i] && !photos[i] && emojiAt(i) ? t.emojiAuto : undefined}
-              onClick={() => setPicking(i)}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              {photos[i] ? <img src={photos[i]} alt="" /> : emojiAt(i) ? <span>{emojiAt(i)}</span> : <ImagePlus size={18} strokeWidth={1.75} aria-hidden />}
-            </button>
-            <span className="search">
-              <input id={`choice-${i}`} enterKeyHint={i < choices.length - 1 ? 'next' : 'go'} autoCapitalize="words" autoComplete="off" onKeyDown={(e) => onEnter(e, i < choices.length - 1 ? `choice-${i + 1}` : null)} data-choice value={c} maxLength={60} aria-label={t.choiceN(i + 1)} placeholder={t.choiceN(i + 1)} aria-invalid={!!fieldError.choices} onChange={(e) => { setChoice(i, e.target.value); setFieldError((f) => ({ ...f, choices: undefined })); }} />
-            </span>
-            {choices.length > 2 && !(i === choices.length - 1 && !c.trim()) && (
-              <button type="button" className="icon-btn" aria-label={t.removeChoice(i + 1)} onClick={() => removeChoice(i)}>
-                <X size={16} strokeWidth={1.75} aria-hidden />
-              </button>
-            )}
-          </div>
-        ))}
+      <section className="tot builder-ballot" aria-label={t.ballotLabel}>
+        <p className="label">{t.ballotLabel}</p>
+        <textarea
+          id="title"
+          className="display builder-q"
+          rows={1}
+          enterKeyHint="next"
+          autoCapitalize="sentences"
+          autoComplete="off"
+          value={title}
+          maxLength={120}
+          placeholder={t.questionPh}
+          aria-label={t.yourQuestion}
+          aria-invalid={!!fieldError.title}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              document.getElementById('choice-0')?.focus();
+            }
+          }}
+          onChange={(e) => {
+            setTitle(e.target.value.replace(/\n/g, ' '));
+            setFieldError((f) => ({ ...f, title: undefined }));
+          }}
+        />
+        {title.length >= 100 && <p className="small muted create-count" aria-live="polite">{t.charsLeft(120 - title.length)}</p>}
+        {fieldError.title && <p className="field-error" role="alert">{fieldError.title}</p>}
+        {fromQuestion && (
+          <button type="button" className="create-suggest" onClick={() => fill(fromQuestion)}>
+            <Sparkles size={14} strokeWidth={1.75} aria-hidden />
+            <span><strong>{t.useAsChoices}</strong> <span className="muted">{fromQuestion.join(' · ')}</span></span>
+          </button>
+        )}
+        {!title.trim() && !typedChoices && <p className="small muted builder-hint">{t.builderHint}</p>}
+
+        <div className="tot-options duel-options is-ballot builder-rows">
+          {choices.map((c, i) => {
+            const isNew = i === choices.length - 1 && !c.trim() && choices.length > 2;
+            return (
+              <div
+                key={i}
+                className={'tot-option duel-option builder-row' + (isNew ? ' is-new' : '')}
+                style={{ '--pc': `var(--p-${TONES[i % TONES.length]})` } as React.CSSProperties}
+              >
+                <span className="tot-letter">{i + 1}</span>
+                <span className="duel-body">
+                  {/* The choice's picture: tap for emoji suggestions, popular emoji, or a photo from the phone. */}
+                  <button
+                    type="button"
+                    className={'face-pick' + (photos[i] ? ' has-photo' : emojiAt(i) ? (touched[i] ? ' has-emoji' : ' has-emoji is-auto') : '')}
+                    aria-label={t.pictureN(i + 1)}
+                    title={!touched[i] && !photos[i] && emojiAt(i) ? t.emojiAuto : undefined}
+                    onClick={() => setPicking(i)}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    {photos[i] ? <img src={photos[i]} alt="" /> : emojiAt(i) ? <span>{emojiAt(i)}</span> : <ImagePlus size={18} strokeWidth={1.75} aria-hidden />}
+                  </button>
+                  <input
+                    id={`choice-${i}`}
+                    className="duel-name builder-name"
+                    enterKeyHint={i < choices.length - 1 ? 'next' : 'go'}
+                    autoCapitalize="words"
+                    autoComplete="off"
+                    data-choice
+                    value={c}
+                    maxLength={60}
+                    aria-label={t.choiceN(i + 1)}
+                    placeholder={isNew ? `+ ${t.addChoiceRow}` : t.choiceN(i + 1)}
+                    aria-invalid={!!fieldError.choices}
+                    onKeyDown={(e) => onEnter(e, i < choices.length - 1 ? `choice-${i + 1}` : null)}
+                    onChange={(e) => {
+                      setChoice(i, e.target.value);
+                      setFieldError((f) => ({ ...f, choices: undefined }));
+                    }}
+                  />
+                </span>
+                <span className="evm-row">
+                  {choices.length > 2 && !isNew ? (
+                    <button type="button" className="icon-btn builder-remove" aria-label={t.removeChoice(i + 1)} onClick={() => removeChoice(i)}>
+                      <X size={14} strokeWidth={1.75} aria-hidden />
+                    </button>
+                  ) : (
+                    <span className="evm-led" aria-hidden />
+                  )}
+                  <span className="evm-btn" aria-hidden>{t.vote}</span>
+                </span>
+              </div>
+            );
+          })}
+        </div>
         {fieldError.choices && <p className="field-error" role="alert">{fieldError.choices}</p>}
+      </section>
+
+      {/* P3 settings as one line of chips: tap to switch, or to open its small box underneath. */}
+      <div className="builder-settings" role="group" aria-label={t.moreOptions}>
+        <button type="button" className={'chip' + (hideUntilVoted ? ' chip-on' : '')} aria-pressed={hideUntilVoted} title={t.hideResultsNote} onClick={() => setHide((v) => !v)}>
+          <EyeOff size={13} strokeWidth={1.75} aria-hidden /> {t.setHidden}
+        </button>
+        <button type="button" className={'chip' + (allowChange ? ' chip-on' : '')} aria-pressed={allowChange} title={t.allowChangeNote} onClick={() => setChange((v) => !v)}>
+          <Repeat size={13} strokeWidth={1.75} aria-hidden /> {t.setChange}
+        </button>
+        <button type="button" className={'chip' + (endsAt ? ' chip-on' : '')} aria-expanded={open === 'ends'} onClick={() => toggleOpen('ends')}>
+          <Clock size={13} strokeWidth={1.75} aria-hidden /> <span suppressHydrationWarning>{endsLabel}</span>
+        </button>
+        <button type="button" className="chip" aria-expanded={open === 'topic'} onClick={() => toggleOpen('topic')}>
+          {t.setTopic(t.categories[category] ?? category)}
+        </button>
+        <button type="button" className={'chip' + (description.trim() ? ' chip-on' : '')} aria-expanded={open === 'details'} onClick={() => toggleOpen('details')}>
+          {t.setDetails}
+        </button>
       </div>
-
-      <button type="button" className="chip duel-add" aria-expanded={more} onClick={() => setMore((m) => !m)}>
-        <ChevronDown size={14} strokeWidth={1.75} aria-hidden style={{ transform: more ? 'rotate(180deg)' : undefined }} /> {t.moreOptions}
-      </button>
-
-      {more && (
-      <>
-      <div className="duel-group">
-        <label className="label" htmlFor="desc">{t.details}</label>
-        <span className="search">
-          <input id="desc" enterKeyHint="done" onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()} value={description} maxLength={300} placeholder={t.detailsPh} onChange={(e) => setDescription(e.target.value)} />
-        </span>
-      </div>
-
-      <div className="duel-group">
-        <span className="label">{t.category}</span>
+      {(open === 'ends' || fieldError.end) && (
+        <div className="duel-group">
+          <span className="search">
+            <Clock size={14} strokeWidth={1.75} aria-hidden />
+            <input id="end" type="datetime-local" min={localNow()} value={endsAt} aria-label={t.ends} aria-invalid={!!fieldError.end} onChange={(e) => { setEndsAt(e.target.value); setFieldError((f) => ({ ...f, end: undefined })); }} />
+          </span>
+          {endsAt && <button type="button" className="link-like small muted" onClick={() => setEndsAt('')}>{t.endsClear}</button>}
+          {fieldError.end && <p className="field-error" role="alert">{fieldError.end}</p>}
+        </div>
+      )}
+      {open === 'topic' && (
         <div className="row wrap" role="radiogroup" aria-label={t.category}>
           {CATEGORIES.map((c) => (
-            <button key={c} type="button" role="radio" aria-checked={category === c} className={'chip' + (category === c ? ' chip-on' : '')} onClick={() => setCategory(c)}>
+            <button key={c} type="button" role="radio" aria-checked={category === c} className={'chip' + (category === c ? ' chip-on' : '')} onClick={() => { setCategory(c); setOpen(null); }}>
               {t.categories[c] ?? c}
             </button>
           ))}
         </div>
-      </div>
-
-      <div className="duel-group">
-        <label className="label" htmlFor="end">{t.ends}</label>
-        <span className="search">
-          <Clock size={14} strokeWidth={1.75} aria-hidden />
-          <input id="end" type="datetime-local" min={localNow()} value={endsAt} aria-invalid={!!fieldError.end} onChange={(e) => { setEndsAt(e.target.value); setFieldError((f) => ({ ...f, end: undefined })); }} />
-        </span>
-        {fieldError.end && <p className="field-error" role="alert">{fieldError.end}</p>}
-      </div>
-
-      <div className="me-stack">
-        <button type="button" className="me-row" onClick={() => setHide((v) => !v)} aria-pressed={hideUntilVoted}>
-          <EyeOff size={20} strokeWidth={1.75} aria-hidden />
-          <span><strong>{t.hideResults}</strong><span className="small muted">{t.hideResultsNote}</span></span>
-          <span className={'switch' + (hideUntilVoted ? ' is-on' : '')} aria-hidden />
-        </button>
-        <button type="button" className="me-row" onClick={() => setChange((v) => !v)} aria-pressed={allowChange}>
-          <Repeat size={20} strokeWidth={1.75} aria-hidden />
-          <span><strong>{t.allowChange}</strong><span className="small muted">{t.allowChangeNote}</span></span>
-          <span className={'switch' + (allowChange ? ' is-on' : '')} aria-hidden />
-        </button>
-      </div>
-      </>
       )}
-
-      {/* P3: what voters will see, as you type (rows like the EVM ballot unit). */}
-      {(title.trim() || filledChoices.length > 0) && (
-        <section className="create-preview" aria-label={t.preview}>
-          <p className="label">{t.preview}</p>
-          {title.trim() && <p className="display duel-q">{title.trim()}</p>}
-          {filledChoices.length > 0 && (
-            <div className="tot-options duel-options is-ballot" aria-hidden>
-              {filledChoices.map((c, n) => (
-                <span key={n} className="tot-option duel-option" style={{ '--pc': `var(--p-${['input', 'feedback', 'control', 'agents', 'output', 'trust'][n % 6]})` } as React.CSSProperties}>
-                  <span className="tot-letter">{n + 1}</span>
-                  <span className="duel-body">
-                    {c.photo ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <span className="duel-photo"><img src={c.photo} alt="" /></span>
-                    ) : (
-                      <span className={'duel-face' + (c.emoji ? ' has-emoji' : '')}><span>{c.emoji || faceLabels(filledChoices.map((x) => x.label))[n]}</span></span>
-                    )}
-                    <span className="duel-text"><span className="duel-name">{c.label}</span></span>
-                  </span>
-                  <span className="evm-row"><span className="evm-led" /><span className="evm-btn">{t.vote}</span></span>
-                </span>
-              ))}
-            </div>
-          )}
-        </section>
+      {open === 'details' && (
+        <span className="search">
+          <input id="desc" enterKeyHint="done" onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), setOpen(null))} value={description} maxLength={300} placeholder={t.detailsPh} aria-label={t.details} onChange={(e) => setDescription(e.target.value)} />
+        </span>
       )}
 
       {photos.some(Boolean) && <p className="small muted">{t.photosHeld}</p>}
@@ -282,8 +302,9 @@ export default function CreateForm() {
           onClose={() => setPicking(null)}
         />
       )}
-      <div className="row">
-        <button className="btn btn-primary btn-lg" disabled={busy}>{buttonText}</button>
+      {/* The one main step, pinned at thumb height on phones (like Next on a duel). */}
+      <div className="builder-go">
+        <button className={'btn btn-primary btn-lg' + (title.trim().length >= 3 && filledCount >= 2 ? ' is-ready' : '')} disabled={busy}>{buttonText}</button>
       </div>
     </form>
   );
