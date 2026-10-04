@@ -54,7 +54,7 @@ Say "continue features" and Claude picks up the next one.
 - [x] Match-day and show-night packs (Create → "Make a match-day or show-night pack"). Tip: make one each IPL match morning and post its link in your WhatsApp Channel.
 - [x] "Tell me the result" alert: built. **It needs 4 settings on Vercel to switch on** (see section 1).
 - [x] Group polls that reveal together: Create → More options → Group poll. Good for office lunch, class trips, family plans.
-- [ ] "Your month in opinions" card
+- [x] "Your month in opinions" card (on My votes after 3+ votes in a month). Idea: on the 1st of each month, post "Share your month" in your WhatsApp Channel.
 
 ## Done
 

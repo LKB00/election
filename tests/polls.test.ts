@@ -979,3 +979,34 @@ describe('no crowd guess on group or called-it polls', () => {
     }
   });
 });
+
+describe('month in opinions', () => {
+  it('describes this month from visible results only, leaves out politics, and never counts hidden numbers', async () => {
+    const { getMonth } = await import('@/lib/month');
+    const ids = [];
+    for (const n of [0, 1, 2, 3]) {
+      const id = await make({ title: `Month poll ${n}`, category: 'food' });
+      const p = (await getPoll(db, id, null))!;
+      // Four others pick Virat; "me" picks Virat on 0 and 1, Dhoni on 2 and 3 (a rare take needs 5+ voters).
+      for (const k of [1, 2, 3, 4]) await castVote(db, id, p.options[0].id, `mo${n}-${k}`);
+      await castVote(db, id, p.options[n < 2 ? 0 : 2].id, 'month-me');
+      ids.push(id);
+    }
+    // A hidden-results poll I have not guessed on: it must not count.
+    const hidden = await make({ title: 'Hidden one', hideUntilVoted: true });
+    const h = (await getPoll(db, hidden, null))!;
+    for (const k of [1, 2, 3]) await castVote(db, hidden, h.options[0].id, `mh-${k}`);
+    await castVote(db, hidden, h.options[0].id, 'month-me');
+    const politics = await make({ title: 'Will Modi win?' });
+    const pp = (await getPoll(db, politics, null))!;
+    await castVote(db, politics, pp.options[0].id, 'month-me');
+    const m = (await getMonth(db, 'month-me'))!;
+    expect(m.polls).toBe(5); // 4 food + the hidden one; politics left out
+    expect(m.judged).toBe(4);
+    expect(m.withCrowd).toBe(2);
+    expect(m.grid).toBe('🟩🟩🟪🟪');
+    expect(m.type).toBe('mix');
+    expect(m.rarest).toEqual({ title: 'Month poll 2', pick: 'Dhoni', pct: 20 });
+    expect(m.topCategory).toBe('food');
+  });
+});
