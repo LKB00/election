@@ -5,15 +5,16 @@ import { schema, type Db } from '@/db';
 import { isCode } from './validation';
 
 // Shared by the share images (link preview and story card).
-const fontDir = path.join(process.cwd(), 'node_modules/@fontsource/lato/files');
+// Figtree, the Arogya Line typeface (static .woff files: the image renderer cannot read variable fonts).
+const fontDir = path.join(process.cwd(), 'node_modules/@fontsource/figtree/files');
 let fontCache: Promise<{ name: string; data: Buffer; weight: 400 | 700; style: 'normal' }[]> | null = null;
 export function cardFonts() {
   fontCache ??= Promise.all([
-    readFile(path.join(fontDir, 'lato-latin-400-normal.woff')),
-    readFile(path.join(fontDir, 'lato-latin-700-normal.woff')),
+    readFile(path.join(fontDir, 'figtree-latin-400-normal.woff')),
+    readFile(path.join(fontDir, 'figtree-latin-600-normal.woff')),
   ]).then(([r, b]) => [
-    { name: 'Lato', data: r, weight: 400 as const, style: 'normal' as const },
-    { name: 'Lato', data: b, weight: 700 as const, style: 'normal' as const },
+    { name: 'Figtree', data: r, weight: 400 as const, style: 'normal' as const },
+    { name: 'Figtree', data: b, weight: 700 as const, style: 'normal' as const },
   ]);
   return fontCache;
 }
@@ -29,7 +30,8 @@ export async function pickFromCode(db: Db, pollId: string, code: string | null) 
   return v?.optionId ?? null;
 }
 
-export const CARD = { ink: '#24282c', paper: '#fbfbf7', sand: '#f7f6f0', lime: '#c2ef72', green: '#5a7a1f', muted: '#5b5e61', tints: ['#e5eef7', '#f6e8ec', '#eef3dc', '#f5efd8'] };
+// The Arogya Line palette (same values as src/styles/arogya.css). "lime" is the brand yellow: the colour of "you".
+export const CARD = { ink: '#1d1b18', paper: '#fbf9f6', sand: '#f5f2ed', lime: '#fcd12a', green: '#2f7d4f', muted: '#5e5a53', tints: ['#e0e3ff', '#fce4ec', '#ddf1e3', '#fdf4df'] };
 export { faceLabels } from './labels';
 
 /** Friends who voted from this share link, and how many picked the same as the sender. Never says who leads. */

@@ -6,9 +6,9 @@ export function appIcon(size: number) {
   const dot = Math.round(size * 0.2);
   return new ImageResponse(
     (
-      <div style={{ width: size, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fbfbf7' }}>
-        <div style={{ width: disc, height: disc, borderRadius: disc, background: '#24282c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: dot, height: dot, borderRadius: dot, background: '#c2ef72' }} />
+      <div style={{ width: size, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fbf9f6' }}>
+        <div style={{ width: disc, height: disc, borderRadius: disc, background: '#1d1b18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: dot, height: dot, borderRadius: dot, background: '#fcd12a' }} />
         </div>
       </div>
     ),

@@ -645,3 +645,19 @@ The research says Election already has the right loop (guess → vote → reveal
 | My votes: "Lead changed! · +12 new votes" under a poll, since you last looked (green = news) | My votes | The true, small news that makes coming back worth it. Remembered only on this phone; shown once per change; only what the poll already shows you (a lead you cannot see yet never appears). |
 | From a friend's link: "You agree with your friend." (green) / "You and your friend disagree." + "They picked Dosa." as the **first** line of the result, and "· your friend" on their card | Poll, after voting via a friend's link | Agreeing or disagreeing with someone you know is the strongest social moment and what people reply about; it used to be the last small sentence. Still hidden until you have voted (and guessed). |
 | Rank: unplaced rows say "→ #2" (the place they would get), placed rows say "Remove"; "Your order: 1. DDLJ · 2. Sholay · 3. 3 Idiots" builds above Vote | Poll (rank) | The number used to show twice and nothing said a second tap removes a choice; now each tap says what it will do, and you can check the whole order before voting. Rows never move under your finger. |
+
+## The Arogya Line look (owner: "make the Election website look visually like Arogya Line")
+
+Every screen, flow and rule stays the same; only the look changes, in one file (`src/styles/arogya.css`, loaded last). Values come from the Arogya Line prototype (LKB00/arogya-line, `src/styles/tokens.css`).
+
+| Part | Was (patricka) | Now (Arogya Line) | Why |
+|---|---|---|---|
+| Type | Bricolage Grotesque headings + Lato | **Figtree** everywhere, semibold titles pulled in (-0.02em); Hindi falls back to Noto Sans Devanagari | Arogya's one calm typeface. |
+| Ground and cards | Cream paper, borderless pastel cards | Warm off-white (#fbf9f6), white cards with a thin warm border (#e7e2da), 18px corners, a whisper of shadow | Arogya's ASHA app. |
+| "You" colour | Lime #c2ef72 | **Brand yellow #fcd12a** (`--lime` keeps its name in code) | Arogya's brand and selected-tab colour. The "lime = you" rule is now "yellow = you". |
+| Main action | Ink pill | Ink pill (unchanged) | Arogya: "the action colour is ink". |
+| Vote keys, selected chips | Pastel blue key, ink chip | Soft indigo container (#e0e3ff) with indigo ink (#13205e) | Arogya's "Check someone" button and selected filters. |
+| Signals | Olive green / brick red / amber | Arogya's green #2f7d4f, pink #b42b5e, marigold | Its triage colours. |
+| Poll tiles | Solid pastel blocks | White cards; the tone fills only a round circle behind the topic icon | Arogya keeps cards white and puts colour in small round icons. |
+| Dark mode | Dark palette | One light look | Arogya Line has no dark mode. |
+| Share images, app icon | Lato, lime | Figtree, Arogya palette | Same look in WhatsApp as on the site. |
