@@ -112,7 +112,7 @@ export function SignInPanel({ onDone, startBack = false, onPage = false }: { onD
 }
 
 /** The same screen as a sheet over Create (the poll stays filled in behind it). */
-export default function SignInSheet({ onDone, onClose }: { onDone: (user: Profile) => void; onClose: () => void }) {
+export default function SignInSheet({ onDone, onClose, startBack = false, onPage = false }: { onDone: (user: Profile) => void; onClose: () => void; startBack?: boolean; onPage?: boolean }) {
   const t = useT();
   useOverlay(onClose, { back: true });
   const ref = useRef<HTMLDivElement>(null);
@@ -130,7 +130,7 @@ export default function SignInSheet({ onDone, onClose }: { onDone: (user: Profil
     <div className="sheet-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div ref={ref} className="sheet signin-sheet" role="dialog" aria-modal="true" aria-label={t.signTitleNew}>
         <button type="button" className="icon-btn sheet-close" onClick={onClose} aria-label={t.close}><X size={18} strokeWidth={2} aria-hidden /></button>
-        <SignInPanel onDone={onDone} />
+        <SignInPanel onDone={onDone} startBack={startBack} onPage={onPage} />
       </div>
     </div>,
     document.body,

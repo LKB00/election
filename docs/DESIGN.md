@@ -906,3 +906,16 @@ Follows the phone's setting (light by default). Every colour is a token in `src/
 ## No tab-name headings (owner, Oct 2026: "if Polls tab is selected there is no need of heading called Polls, and on the rest of the pages")
 
 The bottom bar already says where you are (the yellow tab), so Polls, My votes and You no longer show a big "Polls" / "My votes" / "You" title. Each page keeps it as a hidden heading for screen readers. Polls opens straight on search and topics; the generic line under the old title went too. Pages that are not tabs (a topic, Create, a poll, the maker's page) keep their titles: they say what you are looking at.
+
+## Empty pages, uncluttered (owner, Oct 2026: "empty state pages are so congested, and there are UI elements which are irrelevant on an empty state")
+
+One shape everywhere (`EmptyState`): the picture, a short **title** on its own line (no full stop), **one line** under it, **one ink button**, and at most one quiet text link. Centred, with room around it; a page that is only an empty state sits in the middle of the screen (`.empty-page`).
+
+What an empty page no longer shows, because there is nothing for it to act on:
+- **Home (empty site):** no date and greeting, no rules reminder.
+- **Polls (no polls at all):** no search box, no topic chips (every topic would be empty too).
+- **A topic:** no general "vote in one tap…" line, and the big topic title is screen-reader only (the picture already says "No Cricket polls yet").
+- **Search, nothing found:** no heading repeating the search, no boxed frame; "Clear search" is the quiet link under the button.
+- **My votes (no votes):** no "saved on this device" note, no keep-my-votes, no Reset (TEMPORARY) box, no rules links.
+- **You (signed out):** the lock picture, "Make your profile", one line of promises (only for making polls, votes stay secret, no password/phone/email), one button; the name, faces and the full promises open in the sheet only when tapped. "Already have a profile? Sign in" is the quiet link.
+- **Poll not found:** the same shape.

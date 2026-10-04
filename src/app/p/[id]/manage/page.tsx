@@ -23,7 +23,7 @@ export default async function ManagePage({ params }: { params: Promise<{ id: str
   if (!user) {
     return (
       <div className="page">
-        <section className="block"><YouSignIn /></section>
+        <section className="block"><YouSignIn full /></section>
       </div>
     );
   }

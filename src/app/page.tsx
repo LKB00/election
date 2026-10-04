@@ -54,12 +54,16 @@ export default async function Home() {
   // Arogya Line's Today header: the date and a greeting. The size of the day ("4 left today") sits once, in today's
   // question label just below, where it updates as you vote (it used to be said twice).
 
+  // An empty site shows only its empty state: no greeting, no rules reminder (nothing to be kind about yet).
+  const empty = deck.length === 0 && !tonight.length && !hot.length && !shelves.length && !polls.length;
   return (
     <div className="page page-wide">
-      <header className="al-home">
-        <p className="al-home__date" suppressHydrationWarning>{t.homeDate(new Date())}</p>
-        <p className="al-home__title">{t.homeHello}</p>
-      </header>
+      {!empty && (
+        <header className="al-home">
+          <p className="al-home__date" suppressHydrationWarning>{t.homeDate(new Date())}</p>
+          <p className="al-home__title">{t.homeHello}</p>
+        </header>
+      )}
       {deck.length > 0 && (
         <section className="home-game duel-first" aria-label="Duel">
           <DuelGame deck={deck} todayId={todayId} daily more={more} />
@@ -67,7 +71,7 @@ export default async function Home() {
       )}
       {/* Empty: nothing open today (a new site, or a quiet day). */}
       {deck.length === 0 && (
-        <section className="block">
+        <section className={empty ? 'empty-page' : 'block'}>
           <EmptyState kind="invite" title={t.homeEmptyTitle} line={t.homeEmptyLine} action={{ href: '/create', label: t.startDuel }} />
         </section>
       )}
@@ -106,7 +110,7 @@ export default async function Home() {
         </section>
       )}
       {/* P3: the 3-monthly rules reminder sits last, after everything there is to do. */}
-      <RulesNotice />
+      {!empty && <RulesNotice />}
     </div>
   );
 }

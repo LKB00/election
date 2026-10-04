@@ -555,8 +555,6 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .poll-search { gap: 8px; margin-top: 16px; flex-wrap: nowrap; }
 .poll-search .search { max-width: 420px; height: 40px; }
 .poll-search .search input { font-size: 16px; } /* 16px stops phones zooming in on focus */
-.search-none { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 20px; border: var(--hair) dashed var(--line); border-radius: 12px; background: var(--card); }
-.search-none p { margin: 0; }
 
 /* My group vs everyone (P2, after the vote): two thin bars, lime for your group, quiet grey for everyone. */
 .group-vs { display: flex; flex-direction: column; gap: 10px; }
@@ -669,8 +667,14 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 @keyframes dot-in { from { transform: scale(0); } to { transform: scale(1); } }
 /* Spot pictures on empty pages: picture, one line, one action. */
 .spot { display: block; }
-.spot-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
-.spot-empty p { margin: 0; max-width: 40ch; }
+.spot-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 24px 8px 32px; text-align: center; }
+.spot-empty .spot { margin-bottom: 12px; }
+.spot-empty__title { margin: 0; max-width: 24ch; font: 700 22px / 28px var(--display); letter-spacing: -0.01em; text-wrap: balance; }
+.spot-empty__line { margin: 0; max-width: 32ch; color: var(--ink-2); font-size: 16px; line-height: 24px; text-wrap: pretty; }
+.spot-empty__go { margin-top: 16px; min-width: 200px; }
+.spot-empty__more { margin-top: 4px; padding: 8px; }
+/* A page that is only an empty state: the picture and its words sit in the middle of the screen, with air around. */
+.empty-page { display: flex; flex-direction: column; justify-content: center; min-height: calc(100dvh - 220px); }
 /* Topic chips with their picture; the topic page's big picture. */
 .topic-chip { display: inline-flex; align-items: center; gap: 8px; padding-left: 6px; }
 .topic-chip__disc { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--tone); color: var(--ink); }

@@ -10,7 +10,7 @@ import ResetFresh from '@/components/ResetFresh';
 import SinceLastLook from '@/components/SinceLastLook';
 import MonthCard from '@/components/MonthCard';
 import { getMonth } from '@/lib/month';
-import Spot from '@/components/Spot';
+import EmptyState from '@/components/EmptyState';
 import { getT } from '@/lib/lang-server';
 
 export const dynamic = 'force-dynamic';
@@ -38,7 +38,7 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
   const t = await getT();
 
   return (
-    <div className="page">
+    <div className={'page' + (mine.length === 0 && !restored && !deleted && !swap ? ' empty-page' : '')}>
       <header className="page-head page-head-tight">
         <h1 className="sr-only">{t.myVotes}</h1>
         {(restored || deleted) && <p className="small duel-friend" role="status">{restored ? t.restored : t.deleted}</p>}
@@ -66,12 +66,8 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
       )}
       <section className="block">
         {mine.length === 0 ? (
-          <div className="spot-empty">
-            <Spot kind="finger" />
-            <p><strong>{t.noVotes}</strong> {t.spotNoVotes}</p>
-            {/* Nothing to vote on yet: the next step is making the first poll. */}
-            {open.length > 0 ? <Link href="/" className="btn btn-primary">{t.startToday}</Link> : <Link href="/create" className="btn btn-primary">{t.startDuel}</Link>}
-          </div>
+          // Nothing to vote on yet: the next step is making the first poll.
+          <EmptyState kind="finger" title={t.noVotes} line={t.spotNoVotes} action={open.length > 0 ? { href: '/', label: t.startToday } : { href: '/create', label: t.startDuel }} />
         ) : (
           <ul className="al-listcard block-tight">
             {mine.map((v) => {
@@ -99,15 +95,19 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
             })}
           </ul>
         )}
-        <p className="small muted block-tight">{t.deviceOnly}</p>
+        {mine.length > 0 && <p className="small muted block-tight">{t.deviceOnly}</p>}
       </section>
-      {mine.length > 0 && <KeepVotes voterKey={voterKey} />}
-      {/* TEMPORARY: the owner's "start fresh" for testing (remove before a public launch). */}
-      <ResetFresh />
-      <p className="small block row wrap">
-        <Link href="/terms" className="text-link">{t.termsLink}</Link>
-        <Link href="/privacy" className="text-link">{t.privacyLink}</Link>
-      </p>
+      {/* The rest only matters once you have votes: keeping them, starting fresh (TEMPORARY, for testing), the rules. */}
+      {mine.length > 0 && (
+        <>
+          <KeepVotes voterKey={voterKey} />
+          <ResetFresh />
+          <p className="small block row wrap">
+            <Link href="/terms" className="text-link">{t.termsLink}</Link>
+            <Link href="/privacy" className="text-link">{t.privacyLink}</Link>
+          </p>
+        </>
+      )}
     </div>
   );
 }

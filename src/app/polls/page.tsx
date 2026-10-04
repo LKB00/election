@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Spot from '@/components/Spot';
 import { topicIcon, topicTone } from '@/lib/topicIcons';
 import { Search } from 'lucide-react';
+import EmptyState from '@/components/EmptyState';
 import DuelBanner from '@/components/DuelBanner';
 import DuelTiles from '@/components/DuelTiles';
 import { getDb } from '@/db';
@@ -31,6 +32,16 @@ export default async function Duels({ searchParams }: { searchParams: Promise<{ 
     q ? Promise.resolve([]) : trendingPolls(db, 3),
   ]);
   const rest = polls.filter((p) => !hot.some((h) => h.id === p.id));
+  // No polls at all yet: only the empty state (search and topics would lead nowhere).
+  const empty = !q && !polls.length && !featured;
+  if (empty) {
+    return (
+      <div className="page page-wide empty-page">
+        <h1 className="sr-only">{t.duels}</h1>
+        <EmptyState kind="list" title={t.emptyHome} line={t.emptyHomeLine} action={{ href: '/create', label: t.startDuel }} />
+      </div>
+    );
+  }
   return (
     <div className="page page-wide">
       <header className="page-head">
@@ -57,17 +68,14 @@ export default async function Duels({ searchParams }: { searchParams: Promise<{ 
       )}
       {q && (
         <section className="al-block" aria-live="polite">
-          <h2 className="al-block__title">{t.searchFor(q)}{polls.length > 0 && <span className="al-block__aside">{t.pollsN(polls.length)}</span>}</h2>
+          {/* No matches: the empty picture says so; a heading above it would say it twice. */}
+          {polls.length > 0 ? <h2 className="al-block__title">{t.searchFor(q)}<span className="al-block__aside">{t.pollsN(polls.length)}</span></h2> : <h2 className="sr-only">{t.searchFor(q)}</h2>}
           {polls.length > 0 ? (
             <DuelTiles polls={polls} votedIds={mine.map((v) => v.pollId)} noCreate />
           ) : (
-            <div className="search-none spot-empty">
-              <Spot kind="search" />
-              <p>{t.searchNone}</p>
-              <Link href={`/create?title=${encodeURIComponent(q)}`} className="btn btn-primary">{t.searchAsk}</Link>
-            </div>
+            <EmptyState kind="search" title={t.searchNoneTitle} line={t.searchNone} action={{ href: `/create?title=${encodeURIComponent(q)}`, label: t.searchAsk }} secondary={{ href: '/polls', label: t.searchClear }} />
           )}
-          <p className="small block-tight"><Link href="/polls" className="text-link">{t.searchClear}</Link></p>
+          {polls.length > 0 && <p className="small block-tight"><Link href="/polls" className="text-link">{t.searchClear}</Link></p>}
         </section>
       )}
       {!q && (<>
