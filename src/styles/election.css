@@ -462,3 +462,45 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .picker-foot .picker-none { margin-left: auto; }
 @media (max-height: 640px) { .picker-grid { grid-template-columns: repeat(8, 1fr); } .picker-emoji { font-size: 22px; border-radius: 10px; } }
 @media (prefers-reduced-motion: reduce) { .picker-preview { animation: none; } .face-pick, .picker-emoji { transition: none; } }
+
+/* ---- Create: build the ballot (docs/DESIGN.md, "Create: build the ballot") ---- */
+.builder { display: flex; flex-direction: column; gap: 16px; }
+.builder-ballot { display: flex; flex-direction: column; gap: 12px; }
+.builder-ballot > .label { margin: 0; }
+/* The question is the ballot's title, typed where it will be shown. */
+.builder-q { width: 100%; margin: 0; padding: 0 0 6px; border: 0; border-bottom: 2px dashed var(--line); border-radius: 0; background: transparent; color: var(--ink); font-size: 28px; line-height: 34px; resize: none; overflow: hidden; field-sizing: content; min-height: 40px; outline: none; transition: border-color 0.15s ease; }
+.builder-q::placeholder { color: var(--ink-3, var(--ink-2)); opacity: 0.55; }
+.builder-q:focus { border-bottom-color: var(--ink); }
+.builder-q:not(:placeholder-shown):not(:focus) { border-bottom-color: transparent; }
+.builder-hint { margin: 0; }
+/* Choice rows are real ballot rows; the name is typed straight into the row. */
+.builder-row, .builder-row:hover { transform: none; cursor: default; }
+.builder-row .face-pick { flex-basis: 40px; width: 40px; height: 40px; font-size: 20px; }
+.builder-name { width: 100%; min-width: 0; margin: 0; padding: 6px 0; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; outline: none; }
+.builder-name::placeholder { color: var(--ink-3, var(--ink-2)); opacity: 0.6; font-weight: 700; }
+.builder-name:focus { border-bottom-color: var(--ink); }
+.builder-row .evm-btn { opacity: 0.5; }
+.builder-remove { width: 32px; height: 32px; }
+/* The next empty row, waiting: dashed, quiet, no Vote key yet. */
+.builder-row.is-new { background: transparent; border: 2px dashed var(--line); box-shadow: none; }
+.builder-row.is-new .evm-row { visibility: hidden; }
+.builder-row.is-new .tot-letter { opacity: 0.5; }
+.builder-row:not(.is-new) { animation: pop 0.25s ease; }
+/* Settings: one line of chips. */
+.builder-settings { display: flex; flex-wrap: wrap; gap: 8px; }
+.builder-settings .chip svg { vertical-align: -2px; }
+/* The main button: full width on phones; it turns from "what is missing" into "Create duel". */
+.builder-go .btn { width: 100%; }
+@media (min-width: 720px) { .builder-go .btn { width: auto; } }
+@media (max-width: 400px) {
+  .builder-q { font-size: 24px; line-height: 30px; }
+
+  .builder-row .face-pick { flex-basis: 32px; width: 32px; height: 32px; font-size: 16px; }
+}
+/* Typing in the ballot: the bottom bar steps aside, as for the other boxes. */
+@media (max-width: 720px) {
+  body:has(.builder input:focus, .builder textarea:focus) .bottomnav { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .builder-row:not(.is-new) { animation: none; } }
+/* Small phones (up to 360 px): the name gets the room; the Vote key in the builder is only decoration. */
+@media (max-width: 360px) { .builder-row .evm-btn { display: none; } }
