@@ -730,3 +730,10 @@ What each component shows, and what changed:
 | My votes | summary · your pick · where it stands · since last look | Summary without the guess score |
 
 Kept on purpose: "Polling open/closed", "Vote cast. Your finger is inked" and "Result declared" (the signature booth words); the internal key names `duels`/`moreDuels` (code only, never shown).
+
+## Choice numbers (owner, Oct 2026: numbers on the voting choices are not needed)
+
+The 1, 2, 3 badges on choices came from the EVM, where each candidate has a serial number. On a normal poll they added nothing (every element earns its place), so they now show only where they mean something:
+- **Election mode** (politics, flagship, or when the creator turns it on): serial numbers stay, matching the EVM and the VVPAT slip.
+- **Rank polls**: no badge until you place a choice, then its place (#1, #2…).
+- **Everything else**: no number. Your pick is shown by its colour plus the "Your pick" caption (colour never alone). The Create preview follows the same rule.
