@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
-import { Check, ChevronRight, Cpu, Film, Landmark, Medal, Music, MessageCircleQuestion, Plus, Trophy, Users, UtensilsCrossed } from 'lucide-react';
+import { Check, ChevronRight, Plus } from 'lucide-react';
+import { topicIcon } from '@/lib/topicIcons';
 import { useEffect, useState } from 'react';
 import type { PollSummary } from '@/lib/polls';
 import { useT } from '@/lib/lang';
@@ -12,8 +13,6 @@ import type { VotedEvent } from '@/lib/useStats';
 // the choices as a quiet line, the vote count on the right, a chevron. (Was a grid of pastel tiles.)
 // Order = what you can still do first: live and not voted → voted → ended. Updates the moment you vote.
 const TONES = ['var(--p-input)', 'var(--p-feedback)', 'var(--p-control)', 'var(--p-trust)', 'var(--p-output)'];
-// The disc icon says the topic at a glance.
-const ICONS: Record<string, typeof Trophy> = { politics: Landmark, cricket: Trophy, sports: Medal, movies: Film, music: Music, food: UtensilsCrossed, tech: Cpu, friends: Users };
 
 // Show what it is (Arogya's P3): the poll's own faces, e.g. 🍵☕ for "Chai or coffee?", recognised before read.
 // The creator's emoji, else the same suggestion Create makes from the name; the topic icon only when neither exists.
@@ -57,7 +56,7 @@ export default function DuelTiles({ polls, votedIds = [], noCreate = false, limi
       {shown.map((p, n) => {
         const done = voted.includes(p.id);
         const total = p.totalVotes + (counts[p.id] ?? 0);
-        const Icon = ICONS[p.category] ?? MessageCircleQuestion;
+        const Icon = topicIcon(p.category);
         const face = faces(p);
         return (
           <li key={p.id}>
