@@ -15,7 +15,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!parsed.success || !isAdminKey(parsed.data.key)) return NextResponse.json({ error: 'Not allowed.' }, { status: 403 });
   const { id } = await params;
   if (parsed.data.action === 'today') {
-    return (await setToday(await getDb(), id)) ? NextResponse.json({ ok: true }) : NextResponse.json({ error: 'Poll not found.' }, { status: 404 });
+    return (await setToday(await getDb(), id, parsed.data.closeTonight ?? false)) ? NextResponse.json({ ok: true }) : NextResponse.json({ error: 'Poll not found.' }, { status: 404 });
   }
   if (parsed.data.action === 'resume') {
     return (await resumeVoting(await getDb(), id)) ? NextResponse.json({ ok: true }) : NextResponse.json({ error: 'Poll not found.' }, { status: 404 });

@@ -6,6 +6,7 @@ import { getDb } from '@/db';
 import { isAdminKey } from '@/lib/admin';
 import { getFeaturedId, getPoll, getReviewQueue, listPolls } from '@/lib/polls';
 import { getT } from '@/lib/lang-server';
+import { getStats } from '@/lib/stats';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Review', robots: { index: false, follow: false } };
@@ -17,7 +18,8 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
   if (!isAdminKey(key)) notFound();
   const t = await getT();
   const db = await getDb();
-  const [items, featuredId, recent] = await Promise.all([getReviewQueue(db), getFeaturedId(db), listPolls(db, 20)]);
+  const [items, featuredId, recent, stats] = await Promise.all([getReviewQueue(db), getFeaturedId(db), listPolls(db, 20), getStats(db)]);
+  const pct = (a: number, b: number) => (b ? Math.round((a / b) * 100) : 0);
   const featured = featuredId ? await getPoll(db, featuredId, null) : null;
   return (
     <div className="page">
@@ -33,6 +35,18 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
       </section>
       {/* After the queue: what needs you comes first. */}
       <TodayPicker current={featured ? { id: featured.id, title: featured.title } : null} polls={recent.filter((p) => !p.closed).map((p) => ({ id: p.id, title: p.title }))} adminKey={key!} />
+      {/* P3: how the site is doing. The first line is the one to watch (docs/ENGAGEMENT.md). */}
+      <section className="block admin-stats">
+        <h2>{t.statsTitle}</h2>
+        <p className="small muted">{t.statsLead}</p>
+        <p><strong>{t.statsReturning(stats.weekReturning, stats.weekVoters)}</strong><br /><span className="small">{t.statsReturningGoal(pct(stats.weekReturning, stats.weekVoters))}</span></p>
+        <ul className="small">
+          <li>{t.statsToday(stats.todayVoters, stats.todayVotes)}</li>
+          <li>{t.statsNew(stats.newVoters, stats.newCameBack)}</li>
+          <li>{t.statsFriends(stats.weekViaFriends, stats.weekVotes)}</li>
+          <li>{t.statsPolitics(pct(stats.politicsVotes, stats.weekVotes))}</li>
+        </ul>
+      </section>
     </div>
   );
 }
