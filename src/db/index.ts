@@ -97,6 +97,17 @@ ALTER TABLE polls ADD COLUMN IF NOT EXISTS called_it boolean NOT NULL DEFAULT fa
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS outcome text;
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS outcome_at timestamptz;
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS manage_hash text;
+-- Match-day and show-night packs: a few polls around one live moment.
+CREATE TABLE IF NOT EXISTS packs (
+  id text PRIMARY KEY,
+  kind text NOT NULL,
+  title text NOT NULL,
+  starts_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS packs_starts_idx ON packs (starts_at);
+ALTER TABLE polls ADD COLUMN IF NOT EXISTS pack_id text;
+CREATE INDEX IF NOT EXISTS polls_pack_idx ON polls (pack_id);
 CREATE INDEX IF NOT EXISTS polls_today_on_idx ON polls (today_on);
 CREATE TABLE IF NOT EXISTS vote_flow (
   poll_id text NOT NULL REFERENCES polls(id) ON DELETE CASCADE,

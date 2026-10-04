@@ -48,7 +48,7 @@ Where: Vercel → your project **election** → Settings → Environment Variabl
 
 Say "continue features" and Claude picks up the next one.
 - [x] "Called it" polls (live)
-- [ ] Match-day and show-night packs: 3 short polls around a match or show, each closing at a set time
+- [x] Match-day and show-night packs (Create → "Make a match-day or show-night pack"). Tip: make one each IPL match morning and post its link in your WhatsApp Channel.
 - [ ] "Tell me the result" alert (one phone notification when the 9 pm result is ready)
 - [ ] Group polls that reveal together ("9 of 12 voted")
 - [ ] "Your month in opinions" card

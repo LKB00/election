@@ -116,7 +116,7 @@ export function groupSplit(friendsAll: number, friendsAgree: number, everyoneMin
 const hashKey = (key: string) => createHash('sha256').update(key).digest('hex');
 
 /** `manageKey`: the creator's private key (kept on their phone); only its hash is stored. */
-export async function createPoll(db: Db, raw: CreatePollInput, manageKey?: string): Promise<string> {
+export async function createPoll(db: Db, raw: CreatePollInput, manageKey?: string, packId?: string): Promise<string> {
   // A rating poll always has the same five steps, whatever was sent.
   const input = raw.kind === 'rating' ? { ...raw, options: RATING_LABELS, emojis: RATING_EMOJIS, photos: [] } : raw;
   const id = pollId();
@@ -131,6 +131,7 @@ export async function createPoll(db: Db, raw: CreatePollInput, manageKey?: strin
     // "Called it" is for pick-one questions about sport, films, shows and the like; never politics (election law).
     calledIt: input.calledIt && input.kind === 'choice' && category !== 'politics',
     manageHash: manageKey ? hashKey(manageKey) : null,
+    packId: packId ?? null,
     electionMode: input.electionMode,
     kind: input.kind,
     id,

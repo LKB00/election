@@ -22,6 +22,8 @@ export default async function CreatePage({ searchParams }: { searchParams: Promi
         <p className="eyebrow"><Timer size={13} strokeWidth={2} aria-hidden />{t.takes30}</p>
         <h1 className="display">{t.startDuel}</h1>
         <p className="lead">{t.createLead}</p>
+        {/* A pack: a few polls around a match or a show night, made in one go. */}
+        <p className="small"><Link href="/create/pack" className="text-link">🏏 📺 {t.packMakeLink}</Link></p>
       </header>
       <section className="block block-tight">
         <CreateForm initialTitle={title} initialTopic={topic} />
