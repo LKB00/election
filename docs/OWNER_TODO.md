@@ -30,7 +30,7 @@ Where: Vercel → your project **election** → Settings → Environment Variabl
 
 - [ ] **Create a WhatsApp Channel** (WhatsApp → Updates → + → New channel), name it like the site, add the site link in the description, and post the `/today` link each morning. The research says this is the best way to bring people back without login or notifications.
 - [ ] **Start small:** share in one college, office or friends' group at a time, with a poll made for that group.
-- [ ] **Tell Claude about big dates** (IPL matches, film releases, festivals) a few days before, for themed polls on those days. Keep them light: food, cricket, films, city pride. No religion or caste match-ups.
+- [ ] **Plan big days ahead** (festivals, IPL and India matches, big film Fridays): make the poll a few days early, then on `/admin` pick its date in the box next to it. That morning it becomes Today's question by itself, with the 9 pm final count. Keep them light: food, cricket, films, city pride. No religion or caste match-ups. You can also ask Claude to make a batch of them.
 
 ## 4. Law and safety
 

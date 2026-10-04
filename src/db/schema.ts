@@ -22,6 +22,8 @@ export const polls = pgTable(
     hasPhotos: boolean('has_photos').notNull().default(false),
     // Voting paused until this time after a sudden flood of votes (see src/lib/flood.ts). The owner can resume it.
     frozenUntil: timestamp('frozen_until', { withTimezone: true }),
+    // Planned as Today's question on this India day ("2026-11-08"); it takes over that morning by itself.
+    todayOn: text('today_on'),
     // Election mode: the full booth ritual (EVM, VVPAT slip, voter ID, counting day). Politics polls always have it.
     electionMode: boolean('election_mode').notNull().default(false),
     // What kind of question: 'choice' (pick one) or 'rating' (a 1–5 scale of faces). See src/lib/rating.ts.

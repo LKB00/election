@@ -4,7 +4,7 @@ import AdminRow from '@/components/AdminRow';
 import TodayPicker from '@/components/TodayPicker';
 import { getDb } from '@/db';
 import { isAdminKey } from '@/lib/admin';
-import { getFeaturedId, getPoll, getReviewQueue, listPolls } from '@/lib/polls';
+import { getFeaturedId, getPlannedToday, getPoll, getReviewQueue, indiaDay, listPolls } from '@/lib/polls';
 import { getT } from '@/lib/lang-server';
 import { getStats } from '@/lib/stats';
 
@@ -18,7 +18,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
   if (!isAdminKey(key)) notFound();
   const t = await getT();
   const db = await getDb();
-  const [items, featuredId, recent, stats] = await Promise.all([getReviewQueue(db), getFeaturedId(db), listPolls(db, 20), getStats(db)]);
+  const [items, featuredId, recent, stats, planned] = await Promise.all([getReviewQueue(db), getFeaturedId(db), listPolls(db, 20), getStats(db), getPlannedToday(db)]);
   const pct = (a: number, b: number) => (b ? Math.round((a / b) * 100) : 0);
   const featured = featuredId ? await getPoll(db, featuredId, null) : null;
   return (
@@ -34,7 +34,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
         {items.length === 0 ? <p className="muted">{t.adminEmpty}</p> : items.map((item) => <AdminRow key={item.id} item={item} adminKey={key!} />)}
       </section>
       {/* After the queue: what needs you comes first. */}
-      <TodayPicker current={featured ? { id: featured.id, title: featured.title } : null} polls={recent.filter((p) => !p.closed).map((p) => ({ id: p.id, title: p.title }))} adminKey={key!} />
+      <TodayPicker current={featured ? { id: featured.id, title: featured.title } : null} polls={recent.filter((p) => !p.closed).map((p) => ({ id: p.id, title: p.title }))} planned={planned} adminKey={key!} todayLabel={indiaDay().label} />
       {/* P3: how the site is doing. The first line is the one to watch (docs/ENGAGEMENT.md). */}
       <section className="block admin-stats">
         <h2>{t.statsTitle}</h2>

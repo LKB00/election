@@ -71,4 +71,4 @@ const code = () => z.string().regex(/^[\w-]{1,64}$/);
 export const voteSchema = z.object({ optionId: code(), picks: z.array(code()).max(10).optional(), via: z.string().max(64).nullish().transform((v) => (isCode(v) ? v : null)), human: z.string().max(4096).nullish() });
 export const guessSchema = z.object({ choice: code() });
 export const reportSchema = z.object({ reason: z.string().min(1).max(20) });
-export const adminSchema = z.object({ key: z.string().min(1).max(200), action: z.enum(['hide', 'show', 'approve', 'today', 'resume']), closeTonight: z.boolean().optional() });
+export const adminSchema = z.object({ key: z.string().min(1).max(200), action: z.enum(['hide', 'show', 'approve', 'today', 'resume', 'plan']), closeTonight: z.boolean().optional(), day: z.string().max(10).nullable().optional() });
