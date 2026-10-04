@@ -35,6 +35,8 @@ export const polls = pgTable(
     outcomeAt: timestamp('outcome_at', { withTimezone: true }),
     // SHA-256 of the creator's private key (kept on their phone), which lets them mark the outcome.
     manageHash: text('manage_hash'),
+    // Part of a match-day or show-night pack (see packs).
+    packId: text('pack_id'),
     endsAt: timestamp('ends_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -145,4 +147,18 @@ export const voteFlow = pgTable(
     at: timestamp('at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('vote_flow_poll_at_idx').on(t.pollId, t.at), index('vote_flow_at_idx').on(t.at)],
+);
+
+// A match-day or show-night pack: a few polls around one live moment ("CSK vs MI", "Bigg Boss eviction night").
+// Predictions close when it starts (starts_at); the polls point here with polls.pack_id.
+export const packs = pgTable(
+  'packs',
+  {
+    id: text('id').primaryKey(),
+    kind: text('kind').notNull(), // 'match' | 'show'
+    title: text('title').notNull(),
+    startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('packs_starts_idx').on(t.startsAt)],
 );

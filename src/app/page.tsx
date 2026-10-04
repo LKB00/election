@@ -6,10 +6,12 @@ import EmptyState from '@/components/EmptyState';
 import MyPolls from '@/components/MyPolls';
 import RulesNotice from '@/components/RulesNotice';
 import DuelTiles from '@/components/DuelTiles';
+import PackRows from '@/components/PackRows';
+import { upcomingPacks } from '@/lib/packs';
 import { getDb } from '@/db';
 import { getDeck, getFeaturedId, getTodaySet, listPolls, trendingPolls } from '@/lib/polls';
 import { readVoterId } from '@/lib/voter';
-import { getT } from '@/lib/lang-server';
+import { getLang, getT } from '@/lib/lang-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +34,7 @@ export default async function Home() {
   const voterId = await readVoterId();
   // Today's set (the same few polls for everyone today, with an end), then more polls only if you ask for them.
   const [deck, extra, recent, todayId, trending] = await Promise.all([getTodaySet(db, voterId), getDeck(db, voterId), listPolls(db, 40), getFeaturedId(db), trendingPolls(db, 4)]);
+  const [tonight, lang] = await Promise.all([upcomingPacks(db), getLang()]);
   const more = extra.filter((p) => !deck.some((d) => d.id === p.id));
   const voted = [...deck, ...more].filter((p) => p.myVote !== null).map((p) => p.id);
   // P2 shelves under today's question: what is hot right now, then two topics with the most open polls.
@@ -67,6 +70,14 @@ export default async function Home() {
         </section>
       )}
       <MyPolls />
+
+      {/* P2: tonight's match-day and show-night packs, before predictions close. */}
+      {tonight.length > 0 && (
+        <section className="al-block">
+          <h2 className="al-block__title">{t.tonight}</h2>
+          <PackRows packs={tonight} t={t} lang={lang} />
+        </section>
+      )}
 
       {trending.length > 0 && (
         <section className="al-block">

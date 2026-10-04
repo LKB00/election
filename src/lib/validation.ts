@@ -71,6 +71,17 @@ export type CreatePollInput = z.infer<typeof createPollSchema>;
 export const isCode = (s: string | null | undefined): s is string => !!s && /^[\w-]{1,64}$/.test(s);
 const code = () => z.string().regex(/^[\w-]{1,64}$/);
 export const voteSchema = z.object({ optionId: code(), picks: z.array(code()).max(10).optional(), via: z.string().max(64).nullish().transform((v) => (isCode(v) ? v : null)), human: z.string().max(4096).nullish() });
+// A pack: one live moment (a match, a show's night) and its 2–4 polls, made together. Predictions close at startsAt.
+export const packSchema = z.object({
+  kind: z.enum(['match', 'show']),
+  title: text().pipe(z.string().min(3, 'Your question needs at least 3 letters.').max(80)),
+  startsAt: z
+    .string()
+    .datetime()
+    .refine((v) => new Date(v).getTime() > Date.now(), 'The end time must be in the future.')
+    .refine((v) => new Date(v).getTime() < Date.now() + 30 * 86_400_000, 'Pick a time in the next 30 days.'),
+  polls: z.array(z.unknown()).min(2).max(4),
+}).refine((p) => !hasBlockedWord(p.title), 'Please remove the abusive words.');
 export const outcomeSchema = z.object({ optionId: code(), key: z.string().min(1).max(200) });
 export const guessSchema = z.object({ choice: code() });
 export const reportSchema = z.object({ reason: z.string().min(1).max(20) });

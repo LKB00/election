@@ -774,3 +774,13 @@ Pictures are inline SVG in the Arogya palette (a few hundred bytes each, no down
 | Admin, nothing to review | box with a tick | "Nothing to review." | none |
 
 **Your guess on the result:** after "Guess the crowd", the choice you guessed carries a small "◎ Your guess" pill under its bar, so you see how close you were on the real numbers, not only in a sentence.
+
+## Packs: match-day and show-night (research: reports/Next features for Election, #2)
+
+A few quick polls around one live moment, made in one go from **Create → "Make a match-day or show-night pack"** (`/create/pack`).
+- **Match pack:** type Team 1, Team 2 and when it starts. You get: 🔮 "RCB vs KKR: who wins?" and 🔮 "How will it end?" (Called it, closing when the match starts), plus "Where are you watching?" (open 5 hours).
+- **Show night:** type the show, its contestants (one per line) and the result time. You get: 🔮 "Who goes home this week?", "Your favourite this week?" and "Rate this week's episode" (1–5). Every show poll says "Fan poll, not the official vote."
+- **The form shows the polls before you make them** (what you see is what voters get). One private key on the creator's phone marks every "Called it" result in the pack.
+- **Pack page** (`/pack/<id>`): the pack chip (🏏/📺), the title, "Predictions close Sat, 7:30 pm" (or "Started · results when it ends"), Share the pack (WhatsApp first), then the polls played one after another.
+- **Home → "Tonight"** (P2, under Your polls): packs starting in the next 36 hours or started in the last 6, as list rows.
+- Also fixed: a poll's "Details" line (and the pack's fan-poll note) now shows under the question; it was saved but never shown.

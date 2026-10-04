@@ -893,3 +893,23 @@ describe('called it', () => {
     expect((await getPoll(db, multi, null))!.calledIt).toBe(false);
   });
 });
+
+describe('packs', () => {
+  it('makes its polls in order, finds them, and lists the pack for tonight', async () => {
+    const { createPack, getPack, upcomingPacks } = await import('@/lib/packs');
+    const start = new Date(Date.now() + 3 * 3_600_000).toISOString();
+    const items = [
+      createPollSchema.parse({ title: 'CSK vs MI: who wins?', options: ['CSK', 'MI'], calledIt: true, category: 'cricket', endsAt: start }),
+      createPollSchema.parse({ title: 'How will it end?', options: ['Easy win', 'Close finish'], calledIt: true, endsAt: start }),
+      createPollSchema.parse({ title: 'Where are you watching?', options: ['Phone', 'TV'] }),
+    ];
+    const { id, pollIds } = await createPack(db, { kind: 'match', title: 'CSK vs MI', startsAt: start }, items, 'pack-key');
+    const pack = (await getPack(db, id, null))!;
+    expect(pack.views.map((v) => v.id)).toEqual(pollIds);
+    expect(pack.views[0].calledIt).toBe(true);
+    expect((await upcomingPacks(db)).some((p) => p.id === id && p.polls === 3)).toBe(true);
+    // One key marks every "Called it" in the pack.
+    const { setOutcome } = await import('@/lib/polls');
+    expect(await setOutcome(db, pollIds[1], pack.views[1].options[0].id, 'pack-key')).toBe('ok');
+  });
+});

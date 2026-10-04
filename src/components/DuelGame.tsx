@@ -775,6 +775,8 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
         {/* "Called it" (P2): says this is about a real event, answered later. */}
         {poll.calledIt && !poll.outcome && !(todayId === poll.id || (daily && setIds.has(poll.id) && setLeft > 0)) && <p className="label duel-today">🔮 {t.calledLabel}</p>}
         <h1 key={poll.id} className="display duel-q">{poll.title}</h1>
+        {/* The creator's "Details" line (and a pack's "Fan poll, not the official vote"). */}
+        {poll.description && <p className="small muted duel-desc">{poll.description}</p>}
         <p className="small muted">
           {poll.closed ? t.pollingClosed : <><span className="live-dot" aria-hidden /> {t.pollingOpen}</>}
           {/* No votes yet: "be the first" says it (not "0 votes cast · be the first"). */}
