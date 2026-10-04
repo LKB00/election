@@ -22,12 +22,12 @@ export default async function YouPage({ searchParams }: { searchParams: Promise<
 
   if (!user) {
     return (
-      <div className="page">
-        <header className="page-head page-head-tight">
-          <h1 className="display">{t.you}</h1>
+      <div className="page empty-page">
+        <header>
+          <h1 className="sr-only">{t.you}</h1>
           {deleted && <p className="small duel-friend" role="status">{t.profileDeleted}</p>}
         </header>
-        <section className="block">
+        <section>
           <YouSignIn />
         </section>
         <MyPolls title={t.madeOnPhone} line={t.madeOnPhoneLine} />
@@ -39,7 +39,7 @@ export default async function YouPage({ searchParams }: { searchParams: Promise<
   return (
     <div className="page">
       <header className="page-head page-head-tight">
-        <h1 className="display">{t.you}</h1>
+        <h1 className="sr-only">{t.you}</h1>
         <ProfileCard user={user} />
       </header>
       {polls.length ? (

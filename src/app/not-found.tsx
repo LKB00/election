@@ -1,17 +1,13 @@
-import Link from 'next/link';
 import { getT } from '@/lib/lang-server';
-import Spot from '@/components/Spot';
+import EmptyState from '@/components/EmptyState';
 
+// Same empty-page shape as every other: picture, title, one line, one step.
 export default async function NotFound() {
   const t = await getT();
   return (
-    <div className="page">
-      <header className="page-head">
-        <Spot kind="lost" />
-        <h1 className="display">{t.notFound}</h1>
-        <p className="lead">{t.notFoundLead}</p>
-      </header>
-      <Link href="/" className="btn btn-primary btn-lg block-tight">{t.goToday}</Link>
+    <div className="page empty-page">
+      <h1 className="sr-only">{t.notFound}</h1>
+      <EmptyState kind="lost" title={t.notFound} line={t.notFoundLead} action={{ href: '/', label: t.goToday }} />
     </div>
   );
 }

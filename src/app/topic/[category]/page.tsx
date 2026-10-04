@@ -36,12 +36,13 @@ export default async function Topic({ params }: Props) {
   ]);
   const banner = featured && featured.category === category ? featured : null;
   return (
-    <div className="page page-wide">
-      <header className="page-head">
+    <div className={'page page-wide' + (polls.length || banner ? '' : ' empty-page')}>
+      <header className={polls.length > 0 ? 'page-head' : undefined}>
         {/* The topic's picture, big: the page says what it is before you read (an empty topic shows it in its empty picture instead). */}
         {polls.length > 0 && <span className="topic-hero" style={{ '--tone': topicTone(category) } as React.CSSProperties} aria-hidden>{(() => { const I = topicIcon(category); return <I size={28} strokeWidth={1.75} />; })()}</span>}
-        <h1 className="display">{t.topicTitle(t.categories[category] ?? category)}</h1>
-        <p className="lead">{t.topicLead}</p>
+        {/* Empty: the empty picture says the topic already ("No Cricket polls yet"), so the title stays for screen readers only. */}
+        <h1 className={polls.length > 0 ? 'display' : 'sr-only'}>{t.topicTitle(t.categories[category] ?? category)}</h1>
+        {polls.length > 0 && <p className="lead">{t.topicLead}</p>}
       </header>
       {banner && (
         <section className="block block-tight">

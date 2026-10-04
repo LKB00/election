@@ -6,14 +6,32 @@ import type { Profile } from '@/lib/auth';
 import { AVATARS } from '@/lib/avatars';
 import { apiMsg } from '@/lib/i18n';
 import { useLang, useT } from '@/lib/lang';
+import dynamic from 'next/dynamic';
 import { SignInPanel } from './SignIn';
+import Spot from './Spot';
+
+const SignInSheet = dynamic(() => import('./SignIn'), { ssr: false });
 
 // The You page's moving parts (docs/DESIGN.md, "Profiles").
 
 /** Signed out: the profile screen right on the page; when it is done, the page shows the profile. */
-export function YouSignIn() {
+export function YouSignIn({ full = false }: { full?: boolean }) {
   const router = useRouter();
-  return <SignInPanel onPage onDone={() => router.refresh()} />;
+  const t = useT();
+  const [open, setOpen] = useState<null | 'new' | 'back'>(null);
+  // The maker's page (signed out) shows the whole screen; the You tab starts calm: the picture, the one promise that
+  // matters most, one button. The name, faces and the other promises open in the sheet only when tapped.
+  if (full) return <SignInPanel onPage onDone={() => router.refresh()} />;
+  return (
+    <div className="spot-empty">
+      <Spot kind="lock" />
+      <h2 className="spot-empty__title">{t.signTitleYou}</h2>
+      <p className="spot-empty__line">{t.youIntro}</p>
+      <button type="button" className="btn btn-primary btn-lg spot-empty__go" onClick={() => setOpen('new')}>{t.signTitleYou}</button>
+      <button type="button" className="text-link small spot-empty__more signin-switch" onClick={() => setOpen('back')}>{t.haveProfile}</button>
+      {open && <SignInSheet onPage startBack={open === 'back'} onClose={() => setOpen(null)} onDone={() => { setOpen(null); router.refresh(); }} />}
+    </div>
+  );
 }
 
 /** Your face and name (yellow = you), with Edit in place. */
