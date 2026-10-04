@@ -1,6 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { Clock, Landmark, EyeOff, ImagePlus, Lightbulb, Repeat, Sparkles, X, SlidersHorizontal, Users } from 'lucide-react';
+import { AlignLeft, Check, ChevronDown, CircleDot, Clock, EyeOff, ImagePlus, Landmark, Lightbulb, ListChecks, ListOrdered, Repeat, SlidersHorizontal, Smile, Sparkles, Tag, Users, WandSparkles, X } from 'lucide-react';
 import { useState } from 'react';
 import { CATEGORIES } from '@/lib/categories';
 import { useLang, useT } from '@/lib/lang';
@@ -9,6 +9,25 @@ import { choicesFromQuestion, emojiFor } from '@/lib/createHelp';
 import { RATING_EMOJIS, RATING_LABELS, type PollKind } from '@/lib/rating';
 import { rememberMyPoll } from './MyPolls';
 import PicturePicker, { type Picture } from './PicturePicker';
+
+// One settings row: icon disc, name (+ a quiet line), the current value or a switch, and a chevron for rows that open.
+const Row = ({ icon: Icon, name, note, value, on, open: isOpen, onClick, tone = 'var(--sand)' }: { icon: typeof Clock; name: string; note?: string; value?: string; on?: boolean; open?: boolean; onClick: () => void; tone?: string }) => (
+  <button type="button" className="al-row create-row" onClick={onClick} {...(on === undefined ? { 'aria-expanded': !!isOpen } : { role: 'switch', 'aria-checked': on })}>
+    <span className="al-row__disc" style={{ '--tone': on ? 'var(--lime)' : tone } as React.CSSProperties} aria-hidden><Icon size={18} strokeWidth={1.75} /></span>
+    <span className="al-row__main">
+      <span className="al-row__title">{name}</span>
+      {note && <span className="al-row__meta">{note}</span>}
+    </span>
+    {on === undefined ? (
+      <>
+        {value && <span className="al-row__when create-row__value" suppressHydrationWarning>{value}</span>}
+        <ChevronDown size={18} strokeWidth={1.75} className={'create-row__chev' + (isOpen ? ' is-open' : '')} aria-hidden />
+      </>
+    ) : (
+      <span className={'switch' + (on ? ' is-on' : '')} aria-hidden><span /></span>
+    )}
+  </button>
+);
 
 export default function CreateForm({ initialTitle = '', initialTopic }: { initialTitle?: string; initialTopic?: string }) {
   const router = useRouter();
@@ -55,6 +74,8 @@ export default function CreateForm({ initialTitle = '', initialTopic }: { initia
   const [open, setOpen] = useState<'ends' | 'topic' | 'details' | 'group' | null>(null);
   // The less-used settings (Election mode, votes can change, end time, details) wait behind "More options".
   const [showMore, setShowMore] = useState(false);
+  // The poll-type row opens a list of the five types, each with one line on what it does.
+  const [typeOpen, setTypeOpen] = useState(false);
 
   // Like a WhatsApp poll: typing in the last box adds the next empty one (up to 10), so there is no "add" step.
   const setChoice = (i: number, v: string) => {
@@ -169,44 +190,32 @@ export default function CreateForm({ initialTitle = '', initialTopic }: { initia
   const toggleOpen = (k: 'ends' | 'topic' | 'details' | 'group') => setOpen((o) => (o === k ? null : k));
   const endsLabel = endsAt ? new Date(endsAt).toLocaleString(lang === 'hi' ? 'hi-IN' : 'en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : t.setEnds;
 
-  // Not a form: you build the ballot itself (docs/DESIGN.md, "Create: build the ballot"). The question is the big title,
-  // each choice is a ballot row (number, picture, name, the blue Vote key); what you see is what voters get.
-  return (
-    <form className="builder" onSubmit={submit}>
-      {/* P3: ideas, only on an empty ballot (a blank page is the hardest part). */}
-      {!title.trim() && !typedChoices && (
-        <div className="duel-group">
-          <span className="label"><Lightbulb size={12} strokeWidth={1.75} aria-hidden /> {t.ideasLabel}</span>
-          <div className="create-ideas">
-            {t.ideas.map((it, n) => (
-              <button key={n} type="button" className="chip" onClick={() => idea(n)}>{it.q}</button>
-            ))}
-            <button type="button" className="chip" onClick={() => fill([t.yes, t.no])}>{t.starterYesNo}</button>
-          </div>
-        </div>
-      )}
+  // Create, top to bottom (docs/DESIGN.md, "Create, tidied"): the question in a real box, the choices, then every
+  // setting as one list of rows (the poll type first, the less-used ones behind "More options"). One main button.
+  const TYPES = [
+    { k: 'choice', Icon: CircleDot, name: t.typePickOne, desc: t.typeDesc.choice, pick: () => pickKind('choice') },
+    { k: 'called', Icon: WandSparkles, name: t.formatCalled, desc: t.typeDesc.called, pick: () => pickKind('choice', true) },
+    { k: 'multi', Icon: ListChecks, name: t.formatMulti, desc: t.typeDesc.multi, pick: () => pickKind('multi') },
+    { k: 'rank', Icon: ListOrdered, name: t.formatRank, desc: t.typeDesc.rank, pick: () => pickKind('rank') },
+    { k: 'rating', Icon: Smile, name: t.formatRate, desc: t.typeDesc.rating, pick: () => pickKind('rating') },
+  ];
+  const current = TYPES.find((x) => x.k === (calledIt ? 'called' : kind)) ?? TYPES[0];
 
-      <section className="tot builder-ballot" aria-label={t.ballotLabel}>
-        <p className="label">{t.ballotLabel}</p>
-        {/* What kind of question (P2): your own choices, or a 1–5 rating with faces. */}
-        <div className="builder-kind" role="radiogroup" aria-label={t.ballotLabel}>
-          <button type="button" role="radio" aria-checked={kind === 'choice' && !calledIt} className={'chip' + (kind === 'choice' && !calledIt ? ' chip-on' : '')} onClick={() => pickKind('choice')}>☑️ {t.formatChoice}</button>
-          <button type="button" role="radio" aria-checked={calledIt} className={'chip' + (calledIt ? ' chip-on' : '')} onClick={() => pickKind('choice', true)}>🔮 {t.formatCalled}</button>
-          <button type="button" role="radio" aria-checked={kind === 'multi'} className={'chip' + (kind === 'multi' ? ' chip-on' : '')} onClick={() => pickKind('multi')}>✅ {t.formatMulti}</button>
-          <button type="button" role="radio" aria-checked={kind === 'rank'} className={'chip' + (kind === 'rank' ? ' chip-on' : '')} onClick={() => pickKind('rank')}>🔢 {t.formatRank}</button>
-          <button type="button" role="radio" aria-checked={isRating} className={'chip' + (isRating ? ' chip-on' : '')} onClick={() => pickKind('rating')}>😍 {t.formatRate}</button>
-        </div>
+  return (
+    <form className="builder create" onSubmit={submit}>
+      {/* 1. The question (P1): a real box, so it is clear where to type. */}
+      <section className="create-block">
+        <label htmlFor="title" className="create-label">{t.yourQuestion}</label>
         <textarea
           id="title"
-          className="display builder-q"
-          rows={1}
+          className="create-q"
+          rows={2}
           enterKeyHint="next"
           autoCapitalize="sentences"
           autoComplete="off"
           value={title}
           maxLength={120}
           placeholder={calledIt ? t.calledPh : t.questionPh}
-          aria-label={t.yourQuestion}
           aria-invalid={!!fieldError.title}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
@@ -227,8 +236,24 @@ export default function CreateForm({ initialTitle = '', initialTopic }: { initia
             <span><strong>{t.useAsChoices}</strong> <span className="muted">{fromQuestion.join(' · ')}</span></span>
           </button>
         )}
-        {calledIt ? <p className="small muted builder-hint">{t.calledHint}</p> : !title.trim() && !typedChoices && <p className="small muted builder-hint">{t.builderHint}</p>}
+        {calledIt && <p className="small muted">{t.calledHint}</p>}
+        {/* P3: ideas, only on an empty form (a blank page is the hardest part); one scrolling row. */}
+        {!title.trim() && !typedChoices && (
+          <div className="create-ideas-wrap">
+            <span className="small muted"><Lightbulb size={12} strokeWidth={1.75} aria-hidden /> {t.ideasLabel}</span>
+            <div className="create-ideas">
+              {t.ideas.map((it, n) => (
+                <button key={n} type="button" className="chip" onClick={() => idea(n)}>{it.q}</button>
+              ))}
+              <button type="button" className="chip" onClick={() => fill([t.yes, t.no])}>{t.starterYesNo}</button>
+            </div>
+          </div>
+        )}
+      </section>
 
+      {/* 2. The choices: a picture and a name each; typing in the last row adds the next one. */}
+      <section className="create-block">
+        <p className="create-label">{isRating ? t.formatRate : t.choicesTitle}</p>
         {isRating ? (
           <>
             <div className="rate-scale is-preview" aria-hidden>
@@ -236,144 +261,143 @@ export default function CreateForm({ initialTitle = '', initialTopic }: { initia
                 <span key={e} className="rate-step"><span className="rate-step-face">{e}</span><span className="rate-step-word">{t.rateWords[n]}</span></span>
               ))}
             </div>
-            <p className="small muted builder-hint">{t.rateHint}</p>
+            <p className="small muted">{t.rateHint}</p>
           </>
         ) : (
-        <div className={'tot-options duel-options is-ballot builder-rows' + (electionMode ? '' : ' no-num')}>
-          {choices.map((c, i) => {
-            const isNew = i === choices.length - 1 && !c.trim() && choices.length > 2;
-            return (
-              <div
-                key={i}
-                className={'tot-option duel-option builder-row' + (isNew ? ' is-new' : '')}
-                style={{ '--pc': `var(--p-${TONES[i % TONES.length]})` } as React.CSSProperties}
-              >
-                {electionMode && <span className="tot-letter">{i + 1}</span>}
-                <span className="duel-body">
-                  {/* The choice's picture: tap for emoji suggestions, popular emoji, or a photo from the phone. */}
-                  <button
-                    type="button"
-                    className={'face-pick' + (photos[i] ? ' has-photo' : emojiAt(i) ? (touched[i] ? ' has-emoji' : ' has-emoji is-auto') : '')}
-                    aria-label={t.pictureN(i + 1)}
-                    title={!touched[i] && !photos[i] && emojiAt(i) ? t.emojiAuto : undefined}
-                    onClick={() => setPicking(i)}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    {photos[i] ? <img src={photos[i]} alt="" /> : emojiAt(i) ? <span>{emojiAt(i)}</span> : <ImagePlus size={18} strokeWidth={1.75} aria-hidden />}
-                  </button>
-                  <input
-                    id={`choice-${i}`}
-                    className="duel-name builder-name"
-                    enterKeyHint={i < choices.length - 1 ? 'next' : 'go'}
-                    autoCapitalize="words"
-                    autoComplete="off"
-                    data-choice
-                    value={c}
-                    maxLength={60}
-                    aria-label={t.choiceN(i + 1)}
-                    placeholder={isNew ? `+ ${t.addChoiceRow}` : t.choiceN(i + 1)}
-                    aria-invalid={!!fieldError.choices}
-                    onKeyDown={(e) => onEnter(e, i < choices.length - 1 ? `choice-${i + 1}` : null)}
-                    onChange={(e) => {
-                      setChoice(i, e.target.value);
-                      setFieldError((f) => ({ ...f, choices: undefined }));
-                    }}
-                  />
-                </span>
-                <span className="evm-row">
-                  {choices.length > 2 && !isNew ? (
-                    <button type="button" className="icon-btn builder-remove" aria-label={t.removeChoice(i + 1)} onClick={() => removeChoice(i)}>
-                      <X size={14} strokeWidth={1.75} aria-hidden />
+          <div className={'tot-options duel-options is-ballot builder-rows' + (electionMode ? '' : ' no-num')}>
+            {choices.map((c, i) => {
+              const isNew = i === choices.length - 1 && !c.trim() && choices.length > 2;
+              return (
+                <div
+                  key={i}
+                  className={'tot-option duel-option builder-row' + (isNew ? ' is-new' : '')}
+                  style={{ '--pc': `var(--p-${TONES[i % TONES.length]})` } as React.CSSProperties}
+                >
+                  {electionMode && <span className="tot-letter">{i + 1}</span>}
+                  <span className="duel-body">
+                    {/* The choice's picture: tap for emoji suggestions, popular emoji, or a photo from the phone. */}
+                    <button
+                      type="button"
+                      className={'face-pick' + (photos[i] ? ' has-photo' : emojiAt(i) ? (touched[i] ? ' has-emoji' : ' has-emoji is-auto') : '')}
+                      aria-label={t.pictureN(i + 1)}
+                      title={!touched[i] && !photos[i] && emojiAt(i) ? t.emojiAuto : undefined}
+                      onClick={() => setPicking(i)}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      {photos[i] ? <img src={photos[i]} alt="" /> : emojiAt(i) ? <span>{emojiAt(i)}</span> : <ImagePlus size={18} strokeWidth={1.75} aria-hidden />}
                     </button>
-                  ) : (
-                    <span className="evm-led" aria-hidden />
+                    <input
+                      id={`choice-${i}`}
+                      className="duel-name builder-name"
+                      enterKeyHint={i < choices.length - 1 ? 'next' : 'go'}
+                      autoCapitalize="words"
+                      autoComplete="off"
+                      data-choice
+                      value={c}
+                      maxLength={60}
+                      aria-label={t.choiceN(i + 1)}
+                      placeholder={isNew ? `+ ${t.addChoiceRow}` : t.choiceN(i + 1)}
+                      aria-invalid={!!fieldError.choices}
+                      onKeyDown={(e) => onEnter(e, i < choices.length - 1 ? `choice-${i + 1}` : null)}
+                      onChange={(e) => {
+                        setChoice(i, e.target.value);
+                        setFieldError((f) => ({ ...f, choices: undefined }));
+                      }}
+                    />
+                  </span>
+                  {choices.length > 2 && !isNew && (
+                    <span className="evm-row">
+                      <button type="button" className="icon-btn builder-remove" aria-label={t.removeChoice(i + 1)} onClick={() => removeChoice(i)}>
+                        <X size={14} strokeWidth={1.75} aria-hidden />
+                      </button>
+                    </span>
                   )}
-                  <span className="evm-btn" aria-hidden>{t.vote}</span>
-                </span>
-              </div>
-            );
-          })}
-        </div>
+                </div>
+              );
+            })}
+          </div>
         )}
-        {kind === 'multi' && <p className="small muted builder-hint">{t.multiHint}</p>}
-        {kind === 'rank' && <p className="small muted builder-hint">{t.rankHint}</p>}
+        {kind === 'multi' && <p className="small muted">{t.multiHint}</p>}
+        {kind === 'rank' && <p className="small muted">{t.rankHint}</p>}
         {fieldError.choices && <p className="field-error" role="alert">{fieldError.choices}</p>}
       </section>
 
-      {/* P3 settings. Upfront: the two most people change (results after voting, topic). The rest wait behind
-          "More options"; anything already switched on or filled in always shows, so nothing set is ever hidden. */}
-      <div className="builder-settings" role="group" aria-label={t.moreOptions}>
-        <button type="button" className={'chip' + (hideUntilVoted ? ' chip-on' : '')} aria-pressed={hideUntilVoted} title={t.hideResultsNote} onClick={() => setHide((v) => !v)}>
-          <EyeOff size={13} strokeWidth={1.75} aria-hidden /> {t.setHidden}
-        </button>
-        <button type="button" className="chip" aria-expanded={open === 'topic'} onClick={() => toggleOpen('topic')}>
-          {t.setTopic(t.categories[category] ?? category)}
-        </button>
-        {(showMore || electionMode) && (
-          <button type="button" className={'chip' + (electionMode ? ' chip-on' : '')} aria-pressed={electionMode} title={t.setElectionNote} onClick={() => setElectionMode((v) => !v)}>
-            <Landmark size={13} strokeWidth={1.75} aria-hidden /> {t.setElection}
-          </button>
-        )}
-        {(showMore || allowChange) && (
-          <button type="button" className={'chip' + (allowChange ? ' chip-on' : '')} aria-pressed={allowChange} title={t.allowChangeNote} onClick={() => setChange((v) => !v)}>
-            <Repeat size={13} strokeWidth={1.75} aria-hidden /> {t.setChange}
-          </button>
-        )}
-        {(showMore || isGroup) && (
-          <button type="button" className={'chip' + (isGroup ? ' chip-on' : '')} aria-expanded={open === 'group'} onClick={() => toggleOpen('group')}>
-            <Users size={13} strokeWidth={1.75} aria-hidden /> {isGroup ? `${t.setGroup} · ${groupN}` : t.setGroup}
-          </button>
-        )}
-        {(showMore || endsAt || fieldError.end) && (
-          <button type="button" className={'chip' + (endsAt ? ' chip-on' : '')} aria-expanded={open === 'ends'} onClick={() => toggleOpen('ends')}>
-            <Clock size={13} strokeWidth={1.75} aria-hidden /> <span suppressHydrationWarning>{endsLabel}</span>
-          </button>
-        )}
-        {(showMore || description.trim()) && (
-          <button type="button" className={'chip' + (description.trim() ? ' chip-on' : '')} aria-expanded={open === 'details'} onClick={() => toggleOpen('details')}>
-            {t.setDetails}
-          </button>
-        )}
-        {!showMore && !(electionMode && allowChange && endsAt && description.trim()) && (
-          <button type="button" className="chip chip-more" aria-expanded={false} onClick={() => setShowMore(true)}>
-            <SlidersHorizontal size={13} strokeWidth={1.75} aria-hidden /> {t.moreOptions}
-          </button>
-        )}
-      </div>
-      {electionMode && <p className="small muted builder-note">{t.setElectionNote}</p>}
-      {(open === 'ends' || fieldError.end) && (
-        <div className="duel-group">
-          <span className="search">
-            <Clock size={14} strokeWidth={1.75} aria-hidden />
-            <input id="end" type="datetime-local" min={localNow()} value={endsAt} aria-label={t.ends} aria-invalid={!!fieldError.end} onChange={(e) => { setEndsAt(e.target.value); setFieldError((f) => ({ ...f, end: undefined })); }} />
-          </span>
-          {endsAt && <button type="button" className="link-like small muted" onClick={() => setEndsAt('')}>{t.endsClear}</button>}
-          {fieldError.end && <p className="field-error" role="alert">{fieldError.end}</p>}
-        </div>
-      )}
-      {open === 'group' && (
-        <div className="duel-group">
-          <span className="search">
-            <Users size={14} strokeWidth={1.75} aria-hidden />
-            <input id="group" type="number" inputMode="numeric" min={2} max={200} value={groupSize} placeholder="12" aria-label={t.grpHow} onChange={(e) => setGroupSize(e.target.value.replace(/\D/g, '').slice(0, 3))} />
-          </span>
-          <p className="small muted">{t.grpHow} {t.grpNote}</p>
-        </div>
-      )}
-      {open === 'topic' && (
-        <div className="row wrap" role="radiogroup" aria-label={t.category}>
-          {CATEGORIES.map((c) => (
-            <button key={c} type="button" role="radio" aria-checked={category === c} className={'chip' + (category === c ? ' chip-on' : '')} onClick={() => { setCategory(c); setOpen(null); }}>
-              {t.categories[c] ?? c}
-            </button>
-          ))}
-        </div>
-      )}
-      {open === 'details' && (
-        <span className="search">
-          <input id="desc" enterKeyHint="done" onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), setOpen(null))} value={description} maxLength={300} placeholder={t.detailsPh} aria-label={t.details} onChange={(e) => setDescription(e.target.value)} />
-        </span>
-      )}
+      {/* 3. Settings: one list of rows. Each says its current value; a row opens its own box underneath. */}
+      <section className="create-block">
+        <p className="create-label">{t.settingsLabel}</p>
+        <ul className="al-listcard create-settings">
+          <li>
+            <Row icon={current.Icon} name={t.typeLabel} note={current.desc} value={current.name} open={typeOpen} tone="var(--p-input)" onClick={() => setTypeOpen((v) => !v)} />
+            {typeOpen && (
+              <div className="create-types" role="radiogroup" aria-label={t.typeLabel}>
+                {TYPES.map((x) => (
+                  <button key={x.k} type="button" role="radio" aria-checked={x.k === current.k} className={'create-type' + (x.k === current.k ? ' is-on' : '')} onClick={() => { x.pick(); setTypeOpen(false); }}>
+                    <x.Icon size={18} strokeWidth={1.75} aria-hidden />
+                    <span><strong>{x.name}</strong><span className="small muted">{x.desc}</span></span>
+                    {x.k === current.k && <Check size={16} strokeWidth={2.25} aria-hidden />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </li>
+          <li><Row icon={EyeOff} name={t.setHidden} note={t.hideResultsNote} on={hideUntilVoted} onClick={() => setHide((v) => !v)} /></li>
+          <li>
+            <Row icon={Tag} name={t.category} value={t.categories[category] ?? category} open={open === 'topic'} onClick={() => toggleOpen('topic')} />
+            {open === 'topic' && (
+              <div className="create-panel row wrap" role="radiogroup" aria-label={t.category}>
+                {CATEGORIES.map((c) => (
+                  <button key={c} type="button" role="radio" aria-checked={category === c} className={'chip' + (category === c ? ' chip-on' : '')} onClick={() => { setCategory(c); setOpen(null); }}>
+                    {t.categories[c] ?? c}
+                  </button>
+                ))}
+              </div>
+            )}
+          </li>
+          {showMore || endsAt || isGroup || allowChange || electionMode || description.trim() || fieldError.end ? (
+            <>
+              <li>
+                <Row icon={Clock} name={t.setEnds} value={endsAt ? endsLabel : t.offWord} open={open === 'ends' || !!fieldError.end} onClick={() => toggleOpen('ends')} />
+                {(open === 'ends' || fieldError.end) && (
+                  <div className="create-panel">
+                    <span className="search">
+                      <Clock size={14} strokeWidth={1.75} aria-hidden />
+                      <input id="end" type="datetime-local" min={localNow()} value={endsAt} aria-label={t.ends} aria-invalid={!!fieldError.end} onChange={(e) => { setEndsAt(e.target.value); setFieldError((f) => ({ ...f, end: undefined })); }} />
+                    </span>
+                    {endsAt && <button type="button" className="link-like small muted" onClick={() => setEndsAt('')}>{t.endsClear}</button>}
+                    {fieldError.end && <p className="field-error" role="alert">{fieldError.end}</p>}
+                  </div>
+                )}
+              </li>
+              <li>
+                <Row icon={Users} name={t.setGroup} value={isGroup ? String(groupN) : t.offWord} open={open === 'group'} onClick={() => toggleOpen('group')} />
+                {open === 'group' && (
+                  <div className="create-panel">
+                    <span className="search">
+                      <Users size={14} strokeWidth={1.75} aria-hidden />
+                      <input id="group" type="number" inputMode="numeric" min={2} max={200} value={groupSize} placeholder="12" aria-label={t.grpHow} onChange={(e) => setGroupSize(e.target.value.replace(/\D/g, '').slice(0, 3))} />
+                    </span>
+                    <p className="small muted">{t.grpHow} {t.grpNote}</p>
+                  </div>
+                )}
+              </li>
+              <li><Row icon={Repeat} name={t.setChange} note={t.allowChangeNote} on={allowChange} onClick={() => setChange((v) => !v)} /></li>
+              <li><Row icon={Landmark} name={t.setElection} note={t.setElectionShort} on={electionMode} onClick={() => setElectionMode((v) => !v)} /></li>
+              <li>
+                <Row icon={AlignLeft} name={t.setDetails} value={description.trim() ? '✓' : t.offWord} open={open === 'details'} onClick={() => toggleOpen('details')} />
+                {open === 'details' && (
+                  <div className="create-panel">
+                    <span className="search">
+                      <input id="desc" enterKeyHint="done" onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), setOpen(null))} value={description} maxLength={300} placeholder={t.detailsPh} aria-label={t.details} onChange={(e) => setDescription(e.target.value)} />
+                    </span>
+                  </div>
+                )}
+              </li>
+            </>
+          ) : (
+            <li><Row icon={SlidersHorizontal} name={t.moreOptions} open={false} onClick={() => setShowMore(true)} /></li>
+          )}
+        </ul>
+      </section>
 
       {photos.some(Boolean) && <p className="small muted">{t.photosHeld}</p>}
       {error && <p className="duel-error" role="alert">{error}</p>}

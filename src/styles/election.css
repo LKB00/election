@@ -123,7 +123,7 @@
 @keyframes tick { from { transform: translateY(40%); opacity: 0; } }
 /* Majority mark at 50% on every result bar. */
 .duel-meter { position: relative; }
-.duel-meter::after { content: ''; position: absolute; left: calc(50% - 1px); top: -6px; bottom: -6px; width: 2px; border-radius: 1px; background: var(--ink); opacity: 0.75; }
+.is-election .duel-meter::after { content: ''; position: absolute; left: calc(50% - 1px); top: -6px; bottom: -6px; width: 2px; border-radius: 1px; background: var(--ink); opacity: 0.75; }
 .duel-meter > span { transition: width 0.55s cubic-bezier(0.2, 0.9, 0.3, 1); }
 .duel-pct { transition: color 0.2s; }
 .duel-counting { margin: 0; display: flex; align-items: center; gap: 4px; }
@@ -710,3 +710,41 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .month-card__facts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .month-card__facts li { display: flex; align-items: flex-start; gap: 8px; font-size: 15px; line-height: 22px; }
 .month-card__facts svg { flex: none; margin-top: 3px; }
+
+/* ---- Create, tidied (docs/DESIGN.md, "Create, tidied"): question box, choices, settings rows ---- */
+.builder.create { gap: 28px; }
+.create-block { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.create-label { margin: 0; font: 600 13px / 18px var(--sans); letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-2); }
+.create-q { width: 100%; box-sizing: border-box; margin: 0; padding: 14px 16px; border: 1px solid var(--line); border-radius: 18px; background: var(--card); color: var(--ink); font: 700 22px / 30px var(--display); resize: none; field-sizing: content; min-height: 92px; outline: none; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+.create-q::placeholder { color: var(--ink-3, var(--ink-2)); opacity: 0.6; font-weight: 600; }
+.create-q:focus { border-color: var(--ink); box-shadow: 0 0 0 3px color-mix(in srgb, var(--lime) 55%, transparent); }
+.create-q[aria-invalid='true'] { border-color: var(--negative, #c0392b); }
+.create-ideas-wrap { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.create .create-ideas { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px 2px 4px; margin: 0 -2px; flex-wrap: nowrap; }
+.create .create-ideas::-webkit-scrollbar { display: none; }
+.create .create-ideas .chip { flex: none; white-space: nowrap; }
+/* Settings rows: an Arogya list card; a row can open its own box underneath. */
+.create-settings > li + li { border-top: 1px solid var(--line); }
+.create-row { width: 100%; border: 0; background: none; font: inherit; text-align: left; cursor: pointer; min-height: 64px; }
+.create-row .al-row__when { align-self: center; color: var(--ink-2); max-width: 40%; overflow: hidden; text-overflow: ellipsis; }
+.create-row__chev { flex: none; color: var(--ink-2); transition: transform 0.15s ease; }
+.create-row__chev.is-open { transform: rotate(180deg); }
+.create-panel { display: flex; flex-direction: column; gap: 8px; padding: 0 16px 16px 72px; }
+.create-panel.row { flex-direction: row; }
+.create-panel .search { max-width: none; }
+.create-types { display: flex; flex-direction: column; padding: 0 12px 12px; gap: 4px; }
+.create-type { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; border: 1px solid transparent; border-radius: 14px; background: none; font: inherit; color: var(--ink); text-align: left; cursor: pointer; }
+.create-type > span { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.create-type.is-on { background: var(--p-input); border-color: var(--d-input); }
+.create-type:hover { background: var(--sand); }
+.create-type.is-on:hover { background: var(--p-input); }
+/* On/off switch (with the row's words; the disc turns yellow when on). */
+.switch { flex: none; position: relative; width: 44px; height: 26px; border-radius: 999px; background: var(--line); transition: background-color 0.15s ease; }
+.switch > span { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform 0.15s ease; }
+.switch.is-on { background: var(--ink); }
+.switch.is-on > span { transform: translateX(18px); }
+@media (max-width: 380px) { .create-panel { padding-left: 16px; } }
+/* Topics on the Polls page: one scrolling row under search. */
+.topic-chips.topic-row { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding: 2px 16px 4px; margin: 0 -16px; }
+.topic-chips.topic-row::-webkit-scrollbar { display: none; }
+.topic-row .topic-chip { flex: none; }

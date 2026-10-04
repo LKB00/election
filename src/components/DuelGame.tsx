@@ -836,7 +836,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
           </div>
         )
       ) : (
-      <div className={'tot-options duel-options n-' + poll.options.length + (ballot ? ' is-ballot' : '') + (numbered ? '' : ' no-num') + (nudge && !voted ? ' is-nudge' : '')}>
+      <div className={'tot-options duel-options n-' + poll.options.length + (ballot ? ' is-ballot' : '') + (numbered ? '' : ' no-num') + (poll.electionMode ? ' is-election' : '') + (nudge && !voted ? ' is-nudge' : '')}>
           {poll.options.map((o, n) => {
             const isMine = multi ? poll.myPicks.includes(o.id) : poll.myVote === o.id;
             const ticked = multi && !voted && ticks.includes(o.id);
@@ -993,20 +993,25 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
         </div>
       )}
 
-      {revealed && poll.totalVotes > 0 && !counting && (
+      {/* The trend under the result, only when there is one (a swing, or the share over time). The "line on each bar =
+          majority" note and mark belong to Election mode's counting-day look; elsewhere they were noise. */}
+      {revealed && poll.totalVotes > 0 && !counting && (poll.swing || (poll.trend.length > 2 && sparkOpt) || (poll.electionMode && !rating && !ranking)) && (
         <div className="duel-swing">
           {poll.trend.length > 2 && sparkOpt && <Sparkline points={poll.trend.map((p) => (sparkOpt.id === poll.options[0].id ? p.a : 100 - p.a))} label={sparkOpt.label} aria={t.shareOverTime} />}
           <p className="small muted">
-            {poll.swing ? (
-              <>
-                <strong className="duel-swing-name">{t.swing24}</strong> {poll.options.find((o) => o.id === poll.swing!.optionId)?.label}{' '}
-                <span className={poll.swing.points > 0 ? 'txt-good' : 'txt-bad'}>{poll.swing.points > 0 ? '▲' : '▼'} {Math.abs(poll.swing.points)}{t.pts}</span>
-                {' · '}
-              </>
-            ) : poll.trend.length > 2 && sparkOpt ? (
-              <>{t.shareOverTime(sparkOpt.label)} · </>
-            ) : null}
-            {!rating && !ranking && t.majorityLine}
+            {[
+              poll.swing ? (
+                <span key="s">
+                  <strong className="duel-swing-name">{t.swing24}</strong> {poll.options.find((o) => o.id === poll.swing!.optionId)?.label}{' '}
+                  <span className={poll.swing.points > 0 ? 'txt-good' : 'txt-bad'}>{poll.swing.points > 0 ? '▲' : '▼'} {Math.abs(poll.swing.points)}{t.pts}</span>
+                </span>
+              ) : poll.trend.length > 2 && sparkOpt ? (
+                <span key="t">{t.shareOverTime(sparkOpt.label)}</span>
+              ) : null,
+              poll.electionMode && !rating && !ranking ? <span key="m">{t.majorityLine}</span> : null,
+            ]
+              .filter(Boolean)
+              .flatMap((x, n) => (n ? [' · ', x] : [x]))}
           </p>
         </div>
       )}

@@ -812,3 +812,15 @@ On My votes, above your list, once you have voted in 3+ polls this month (India 
 - **P2, what it rests on:** a row of 🟩/🟪 squares (with the crowd / against it, oldest first), "7 polls voted", "With the crowd on 5 of 7", "Rarest take: Dhoni (20%) in …" (polls with 5+ voters), "Mostly Food" (the topic's icon).
 - **Share my month** (WhatsApp first): the type, the count and the squares, never what you picked.
 - **Describes, never ranks:** no score, no percentile, no comparison with other people, nothing saved. Made fresh each time from this phone's votes; politics polls are left out; only polls whose results you can already see count (never a hidden number, never a group poll still waiting).
+
+## Journey polish (owner: "few screens look off or messy, for example Create")
+
+**Create, tidied:** one top-to-bottom flow in three labelled parts, then the one button.
+1. **Your question:** a real box (border, white card, focus ring) instead of grey text on a dashed line; idea chips under it as one scrolling row (they used to run off the edge).
+2. **Choices:** picture + name per row; the greyed-out "Vote" key that did nothing is gone (only the remove ×).
+3. **Settings:** one Arogya list card of rows, each with its icon, its name, a quiet line and its current value or an on/off switch (the disc turns yellow when on). **Poll type** is the first row ("Pick one ›"); it opens the five types, each with one line on what it does, instead of five wrapping emoji chips. Then Results after voting, Category, and **More options** (End time, Group poll, Votes can change, Election mode, Add details). A row opens its own box right under itself.
+- The pack link left the header (it competed with the form) and is now a list row after the form: "Or make a pack".
+
+**Poll result:** the "line on each bar marks half (50%)" note and the 50% mark now show only in Election mode (counting-day look); elsewhere they were noise under every result. The trend line shows only when there is a trend.
+
+**Polls page:** topics moved up, right under search, as one scrolling row of picture + word chips (they were at the very bottom, under a long list).

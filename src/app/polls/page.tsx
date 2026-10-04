@@ -43,6 +43,17 @@ export default async function Duels({ searchParams }: { searchParams: Promise<{ 
           <button type="submit" className="btn btn-ghost">{t.searchGo}</button>
         </form>
       </header>
+      {/* P2: browse by topic, right under search (one scrolling row of pictures + words). */}
+      {!q && (
+        <nav className="topic-chips topic-row block-tight" aria-label={t.topics}>
+          {CATEGORIES.map((c) => (
+            <Link key={c} href={`/topic/${c}`} className="chip topic-chip">
+              <span className="topic-chip__disc" style={{ '--tone': topicTone(c) } as React.CSSProperties} aria-hidden>{(() => { const I = topicIcon(c); return <I size={14} strokeWidth={1.75} />; })()}</span>
+              {t.categories[c] ?? c}
+            </Link>
+          ))}
+        </nav>
+      )}
       {q && (
         <section className="al-block" aria-live="polite">
           <h2 className="al-block__title">{t.searchFor(q)}{polls.length > 0 && <span className="al-block__aside">{t.pollsN(polls.length)}</span>}</h2>
@@ -83,19 +94,6 @@ export default async function Duels({ searchParams }: { searchParams: Promise<{ 
         </section>
       )}
       </>)}
-      {/* P3: browse by topic (also how search engines find the topic pages). */}
-      <section className="al-block">
-        <h2 className="al-block__title">{t.topics}</h2>
-        <nav className="topic-chips block-tight" aria-label={t.topics}>
-          {CATEGORIES.map((c) => (
-            <Link key={c} href={`/topic/${c}`} className="chip topic-chip">
-              {/* The topic's picture and colour, the same as on its poll rows. */}
-              <span className="topic-chip__disc" style={{ '--tone': topicTone(c) } as React.CSSProperties} aria-hidden>{(() => { const I = topicIcon(c); return <I size={14} strokeWidth={1.75} />; })()}</span>
-              {t.categories[c] ?? c}
-            </Link>
-          ))}
-        </nav>
-      </section>
     </div>
   );
 }

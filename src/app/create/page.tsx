@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Timer } from 'lucide-react';
+import { ChevronRight, Timer } from 'lucide-react';
 import { CATEGORIES } from '@/lib/categories';
 import CreateForm from '@/components/CreateForm';
 import { getT } from '@/lib/lang-server';
@@ -22,11 +22,25 @@ export default async function CreatePage({ searchParams }: { searchParams: Promi
         <p className="eyebrow"><Timer size={13} strokeWidth={2} aria-hidden />{t.takes30}</p>
         <h1 className="display">{t.startDuel}</h1>
         <p className="lead">{t.createLead}</p>
-        {/* A pack: a few polls around a match or a show night, made in one go. */}
-        <p className="small"><Link href="/create/pack" className="text-link">🏏 📺 {t.packMakeLink}</Link></p>
       </header>
       <section className="block block-tight">
         <CreateForm initialTitle={title} initialTopic={topic} />
+      </section>
+      {/* P3, after the form: a pack (a few polls around a match or a show night, made in one go). */}
+      <section className="al-block">
+        <h2 className="al-block__title">{t.packOr}</h2>
+        <ul className="al-listcard">
+          <li>
+            <Link href="/create/pack" className="al-row">
+              <span className="al-row__disc is-faces" style={{ '--tone': 'var(--p-control)' } as React.CSSProperties} aria-hidden>🏏</span>
+              <span className="al-row__main">
+                <span className="al-row__title">{t.packRow}</span>
+                <span className="al-row__meta">{t.packRowNote}</span>
+              </span>
+              <ChevronRight size={18} strokeWidth={1.75} className="al-row__chevron" aria-hidden />
+            </Link>
+          </li>
+        </ul>
       </section>
       <p className="small block row wrap">
         <Link href="/terms" className="text-link">{t.termsLink}</Link>
