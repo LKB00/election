@@ -546,3 +546,12 @@ Ballots keep one vote per person; each place is stored in `vote_picks.rank`. Poi
 |---|---|---|---|
 | `/today`: a fixed link that always opens today's question (shown on /admin to copy) | Link | – | Post it once in a WhatsApp Channel, group description or Instagram bio; it follows your daily pick. |
 | Story card line: "5 friends voted from my link · 3 agree with me" (lime pill, only when friends have voted) | Status / Story image | P2 | Something to brag about that never says who leads (Wordle lesson), so friends still have to vote to see the result. Lime = your progress. |
+
+## Phase 3: Search (`/polls?q=…`)
+
+| Element | Where | Priority | Job |
+|---|---|---|---|
+| Search box + "Search" (ghost) button under the page title | Polls | P2 | Find a poll by any word in the question or a choice ("chai" finds "Chai or coffee?"). A plain form, so it works before scripts load and each search has its own link. |
+| "Polls about “…”" + matching tiles | Polls, while searching | P1 | The only thing on the page while you search: Today's banner and Trending step away. Today's question is found like any other poll. |
+| "Nothing yet. Be the first to ask." + ink "Ask it yourself" | Polls, no match | P1 | A dead end becomes a new poll: it opens Create with your words already in the question. |
+| "Clear search" link | Polls, while searching | P3 | Back to the normal page. |

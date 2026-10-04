@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Search } from 'lucide-react';
 import DuelBanner from '@/components/DuelBanner';
 import DuelTiles from '@/components/DuelTiles';
 import { getDb } from '@/db';
@@ -11,17 +12,19 @@ import { CATEGORIES } from '@/lib/categories';
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Polls' };
 
-// P1: the duel of the day (dark banner). P2: browse the tiles.
-export default async function Duels() {
+// P1: the duel of the day (dark banner). P2: browse the tiles. While searching, only the matches (P1) show.
+export default async function Duels({ searchParams }: { searchParams: Promise<{ q?: string | string[] }> }) {
+  const raw = (await searchParams).q;
+  const q = (Array.isArray(raw) ? raw[0] : raw ?? '').trim().slice(0, 60);
   const db = await getDb();
   const t = await getT();
   const voterId = await readVoterId();
-  const featuredId = await getFeaturedId(db);
+  const featuredId = q ? null : await getFeaturedId(db);
   const [featured, polls, mine, hot] = await Promise.all([
     featuredId ? getPoll(db, featuredId, voterId) : Promise.resolve(null),
-    listPolls(db, 60),
+    listPolls(db, 60, { q }),
     getMyVotes(db, voterId, 200),
-    trendingPolls(db, 3),
+    q ? Promise.resolve([]) : trendingPolls(db, 3),
   ]);
   const rest = polls.filter((p) => !hot.some((h) => h.id === p.id));
   return (
@@ -29,7 +32,30 @@ export default async function Duels() {
       <header className="page-head">
         <h1 className="display">{t.duels}</h1>
         <p className="lead">{t.duelsLead}</p>
+        {/* P2: search. A plain form, so it works before the page's script loads and the result has its own link. */}
+        <form role="search" action="/polls" className="row poll-search">
+          <label className="search">
+            <Search size={14} strokeWidth={1.75} aria-hidden />
+            <input type="search" name="q" defaultValue={q} maxLength={60} placeholder={t.searchPh} aria-label={t.searchPh} enterKeyHint="search" />
+          </label>
+          <button type="submit" className="btn btn-ghost">{t.searchGo}</button>
+        </form>
       </header>
+      {q && (
+        <section className="block block-tight" aria-live="polite">
+          <h2>{t.searchFor(q)}</h2>
+          {polls.length > 0 ? (
+            <DuelTiles polls={polls} votedIds={mine.map((v) => v.pollId)} noCreate />
+          ) : (
+            <div className="search-none">
+              <p>{t.searchNone}</p>
+              <Link href={`/create?title=${encodeURIComponent(q)}`} className="btn btn-primary">{t.searchAsk}</Link>
+            </div>
+          )}
+          <p className="small block-tight"><Link href="/polls" className="text-link">{t.searchClear}</Link></p>
+        </section>
+      )}
+      {!q && (<>
       {/* Not voted yet: the duel of the day is the main thing here. Voted: it steps back below the duels you have not done. */}
       {featured && featured.myVote === null && (
         <section className="block block-tight">
@@ -53,6 +79,7 @@ export default async function Duels() {
           <DuelBanner poll={featured} />
         </section>
       )}
+      </>)}
       {/* P3: browse by topic (also how search engines find the topic pages). */}
       <section className="block">
         <h2>{t.topics}</h2>

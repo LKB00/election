@@ -124,6 +124,19 @@ describe('listing', () => {
     expect(item.totalVotes).toBe(2);
     expect(item.options).toEqual(['Virat', 'Rohit', 'Dhoni']);
   });
+
+  it('searches the question and the choices, ignoring case, with % and _ as plain letters', async () => {
+    const id = await make({ title: 'Morning drink zqx?', options: ['Masala Chai', 'Filter coffee'] });
+    const odd = await make({ title: 'Is 100% zqx_odd fair?' });
+    const ids = async (q: string) => (await listPolls(db, 100, { q })).map((p) => p.id);
+    expect(await ids('DRINK ZQX')).toContain(id);
+    expect(await ids('masala chai')).toContain(id);
+    expect(await ids('zqx%odd')).not.toContain(odd);
+    expect(await ids('100%')).toContain(odd);
+    expect(await ids('zqx_odd')).toEqual([odd]);
+    expect(await ids('zqx_')).toEqual([odd]);
+    expect(await ids('no such poll at all qq')).toEqual([]);
+  });
 });
 
 describe('flagship poll and reasons', () => {

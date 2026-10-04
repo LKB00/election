@@ -5,7 +5,10 @@ import { getT } from '@/lib/lang-server';
 
 export const metadata: Metadata = { title: 'Start a poll' };
 
-export default async function CreatePage() {
+// "Ask it yourself" from an empty search lands here with ?title=…, already typed in.
+export default async function CreatePage({ searchParams }: { searchParams: Promise<{ title?: string | string[] }> }) {
+  const raw = (await searchParams).title;
+  const title = (Array.isArray(raw) ? raw[0] : raw ?? '').trim().slice(0, 120);
   const t = await getT();
   return (
     <div className="page">
@@ -15,7 +18,7 @@ export default async function CreatePage() {
         <p className="lead">{t.createLead}</p>
       </header>
       <section className="block block-tight">
-        <CreateForm />
+        <CreateForm initialTitle={title} />
       </section>
       <p className="small block">
         <Link href="/privacy" className="text-link">{t.privacyLink}</Link>
