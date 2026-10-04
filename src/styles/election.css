@@ -563,3 +563,10 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .group-bar { display: block; height: 8px; border-radius: 9999px; background: var(--line); overflow: hidden; }
 .group-bar > span { display: block; height: 100%; border-radius: inherit; background: var(--ink-3); }
 .group-row.is-you .group-bar > span { background: var(--lime); }
+.prose-block .terms-list { margin: 0; padding-left: 20px; max-width: 60ch; display: flex; flex-direction: column; gap: 6px; }
+/* The 18+ / permission tick above "Photo from your phone" (the button waits for it). */
+.picker-consent { display: flex; align-items: flex-start; gap: 10px; text-align: left; cursor: pointer; }
+.picker-consent input { width: 18px; height: 18px; margin: 2px 0 0; flex: none; accent-color: var(--ink); }
+/* The 3-monthly rules reminder on Home (P3): one quiet line, not a banner. */
+.rules-note { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-top: 24px; padding: 12px 16px; border: var(--hair) solid var(--line); border-radius: 12px; color: var(--ink-3); }
+.rules-note > span { flex: 1 1 220px; }

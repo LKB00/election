@@ -20,7 +20,8 @@ export default async function CreatePage({ searchParams }: { searchParams: Promi
       <section className="block block-tight">
         <CreateForm initialTitle={title} />
       </section>
-      <p className="small block">
+      <p className="small block row wrap">
+        <Link href="/terms" className="text-link">{t.termsLink}</Link>
         <Link href="/privacy" className="text-link">{t.privacyLink}</Link>
       </p>
     </div>

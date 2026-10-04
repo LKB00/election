@@ -790,25 +790,35 @@ export async function undoVote(db: Db, id: string, voterId: string): Promise<boo
 
 // ---- Reports and the owner's review (docs/DESIGN.md, "Safety") ----
 
-export const REPORT_REASONS = ['hate', 'false', 'private', 'spam', 'other'] as const;
+export const REPORT_REASONS = ['hate', 'false', 'private', 'me', 'spam', 'other'] as const;
 /** Distinct reports that take an unreviewed duel down at once, until the owner looks (the law asks for removal within hours). */
 export const AUTO_HIDE_REPORTS = 3;
+/** Reports about a photo ("private or sexual photo", "this is me"): the law gives 2 hours for intimate images, so a poll
+ *  with photos comes down at the first one, until the owner looks (they can put it back from /admin). */
+const PHOTO_REASONS: readonly string[] = ['private', 'me'];
 
-/** One report per person per duel. An unreviewed duel with enough reports is hidden at once. */
-export async function reportPoll(db: Db, id: string, voterId: string, reason: string, ipHash: string | null = null): Promise<boolean> {
+/** Saves a report. Returns false for an unknown poll or reason; otherwise the poll's title and whether it is now hidden
+ *  (for the owner's phone alert). */
+export async function reportPoll(db: Db, id: string, voterId: string, reason: string, ipHash: string | null = null): Promise<false | { title: string; hidden: boolean }> {
   if (!(REPORT_REASONS as readonly string[]).includes(reason)) return false;
-  const [poll] = await db.select({ id: polls.id, reviewed: polls.reviewed }).from(polls).where(and(eq(polls.id, id), eq(polls.hidden, false))).limit(1);
+  const [poll] = await db
+    .select({ id: polls.id, title: polls.title, reviewed: polls.reviewed, hasPhotos: polls.hasPhotos })
+    .from(polls)
+    .where(and(eq(polls.id, id), eq(polls.hidden, false)))
+    .limit(1);
   if (!poll) return false;
   await db.insert(reports).values({ pollId: id, voterKey: voterId, reason, ipHash }).onConflictDoNothing();
-  if (!poll.reviewed) {
+  let hide = poll.hasPhotos && PHOTO_REASONS.includes(reason);
+  if (!hide && !poll.reviewed) {
     // Distinct people: one network clearing its cookies three times still counts once.
     const [{ n }] = await db
       .select({ n: sql<number>`count(distinct coalesce(${reports.ipHash}, ${reports.voterKey}))::int` })
       .from(reports)
       .where(eq(reports.pollId, id));
-    if (n >= AUTO_HIDE_REPORTS) await db.update(polls).set({ hidden: true }).where(eq(polls.id, id));
+    hide = n >= AUTO_HIDE_REPORTS;
   }
-  return true;
+  if (hide) await db.update(polls).set({ hidden: true }).where(eq(polls.id, id));
+  return { title: poll.title, hidden: hide };
 }
 
 export type ReviewItem = { id: string; title: string; options: string[]; photos: string[]; category: string; hidden: boolean; reviewed: boolean; reports: number; reasons: string[]; createdAt: string };

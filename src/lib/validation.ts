@@ -53,13 +53,16 @@ export const createPollSchema = z.object({
   hideUntilVoted: z.boolean().default(true),
   allowChange: z.boolean().default(false),
   electionMode: z.boolean().default(false),
+  // "I am 18+, and these photos are me or I have permission" (DPDP: no children's data; consent for other people's faces).
+  photoConsent: z.boolean().default(false),
   kind: z.enum(['choice', 'rating', 'multi', 'rank']).default('choice'),
   endsAt: z
     .string()
     .datetime()
     .optional()
     .refine((v) => !v || new Date(v).getTime() > Date.now(), 'The end time must be in the future.'),
-}).refine((p) => !hasBlockedWord(p.title, p.description, ...p.options), 'Please remove the abusive words.');
+}).refine((p) => !hasBlockedWord(p.title, p.description, ...p.options), 'Please remove the abusive words.')
+  .refine((p) => p.photoConsent || !p.photos.some(Boolean), 'Tick "I am 18+" to add photos.');
 export type CreatePollInput = z.infer<typeof createPollSchema>;
 
 /** Ids and share codes are plain letters, digits, "-" and "_"; anything else (a NUL byte, spaces) is refused early. */

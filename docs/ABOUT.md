@@ -121,7 +121,8 @@ We decided **not to have streaks, levels, points or score bubbles**: they belong
 
 Optional settings (each feature stays off until set):
 - `ADMIN_SECRET` (16+ characters): turns on the review page.
-- `NEXT_PUBLIC_GRIEVANCE_EMAIL`: the complaints contact shown on the Privacy page.
+- `NEXT_PUBLIC_GRIEVANCE_NAME` and `NEXT_PUBLIC_GRIEVANCE_EMAIL`: the named complaints officer shown on the Rules and Privacy pages (the IT Rules ask for a name and an email).
+- `REPORT_ALERT_URL`: a phone alert for every report. Easiest: install the free **ntfy** app, subscribe to a long secret topic name, and set this to `https://ntfy.sh/<that-topic>`. Photo reports arrive as urgent.
 - `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`: vote-rate limits shared by all servers (free Upstash account).
 - `NEXT_PUBLIC_TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY`: the invisible bot check on votes (free Cloudflare account).
 - `SILENCE_WINDOWS`: election silence windows, for example `[{"from":"2027-02-08T18:00:00+05:30","to":"2027-03-10T18:00:00+05:30"}]`.
@@ -196,3 +197,13 @@ Design, UX, UI and interaction are the selling points. The plan, with research a
 - Moderation is one person (the owner) on the review page. The word filter is a short list, so it misses things; reports catch the rest.
 - Duel creators can add an emoji per choice, but not photos yet (needs file storage). Only the launch duel has photos.
 - The server is in the USA, so pages are slower for people in India until it moves.
+
+## Update: legal must-dos (Oct 2026)
+
+- `/terms` (Rules) in English, Hindi and Hinglish: what the site is, the banned-content list, photo rules, removal times (3 h for orders, 2 h for intimate images, 7 days otherwise), 180-day record keeping, and the complaints officer. Change `RULES_UPDATED` in `src/lib/grievance.ts` whenever that text changes.
+- A quiet reminder of the rules on Home, once every 3 months per phone (the IT Rules ask for this).
+- Photos need an "I am 18+, and these photos are of me or of people who said yes" tick, checked on the server too.
+- New report reason "This is me, remove it". Any photo report ("private or sexual photo" or "this is me") takes a poll with photos down at once until the owner looks.
+- Each report can ping the owner's phone (`REPORT_ALERT_URL`).
+- Complaints are now promised within 7 days (was 15), as the Feb 2026 IT Rules amendment asks.
+- Not legal advice: get a one-time review from an Indian tech lawyer.

@@ -2,6 +2,7 @@
 import { Camera, Check, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import Link from 'next/link';
 import { useOverlay } from '@/lib/useOverlay';
 import { useT } from '@/lib/lang';
 import { photoForChoice } from '@/lib/photo';
@@ -13,12 +14,15 @@ export type Picture = { emoji: string; photo: string };
 
 // The picture for one choice, as a sheet from the bottom (like the share panel): a big preview, "Photo from your
 // phone" (camera or gallery), the suggested emoji, a grid of popular ones, or any emoji typed on the keyboard.
-export default function PicturePicker({ name, value, suggested, onChange, onClose }: {
+export default function PicturePicker({ name, value, suggested, onChange, onClose, consent, onConsent }: {
   name: string;
   value: Picture;
   suggested: string;
   onChange: (p: Picture) => void;
   onClose: () => void;
+  /** The 18+ / permission tick (the law asks for it before photos; the server checks it too). */
+  consent: boolean;
+  onConsent: (v: boolean) => void;
 }) {
   const t = useT();
   const [busy, setBusy] = useState(false);
@@ -32,7 +36,7 @@ export default function PicturePicker({ name, value, suggested, onChange, onClos
   // Escape closes; focus starts in the sheet and goes back to the circle you tapped.
   useEffect(() => {
     const before = document.activeElement as HTMLElement | null;
-    sheetRef.current?.querySelector<HTMLElement>('.picker-photo')?.focus({ preventScroll: true });
+    sheetRef.current?.querySelector<HTMLElement>(consent ? '.picker-photo' : '.picker-consent input')?.focus({ preventScroll: true });
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close.current();
     window.addEventListener('keydown', onKey);
     return () => {
@@ -78,9 +82,14 @@ export default function PicturePicker({ name, value, suggested, onChange, onClos
 
         {/* Phones offer camera or gallery for this; the photo is made small on the phone before it is sent. */}
         <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => onFile(e.target.files?.[0])} />
-        <button type="button" className="btn btn-primary btn-lg picker-photo" disabled={busy} onClick={() => fileRef.current?.click()}>
+        <label className="small picker-consent">
+          <input type="checkbox" checked={consent} onChange={(e) => onConsent(e.target.checked)} />
+          <span>{t.photoConsent} <Link href="/terms" target="_blank" className="text-link">{t.termsLink}</Link></span>
+        </label>
+        <button type="button" className="btn btn-primary btn-lg picker-photo" disabled={busy || !consent} aria-describedby={consent ? undefined : 'consent-first'} onClick={() => fileRef.current?.click()}>
           <Camera size={16} strokeWidth={1.75} aria-hidden /> {busy ? t.photoWorking : value.photo ? t.photoChange : t.photoFromPhone}
         </button>
+        {!consent && <p id="consent-first" className="small muted">{t.photoConsentFirst}</p>}
         {failed && <p className="small duel-error" role="alert">{t.photoFailed}</p>}
 
         <p className="label">{suggested ? t.emojiSuggested : t.emojiPopular}</p>

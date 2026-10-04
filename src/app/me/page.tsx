@@ -84,7 +84,8 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
       {mine.length > 0 && <KeepVotes voterKey={voterKey} />}
       {/* TEMPORARY: the owner's "start fresh" for testing (remove before a public launch). */}
       <ResetFresh />
-      <p className="small block">
+      <p className="small block row wrap">
+        <Link href="/terms" className="text-link">{t.termsLink}</Link>
         <Link href="/privacy" className="text-link">{t.privacyLink}</Link>
       </p>
     </div>
