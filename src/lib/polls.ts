@@ -1,6 +1,7 @@
 import { and, desc, eq, inArray, isNull, ne, or, sql } from 'drizzle-orm';
 import { nanoid, customAlphabet } from 'nanoid';
 import { shareProof } from './secret';
+import { RATING_EMOJIS, RATING_LABELS, ratingAverage, type PollKind } from './rating';
 import { isCode } from './validation';
 import { schema, type Db } from '@/db';
 import type { CreatePollInput } from './validation';
@@ -68,6 +69,8 @@ export type PollView = {
   myGuess: { optionId: string; correct: boolean } | null;
   /** Code for your share link, and how the friends who used it voted. */
   myShareCode: string | null;
+  /** 'choice' (pick one) or 'rating' (1–5 faces; the options are the five steps). */
+  kind: PollKind;
   /** The full booth ritual (EVM, VVPAT slip, voter ID, counting day). Always on for politics and the flagship. */
   electionMode: boolean;
   /** Lets an open (not secret) share link show your pick on its preview image. */
@@ -87,7 +90,9 @@ function parseReasons(raw: string): string[] {
   }
 }
 
-export async function createPoll(db: Db, input: CreatePollInput): Promise<string> {
+export async function createPoll(db: Db, raw: CreatePollInput): Promise<string> {
+  // A rating poll always has the same five steps, whatever was sent.
+  const input = raw.kind === 'rating' ? { ...raw, options: RATING_LABELS, emojis: RATING_EMOJIS, photos: [] } : raw;
   const id = pollId();
   // Photos get their own short ids; the choice points at /api/img/<id>.
   const photoIds = input.options.map((_, n) => (input.photos[n] ? nanoid(12) : null));
@@ -97,6 +102,7 @@ export async function createPoll(db: Db, input: CreatePollInput): Promise<string
   await tx.insert(polls).values({
     hasPhotos,
     electionMode: input.electionMode,
+    kind: input.kind,
     id,
     title: input.title,
     description: input.description,
@@ -258,6 +264,7 @@ export async function getPoll(
       !sealed && mine[0]?.prediction && mine[0].prediction !== 'skip' && mine[0].prediction !== 'alone' ? { optionId: mine[0].prediction, correct: !!mine[0].predictionCorrect } : null,
     myShareCode,
     electionMode: poll.electionMode || poll.category === 'politics' || poll.featured,
+    kind: poll.kind === 'rating' ? 'rating' : 'choice',
     myShareProof: myShareCode ? shareProof(myShareCode) : null,
     // How your friends voted tells who leads, so it waits for the results too.
     friends: !resultsVisible ? { agree: 0, disagree: 0 } : { agree: friendRows[0]?.agree ?? 0, disagree: (friendRows[0]?.all ?? 0) - (friendRows[0]?.agree ?? 0) },
@@ -420,7 +427,7 @@ export async function guessLeader(db: Db, id: string, voterId: string, choice: s
   return 'ok';
 }
 
-export type PollSummary = { id: string; title: string; category: string; totalVotes: number; lastHour: number; options: string[]; closed: boolean };
+export type PollSummary = { id: string; title: string; category: string; kind: PollKind; totalVotes: number; lastHour: number; options: string[]; closed: boolean };
 
 /** Public duels, newest first. Hidden duels never; unreviewed politics duels not until the owner checks them. */
 export async function listPolls(db: Db, limit = 20, filter: { category?: string; reviewedOnly?: boolean } = {}): Promise<PollSummary[]> {
@@ -429,6 +436,7 @@ export async function listPolls(db: Db, limit = 20, filter: { category?: string;
       id: polls.id,
       title: polls.title,
       category: polls.category,
+      kind: polls.kind,
       endsAt: polls.endsAt,
       totalVotes: sql<number>`count(${votes.id})::int`,
       lastHour: sql<number>`count(${votes.id}) filter (where ${votes.createdAt} > now() - interval '1 hour')::int`,
@@ -457,6 +465,7 @@ export async function listPolls(db: Db, limit = 20, filter: { category?: string;
     id: r.id,
     title: r.title,
     category: r.category,
+    kind: r.kind === 'rating' ? 'rating' : 'choice',
     totalVotes: r.totalVotes,
     lastHour: r.lastHour,
     closed: !!r.endsAt && r.endsAt.getTime() <= Date.now(),
@@ -530,6 +539,7 @@ export async function getDeck(db: Db, voterId: string | null, limit = 12): Promi
 /** Where a duel you voted in stands now, as far as you are allowed to see (same rules as getPoll). */
 export type Standing =
   | { kind: 'leading' | 'won'; name: string; percent: number }
+  | { kind: 'rating'; average: number }
   | { kind: 'tie' | 'tied' | 'guess' | 'sealed' | 'none' };
 export type MyVote = { pollId: string; title: string; pick: string; at: string; standing: Standing };
 
@@ -541,6 +551,8 @@ export async function getMyVotes(db: Db, voterId: string | null, limit = 50): Pr
       pollId: votes.pollId,
       title: polls.title,
       pick: options.label,
+      pickEmoji: options.emoji,
+      pollKind: polls.kind,
       at: votes.createdAt,
       prediction: votes.prediction,
       category: polls.category,
@@ -568,9 +580,12 @@ export async function getMyVotes(db: Db, voterId: string | null, limit = 50): Pr
     if (sealedUntil(r.category)) standing = { kind: 'sealed' };
     else if (r.hideUntilVoted && !closed && r.prediction == null && mine.length >= 2 && total >= 2) standing = { kind: 'guess' };
     else if (!total) standing = { kind: 'none' };
+    else if (r.pollKind === 'rating') standing = { kind: 'rating', average: ratingAverage([1, 2, 3, 4, 5].map((v) => mine.find((c) => c.label === String(v))?.n ?? 0)) ?? 0 };
     else if (mine.length > 1 && mine[0].n === mine[1].n) standing = { kind: closed ? 'tied' : 'tie' };
     else standing = { kind: closed ? 'won' : 'leading', name: mine[0].label, percent: Math.round((mine[0].n / total) * 100) };
-    return { pollId: r.pollId, title: r.title, pick: r.pick, at: r.at.toISOString(), standing };
+    // A rating vote shows as its face ("🙂 4"), not as a bare number.
+    const pick = r.pollKind === 'rating' ? `${r.pickEmoji ?? ''} ${r.pick}/5`.trim() : r.pick;
+    return { pollId: r.pollId, title: r.title, pick, at: r.at.toISOString(), standing };
   });
 }
 

@@ -493,3 +493,15 @@ No form fields any more: you make the ballot itself, and it looks the way voters
 | Site title and preview: "Election · What does everyone think?"; "Ask anything. Vote in one tap, then see what everyone thinks." | Says what the site is now. |
 | **Election mode** (per poll; chip on Create, P3) | On: EVM row light and beep, VVPAT slip, voter ID, counting day, "Result declared". Off: blue Vote key, a soft "pop", a 2-second ink moment, the result straight away, "Final result". Always on for politics polls and the flagship. |
 | Sealed note: "no poll results while a real election is voting" | Same rule, plainer words. |
+
+## Phase 2: Rate it (owner: "start building next phase"; plan in docs/OPINIONS.md)
+
+The first new question type. A rating poll is stored as a normal poll with five fixed choices ("1"…"5", faces 😖 🙁 😐 🙂 😍), so one vote each, hidden results, Guess the crowd, sealing and reports all work unchanged.
+
+| Element | Screen | Priority | Job |
+|---|---|---|---|
+| "☑️ Choices / 😍 Rate 1–5" switch at the top of the ballot | Create | P2 | Pick the kind of question first; rating hides the choice rows and shows the five faces. |
+| Five faces with words (Hate it … Love it), tap one to vote | Poll | P1 | One tap, like the research's best-answered formats. Lime outline = your pick. |
+| After voting: the average big ("3.8 out of 5" with its face), "Average of N votes · You said: 🙂 Good", then one bar per face (yours lime) | Poll | P1 at that moment | You vs everyone, at a glance. No 50% line (it means nothing for a rating). |
+| Tiles say "Rate it · 😖 to 😍"; My votes says "😍 5/5" and "Average so far: 4.5 / 5" with a bar | Polls, My votes | P3 | Rating polls are recognisable in lists. |
+| Share images show the five faces; an open link says "I voted for 😍" | Share | P2 | Same share flow as other polls. |

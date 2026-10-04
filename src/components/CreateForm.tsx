@@ -6,6 +6,7 @@ import { CATEGORIES } from '@/lib/categories';
 import { useLang, useT } from '@/lib/lang';
 import { apiMsg } from '@/lib/i18n';
 import { choicesFromQuestion, emojiFor } from '@/lib/createHelp';
+import { RATING_EMOJIS, RATING_LABELS, type PollKind } from '@/lib/rating';
 import PicturePicker, { type Picture } from './PicturePicker';
 
 export default function CreateForm() {
@@ -30,6 +31,9 @@ export default function CreateForm() {
   const [allowChange, setChange] = useState(false);
   // Election mode: the full booth ritual for this poll. Politics polls get it anyway (the server decides that).
   const [electionMode, setElectionMode] = useState(false);
+  // What kind of question: pick one of your choices, or rate it 1–5 with faces.
+  const [kind, setKind] = useState<PollKind>('choice');
+  const isRating = kind === 'rating';
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   // Errors show under the field they belong to, and focus moves there.
@@ -81,10 +85,10 @@ export default function CreateForm() {
   }
   const typedChoices = choices.some((c) => c.trim());
   // "Virat, Rohit or Dhoni?" → offer those three as the choices (until you type your own).
-  const fromQuestion = typedChoices ? null : choicesFromQuestion(title);
+  const fromQuestion = typedChoices || kind === 'rating' ? null : choicesFromQuestion(title);
   const filledCount = choices.filter((c) => c.trim()).length;
   // The main button says what is still missing, then "Create duel".
-  const buttonText = busy ? t.creating : title.trim().length < 3 ? t.needQuestion : filledCount < 2 ? t.needChoices(2 - filledCount) : t.createDuel;
+  const buttonText = busy ? t.creating : title.trim().length < 3 ? t.needQuestion : !isRating && filledCount < 2 ? t.needChoices(2 - filledCount) : t.createDuel;
   // The end time as the phone shows it (local time, no seconds), for the picker's earliest allowed value.
   const localNow = () => {
     const d = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000);
@@ -95,7 +99,9 @@ export default function CreateForm() {
     const filled = choices.map((c) => c.trim().replace(/\s+/g, ' ')).filter(Boolean);
     const errs: { title?: string; choices?: string; end?: string } = {};
     if (title.trim().length < 3) errs.title = t.errTitle;
-    if (filled.length < 2) errs.choices = t.errChoices;
+    if (isRating) {
+      /* a rating poll has its five faces already */
+    } else if (filled.length < 2) errs.choices = t.errChoices;
     else if (new Set(filled.map((c) => c.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '') || c)).size !== filled.length) errs.choices = t.errSame;
     if (endsAt && !(new Date(endsAt).getTime() > Date.now())) errs.end = t.errEnd;
     setFieldError(errs);
@@ -122,9 +128,10 @@ export default function CreateForm() {
         title,
         description,
         category,
-        options: kept.map((x) => x.c),
-        emojis: kept.map((x) => x.e),
-        photos: kept.map((x) => x.p),
+        kind,
+        options: isRating ? RATING_LABELS : kept.map((x) => x.c),
+        emojis: isRating ? RATING_EMOJIS : kept.map((x) => x.e),
+        photos: isRating ? [] : kept.map((x) => x.p),
         hideUntilVoted,
         allowChange,
         electionMode,
@@ -160,6 +167,11 @@ export default function CreateForm() {
 
       <section className="tot builder-ballot" aria-label={t.ballotLabel}>
         <p className="label">{t.ballotLabel}</p>
+        {/* What kind of question (P2): your own choices, or a 1–5 rating with faces. */}
+        <div className="builder-kind" role="radiogroup" aria-label={t.ballotLabel}>
+          <button type="button" role="radio" aria-checked={!isRating} className={'chip' + (!isRating ? ' chip-on' : '')} onClick={() => setKind('choice')}>☑️ {t.formatChoice}</button>
+          <button type="button" role="radio" aria-checked={isRating} className={'chip' + (isRating ? ' chip-on' : '')} onClick={() => setKind('rating')}>😍 {t.formatRate}</button>
+        </div>
         <textarea
           id="title"
           className="display builder-q"
@@ -193,6 +205,16 @@ export default function CreateForm() {
         )}
         {!title.trim() && !typedChoices && <p className="small muted builder-hint">{t.builderHint}</p>}
 
+        {isRating ? (
+          <>
+            <div className="rate-scale is-preview" aria-hidden>
+              {RATING_EMOJIS.map((e, n) => (
+                <span key={e} className="rate-step"><span className="rate-step-face">{e}</span><span className="rate-step-word">{t.rateWords[n]}</span></span>
+              ))}
+            </div>
+            <p className="small muted builder-hint">{t.rateHint}</p>
+          </>
+        ) : (
         <div className="tot-options duel-options is-ballot builder-rows">
           {choices.map((c, i) => {
             const isNew = i === choices.length - 1 && !c.trim() && choices.length > 2;
@@ -248,6 +270,7 @@ export default function CreateForm() {
             );
           })}
         </div>
+        )}
         {fieldError.choices && <p className="field-error" role="alert">{fieldError.choices}</p>}
       </section>
 
@@ -311,7 +334,7 @@ export default function CreateForm() {
       )}
       {/* The one main step, pinned at thumb height on phones (like Next on a duel). */}
       <div className="builder-go">
-        <button className={'btn btn-primary btn-lg' + (title.trim().length >= 3 && filledCount >= 2 ? ' is-ready' : '')} disabled={busy}>{buttonText}</button>
+        <button className={'btn btn-primary btn-lg' + (title.trim().length >= 3 && (isRating || filledCount >= 2) ? ' is-ready' : '')} disabled={busy}>{buttonText}</button>
       </div>
     </form>
   );

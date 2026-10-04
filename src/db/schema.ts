@@ -22,6 +22,8 @@ export const polls = pgTable(
     hasPhotos: boolean('has_photos').notNull().default(false),
     // Election mode: the full booth ritual (EVM, VVPAT slip, voter ID, counting day). Politics polls always have it.
     electionMode: boolean('election_mode').notNull().default(false),
+    // What kind of question: 'choice' (pick one) or 'rating' (a 1–5 scale of faces). See src/lib/rating.ts.
+    kind: text('kind').notNull().default('choice'),
     endsAt: timestamp('ends_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },

@@ -512,3 +512,34 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 /* Off: the ballot rows keep the blue Vote key but not the EVM's red light. */
 .duel.is-light .evm-led { display: none; }
 .builder-note { margin: -8px 0 0; }
+
+/* ---- Rate it (1–5 faces) (docs/DESIGN.md, "Phase 2: Rate it") ---- */
+.rate-scale { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.rate-step { display: flex; flex-direction: column; align-items: center; gap: 6px; min-height: 96px; padding: 14px 4px 10px; border: 0; border-radius: 16px; background: var(--card); color: var(--ink); font: inherit; cursor: pointer; box-shadow: inset 0 -3px 0 rgba(36, 40, 44, 0.06); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.rate-step-face { font-size: 36px; line-height: 1; transition: transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.4); }
+.rate-step-word { font-size: 12px; line-height: 16px; font-weight: 700; text-align: center; overflow-wrap: anywhere; }
+.rate-step:not(:disabled):active { transform: scale(0.94); }
+@media (hover: hover) { .rate-step:not(:disabled):hover .rate-step-face { transform: scale(1.18) rotate(-4deg); } }
+.rate-step.is-mine { background: var(--lime-badge); box-shadow: inset 0 0 0 2px var(--lime); }
+.rate-step.is-busy { opacity: 0.6; }
+.rate-step:disabled { cursor: default; }
+.rate-scale.is-nudge .rate-step-face { animation: nudge 1.4s ease-in-out 3; }
+.rate-scale.is-nudge .rate-step:nth-child(2) .rate-step-face { animation-delay: 0.1s; }
+.rate-scale.is-nudge .rate-step:nth-child(3) .rate-step-face { animation-delay: 0.2s; }
+.rate-scale.is-nudge .rate-step:nth-child(4) .rate-step-face { animation-delay: 0.3s; }
+.rate-scale.is-nudge .rate-step:nth-child(5) .rate-step-face { animation-delay: 0.4s; }
+/* After voting: the average, big, then how many picked each face. */
+.rate-result { display: flex; flex-direction: column; gap: 16px; padding: 16px; border-radius: 16px; background: var(--card); animation: pop 0.35s ease; }
+.rate-avg { display: flex; align-items: center; gap: 16px; margin: 0; }
+.rate-avg > span:last-child { display: flex; flex-direction: column; gap: 2px; }
+.rate-face { font-size: 56px; line-height: 1; }
+.rate-bars { display: flex; flex-direction: column; gap: 8px; }
+.rate-bar { display: grid; grid-template-columns: 28px 1fr 44px; align-items: center; gap: 10px; }
+.rate-bar-face { font-size: 20px; line-height: 1; text-align: center; }
+.rate-bar-pct { text-align: right; font-variant-numeric: tabular-nums; }
+.rate-bar.is-mine .meter > span { background: var(--lime); }
+.rate-bar.is-mine .rate-bar-pct { font-weight: 800; }
+@media (max-width: 360px) { .rate-step { min-height: 84px; } .rate-step-face { font-size: 30px; } .rate-step-word { font-size: 11px; } }
+@media (prefers-reduced-motion: reduce) { .rate-result { animation: none; } .rate-scale.is-nudge .rate-step-face { animation: none; } }
+.builder-kind { display: flex; gap: 8px; flex-wrap: wrap; }
+.rate-scale.is-preview .rate-step { cursor: default; min-height: 84px; }
