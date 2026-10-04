@@ -829,10 +829,11 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
                 <span className="tot-letter">
                   {ranking && (ticked || isMine) ? `#${(voted ? poll.myPicks : ticks).indexOf(o.id) + 1}` : isMine || ticked ? <Check size={13} strokeWidth={2.5} aria-hidden /> : serial(n)}
                 </span>
-                {revealed && (lead || (isMine && !ranking)) && (
+                {revealed && (lead || (isMine && !ranking) || poll.friend.optionId === o.id) && (
                   <span className="tot-caption">
-                    {isMine && !ranking ? t.yourPick : poll.closed && !counting ? t.won : t.leading}
+                    {isMine && !ranking ? t.yourPick : lead ? (poll.closed && !counting ? t.won : t.leading) : t.friendsPick}
                     {isMine && !ranking && lead ? ` · ${poll.closed && !counting ? t.wonLower : t.leadingLower}` : ''}
+                    {poll.friend.optionId === o.id && (isMine || lead) ? ` · ${t.friendsPickLower}` : ''}
                   </span>
                 )}
                 <span className="duel-body">
@@ -988,13 +989,16 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
                       <br />
                     </span>
                   )}
-                  <strong className={rareNow ? 'is-rare' : undefined}>{vTitle}</strong> {vLine}
+                  {/* Came from a friend's link: agree or disagree with them is the headline of this moment (P1). */}
                   {poll.friend.optionId && (
-                    <span className="duel-friend-line">
-                      {' '}<Users size={13} strokeWidth={1.75} aria-hidden /> {t.friendPicked(poll.options.find((o) => o.id === poll.friend.optionId)?.label ?? '')}
-                      {poll.friend.optionId === poll.myVote ? t.agree : t.disagree}
+                    <span className={'duel-friend-line' + (poll.friend.optionId === poll.myVote ? ' is-agree' : '')}>
+                      <Users size={14} strokeWidth={1.75} aria-hidden />{' '}
+                      <strong>{poll.friend.optionId === poll.myVote ? t.friendAgree : t.friendDisagree}</strong>{' '}
+                      {t.friendTheyPicked(poll.options.find((o) => o.id === poll.friend.optionId)?.label ?? '')}
+                      <br />
                     </span>
                   )}
+                  <strong className={rareNow ? 'is-rare' : undefined}>{vTitle}</strong> {vLine}
                   {poll.friends.agree + poll.friends.disagree > 0 && (
                     <span className="small muted">
                       {' '}{t.dares(poll.friends.agree + poll.friends.disagree, poll.friends.agree, poll.friends.disagree)}
