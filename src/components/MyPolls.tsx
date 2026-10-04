@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { ChevronRight, PenLine } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useT } from '@/lib/lang';
 
@@ -34,13 +35,19 @@ export default function MyPolls() {
   }, []);
   if (!rows.length) return null;
   return (
-    <section className="block my-polls" aria-label={t.yourPolls}>
-      <p className="label">{t.yourPolls}</p>
-      <ul>
+    <section className="al-block" aria-label={t.yourPolls}>
+      <h2 className="al-block__title">{t.yourPolls}</h2>
+      <ul className="al-listcard">
         {rows.map((r) => (
           <li key={r.id}>
-            <Link href={`/p/${r.id}`} className="day-q">{r.title}</Link>
-            <span className="small muted">{t.votesSoFar(r.votes)}</span>
+            <Link href={`/p/${r.id}`} className="al-row">
+              <span className="al-row__disc" style={{ '--tone': 'var(--lime-badge)' } as React.CSSProperties}><PenLine size={20} strokeWidth={1.75} aria-hidden /></span>
+              <span className="al-row__main">
+                <span className="al-row__title">{r.title}</span>
+                <span className="al-row__meta">{t.votesSoFar(r.votes)}</span>
+              </span>
+              <ChevronRight size={18} strokeWidth={1.75} className="al-row__chevron" aria-hidden />
+            </Link>
           </li>
         ))}
       </ul>

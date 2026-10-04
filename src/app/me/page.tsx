@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ChevronRight } from 'lucide-react';
+import { Check, ChevronRight, Vote } from 'lucide-react';
 import { getDb } from '@/db';
 import { getMyVotes, getVoterStats, type Standing } from '@/lib/polls';
 import type { Dict } from '@/lib/i18n';
@@ -57,29 +57,29 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
         {mine.length === 0 ? (
           <p className="muted">{t.noVotes} <Link href="/" className="text-link">{t.startToday}</Link></p>
         ) : (
-          <ul className="index-list block-tight">
-            {mine.map((v) => (
-              <li key={v.pollId}>
-                <Link href={`/p/${v.pollId}`} className="index-row">
-                  <span className="index-title">{v.title}</span>
-                  <span className="index-sum">{t.youPicked(v.pick)}</span>
-                  {/* Where it stands now: a reason to come back (same visibility rules as the duel itself). */}
-                  {standingText(t, v.standing) && <span className="index-standing">{standingText(t, v.standing)}</span>}
-                  {/* What changed since you last looked (this phone only): the reason to come back here. */}
-                  <SinceLastLook pollId={v.pollId} voters={v.voters} lead={v.standing.kind === 'leading' || v.standing.kind === 'won' ? v.standing.name : null} />
-                  {/* A small bar: how far ahead the leader is. Lime (= you) when your pick is the one in front. */}
-                  {v.standing.kind === 'rating' && (
-                    <span className="index-meter" aria-hidden><span style={{ width: `${v.standing.average * 20}%` }} /></span>
-                  )}
-                  {(v.standing.kind === 'leading' || v.standing.kind === 'won') && (
-                    <span className={'index-meter' + (v.standing.name === v.pick ? ' is-mine' : '')} aria-hidden>
-                      <span style={{ width: `${v.standing.percent}%` }} />
+          <ul className="al-listcard block-tight">
+            {mine.map((v) => {
+              // Your pick in front (or won): the yellow disc of "you" with a tick; otherwise a quiet disc.
+              const ahead = (v.standing.kind === 'leading' || v.standing.kind === 'won') && v.standing.name === v.pick;
+              return (
+                <li key={v.pollId}>
+                  <Link href={`/p/${v.pollId}`} className="al-row">
+                    <span className="al-row__disc" style={{ '--tone': ahead ? 'var(--lime)' : 'var(--sand)' } as React.CSSProperties}>
+                      {ahead ? <Check size={20} strokeWidth={2} aria-hidden /> : <Vote size={20} strokeWidth={1.75} aria-hidden />}
                     </span>
-                  )}
-                  <ChevronRight size={16} strokeWidth={1.75} className="index-chev" aria-hidden />
-                </Link>
-              </li>
-            ))}
+                    <span className="al-row__main">
+                      <span className="al-row__title">{v.title}</span>
+                      <span className="al-row__meta">{t.youPicked(v.pick)}</span>
+                      {/* Where it stands now: a reason to come back (same visibility rules as the poll itself). */}
+                      {standingText(t, v.standing) && <span className="al-row__meta">{standingText(t, v.standing)}</span>}
+                      {/* What changed since you last looked (this phone only). */}
+                      <SinceLastLook pollId={v.pollId} voters={v.voters} lead={v.standing.kind === 'leading' || v.standing.kind === 'won' ? v.standing.name : null} />
+                    </span>
+                    <ChevronRight size={18} strokeWidth={1.75} className="al-row__chevron" aria-hidden />
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         )}
         <p className="small muted block-tight">{t.deviceOnly}</p>

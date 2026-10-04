@@ -116,3 +116,63 @@ h2 { font-weight: 600; }
 .game.game-f > svg:first-child { background: var(--p-feedback); }
 .game strong { font-family: var(--display); font-size: 17px; line-height: 1.3; font-weight: 600; letter-spacing: -0.01em; }
 .game-meta { font-weight: 600; color: var(--ink-2); }
+
+/* ======================================================================================
+   Arogya Line building blocks (copied from its ASHA app, asha.css), prefixed "al-" so they never clash with the
+   patricka classes of the same names. Use these for new screens: header, titled block, grouped list card, row, chip.
+   ====================================================================================== */
+
+/* Page header: date, a greeting, one line that sizes up the day ("Namaste, Sunita · 4 people need you today"). */
+.al-home { display: flex; flex-direction: column; padding-top: 8px; margin-bottom: 8px; }
+.al-home__date { color: var(--ink-2); font: 500 14px / 20px var(--sans); margin: 0; }
+.al-home__title { margin: 8px 0 0; font: 600 28px / 36px var(--display); letter-spacing: -0.02em; }
+.al-home__sub { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0; color: var(--ink-2); font: 400 15px / 22px var(--sans); }
+.al-home__strong { color: var(--ink); font-weight: 600; }
+
+/* A titled block: sentence-case title, a quiet count or link on the right, then the content 12px below. */
+.al-block { display: flex; flex-direction: column; gap: 12px; margin-top: 32px; min-width: 0; }
+.al-block__title { display: flex; align-items: baseline; gap: 8px; margin: 0; font: 600 20px / 28px var(--display); letter-spacing: -0.01em; }
+.al-block__aside { margin-left: auto; color: var(--ink-3); font: 400 14px / 20px var(--sans); letter-spacing: 0; }
+a.al-block__aside { color: var(--ink-2); font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+a.al-block__aside:hover { color: var(--ink); }
+
+/* A list in an outlined card (Material 3, 20px), rows split by hairlines. */
+.al-listcard { list-style: none; margin: 0; padding: 0; overflow: hidden; border-radius: 20px; background: var(--card); outline: 1px solid var(--line); outline-offset: -1px; }
+.al-listcard > li { position: relative; }
+.al-listcard > li + li::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: var(--line); pointer-events: none; }
+
+/* A row: tinted disc with an icon, title and quiet meta, a right-hand detail, a chevron. 72px tall at least. */
+.al-row { display: flex; align-items: center; gap: 16px; min-height: 72px; box-sizing: border-box; padding: 12px 16px; color: var(--ink); text-decoration: none; transition: background-color 140ms cubic-bezier(0.2, 0, 0.2, 1); }
+.al-row:hover { background: var(--sand); }
+.al-row:focus-visible { outline: 3px solid var(--ink); outline-offset: -3px; }
+.al-row__disc { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--tone, var(--sand)); color: var(--ink); }
+.al-row__main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.al-row__title { font: 600 16px / 24px var(--sans); overflow-wrap: anywhere; }
+.al-row__meta { color: var(--ink-2); font: 400 13px / 18px var(--sans); }
+.al-row__when { flex: none; align-self: flex-start; display: flex; flex-direction: column; align-items: flex-end; font: 500 14px / 24px var(--sans); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.al-row__time { color: var(--ink-3); font: 400 12px / 16px var(--sans); }
+.al-row__chevron { flex: none; color: var(--ink-3); transition: transform 140ms cubic-bezier(0.2, 0, 0.2, 1); }
+.al-row:hover .al-row__chevron { transform: translateX(2px); }
+.al-row.is-done .al-row__title { color: var(--ink-2); }
+.al-row__done { display: inline-flex; align-items: center; gap: 4px; color: var(--positive); font-weight: 600; }
+
+/* A status chip: small, quiet, one step deeper than its card; icon and word share the ink. Never an action. */
+.al-chip { display: inline-flex; align-self: flex-start; align-items: center; gap: 4px; height: 24px; padding: 0 8px 0 6px; border-radius: 12px; background: var(--chip-bg, var(--sand-dark)); color: var(--chip-ink, var(--ink)); font: 600 12px / 16px var(--sans); letter-spacing: 0.01em; white-space: nowrap; }
+.al-chip.is-you { --chip-bg: #fef1b8; --chip-ink: #4d3800; }
+.al-chip.is-good { --chip-bg: var(--positive-soft); --chip-ink: #0f3b22; }
+.al-chip.is-alert { --chip-bg: var(--negative-soft); --chip-ink: #5a1030; }
+
+/* "Someone wants your pick", "Takes 30 seconds": Arogya's status chip, in the soft brand yellow (they are about you).
+   Icon + word, quiet, never a button. */
+.eyebrow { align-items: center; gap: 4px; height: 24px; padding: 0 10px 0 7px; border-radius: 12px; background: #fef1b8; color: #4d3800; font: 600 12px / 16px var(--sans); letter-spacing: 0.01em; }
+.eyebrow svg { flex: none; }
+
+/* "Up next" (Arogya's hero card): one large soft card, a status chip, the name as the big line, the fact you act on,
+   and one full-width action. Here: the poll of the day, in the soft brand yellow. */
+.al-hero { display: flex; flex-direction: column; gap: 12px; padding: 24px; border-radius: 24px; background: #fef6d6; color: #2b2208; }
+.al-hero.is-done { background: var(--sand); color: var(--ink); }
+.al-hero__name { margin: 4px 0 0; font: 600 24px / 32px var(--display); letter-spacing: -0.015em; }
+.al-hero__fact { margin: 0; font: 500 16px / 24px var(--sans); }
+.al-hero__action { display: flex; align-items: center; justify-content: center; gap: 8px; height: 48px; margin-top: 4px; border-radius: 24px; background: var(--ink); color: var(--on-ink); font: 600 16px / 24px var(--sans); text-decoration: none; transition: filter 140ms, transform 140ms; }
+.al-hero__action:hover { filter: brightness(1.15); }
+.al-hero__action:active { transform: scale(0.98); }

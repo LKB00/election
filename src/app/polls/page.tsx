@@ -42,8 +42,8 @@ export default async function Duels({ searchParams }: { searchParams: Promise<{ 
         </form>
       </header>
       {q && (
-        <section className="block block-tight" aria-live="polite">
-          <h2>{t.searchFor(q)}</h2>
+        <section className="al-block" aria-live="polite">
+          <h2 className="al-block__title">{t.searchFor(q)}{polls.length > 0 && <span className="al-block__aside">{t.pollsN(polls.length)}</span>}</h2>
           {polls.length > 0 ? (
             <DuelTiles polls={polls} votedIds={mine.map((v) => v.pollId)} noCreate />
           ) : (
@@ -64,14 +64,14 @@ export default async function Duels({ searchParams }: { searchParams: Promise<{ 
       )}
       {/* P2: the duels with the most votes in the last hour, like TV's "hot seats". Not repeated in the list below. */}
       {hot.length > 0 && (
-        <section className="block">
-          <h2>{t.trendingNow}</h2>
+        <section className="al-block">
+          <h2 className="al-block__title">{t.trendingNow}<span className="al-block__aside">{t.pollsN(hot.length)}</span></h2>
           <DuelTiles polls={hot} votedIds={mine.map((v) => v.pollId)} noCreate />
         </section>
       )}
-      <section className="block">
+      <section className="al-block">
         {/* A heading only when something sits above; otherwise it would just repeat the page title. */}
-        {((featured && featured.myVote === null) || hot.length > 0) && <h2>{t.allDuels}</h2>}
+        {((featured && featured.myVote === null) || hot.length > 0) && <h2 className="al-block__title">{t.allDuels}<span className="al-block__aside">{t.pollsN(rest.length)}</span></h2>}
         <DuelTiles polls={rest} votedIds={mine.map((v) => v.pollId)} />
       </section>
       {featured && featured.myVote !== null && (
@@ -81,8 +81,8 @@ export default async function Duels({ searchParams }: { searchParams: Promise<{ 
       )}
       </>)}
       {/* P3: browse by topic (also how search engines find the topic pages). */}
-      <section className="block">
-        <h2>{t.topics}</h2>
+      <section className="al-block">
+        <h2 className="al-block__title">{t.topics}</h2>
         <nav className="topic-chips block-tight" aria-label={t.topics}>
           {CATEGORIES.map((c) => (
             <Link key={c} href={`/topic/${c}`} className="chip">{t.categories[c] ?? c}</Link>

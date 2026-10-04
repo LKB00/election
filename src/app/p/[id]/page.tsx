@@ -1,3 +1,4 @@
+import { Check, Clock, Users, Vote } from 'lucide-react';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
@@ -70,7 +71,13 @@ export default async function DuelPage({ params, searchParams }: Props) {
   // (Friend: the label says why you are here; the line in the game holds the hook, "their pick is sealed".)
   return (
     <div className="page page-wide">
-      {label && <p className="eyebrow">{label}</p>}
+      {label && (
+        <p className="eyebrow">
+          {/* Arogya's chip: an icon with the word. */}
+          {poll.closed ? <Clock size={13} strokeWidth={2} aria-hidden /> : poll.myVote ? <Check size={13} strokeWidth={2.25} aria-hidden /> : poll.friend.known ? <Users size={13} strokeWidth={2} aria-hidden /> : <Vote size={13} strokeWidth={2} aria-hidden />}
+          {label}
+        </p>
+      )}
       {justCreated && <CreatedPanel id={poll.id} title={poll.title} />}
       <section className="home-game duel-first" aria-label="Duel">
         <DuelGame deck={deck} start={0} via={f ?? null} />

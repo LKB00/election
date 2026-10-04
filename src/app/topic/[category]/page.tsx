@@ -45,7 +45,7 @@ export default async function Topic({ params }: Props) {
           <DuelBanner poll={banner} />
         </section>
       )}
-      <section className="block">
+      <section className="al-block">
         <DuelTiles polls={polls} votedIds={mine.map((v) => v.pollId)} />
       </section>
     </div>

@@ -45,8 +45,16 @@ export default async function Home() {
   const shelved = new Set([...shown, ...shelves.flatMap(([, ps]) => ps.map((p) => p.id))]);
   const polls = recent.filter((p) => !shelved.has(p.id)).slice(0, 8);
 
+  // Arogya Line's Today header: the date, a greeting, and the size of the day in questions (left to answer).
+  const left = deck.filter((p) => p.myVote === null && !p.closed).length;
+
   return (
     <div className="page page-wide">
+      <header className="al-home">
+        <p className="al-home__date" suppressHydrationWarning>{t.homeDate(new Date())}</p>
+        <p className="al-home__title">{t.homeHello}</p>
+        {deck.length > 0 && <p className="al-home__sub">{t.homeSub(deck.length, left)}</p>}
+      </header>
       {deck.length > 0 && (
         <section className="home-game duel-first" aria-label="Duel">
           <DuelGame deck={deck} todayId={todayId} daily more={more} />
@@ -56,25 +64,25 @@ export default async function Home() {
       <RulesNotice />
 
       {trending.length > 0 && (
-        <section className="block">
-          <h2>{t.trendingNow}</h2>
+        <section className="al-block">
+          <h2 className="al-block__title">{t.trendingNow}<span className="al-block__aside">{t.pollsN(trending.length)}</span></h2>
           <DuelTiles polls={trending} votedIds={voted} noCreate />
         </section>
       )}
       {shelves.map(([cat, ps]) => (
-        <section className="block" key={cat}>
-          <div className="row space-between">
-            <h2>{t.categories[cat] ?? cat}</h2>
-            <Link href={`/topic/${cat}`} className="text-link">{t.allDuels} <ArrowRight size={14} strokeWidth={1.75} aria-hidden /></Link>
-          </div>
+        <section className="al-block" key={cat}>
+          <h2 className="al-block__title">
+            {t.categories[cat] ?? cat}
+            <Link href={`/topic/${cat}`} className="al-block__aside">{t.allDuels} <ArrowRight size={14} strokeWidth={1.75} aria-hidden /></Link>
+          </h2>
           <DuelTiles polls={ps} votedIds={voted} noCreate />
         </section>
       ))}
-      <section className="block">
-        <div className="row space-between">
-          <h2>{t.moreDuels}</h2>
-          <Link href="/polls" className="text-link">{t.allDuels} <ArrowRight size={14} strokeWidth={1.75} aria-hidden /></Link>
-        </div>
+      <section className="al-block">
+        <h2 className="al-block__title">
+          {t.moreDuels}
+          <Link href="/polls" className="al-block__aside">{t.allDuels} <ArrowRight size={14} strokeWidth={1.75} aria-hidden /></Link>
+        </h2>
         <DuelTiles polls={polls} votedIds={voted} />
       </section>
     </div>

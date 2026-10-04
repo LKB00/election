@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Timer } from 'lucide-react';
 import CreateForm from '@/components/CreateForm';
 import { getT } from '@/lib/lang-server';
 
@@ -13,7 +14,7 @@ export default async function CreatePage({ searchParams }: { searchParams: Promi
   return (
     <div className="page">
       <header className="page-head">
-        <p className="eyebrow">{t.takes30}</p>
+        <p className="eyebrow"><Timer size={13} strokeWidth={2} aria-hidden />{t.takes30}</p>
         <h1 className="display">{t.startDuel}</h1>
         <p className="lead">{t.createLead}</p>
       </header>
