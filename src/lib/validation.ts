@@ -55,7 +55,15 @@ export const createPollSchema = z.object({
   electionMode: z.boolean().default(false),
   // "I am 18+, and these photos are me or I have permission" (DPDP: no children's data; consent for other people's faces).
   photoConsent: z.boolean().default(false),
-  kind: z.enum(['choice', 'rating', 'multi', 'rank']).default('choice'),
+  kind: z.enum(['choice', 'rating', 'multi', 'rank', 'dates']).default('choice'),
+  // Each voter sees the choices in their own order (not for rating scales or dates, which have a natural order).
+  shuffle: z.boolean().default(false),
+  // Voters may suggest a missing choice (the maker approves it before anyone sees it).
+  suggestionsOn: z.boolean().default(false),
+  // The maker's name and face shown on the poll (their choice; off by default).
+  showMaker: z.boolean().default(false),
+  // "Ask again": the earlier poll (made by the same person) this one repeats.
+  previousId: z.string().regex(/^[\w-]{1,64}$/).optional(),
   // "Called it": about a real event that has not happened yet; the creator marks what happened later.
   calledIt: z.boolean().default(false),
   // A group poll: how many people are in the group (results open when they have all voted).
@@ -71,8 +79,30 @@ export type CreatePollInput = z.infer<typeof createPollSchema>;
 
 /** Ids and share codes are plain letters, digits, "-" and "_"; anything else (a NUL byte, spaces) is refused early. */
 export const isCode = (s: string | null | undefined): s is string => !!s && /^[\w-]{1,64}$/.test(s);
+/** Fixing a typo before anyone has voted: the question, the details and each choice's words (same rules as making it). */
+export const editPollSchema = z
+  .object({
+    key: z.string().max(100).optional(),
+    title: text().pipe(z.string().min(3, 'Your question needs at least 3 letters.').max(120, 'Your question is too long (120 letters max).')).refine(visible, 'Your question needs at least 3 letters.'),
+    description: text().pipe(z.string().max(300)).default(''),
+    options: z
+      .array(z.object({ id: z.string().regex(/^[\w-]{1,64}$/), label: text().pipe(z.string().min(1, 'A choice is empty.').max(60, 'A choice is too long (60 letters max).')).refine(visible, 'A choice is empty.') }))
+      .max(10)
+      .refine((a) => new Set(a.map((o) => sameKey(o.label))).size === a.length, 'Two choices are the same. Make each one different.'),
+  })
+  .refine((p) => !hasBlockedWord(p.title, p.description, ...p.options.map((o) => o.label)), 'Please remove the abusive words.');
+export const suggestSchema = z
+  .object({ label: text().pipe(z.string().min(1, 'A choice is empty.').max(60, 'A choice is too long (60 letters max).')).refine(visible, 'A choice is empty.') })
+  .refine((p) => !hasBlockedWord(p.label), 'Please remove the abusive words.');
 const code = () => z.string().regex(/^[\w-]{1,64}$/);
-export const voteSchema = z.object({ optionId: code(), picks: z.array(code()).max(10).optional(), via: z.string().max(64).nullish().transform((v) => (isCode(v) ? v : null)), human: z.string().max(4096).nullish() });
+export const VOTE_SOURCES = ['wa', 'ig', 'qr', 'link', 'other'] as const;
+export const voteSchema = z.object({
+  optionId: code(),
+  picks: z.array(code()).max(10).optional(),
+  // "Which dates work?": the dates answered "if need be" (the ticked ones in picks are "yes").
+  maybes: z.array(code()).max(10).optional(),
+  // Where the link was opened from (counted per poll only, never kept with the vote).
+  src: z.enum(VOTE_SOURCES).optional().catch(undefined), via: z.string().max(64).nullish().transform((v) => (isCode(v) ? v : null)), human: z.string().max(4096).nullish() });
 // A pack: one live moment (a match, a show's night) and its 2–4 polls, made together. Predictions close at startsAt.
 export const packSchema = z.object({
   kind: z.enum(['match', 'show']),

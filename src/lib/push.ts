@@ -5,7 +5,9 @@ import { dict, isLang } from './i18n';
 
 // "Tell me the result" (docs/DESIGN.md, "Result alerts"): opt-in, per poll, one alert when its result is in, then
 // nothing. Switched off until the owner sets the VAPID keys (docs/OWNER_TODO.md).
-const { pushSubs, pushWants, polls } = schema;
+const { pushSubs, pushWants, pushMilestones, polls } = schema;
+/** The maker's one "first votes are in" alert fires at this many votes. */
+export const MILESTONE = 10;
 
 export const pushEnabled = () => !!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && !!process.env.VAPID_PRIVATE_KEY;
 
@@ -91,5 +93,33 @@ export async function sendResultAlerts(db: Db, pollIds: string[], send: Sender =
     }
     await db.delete(pushWants).where(and(eq(pushWants.endpoint, endpoint), inArray(pushWants.pollId, list.map((r) => r.pollId))));
   }
+  return sent;
+}
+
+/** The maker's phone wants one alert when the poll reaches its first MILESTONE votes. */
+export async function wantMilestone(db: Db, voterKey: string, sub: PushSub, pollId: string, lang: string) {
+  await db
+    .insert(pushSubs)
+    .values({ endpoint: sub.endpoint, p256dh: sub.keys.p256dh, auth: sub.keys.auth, voterKey, lang: isLang(lang) ? lang : 'en' })
+    .onConflictDoUpdate({ target: pushSubs.endpoint, set: { p256dh: sub.keys.p256dh, auth: sub.keys.auth, lang: isLang(lang) ? lang : 'en' } });
+  await db.insert(pushMilestones).values({ pollId, endpoint: sub.endpoint }).onConflictDoNothing();
+}
+
+/** "Your first 10 votes are in": once, then the wish is gone. */
+export async function sendMilestone(db: Db, pollId: string, send: Sender = webSender): Promise<number> {
+  const rows = await db
+    .select({ endpoint: pushSubs.endpoint, p256dh: pushSubs.p256dh, auth: pushSubs.auth, lang: pushSubs.lang, title: polls.title })
+    .from(pushMilestones)
+    .innerJoin(pushSubs, eq(pushSubs.endpoint, pushMilestones.endpoint))
+    .innerJoin(polls, eq(polls.id, pushMilestones.pollId))
+    .where(eq(pushMilestones.pollId, pollId));
+  let sent = 0;
+  for (const r of rows) {
+    const t = dict[isLang(r.lang) ? r.lang : 'en'];
+    const { gone, ok = true } = await send({ endpoint: r.endpoint, keys: { p256dh: r.p256dh, auth: r.auth } }, JSON.stringify({ title: r.title, body: t.pushMilestone(MILESTONE), url: `/p/${pollId}/manage` }));
+    if (gone) await db.delete(pushSubs).where(eq(pushSubs.endpoint, r.endpoint));
+    else if (ok) sent++;
+  }
+  await db.delete(pushMilestones).where(eq(pushMilestones.pollId, pollId));
   return sent;
 }

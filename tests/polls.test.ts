@@ -1065,3 +1065,109 @@ describe('profiles', () => {
     expect(await db.select().from(schema.passkeys).where(eq(schema.passkeys.userId, uid))).toEqual([]);
   });
 });
+
+describe('poll maker tools', () => {
+  const owner = async () => {
+    const { createUser } = await import('@/lib/profiles');
+    const uid = 'mk-' + Math.random().toString(36).slice(2, 8);
+    await createUser(db, { id: uid, name: 'Maker', avatar: '🦁' }, { id: 'cred-' + uid, publicKey: 'pk', counter: 0, transports: [] });
+    return uid;
+  };
+
+  it('fixes a typo only before the first vote, and only for the maker', async () => {
+    const { editPoll } = await import('@/lib/maker');
+    const uid = await owner();
+    const id = await createPoll(db, createPollSchema.parse({ title: 'Chai or cofee?', options: ['Chai', 'Cofee'] }), 'k', undefined, uid);
+    const p = (await getPoll(db, id, null))!;
+    const opts = p.options.map((o) => ({ id: o.id, label: o.label === 'Cofee' ? 'Coffee' : o.label }));
+    expect(await editPoll(db, id, 'someone-else', { title: 'x', description: '', options: [] })).toBe('not_found');
+    expect(await editPoll(db, id, uid, { title: 'Chai or coffee?', description: '', options: opts })).toBe('ok');
+    expect((await getPoll(db, id, null))!.options.map((o) => o.label)).toEqual(['Chai', 'Coffee']);
+    await castVote(db, id, p.options[0].id, 'v-typo');
+    expect(await editPoll(db, id, uid, { title: 'Changed', description: '', options: opts })).toBe('voted');
+    expect((await getPoll(db, id, null))!.title).toBe('Chai or coffee?');
+  });
+
+  it('ends a poll now (final), counts where votes came from, and shows the last result on "ask again"', async () => {
+    const { setEnd, countSource, makerView } = await import('@/lib/maker');
+    const uid = await owner();
+    const id = await createPoll(db, createPollSchema.parse({ title: 'Best snack?', options: ['Samosa', 'Vada pav'], hideUntilVoted: true }), 'k', undefined, uid);
+    const p = (await getPoll(db, id, null))!;
+    for (const [k, n] of [0, 0, 1].entries()) await castVote(db, id, p.options[n].id, `src-${k}`);
+    await countSource(db, id, 'wa');
+    await countSource(db, id, 'wa');
+    await countSource(db, id, 'qr');
+    let v = (await makerView(db, id, uid))!;
+    expect(v.votes).toBe(3);
+    expect(v.sources).toEqual([{ src: 'wa', n: 2 }, { src: 'qr', n: 1 }]);
+    expect(v.byHour.reduce((a, b) => a + b, 0)).toBe(3);
+    // Hidden results: no results picture until the poll ends.
+    expect(v.resultsPublic).toBe(false);
+    expect(await setEnd(db, id, uid, new Date())).toBe('ok');
+    v = (await makerView(db, id, uid))!;
+    expect(v.closed && v.resultsPublic).toBe(true);
+    expect(await setEnd(db, id, uid, new Date(Date.now() + 3_600_000))).toBe('closed');
+    const again = await createPoll(db, createPollSchema.parse({ title: 'Best snack?', options: ['Samosa', 'Vada pav'], previousId: id }), 'k2', undefined, uid);
+    const view = (await getPoll(db, again, null))!;
+    expect(view.previous).toMatchObject({ id, leader: 'Samosa', percent: 67, voters: 3 });
+  });
+
+  it('keeps "last time" quiet while the earlier result is still hidden', async () => {
+    const uid = await owner();
+    const first = await createPoll(db, createPollSchema.parse({ title: 'Hidden then?', options: ['A', 'B'], hideUntilVoted: true }), 'k', undefined, uid);
+    const p = (await getPoll(db, first, null))!;
+    await castVote(db, first, p.options[0].id, 'hid-1');
+    const again = await createPoll(db, createPollSchema.parse({ title: 'Hidden then?', options: ['A', 'B'], previousId: first }), 'k', undefined, uid);
+    expect((await getPoll(db, again, null))!.previous).toMatchObject({ leader: null, percent: null, voters: 1 });
+  });
+
+  it('suggested choices wait for the maker; the same suggestion counts up; adding makes it a real choice', async () => {
+    const { suggest, decideSuggestion, makerView } = await import('@/lib/maker');
+    const uid = await owner();
+    const id = await createPoll(db, createPollSchema.parse({ title: 'Best chaat?', options: ['Golgappe', 'Papdi'], suggestionsOn: true }), 'k', undefined, uid);
+    expect(await suggest(db, id, 'golgappe')).toBe('exists');
+    expect(await suggest(db, id, 'Aloo tikki')).toBe('ok');
+    expect(await suggest(db, id, 'aloo  tikki')).toBe('ok');
+    expect((await getPoll(db, id, null))!.options).toHaveLength(2);
+    const v = (await makerView(db, id, uid))!;
+    expect(v.pending).toEqual([expect.objectContaining({ label: 'Aloo tikki', n: 2 })]);
+    expect(await decideSuggestion(db, id, 'not-me', v.pending[0].id, true)).toBe('not_found');
+    expect(await decideSuggestion(db, id, uid, v.pending[0].id, true)).toBe('ok');
+    expect((await getPoll(db, id, null))!.options.map((o) => o.label)).toEqual(['Golgappe', 'Papdi', 'Aloo tikki']);
+    const off = await createPoll(db, createPollSchema.parse({ title: 'No ideas please', options: ['A', 'B'] }), 'k', undefined, uid);
+    expect(await suggest(db, off, 'C')).toBe('off');
+  });
+
+  it('"which dates work?" counts yes and "if need be" separately', async () => {
+    const id = await createPoll(db, createPollSchema.parse({ title: 'Goa weekend?', kind: 'dates', options: ['Sat, 7 Nov', 'Sat, 14 Nov', 'Sat, 21 Nov'], hideUntilVoted: false }));
+    const [a, b, c] = (await getPoll(db, id, null))!.options.map((o) => o.id);
+    expect(await castVote(db, id, a, 'd1', null, [b], [])).toBe('ok');
+    expect(await castVote(db, id, a, 'd2', null, [], [b, c])).toBe('ok');
+    expect(await castVote(db, id, c, 'd3', null, [], [c])).toBe('ok');
+    const p = (await getPoll(db, id, 'd2'))!;
+    const by = Object.fromEntries(p.options.map((o) => [o.label, [o.votes, o.maybe]]));
+    expect(by).toEqual({ 'Sat, 7 Nov': [2, 0], 'Sat, 14 Nov': [1, 1], 'Sat, 21 Nov': [0, 2] });
+    expect(p.myPicks).toEqual([a]);
+    expect(p.myMaybes.sort()).toEqual([b, c].sort());
+    expect(p.needsGuess).toBe(false);
+  });
+
+  it('shuffles the order per voter (the same every visit), never for the EVM', async () => {
+    const id = await createPoll(db, createPollSchema.parse({ title: 'Order test', options: ['A', 'B', 'C', 'D', 'E', 'F'], shuffle: true }));
+    const order = async (v: string) => (await getPoll(db, id, v))!.options.map((o) => o.label).join('');
+    expect(await order('x1')).toBe(await order('x1'));
+    const seen = new Set(await Promise.all(['x1', 'x2', 'x3', 'x4', 'x5', 'x6'].map(order)));
+    expect(seen.size).toBeGreaterThan(1);
+    expect((await getPoll(db, id, null))!.options.map((o) => o.label).join('')).toBe('ABCDEF');
+    const evm = await createPoll(db, createPollSchema.parse({ title: 'Ballot order', options: ['A', 'B', 'C', 'D'], shuffle: true, electionMode: true }));
+    expect((await getPoll(db, evm, 'x2'))!.options.map((o) => o.label).join('')).toBe('ABCD');
+  });
+
+  it('shows the maker only when they chose to', async () => {
+    const uid = await owner();
+    const shown = await createPoll(db, createPollSchema.parse({ title: 'Named poll', options: ['A', 'B'], showMaker: true }), 'k', undefined, uid);
+    const quiet = await createPoll(db, createPollSchema.parse({ title: 'Quiet poll', options: ['A', 'B'] }), 'k', undefined, uid);
+    expect((await getPoll(db, shown, null))!.maker).toMatchObject({ id: uid, name: 'Maker' });
+    expect((await getPoll(db, quiet, null))!.maker).toBeNull();
+  });
+});

@@ -22,13 +22,14 @@
   --ink: #1d1b18;
   --ink-hover: #000000;
   --ink-2: #5e5a53;
-  --ink-3: #736e66;
+  --ink-3: #6a655d;           /* 4.5:1 or more on every light ground (WCAG AA) */
   --line: #e7e2da;
+  --line-control: #8f897f;    /* edges of things you type in or switch: 3:1 against the ground (WCAG 1.4.11) */
   --divider: #efebe5;
   --on-ink: #ffffff;
 
   /* Signals: Arogya's green, pink and marigold */
-  --positive: #2f7d4f;
+  --positive: #276b43;        /* 4.5:1 on its soft green */
   --positive-soft: #ddf1e3;
   --negative: #b42b5e;
   --negative-soft: #fce4ec;
@@ -80,7 +81,7 @@
   --on-key: #24282c;           /* text on the indigo vote key */
   --key-pressed: #cdd3fb;
   --spot-paper: #ffffff;       /* the white parts of the drawn pictures (lid, slips, bubble) */
-  --switch-off: #e7e2da;
+  --switch-off: #948e84;      /* 3:1 so an off switch can be found */
   --switch-on: #1d1b18;
   --switch-knob-on: #ffffff;
   --backdrop: rgba(36, 40, 44, 0.45);
@@ -98,6 +99,7 @@
     --ink: #f2eee7;
     --ink-hover: #ffffff;
     --ink-2: #b8b1a6;
+    --line-control: #7d776d;
     --ink-3: #9a9388;
     --line: #36322c;
     --divider: #2a2723;
@@ -144,7 +146,7 @@
     --on-key: #eef0ff;
     --key-pressed: #5a63a8;
     --spot-paper: #2b2824;
-    --switch-off: #4a453e;
+    --switch-off: #6f695f;
     --switch-on: #fcd12a;
     --switch-knob-on: #1d1b18;
     --backdrop: rgba(0, 0, 0, 0.6);

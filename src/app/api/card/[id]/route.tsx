@@ -28,7 +28,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   if (!poll) return new Response('Not found', { status: 404 });
   const pickId = await pickFromCode(db, id, f);
   const showPick = !!pickId && !secret;
-  const target = `${url.origin}/p/${id}${f ? `?f=${encodeURIComponent(f)}${secret ? '&s=1' : `&o=${proof}`}${isLang(lang) && lang !== 'en' ? `&l=${lang}` : ''}` : ''}`;
+  const target = `${url.origin}/p/${id}${f ? `?f=${encodeURIComponent(f)}${secret ? '&s=1' : `&o=${proof}`}${isLang(lang) && lang !== 'en' ? `&l=${lang}` : ''}&src=qr` : '?src=qr'}`;
   const qr = await QRCode.toDataURL(target, { margin: 1, width: 300, color: { dark: CARD.ink, light: '#ffffff' } });
   const abs = (src: string) => new URL(src, url.origin).toString();
   // A rating poll shows its five faces (smaller); other polls their first two choices.

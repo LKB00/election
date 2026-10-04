@@ -4,7 +4,8 @@ import { checkFlow, recordFlow } from '@/lib/flood';
 import { eq } from 'drizzle-orm';
 import { getDb, schema } from '@/db';
 import { castVote, getPoll, undoVote } from '@/lib/polls';
-import { pushEnabled, sendResultAlerts } from '@/lib/push';
+import { MILESTONE, pushEnabled, sendMilestone, sendResultAlerts } from '@/lib/push';
+import { countSource } from '@/lib/maker';
 import { clientIp, rateLimit } from '@/lib/rate-limit';
 import { verifyHuman } from '@/lib/turnstile';
 import { voteSchema } from '@/lib/validation';
@@ -39,7 +40,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const flow = await checkFlow(db, id, net, meta.category);
     if (flow !== 'ok') return NextResponse.json({ error: MESSAGES[flow], result: flow }, { status: flow === 'frozen' ? 423 : 429 });
   }
-  const result = await castVote(db, id, parsed.data.optionId, voterId, parsed.data.via, parsed.data.picks ?? []);
+  const result = await castVote(db, id, parsed.data.optionId, voterId, parsed.data.via, parsed.data.picks ?? [], parsed.data.maybes ?? []);
 
   if (result !== 'ok' && result !== 'changed') {
     const status = result === 'not_found' ? 404 : result === 'already_voted' ? 409 : result === 'frozen' ? 423 : 400;
@@ -48,7 +49,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (meta && result === 'ok' && (await recordFlow(db, id, net, meta.category))) {
     after(() => alertOwner('Poll paused: flood of votes', `"${meta.title}" /p/${id} got a sudden flood of votes and is paused. Resume it on /admin if it looks fine.`, true));
   }
+  // Where the vote came from, for the maker's view (a count per poll, never kept with the vote).
+  if (result === 'ok') await countSource(db, id, parsed.data.src ?? 'other').catch(() => undefined);
   const view = await getPoll(db, id, voterId, parsed.data.via);
+  // The maker asked for one alert when the first votes are in.
+  if (result === 'ok' && view?.participants === MILESTONE && pushEnabled()) after(() => sendMilestone(db, id).then(() => undefined));
   // A group poll just got its last vote: its results open now, so tell the people who asked.
   if (view?.groupSize && !view.groupWaiting && view.participants === view.groupSize && pushEnabled()) after(() => sendResultAlerts(db, [id]).then(() => undefined));
   return NextResponse.json({ result, poll: view });

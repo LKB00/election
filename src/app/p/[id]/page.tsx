@@ -1,13 +1,19 @@
-import { Check, Clock, Users, Vote } from 'lucide-react';
+import { Check, ChevronRight, Clock, SlidersHorizontal, Users, Vote } from 'lucide-react';
+import Link from 'next/link';
+import { currentUser } from '@/lib/auth';
+import { ownPoll } from '@/lib/maker';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import CreatedPanel from '@/components/CreatedPanel';
 import DuelGame from '@/components/DuelGame';
 import { getDb } from '@/db';
-import { getDeck, getPoll } from '@/lib/polls';
+import { SITE_URL } from '@/lib/site';
+import { getDeck, getPoll, INDEX_MIN_VOTES } from '@/lib/polls';
 import { readVoterId } from '@/lib/voter';
-import { getT } from '@/lib/lang-server';
+import { getT, langAlternates } from '@/lib/lang-server';
+
+
 import { dict, isLang } from '@/lib/i18n';
 
 export const dynamic = 'force-dynamic';
@@ -26,11 +32,12 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const title = f ? (s === '1' || !o ? dict[lang].ogTitleSecret(poll.title) : dict[lang].ogTitleOpen(poll.title)) : poll.title;
   return {
     title: poll.title,
-    // Search engines only get duels the owner has checked (and never someone's personal share link).
-    robots: poll.reviewed && !f ? undefined : { index: false, follow: true },
-    alternates: { canonical: `/p/${poll.id}` },
+    // Search engines only get polls the owner has checked that enough people voted in (a thin page with two votes
+    // looks like spam to Google), and never someone's personal share link.
+    robots: poll.reviewed && !f && poll.participants >= INDEX_MIN_VOTES ? undefined : { index: false, follow: true },
+    alternates: await langAlternates(`/p/${poll.id}`),
     description: `${names}. What do you think? Tap to vote.`,
-    openGraph: { title, description: `${names}. Vote in one tap and see where everyone stands.`, images: [{ url: image, width: 1200, height: 630 }] },
+    openGraph: { title, description: `${names}. Secret vote: nobody sees your pick. Vote in one tap and see where everyone stands.`, images: [{ url: image, width: 1200, height: 630 }] },
     twitter: { card: 'summary_large_image', images: [image] },
   };
 }
@@ -45,7 +52,9 @@ export default async function DuelPage({ params, searchParams }: Props) {
   const voterId = await readVoterId();
   const poll = await getPoll(db, id, voterId, f);
   if (!poll) notFound();
-  const rest = await getDeck(db, voterId);
+  const [rest, user] = await Promise.all([getDeck(db, voterId), currentUser(db)]);
+  // The poll's maker gets a way to their tools (votes so far, end it, results picture).
+  const mine = !!user && !!(await ownPoll(db, poll.id, user.id));
   // Opened from inside the site (Duels list, a tile): nobody "wants your pick", so no label then.
   const h = await headers();
   let fromInside = false;
@@ -69,8 +78,20 @@ export default async function DuelPage({ params, searchParams }: Props) {
             ? null
             : t.labelAsk;
   // (Friend: the label says why you are here; the line in the game holds the hook, "their pick is sealed".)
+  // For search engines (structured data): the question and its choices. Vote numbers only when anyone may see them
+  // (never when results wait until after voting: they would leak to everyone reading the page source).
+  const publicCounts = poll.resultsVisible && !poll.myVote;
+  const ld = {
+    '@context': 'https://schema.org',
+    '@type': 'DiscussionForumPosting',
+    headline: poll.title,
+    text: [poll.description, poll.options.map((o) => o.label).join(' · ')].filter(Boolean).join(' — '),
+    url: `${SITE_URL}/p/${poll.id}`,
+    ...(publicCounts ? { interactionStatistic: { '@type': 'InteractionCounter', interactionType: 'https://schema.org/VoteAction', userInteractionCount: poll.participants } } : {}),
+  };
   return (
     <div className="page page-wide">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, '\\u003c') }} />
       {label && (
         <p className="eyebrow">
           {/* Arogya's chip: an icon with the word. */}
@@ -79,6 +100,17 @@ export default async function DuelPage({ params, searchParams }: Props) {
         </p>
       )}
       {justCreated && <CreatedPanel id={poll.id} title={poll.title} />}
+      {mine && !justCreated && (
+        <Link href={`/p/${poll.id}/manage`} className="maker-bar">
+          <SlidersHorizontal size={16} strokeWidth={2} aria-hidden /> {t.manageLink}
+          <ChevronRight size={16} strokeWidth={2} aria-hidden />
+        </Link>
+      )}
+      {poll.maker && (
+        <Link href={`/u/${poll.maker.id}`} className="maker-by">
+          <span className="maker-by-face" aria-hidden>{poll.maker.avatar}</span> {t.askedBy(poll.maker.name)}
+        </Link>
+      )}
       <section className="home-game duel-first" aria-label="Duel">
         <DuelGame deck={deck} start={0} via={f ?? null} />
       </section>

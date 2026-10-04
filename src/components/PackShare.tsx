@@ -16,7 +16,7 @@ export default function PackShare({ id, title }: { id: string; title: string }) 
         if ((e as Error)?.name === 'AbortError') return;
       }
     }
-    window.open(`https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`, '_blank', 'noopener');
+    window.open(`https://wa.me/?text=${encodeURIComponent(`${text} ${url}${url.includes('?') ? '&' : '?'}src=wa`)}`, '_blank', 'noopener');
   }
   return (
     <p className="block-tight">
