@@ -363,3 +363,38 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 /* "Election" is short and fits next to the compact language button, so it stays on the smallest phones too
    (patricka hides its longer name below 340px). */
 @media (max-width: 340px) { .topnav .logo-full { display: inline; } }
+
+/* ---- Delight pass (docs/DESIGN.md, "Delight") ---- */
+/* Exit poll: each choice is a small card with its face, so you recognise before you read. */
+.duel-guess-options .guess-card {
+  display: flex; flex-direction: column; align-items: center; gap: 8px; min-height: 44px; padding: 12px 8px;
+  border: 0; border-radius: 12px; background: var(--sand); color: var(--ink); cursor: pointer; font: inherit; text-align: center;
+  box-shadow: inset 0 0 0 1px var(--line); transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.guess-card .duel-face, .guess-card .duel-photo { width: 48px; height: 48px; aspect-ratio: auto; border-radius: 50%; font-size: 16px; }
+.guess-name { font-family: var(--display); font-weight: 800; font-size: 15px; line-height: 20px; overflow-wrap: anywhere; }
+.guess-card:not(:disabled):active { transform: scale(0.96); box-shadow: inset 0 0 0 2px var(--ink); }
+.guess-card:disabled { opacity: 0.6; cursor: default; }
+@media (hover: hover) { .guess-card:not(:disabled):hover { box-shadow: inset 0 0 0 2px var(--ink); } }
+/* 5+ choices: one row each (face, name), so the list stays short. */
+.duel-guess-options.is-many { grid-template-columns: 1fr; }
+.duel-guess-options.is-many .guess-card { flex-direction: row; justify-content: flex-start; padding: 8px 12px; text-align: left; }
+.duel-guess-options.is-many .guess-card .duel-face, .duel-guess-options.is-many .guess-card .duel-photo { width: 32px; height: 32px; font-size: 12px; }
+
+/* "Up next: …" above the Next button: one line, cut with … */
+.duel-upnext { display: block; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+/* "3 new votes just now": appears softly, goes away by itself. */
+.duel-fresh { color: var(--positive); animation: fade-in 0.4s ease; }
+
+/* Idle nudge: nobody has touched the page for a while, the blue keys breathe three times. */
+.is-nudge .evm-btn { animation: nudge 1.4s ease-in-out 3; }
+.is-nudge .duel-option:nth-child(2) .evm-btn { animation-delay: 0.2s; }
+.is-nudge .duel-option:nth-child(3) .evm-btn { animation-delay: 0.4s; }
+@keyframes nudge { 0%, 100% { transform: none; } 40% { transform: translateY(-2px) scale(1.06); } }
+@media (prefers-reduced-motion: reduce) { .is-nudge .evm-btn, .duel-fresh { animation: none; } }
+/* My votes: the leader's share as a thin bar under each duel; lime when your pick is in front. */
+.index-meter { display: block; height: 6px; margin-top: 4px; border-radius: 3px; background: var(--sand-dark); overflow: hidden; }
+.index-meter > span { display: block; height: 100%; border-radius: 3px; background: var(--line); transform-origin: left; animation: meter-grow 0.6s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+.index-meter.is-mine > span { background: var(--lime); }
+@keyframes meter-grow { from { transform: scaleX(0); } }
+@media (prefers-reduced-motion: reduce) { .index-meter > span { animation: none; } }
