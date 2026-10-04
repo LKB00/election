@@ -7,6 +7,7 @@ import { isAdminKey } from '@/lib/admin';
 import { getFeaturedId, getPlannedToday, getPoll, getReviewQueue, indiaDay, listPolls } from '@/lib/polls';
 import { getT } from '@/lib/lang-server';
 import { getStats } from '@/lib/stats';
+import EmptyState from '@/components/EmptyState';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Review', robots: { index: false, follow: false } };
@@ -31,7 +32,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
         )}
       </header>
       <section className="block">
-        {items.length === 0 ? <p className="muted">{t.adminEmpty}</p> : items.map((item) => <AdminRow key={item.id} item={item} adminKey={key!} />)}
+        {items.length === 0 ? <EmptyState kind="done" title={t.adminEmpty} /> : items.map((item) => <AdminRow key={item.id} item={item} adminKey={key!} />)}
       </section>
       {/* After the queue: what needs you comes first. */}
       <TodayPicker current={featured ? { id: featured.id, title: featured.title } : null} polls={recent.filter((p) => !p.closed).map((p) => ({ id: p.id, title: p.title }))} planned={planned} adminKey={key!} todayLabel={indiaDay().label} />

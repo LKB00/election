@@ -676,3 +676,6 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .topic-chip__disc { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--tone); color: var(--ink); }
 .topic-hero { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 18px; background: var(--tone); color: var(--ink); margin-bottom: 12px; }
 .al-hero__faces { margin: 4px 0 0; font-size: 40px; line-height: 48px; letter-spacing: 4px; }
+/* Your crowd guess on the real result (a quiet pill under the bar). */
+.guess-tag { display: inline-flex; align-items: center; gap: 4px; align-self: flex-start; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--ink); font-size: 12px; line-height: 16px; font-weight: 700; }
+.is-ballot .guess-tag { align-self: center; }

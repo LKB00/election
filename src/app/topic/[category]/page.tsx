@@ -49,7 +49,7 @@ export default async function Topic({ params }: Props) {
         </section>
       )}
       <section className="al-block">
-        <DuelTiles polls={polls} votedIds={mine.map((v) => v.pollId)} />
+        <DuelTiles polls={polls} votedIds={mine.map((v) => v.pollId)} topic={category} />
       </section>
     </div>
   );

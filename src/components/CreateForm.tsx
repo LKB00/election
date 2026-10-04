@@ -10,13 +10,13 @@ import { RATING_EMOJIS, RATING_LABELS, type PollKind } from '@/lib/rating';
 import { rememberMyPoll } from './MyPolls';
 import PicturePicker, { type Picture } from './PicturePicker';
 
-export default function CreateForm({ initialTitle = '' }: { initialTitle?: string }) {
+export default function CreateForm({ initialTitle = '', initialTopic }: { initialTitle?: string; initialTopic?: string }) {
   const router = useRouter();
   const t = useT();
   const lang = useLang();
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState<string>('general');
+  const [category, setCategory] = useState<string>(initialTopic ?? 'general');
   const [choices, setChoices] = useState(['', '']);
   // One optional emoji per choice, kept in step with the choices.
   const [emojis, setEmojis] = useState(['', '']);

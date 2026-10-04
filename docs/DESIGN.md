@@ -759,3 +759,18 @@ Rule: pictures alongside words, never instead of them (people remember pictures 
 | Up next card (Polls, topics) | question + text | the choices' own emoji, big ("🍵 ☕"), above the question | seen before read |
 
 Pictures are inline SVG in the Arogya palette (a few hundred bytes each, no downloads). The dots grow in once; with reduced motion they just appear. Kept out on purpose: saffron, flag green, party symbols, the ECI logo, red/green for won/lost (Indian political and legal sensitivity).
+
+## Empty states and "your guess" (visual communication, part 2)
+
+**Empty states** (`EmptyState`): every empty page has the same three parts: a drawn picture, one line that says what is missing and why it matters, and the one next step. Never a blank space or a bare "nothing here".
+| Where | Picture | Line | Next step |
+|---|---|---|---|
+| Home, nothing open today | ballot box | "No polls open right now. Start one for your friends. It takes 30 seconds." | Start a poll |
+| A topic with no polls | ballot box | "No Music polls yet. Ask the first one. Your friends will vote." | Start a poll (Create opens already in that topic) |
+| A poll list with no polls | ballot box | same as Home | Start a poll |
+| My votes, none yet | ballot box | "No votes yet. Your votes will show up here…" | Start with today's poll |
+| Search, nothing found | slips + magnifier | "Nothing yet. Be the first to ask." | Ask it yourself (question typed in) |
+| Poll not found | box with "?" | "The link may be wrong, or the poll was removed." | Go to today's poll |
+| Admin, nothing to review | box with a tick | "Nothing to review." | none |
+
+**Your guess on the result:** after "Guess the crowd", the choice you guessed carries a small "◎ Your guess" pill under its bar, so you see how close you were on the real numbers, not only in a sentence.
