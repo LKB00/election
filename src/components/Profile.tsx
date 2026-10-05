@@ -1,7 +1,9 @@
 'use client';
-import { LogOut, Trash2 } from 'lucide-react';
+import { LogOut, Trash2, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { useOverlay } from '@/lib/useOverlay';
 import type { Profile } from '@/lib/auth';
 import { AVATARS } from '@/lib/avatars';
 import { apiMsg } from '@/lib/i18n';
@@ -45,13 +47,45 @@ export function YouSignIn({ full = false, startBack = false }: { full?: boolean;
 /** Your face and name (yellow = you), with Edit in place. */
 export function ProfileCard({ user }: { user: Profile }) {
   const t = useT();
-  const lang = useLang();
-  const router = useRouter();
   const [editing, setEditing] = useState(false);
+  // Shown at once after Save (closing the sheet steps back in history, which would undo a page refresh made then).
+  const [me, setMe] = useState(user);
+  return (
+    <>
+      <div className="profile-card">
+        <span className="profile-face" aria-hidden>{me.avatar}</span>
+        <span className="profile-who">
+          <span className="profile-name">{me.name}</span>
+          <span className="small muted">{t.youSignedIn}</span>
+        </span>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditing(true)}>{t.editProfile}</button>
+      </div>
+      {editing && <EditProfileSheet user={me} onSaved={setMe} onClose={() => setEditing(false)} />}
+    </>
+  );
+}
+
+/** Edit profile (owner: "this screen should be about edit profile"): its own sheet over the dimmed page, with only the
+ * name, the face and Save / Cancel. Nothing else on the page can be tapped until it is saved or closed. */
+function EditProfileSheet({ user, onSaved, onClose }: { user: Profile; onSaved: (u: Profile) => void; onClose: () => void }) {
+  const t = useT();
+  const lang = useLang();
   const [name, setName] = useState(user.name);
   const [avatar, setAvatar] = useState(user.avatar);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const ref = useRef<HTMLFormElement>(null);
+  useOverlay(onClose, { back: true });
+  useEffect(() => {
+    const before = document.activeElement as HTMLElement | null;
+    ref.current?.querySelector<HTMLElement>('input')?.focus({ preventScroll: true });
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      before?.focus?.({ preventScroll: true });
+    };
+  }, [onClose]);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -60,42 +94,36 @@ export function ProfileCard({ user }: { user: Profile }) {
     const data = await res?.json().catch(() => null);
     setBusy(false);
     if (!res?.ok) return setError(data?.error ? apiMsg(lang, data.error) : t.errGeneric);
-    setError('');
-    setEditing(false);
-    router.refresh();
+    onSaved(data?.user ?? { ...user, name: name.trim(), avatar });
+    onClose();
   }
 
-  if (!editing) {
-    return (
-      <div className="profile-card">
-        <span className="profile-face" aria-hidden>{user.avatar}</span>
-        <span className="profile-who">
-          <span className="profile-name">{user.name}</span>
-          <span className="small muted">{t.youSignedIn}</span>
-        </span>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditing(true)}>{t.editProfile}</button>
-      </div>
-    );
-  }
-  return (
-    <form className="profile-card is-editing" onSubmit={save}>
-      <label className="create-label" htmlFor="profile-name">{t.yourName}</label>
-      <input id="profile-name" className="input" value={name} maxLength={MAX_NAME} autoComplete="nickname" onChange={(e) => setName(e.target.value)} />
-      <fieldset className="signin-faces">
-        <legend className="create-label">{t.pickFace}</legend>
-        {AVATARS.map((a) => (
-          <label key={a} className={'signin-face' + (a === avatar ? ' is-on' : '')}>
-            <input type="radio" name="avatar" value={a} checked={a === avatar} onChange={() => setAvatar(a)} />
-            <span aria-hidden>{a}</span>
-          </label>
-        ))}
-      </fieldset>
-      {error && <p className="duel-error" role="alert">{error}</p>}
-      <span className="row wrap">
-        <button className="btn btn-primary" disabled={busy}>{t.saveProfile}</button>
-        <button type="button" className="btn btn-ghost" onClick={() => { setEditing(false); setName(user.name); setAvatar(user.avatar); setError(''); }}>{t.cancel}</button>
-      </span>
-    </form>
+  return createPortal(
+    <div className="sheet-backdrop" onClick={(e) => e.target === e.currentTarget && !busy && onClose()}>
+      <form ref={ref} className="sheet profile-edit" role="dialog" aria-modal="true" aria-labelledby="profile-edit-title" onSubmit={save}>
+        <button type="button" className="icon-btn sheet-close" onClick={onClose} aria-label={t.close}><X size={18} strokeWidth={2} aria-hidden /></button>
+        <h2 id="profile-edit-title" className="profile-edit-title">{t.editProfile}</h2>
+        {/* The face you picked, large, so the change is seen at once. */}
+        <span className="profile-face profile-edit-face" aria-hidden>{avatar}</span>
+        <label className="create-label" htmlFor="profile-name">{t.yourName}</label>
+        <input id="profile-name" className="input" value={name} maxLength={MAX_NAME} autoComplete="nickname" onChange={(e) => setName(e.target.value)} />
+        <fieldset className="signin-faces">
+          <legend className="create-label">{t.pickFace}</legend>
+          {AVATARS.map((a) => (
+            <label key={a} className={'signin-face' + (a === avatar ? ' is-on' : '')}>
+              <input type="radio" name="avatar" value={a} checked={a === avatar} onChange={() => setAvatar(a)} />
+              <span aria-hidden>{a}</span>
+            </label>
+          ))}
+        </fieldset>
+        {error && <p className="duel-error" role="alert">{error}</p>}
+        <div className="preview-actions">
+          <button className="btn btn-primary btn-lg" disabled={busy}>{t.saveProfile}</button>
+          <button type="button" className="btn btn-ghost btn-lg" onClick={onClose} disabled={busy}>{t.cancel}</button>
+        </div>
+      </form>
+    </div>,
+    document.body,
   );
 }
 

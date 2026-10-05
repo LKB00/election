@@ -18,7 +18,8 @@ export async function PATCH(req: Request) {
   if (name === null) return NextResponse.json({ error: 'Your name needs at least 2 letters.' }, { status: 400 });
   const avatar = AVATARS.includes(body?.avatar) ? body.avatar : undefined;
   await updateProfile(db, user.id, { ...(name ? { name } : {}), ...(avatar ? { avatar } : {}) });
-  return NextResponse.json({ ok: true });
+  // The saved profile (name cleaned as stored), so the page can show it at once.
+  return NextResponse.json({ ok: true, user: { ...user, ...(name ? { name } : {}), ...(avatar ? { avatar } : {}) } });
 }
 
 // Delete my profile: the name, avatar and passkeys go; polls stay up with no owner. Votes were never linked to it.

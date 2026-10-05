@@ -1031,3 +1031,7 @@ Replaces "fill the form first, sign in at the end". Signed out, Start a poll (th
 ### You page, clearer order (owner, Oct 2026: "so many CTAs, no hierarchy, why is there this Your votes CTA")
 
 Top to bottom: who you are (profile card, Edit profile) → **Your polls** (P1: each row opens the poll's page) → **Account** (P3: one quiet list, "Sign out" and "Delete profile" in pink, asked once more inline). Removed: the "Your votes are not part of your profile… Your votes" line and link (Your votes is its own tab; the promise is on the profile screen), and the big outlined Sign out button. An ended poll's row says "Ended · 0 votes", never "no votes yet: share it".
+
+### Edit profile: its own sheet (owner, Oct 2026: "when I click on edit profile why are options visible, this screen should be about edit profile")
+
+"Edit profile" opens a sheet over the dimmed page (it used to open inside the card, with the polls, sign out and the rest still around it): "Edit profile", the picked face large, Your name, Pick a face, **Save** (ink) and **Cancel**, and × / Back / Escape to close. Nothing else can be tapped while it is open. After Save the card shows the new name and face at once (the API returns the saved profile).
