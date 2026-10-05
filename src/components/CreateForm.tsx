@@ -2,7 +2,7 @@
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { AlignLeft, CalendarDays, Check, ChevronDown, CircleDot, Clock, EyeOff, ImagePlus, Landmark, Lightbulb, ListChecks, ListOrdered, MessageSquarePlus, Repeat, Shuffle, SlidersHorizontal, Smile, Sparkles, Tag, UserRound, Users, WandSparkles, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CATEGORIES } from '@/lib/categories';
 import { useLang, useT } from '@/lib/lang';
 import { apiMsg } from '@/lib/i18n';
@@ -56,7 +56,9 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   // "Which dates work?": the dates as the phone's date picker gives them (2026-10-12), growing like the choices.
   const [dateVals, setDateVals] = useState(['', '']);
   const setDate = (i: number, v: string) => setDateVals((d) => [...d.map((x, j) => (j === i ? v : x)), ...(i === d.length - 1 && v && d.length < 10 ? [''] : [])]);
-  const dateLabel = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString(lang === 'hi' ? 'hi-IN' : 'en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+  // Dates are saved in one form for every voter ("Sat, 7 Nov"), whatever language the maker uses (the share picture can
+  // only draw Latin letters).
+  const dateLabel = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
   const filledDates = [...new Set(dateVals.filter(Boolean))].sort();
   // Fairer, and more ways in: each voter's own order, and "suggest a choice" (the maker adds it first).
   const [shuffle, setShuffle] = useState(false);
@@ -88,6 +90,30 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
     setCalledIt(called);
   };
   const [busy, setBusy] = useState(false);
+  // Closed the sign-in sheet without a profile: say the poll is kept (it is) and what is needed to post it.
+  const [askedOnce, setAskedOnce] = useState(false);
+  // A draft of what you typed, kept on this phone for this visit: Close, a closed sign-in or a dropped connection never
+  // throws a filled poll away. Restored when Create opens empty; cleared once the poll is made.
+  const DRAFT = 'election-create-draft';
+  useEffect(() => {
+    if (again || initialTitle) return;
+    try {
+      const d = JSON.parse(sessionStorage.getItem(DRAFT) ?? 'null') as { title?: string; choices?: string[]; kind?: PollKind; calledIt?: boolean } | null;
+      if (d?.title || d?.choices?.some(Boolean)) {
+        if (d.title) setTitle(d.title);
+        if (d.kind) setKind(d.kind);
+        if (d.calledIt) setCalledIt(true);
+        if (d.choices?.length) fill(d.choices.filter(Boolean));
+      }
+    } catch {}
+    // Once, on opening.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    try {
+      if (title.trim() || choices.some((c) => c.trim())) sessionStorage.setItem(DRAFT, JSON.stringify({ title, choices, kind, calledIt }));
+    } catch {}
+  }, [title, choices, kind, calledIt]);
   const [error, setError] = useState('');
   // Errors show under the field they belong to, and focus moves there.
   const [fieldError, setFieldError] = useState<{ title?: string; choices?: string; end?: string }>({});
@@ -207,13 +233,18 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
         electionMode,
         groupSize: isGroup ? groupN : undefined,
         photoConsent,
-        endsAt: endsAt ? new Date(endsAt).toISOString() : undefined,
+        // A group poll with no end time would wait forever for one missing friend: it ends in 3 days unless you pick a time.
+        endsAt: endsAt ? new Date(endsAt).toISOString() : isGroup ? new Date(Date.now() + 3 * 86_400_000).toISOString() : undefined,
       }),
     }).catch(() => null);
     const data = await res?.json().catch(() => null);
     if (res?.ok && data?.id) {
       rememberMyPoll(data.id, data.manageKey);
-      return router.push(`/p/${data.id}?new=1`);
+      try {
+        sessionStorage.removeItem(DRAFT);
+      } catch {}
+      // Replace, not push: Back from the new poll must not reopen a filled Create (it looked like it had not worked).
+      return router.replace(`/p/${data.id}?new=1`);
     }
     setBusy(false);
     // Signed out on another tab, or the sign-in ran out: ask again.
@@ -221,7 +252,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
       setSigned(false);
       return setAsk(true);
     }
-    setError(data?.error ? apiMsg(lang, data.error) : t.errGeneric);
+    setError(!res && !navigator.onLine ? t.createOffline : data?.error ? apiMsg(lang, data.error) : t.errGeneric);
   }
 
   const TONES = ['input', 'feedback', 'control', 'agents', 'output', 'trust'];
@@ -478,7 +509,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
       )}
       {ask && (
         <SignInSheet
-          onClose={() => setAsk(false)}
+          onClose={() => { setAsk(false); setAskedOnce(true); }}
           onDone={() => {
             setAsk(false);
             setSigned(true);
@@ -488,7 +519,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
       )}
       {/* The one main step, pinned at thumb height on phones (like Next on a duel). */}
       <div className="builder-go">
-        {!signed && <p className="small muted builder-go-hint">{t.createSignHint}</p>}
+        {!signed && <p className="small muted builder-go-hint" role={askedOnce ? 'status' : undefined}>{askedOnce ? t.signKept : t.createSignHint}</p>}
         <button className={'btn btn-primary btn-lg' + (title.trim().length >= 3 && (isRating || filledCount >= 2) ? ' is-ready' : '')} disabled={busy}>{buttonText}</button>
       </div>
     </form>

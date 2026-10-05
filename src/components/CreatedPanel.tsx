@@ -1,12 +1,13 @@
 'use client';
-import { Check, Link2, Share2 } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowRight, Check, Link2, Share2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useT } from '@/lib/lang';
 import { votePop } from '@/lib/sound';
 import Burst from './Burst';
 
 // Right after creating a duel, the job is to send it (P1). Voting yourself is P2 (the duel is below).
-export default function CreatedPanel({ id, title, path = `/p/${id}`, heading, text, button }: { id: string; title: string; /** A pack's page instead of a poll's. */ path?: string; heading?: string; text?: string; button?: string }) {
+export default function CreatedPanel({ id, title, path = `/p/${id}`, heading, text, button, manageHref }: { id: string; title: string; /** A pack's page instead of a poll's. */ path?: string; heading?: string; text?: string; button?: string; /** The maker's page for this poll (votes as they come in). */ manageHref?: string }) {
   const t = useT();
   const [copied, setCopied] = useState(false);
   // Remove "?new=1" from the address bar, so a copied address or a refresh shows the normal page to friends.
@@ -52,6 +53,12 @@ export default function CreatedPanel({ id, title, path = `/p/${id}`, heading, te
           {copied ? <Check size={15} strokeWidth={2} aria-hidden /> : <Link2 size={15} strokeWidth={1.75} aria-hidden />} {copied ? t.copied : t.copyLink}
         </button>
       </span>
+      {/* Where to come back to: the maker's page (votes as they come in), also under You. */}
+      {manageHref && (
+        <Link href={manageHref} className="text-link small created-manage">
+          {t.createdManage} <ArrowRight size={14} strokeWidth={1.75} aria-hidden />
+        </Link>
+      )}
     </section>
   );
 }

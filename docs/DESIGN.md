@@ -936,3 +936,17 @@ One scale on phones (in `election.css`, "Mobile spacing"): 16px page sides; 24px
 - **Edges:** fields, switches and face pickers have the stronger `--line-control` edge (WCAG); chips, cards and buttons keep the soft `--line`.
 - **Heights:** buttons side by side are the same height (Share the poll / Copy link 48px).
 - **Counts:** data bars are ink or grey; green is kept for good-news signals.
+
+## UX copy and journey audit, round 2 (owner, Oct 2026: "if there is slight scope of improvement it needs to be improved")
+
+**Naming, the same everywhere (three languages):** "Start a poll" for every way in (the + / top-bar link, empty states, "Start a poll about this" from search); the form's button "Start poll". "Your votes" (tab and page; it sits next to "You"). "Today's question" (never "poll of the day"). "Share the result" (final outcome) / "See the results" (live numbers). "Share your ink" for the after-vote share and its sheet. "Topic", never "category". "Phone", never "device"/"browser"/"cookie" in what people read; "profile", never "account"; "notification", never "alert". "Poll maker" for the person who made a poll. Errors say how to fix them ("check your internet", "wait a few seconds", "remove one to continue"); server messages were rewritten too ("We could not find your profile on this phone…").
+
+**Journeys fixed:**
+- **Next on a shared poll:** the address, Refresh and the header ("Asked by …", the maker's bar, "Someone wants your pick") now follow the poll on screen. "Asked by" replaces the generic "Someone wants your pick" when both would show.
+- **After making a poll:** "See votes as they come in (also under You)" links to the maker's page; Back no longer reopens a filled Create (the history entry is replaced); the note says "Send it to the group" (it used to promise live votes the maker could not see).
+- **Create keeps a draft** (question, choices, type) for the visit: Close, a closed sign-in sheet or no internet never loses a poll. Closing sign-in says "Your poll is kept. Make a profile to post it." No internet says so, instead of "Something went wrong".
+- **Maker's page:** Back goes to You and the You tab is lit; "Called it" answers can be marked here on any phone (not only the phone that made the poll); after a length change, End now or marking the answer, the top says what changed ("Saved. The poll now ends Tue, 9 pm."); "End the poll to make it now · Vote on your poll to see the results" explains a missing results picture; the repeated "Open the poll" row is gone; signed out, it says "Sign in to manage your poll" and starts on "Welcome back".
+- **Back link:** poll, pack, topic and maker pages go back where you came from inside the site (Polls, Your votes, a topic…), or to Home from a WhatsApp link.
+- **Voting:** an offline vote on pick-several, rank or dates polls now sends every tick when the phone is back online (it used to send only the first); untouched dates say "Tap to answer" (they looked pre-answered as "Doesn't work"); a waiting group poll shows one share action ("Remind the group"); group polls end in 3 days unless the maker picks a time; dates are saved as "Sat, 7 Nov" for every voter.
+- **Links between places:** Your votes → "Polls you made"; your own maker page → "Manage your polls under You"; Poll not found → "Browse polls" too; the caught-up card → "See your votes".
+- **Start fresh (TEMPORARY test tool)** no longer wipes a maker's private keys or list of polls.

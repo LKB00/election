@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { ChevronRight, Vote } from 'lucide-react';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { getDb, schema } from '@/db';
+import { currentUser } from '@/lib/auth';
 import { getT } from '@/lib/lang-server';
 import { isCode } from '@/lib/validation';
 import EmptyState from '@/components/EmptyState';
@@ -42,6 +43,8 @@ export default async function MakerPage({ params }: { params: Promise<{ id: stri
   if (!data) notFound();
   const t = await getT();
   const { u, rows } = data;
+  // Your own page: a way to your tools (You).
+  const me = await currentUser(await getDb());
   return (
     <div className="page">
       <header className="page-head page-head-tight">
@@ -52,6 +55,7 @@ export default async function MakerPage({ params }: { params: Promise<{ id: stri
             <span className="small muted">{t.makerLead}</span>
           </span>
         </div>
+        {me?.id === u.id && <Link href="/you" className="text-link small">{t.thisIsYou} →</Link>}
       </header>
       {rows.length ? (
         <section className="al-block">

@@ -15,13 +15,13 @@ const SignInSheet = dynamic(() => import('./SignIn'), { ssr: false });
 // The You page's moving parts (docs/DESIGN.md, "Profiles").
 
 /** Signed out: the profile screen right on the page; when it is done, the page shows the profile. */
-export function YouSignIn({ full = false }: { full?: boolean }) {
+export function YouSignIn({ full = false, startBack = false }: { full?: boolean; startBack?: boolean }) {
   const router = useRouter();
   const t = useT();
   const [open, setOpen] = useState<null | 'new' | 'back'>(null);
   // The maker's page (signed out) shows the whole screen; the You tab starts calm: the picture, the one promise that
   // matters most, one button. The name, faces and the other promises open in the sheet only when tapped.
-  if (full) return <SignInPanel onPage onDone={() => router.refresh()} />;
+  if (full) return <SignInPanel onPage startBack={startBack} onDone={() => router.refresh()} />;
   return (
     <div className="spot-empty">
       <Spot kind="lock" />

@@ -6,7 +6,7 @@ import { clientIp, rateLimit } from '@/lib/rate-limit';
 
 // Step 1 of making a profile: the phone is asked to create a passkey (fingerprint, face or screen lock) for this site.
 export async function POST(req: Request) {
-  if (!(await rateLimit(`auth:${clientIp(req)}`, 20, 10 * 60_000))) return NextResponse.json({ error: 'Slow down a little.' }, { status: 429 });
+  if (!(await rateLimit(`auth:${clientIp(req)}`, 20, 10 * 60_000))) return NextResponse.json({ error: 'Too many taps. Wait a few seconds and try again.' }, { status: 429 });
   const body = await req.json().catch(() => null);
   const name = cleanName(body?.name);
   if (!name) return NextResponse.json({ error: 'Your name needs at least 2 letters.' }, { status: 400 });

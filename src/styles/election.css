@@ -930,3 +930,4 @@ html { scroll-padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); scr
 .maker-results-side .btn, .profile-actions .btn { min-height: 44px; }
 /* Counts use ink (as the vote-per-hour bars and your result); green stays for "good news" signals only. */
 .maker-sources .meter span { background: var(--ink-2); }
+.created-manage { display: inline-flex; align-items: center; gap: 4px; margin-top: 12px; }

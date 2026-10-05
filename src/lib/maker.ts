@@ -28,6 +28,8 @@ export type MakerView = {
   /** The maker can share a results card: anyone may see the result (open results, or the poll has ended). */
   resultsPublic: boolean;
   groupSize: number | null;
+  /** "Called it": the answer still to mark (null once marked, or for other polls). */
+  calledOpen: boolean;
 };
 
 /** The poll, if this profile made it. */
@@ -69,6 +71,7 @@ export async function makerView(db: Db, id: string, uid: string): Promise<MakerV
     suggestionsOn: p.suggestionsOn,
     resultsPublic: n > 0 && p.category !== 'politics' && (closed || (!p.hideUntilVoted && groupDone)),
     groupSize: p.groupSize,
+    calledOpen: p.calledIt && !p.outcome,
   };
 }
 
@@ -95,6 +98,19 @@ export async function editPoll(db: Db, id: string, uid: string, e: { title: stri
     for (const o of e.options) await tx.update(options).set({ label: o.label }).where(and(eq(options.id, o.id), eq(options.pollId, id)));
     return 'ok';
   });
+}
+
+/** "Called it": the signed-in maker marks what happened (on any phone; the phone key is only for makers without a
+ * profile). Closes the poll, like the phone-key path in polls.ts. */
+export async function markOutcome(db: Db, id: string, uid: string, optionId: string): Promise<'ok' | 'done' | 'bad_option' | 'not_found'> {
+  const p = await ownPoll(db, id, uid);
+  if (!p || !p.calledIt) return 'not_found';
+  if (p.outcome) return 'done';
+  const [opt] = await db.select({ id: options.id }).from(options).where(and(eq(options.id, optionId), eq(options.pollId, id))).limit(1);
+  if (!opt) return 'bad_option';
+  const now = new Date();
+  await db.update(polls).set({ outcome: optionId, outcomeAt: now, endsAt: p.endsAt && p.endsAt < now ? p.endsAt : now }).where(eq(polls.id, id));
+  return 'ok';
 }
 
 /** Where a vote came from (counted for the poll only; never kept with the vote). */

@@ -42,9 +42,9 @@ export const createPollSchema = z.object({
   description: text().pipe(z.string().max(300)).default(''),
   category: z.enum(CATEGORIES).default('general'),
   options: z
-    .array(text().pipe(z.string().min(1, 'A choice is empty.').max(60, 'A choice is too long (60 letters max).')).refine(visible, 'A choice is empty.'))
+    .array(text().pipe(z.string().min(1, 'One choice is empty. Fill it in or remove it.').max(60, 'A choice is too long (60 letters max).')).refine(visible, 'One choice is empty. Fill it in or remove it.'))
     .min(2, 'Add at least 2 choices.')
-    .max(10, 'At most 10 choices.')
+    .max(10, 'You can have up to 10 choices. Remove one to continue.')
     .refine((a) => new Set(a.map(sameKey)).size === a.length, 'Two choices are the same. Make each one different.'),
   // One optional emoji per choice, in the same order as the choices ('' = none).
   emojis: z.array(z.string().max(16).refine((e) => e === '' || isEmoji(e), 'Pick one emoji per choice.')).max(10).default([]),
@@ -86,13 +86,13 @@ export const editPollSchema = z
     title: text().pipe(z.string().min(3, 'Your question needs at least 3 letters.').max(120, 'Your question is too long (120 letters max).')).refine(visible, 'Your question needs at least 3 letters.'),
     description: text().pipe(z.string().max(300)).default(''),
     options: z
-      .array(z.object({ id: z.string().regex(/^[\w-]{1,64}$/), label: text().pipe(z.string().min(1, 'A choice is empty.').max(60, 'A choice is too long (60 letters max).')).refine(visible, 'A choice is empty.') }))
+      .array(z.object({ id: z.string().regex(/^[\w-]{1,64}$/), label: text().pipe(z.string().min(1, 'One choice is empty. Fill it in or remove it.').max(60, 'A choice is too long (60 letters max).')).refine(visible, 'One choice is empty. Fill it in or remove it.') }))
       .max(10)
       .refine((a) => new Set(a.map((o) => sameKey(o.label))).size === a.length, 'Two choices are the same. Make each one different.'),
   })
   .refine((p) => !hasBlockedWord(p.title, p.description, ...p.options.map((o) => o.label)), 'Please remove the abusive words.');
 export const suggestSchema = z
-  .object({ label: text().pipe(z.string().min(1, 'A choice is empty.').max(60, 'A choice is too long (60 letters max).')).refine(visible, 'A choice is empty.') })
+  .object({ label: text().pipe(z.string().min(1, 'One choice is empty. Fill it in or remove it.').max(60, 'A choice is too long (60 letters max).')).refine(visible, 'One choice is empty. Fill it in or remove it.') })
   .refine((p) => !hasBlockedWord(p.label), 'Please remove the abusive words.');
 const code = () => z.string().regex(/^[\w-]{1,64}$/);
 export const VOTE_SOURCES = ['wa', 'ig', 'qr', 'link', 'other'] as const;

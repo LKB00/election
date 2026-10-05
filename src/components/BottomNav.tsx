@@ -19,13 +19,13 @@ export default function BottomNav() {
   );
   return (
     <nav className="bottomnav" aria-label="Main">
-      {tab('/', t.home, House, path === '/' || path.startsWith('/p/') || path.startsWith('/pack/'))}
+      {tab('/', t.home, House, path === '/' || (path.startsWith('/p/') && !path.endsWith('/manage')) || path.startsWith('/pack/'))}
       {tab('/polls', t.duels, ChartNoAxesColumn, path.startsWith('/polls') || path.startsWith('/topic/'))}
       <Link href="/create" className="bottomnav-plus" aria-label={t.startDuel}>
         <span><Plus size={24} strokeWidth={2.25} aria-hidden /></span>
       </Link>
       {tab('/me', t.myVotes, Vote, path === '/me')}
-      {tab('/you', t.you, UserRound, path.startsWith('/you') || path.startsWith('/mine'))}
+      {tab('/you', t.you, UserRound, path.startsWith('/you') || path.startsWith('/mine') || path.endsWith('/manage'))}
     </nav>
   );
 }

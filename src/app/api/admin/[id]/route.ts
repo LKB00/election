@@ -9,7 +9,7 @@ import { adminSchema } from '@/lib/validation';
 // The owner hides, shows or approves a duel from /admin.
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await rateLimit(`admin:${clientIp(req)}`, 60, 60_000))) {
-    return NextResponse.json({ error: 'Slow down a little.' }, { status: 429 });
+    return NextResponse.json({ error: 'Too many taps. Wait a few seconds and try again.' }, { status: 429 });
   }
   const parsed = adminSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success || !isAdminKey(parsed.data.key)) return NextResponse.json({ error: 'Not allowed.' }, { status: 403 });

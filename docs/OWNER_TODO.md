@@ -62,6 +62,7 @@ Say "continue features" and Claude picks up the next one.
 - [ ] **Move to Mumbai, both parts on the same day:** Vercel → Settings → Functions → Region → **Mumbai (bom1)**, and in Neon make a new project in **Singapore** and move the data (Claude can do the moving with you; say "move the database"). Doing only one makes pages slower, not faster.
 - [ ] **Google Search Console** (free, 10 minutes): search.google.com/search-console → Add property → your site address → verify (Vercel lets you add the TXT record) → Sitemaps → submit `sitemap.xml`. It shows which searches find you. Hindi and Hinglish pages are now offered to Google too.
 - [ ] **Test on an old Android phone inside WhatsApp:** send yourself a poll link, check the preview picture shows, open it, time how long until you can vote.
+- [ ] **Should poll makers see their own poll's results without voting?** Today they must vote (or end the poll) like everyone else, so the maker's page says "Vote on your poll to see the results". Say "let makers see results" if you want that.
 - [ ] **Two decisions:** (1) should private planning polls (like "Which dates work?") ever be allowed to show voters' names? Today: never. (2) should results ever be split by groups people choose (city, team)? Today: no.
 - [ ] **Invite small fan pages and college meme pages** to make polls with "Show my name" on (never paid). Their page `/u/…` lists their polls.
 - [ ] **IPL 2027:** when the schedule is out (about Jan–Feb 2027), plan match-day packs; Claude can make the batch.

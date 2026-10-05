@@ -480,7 +480,8 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
         queued.current = null;
         setMsg('');
         setBusy(null);
-        vote(optionId);
+        // The whole vote goes out (every tick and "if need be" date), not just the first choice.
+        vote(optionId, picks, maybeList);
       };
       queued.current = retry;
       window.addEventListener('online', retry, { once: true });
@@ -635,6 +636,16 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
     } else setMsg(data?.error ? apiMsg(lang, data.error) : t.saveFail2);
   }
 
+  // A shared poll page (/p/<id>): after Next, the address (and Refresh, and the page's own header) follow the poll on
+  // screen, so "Asked by …" never sits above someone else's poll.
+  useEffect(() => {
+    if (!poll || typeof window === 'undefined' || !window.location.pathname.startsWith('/p/')) return;
+    if (window.location.pathname !== `/p/${poll.id}`) {
+      history.replaceState(history.state, '', `/p/${poll.id}`);
+      window.dispatchEvent(new CustomEvent('election:poll', { detail: poll.id }));
+    }
+  }, [poll?.id]);
+
   // Next: the next live duel you have not voted in (wraps around), else "all caught up".
   // Always brings the top of the game into view, so the new question is the first thing you see.
   function next() {
@@ -760,7 +771,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
         <p className="tot-verdict">{t.allDoneNote}</p>
         <div className="row wrap center">
           <Link href="/create" className="btn btn-primary btn-lg"><Plus size={15} strokeWidth={1.75} aria-hidden /> {t.startOwn}</Link>
-          <button type="button" className="btn btn-ghost btn-lg" onClick={() => { setOver(false); setI(0); }}>{t.seeResults}</button>
+          <Link href="/me" className="btn btn-ghost btn-lg">{t.seeYourVotes}</Link>
         </div>
       </div>
     );
@@ -924,7 +935,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
                 {!revealed && !poll.closed && (
                   <span className="evm-row" aria-hidden>
                     <span className={'evm-led' + (isMine || ticked ? ' is-on' : '')} />
-                    <span className="evm-btn">{dates && !voted ? (ticked ? t.datesWorks : maybe ? t.datesMaybe : t.datesNo) : multi && !voted ? (ranking ? (ticked ? t.rankRemove : t.rankNext(ticks.length + 1)) : ticked ? t.multiTicked : t.multiTick) : isMine ? t.voted : t.vote}</span>
+                    <span className="evm-btn">{dates && !voted ? (ticked ? t.datesWorks : maybe ? t.datesMaybe : ticks.length + maybes.length ? t.datesNo : t.datesTap) : multi && !voted ? (ranking ? (ticked ? t.rankRemove : t.rankNext(ticks.length + 1)) : ticked ? t.multiTicked : t.multiTick) : isMine ? t.voted : t.vote}</span>
                   </span>
                 )}
                 {justVoted === o.id && !counting && <Burst />}
@@ -1134,9 +1145,10 @@ null
             </p>
             {upNext && <span className="small muted duel-upnext">{t.upNext(upNext.title)}</span>}
             <span className="row duel-actions">
-              <button type="button" className="btn btn-ghost" onClick={() => (mine && poll.myShareCode ? setSharing(true) : share())}>
+              {/* A group poll still waiting: "Remind the group" (above) is the one share action. */}
+              {!poll.groupWaiting && <button type="button" className="btn btn-ghost" onClick={() => (mine && poll.myShareCode ? setSharing(true) : share())}>
                 <Share2 size={14} strokeWidth={1.75} aria-hidden /> {copied ? t.linkCopied : poll.closed ? t.shareResult : t.shareInk}
-              </button>
+              </button>}
               <button type="button" className="btn btn-primary" onClick={next} ref={nextRef}>
                 {t.next} <ArrowRight size={14} strokeWidth={1.75} aria-hidden />
               </button>

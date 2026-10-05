@@ -100,6 +100,8 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
       {/* The rest only matters once you have votes: keeping them, starting fresh (TEMPORARY, for testing), the rules. */}
       {mine.length > 0 && (
         <>
+          {/* The polls you made live under You. */}
+          <p className="small block-tight"><Link href="/you" className="text-link">{t.pollsYouMade} →</Link></p>
           <KeepVotes voterKey={voterKey} />
           <ResetFresh />
           <p className="small block row wrap">

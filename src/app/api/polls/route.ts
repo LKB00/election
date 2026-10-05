@@ -13,7 +13,7 @@ export async function POST(req: Request) {
   const user = await currentUser(db);
   if (!user) return NextResponse.json({ error: 'Sign in to make a poll.' }, { status: 401 });
   if (!(await rateLimit(`create:${clientIp(req)}`, 10, 60 * 60_000))) {
-    return NextResponse.json({ error: 'Too many polls. Try again later.' }, { status: 429 });
+    return NextResponse.json({ error: 'You have started a lot of polls. Try again in an hour.' }, { status: 429 });
   }
   const body = await req.json().catch(() => null);
   const parsed = createPollSchema.safeParse(body);

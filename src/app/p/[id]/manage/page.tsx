@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ChevronRight, Clock, Eye } from 'lucide-react';
+import { Clock, Eye } from 'lucide-react';
 import { getDb } from '@/db';
 import { currentUser } from '@/lib/auth';
 import { makerView } from '@/lib/maker';
@@ -8,7 +8,7 @@ import { MILESTONE } from '@/lib/push';
 import { getLang, getT } from '@/lib/lang-server';
 import EmptyState from '@/components/EmptyState';
 import { YouSignIn } from '@/components/Profile';
-import { AskAgainRow, FixTypo, Lengths, MilestoneAlert, ResultsCard, ShareLink, Suggestions } from '@/components/MakerTools';
+import { AskAgainRow, FixTypo, Lengths, MarkOutcome, MilestoneAlert, ResultsCard, ShareLink, Suggestions } from '@/components/MakerTools';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Your poll', robots: { index: false, follow: false } };
@@ -16,14 +16,16 @@ export const metadata: Metadata = { title: 'Your poll', robots: { index: false, 
 // The poll maker's page (docs/DESIGN.md, "Poll maker tools"). P1: how it's going (votes, the last day, where votes
 // came from), with sharing as the one main action. Then the results picture once the result is public, suggested
 // choices, how long it runs, fix a typo (before the first vote), ask again, and the first-votes alert.
-export default async function ManagePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ManagePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ done?: string }> }) {
   const { id } = await params;
+  const { done } = await searchParams;
   const db = await getDb();
   const [user, t, lang] = await Promise.all([currentUser(db), getT(), getLang()]);
   if (!user) {
     return (
       <div className="page">
-        <section className="block"><YouSignIn full /></section>
+        <h1 className="display">{t.manageSignIn}</h1>
+        <section className="block-tight"><YouSignIn full startBack /></section>
       </div>
     );
   }
@@ -44,7 +46,19 @@ export default async function ManagePage({ params }: { params: Promise<{ id: str
         <p className="eyebrow"><Clock size={13} strokeWidth={2} aria-hidden />{v.closed ? t.statusEnded : v.endsAt ? t.statusEnds(when) : t.statusOpenNoEnd}</p>
         <h1 className="display maker-title">{v.title}</h1>
         <Link href={`/p/${v.id}`} className="text-link small"><Eye size={14} strokeWidth={2} aria-hidden /> {t.openPoll}</Link>
+        {/* What just changed, said once at the top. */}
+        {done === 'end' && <p className="small duel-friend" role="status">{t.endedNow}</p>}
+        {done === 'length' && v.endsAt && !v.closed && <p className="small duel-friend" role="status">{t.lengthSaved(when)}</p>}
+        {done === 'outcome' && <p className="small duel-friend" role="status">{t.outcomeSaved}</p>}
       </header>
+
+      {/* "Called it": mark what happened (only the maker, on any phone). */}
+      {v.calledOpen && (
+        <section className="al-block" aria-label={t.calledMarkTitle}>
+          <h2 className="al-block__title">{t.calledMarkTitle}</h2>
+          <MarkOutcome id={v.id} options={v.options} />
+        </section>
+      )}
 
       {/* P1: how it's going, and the one main action (share). */}
       <section className="al-block" aria-label={t.howGoing}>
@@ -79,7 +93,9 @@ export default async function ManagePage({ params }: { params: Promise<{ id: str
 
       <section className="al-block" aria-label={t.resultsCard}>
         <h2 className="al-block__title">{t.resultsCard}</h2>
-        {v.resultsPublic ? <ResultsCard id={v.id} votes={v.votes + v.options.length} /> : <p className="small muted">{t.resultsCardLater}</p>}
+        {v.resultsPublic ? <ResultsCard id={v.id} votes={v.votes + v.options.length} /> : (
+          <p className="small muted">{t.resultsCardLater} {!v.closed && <>{t.endToPicture} <Link href={`/p/${v.id}`} className="text-link">{t.voteToSee}</Link></>}</p>
+        )}
       </section>
 
       {v.pending.length > 0 && (
@@ -102,13 +118,6 @@ export default async function ManagePage({ params }: { params: Promise<{ id: str
           {v.canEdit && <li><FixTypo view={v} /></li>}
           {!v.closed && v.votes < MILESTONE && <li><MilestoneAlert id={v.id} n={MILESTONE} /></li>}
           <li><AskAgainRow id={v.id} /></li>
-          <li>
-            <Link href={`/p/${v.id}`} className="al-row">
-              <span className="al-row__disc" style={{ '--tone': 'var(--p-input)' } as React.CSSProperties}><Eye size={20} strokeWidth={1.75} aria-hidden /></span>
-              <span className="al-row__main"><span className="al-row__title">{t.openPoll}</span></span>
-              <ChevronRight size={18} strokeWidth={1.75} className="al-row__chevron" aria-hidden />
-            </Link>
-          </li>
         </ul>
       </section>
     </div>

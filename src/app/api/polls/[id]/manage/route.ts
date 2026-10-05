@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/db';
 import { currentUser } from '@/lib/auth';
-import { decideSuggestion, editPoll, ownPoll, setEnd } from '@/lib/maker';
+import { decideSuggestion, editPoll, markOutcome, ownPoll, setEnd } from '@/lib/maker';
 import { isPushSub, pushEnabled, sendResultAlerts, wantMilestone } from '@/lib/push';
 import { clientIp, rateLimit } from '@/lib/rate-limit';
 import { editPollSchema, isCode } from '@/lib/validation';
@@ -12,7 +12,7 @@ import { getOrCreateVoterId } from '@/lib/voter';
 const HOURS = { hour: 1, day: 24, days3: 72, week: 168 } as const;
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (!(await rateLimit(`manage:${clientIp(req)}`, 30, 60_000))) return NextResponse.json({ error: 'Slow down a little.' }, { status: 429 });
+  if (!(await rateLimit(`manage:${clientIp(req)}`, 30, 60_000))) return NextResponse.json({ error: 'Too many taps. Wait a few seconds and try again.' }, { status: 429 });
   const { id } = await params;
   const db = await getDb();
   const user = await currentUser(db);
@@ -50,7 +50,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (action === 'add' || action === 'drop') {
     if (!isCode(body?.sid)) return NextResponse.json({ error: 'Pick a choice.' }, { status: 400 });
     const r = await decideSuggestion(db, id, user.id, body.sid, action === 'add');
-    if (r === 'full') return NextResponse.json({ error: 'At most 10 choices.' }, { status: 409 });
+    if (r === 'full') return NextResponse.json({ error: 'You can have up to 10 choices. Remove one to continue.' }, { status: 409 });
+    return NextResponse.json({ ok: true });
+  }
+  if (action === 'outcome') {
+    if (!isCode(body?.optionId)) return NextResponse.json({ error: 'Pick a choice.' }, { status: 400 });
+    const r = await markOutcome(db, id, user.id, body.optionId);
+    if (r === 'bad_option') return NextResponse.json({ error: 'That choice is not in this poll.' }, { status: 400 });
+    // The answer is in: tell the people who asked for the result.
+    if (r === 'ok' && pushEnabled()) await sendResultAlerts(db, [id]).catch(() => 0);
     return NextResponse.json({ ok: true });
   }
   if (action === 'alert') {

@@ -8,7 +8,7 @@ import { outcomeSchema } from '@/lib/validation';
 // "Called it": the creator (or the owner) marks the choice that came true.
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await rateLimit(`outcome:${clientIp(req)}`, 20, 60_000))) {
-    return NextResponse.json({ error: 'Slow down a little.' }, { status: 429 });
+    return NextResponse.json({ error: 'Too many taps. Wait a few seconds and try again.' }, { status: 429 });
   }
   const parsed = outcomeSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: 'Pick a choice.' }, { status: 400 });

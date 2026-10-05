@@ -123,6 +123,8 @@ export function Lengths({ id }: { id: string }) {
     if (!r.ok) return setError(r.data?.error ? apiMsg(lang, r.data.error) : t.errGeneric);
     setError('');
     setAsking(false);
+    // Say what changed (the page shows it at the top).
+    router.replace(`/p/${id}/manage?done=${body.action === 'end' ? 'end' : 'length'}`);
     router.refresh();
   }
   return (
@@ -241,3 +243,32 @@ export function AskAgainRow({ id }: { id: string }) {
   );
 }
 
+
+/** "Called it": mark what happened (asked once more), from the maker's page on any phone. */
+export function MarkOutcome({ id, options }: { id: string; options: { id: string; label: string }[] }) {
+  const t = useT();
+  const lang = useLang();
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  async function mark(o: { id: string; label: string }) {
+    if (busy || !window.confirm(t.calledMarkConfirm(o.label))) return;
+    setBusy(true);
+    const r = await manage(id, { action: 'outcome', optionId: o.id });
+    setBusy(false);
+    if (!r.ok) return setError(r.data?.error ? apiMsg(lang, r.data.error) : t.errGeneric);
+    router.replace(`/p/${id}/manage?done=outcome`);
+    router.refresh();
+  }
+  return (
+    <div className="maker-lengths">
+      <p className="small muted">{t.calledMarkNote}</p>
+      <div className="row" role="group" aria-label={t.calledMarkTitle}>
+        {options.map((o) => (
+          <button key={o.id} type="button" className="chip" disabled={busy} onClick={() => mark(o)}>{o.label}</button>
+        ))}
+      </div>
+      {error && <p className="duel-error" role="alert">{error}</p>}
+    </div>
+  );
+}
