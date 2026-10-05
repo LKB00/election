@@ -21,6 +21,16 @@ const CreatePreview = dynamic(() => import('./CreatePreview'), { ssr: false });
 // One settings row, two kinds only (owner, Oct 2026: "Settings, no consistency"): a switch row (icon disc, name, one
 // short line, the switch) or a row that opens (icon disc, name, the current value when there is one, a chevron). The
 // row keeps its look when open; what opens sits in one panel shape underneath.
+// Picking an option inside an open row keeps the row open (owner, Oct 2026: closing on every tap felt jumpy), and keeps
+// the option you tapped under your finger: a new poll type changes the choices above, which would shift the page.
+const steady = (el: HTMLElement, change: () => void) => {
+  const before = el.getBoundingClientRect().top;
+  change();
+  requestAnimationFrame(() => {
+    const moved = el.getBoundingClientRect().top - before;
+    if (moved) window.scrollBy({ top: moved, behavior: 'instant' });
+  });
+};
 const Row = ({ icon: Icon, name, note, value, on, open: isOpen, onClick, tone = 'var(--sand)' }: { icon: typeof Clock; name: string; note?: string; value?: string; on?: boolean; open?: boolean; onClick: () => void; tone?: string }) => (
   <button type="button" className="al-row create-row" onClick={onClick} {...(on === undefined ? { 'aria-expanded': !!isOpen } : { role: 'switch', 'aria-checked': on })}>
     <span className="al-row__disc" style={{ '--tone': on ? 'var(--lime)' : tone } as React.CSSProperties} aria-hidden><Icon size={18} strokeWidth={1.75} /></span>
@@ -441,7 +451,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
             {typeOpen && (
               <div className="create-panel create-types" role="radiogroup" aria-label={t.typeLabel}>
                 {TYPES.map((x) => (
-                  <button key={x.k} type="button" role="radio" aria-checked={x.k === current.k} className={'create-type' + (x.k === current.k ? ' is-on' : '')} onClick={() => { x.pick(); setTypeOpen(false); }}>
+                  <button key={x.k} type="button" role="radio" aria-checked={x.k === current.k} className={'create-type' + (x.k === current.k ? ' is-on' : '')} onClick={(e) => steady(e.currentTarget, x.pick)}>
                     <span className="create-type__disc" aria-hidden><x.Icon size={18} strokeWidth={1.75} /></span>
                     <span><strong>{x.name}</strong><span className="small muted">{x.desc}</span></span>
                     {x.k === current.k && <Check size={16} strokeWidth={2.25} aria-hidden />}
@@ -457,7 +467,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
             {open === 'topic' && (
               <div className="create-panel row wrap" role="radiogroup" aria-label={t.category}>
                 {CATEGORIES.map((c) => (
-                  <button key={c} type="button" role="radio" aria-checked={category === c} className={'chip' + (category === c ? ' chip-on' : '')} onClick={() => { setCategory(c); setOpen(null); }}>
+                  <button key={c} type="button" role="radio" aria-checked={category === c} className={'chip' + (category === c ? ' chip-on' : '')} onClick={(e) => steady(e.currentTarget, () => setCategory(c))}>
                     {t.categories[c] ?? c}
                   </button>
                 ))}

@@ -1069,3 +1069,11 @@ Phones and tablets are unchanged: every rule is in `election.css` under `min-wid
   `PreviewCard` the "See how it looks" sheet uses; empty parts show as faint placeholders). It stays in place while
   the form scrolls. "See how it looks" is hidden here, since the preview already shows it; Post is still the one
   ink button.
+
+## Create settings stay open while you pick (owner, Oct 2026: "whenever I click on any option… it automatically got collapsed… not smooth")
+
+- Picking a poll type or a topic no longer closes its list. The tick and colour move to your pick; the row's own header
+  (its value now updated) closes it, like any accordion.
+- The option you tapped stays under your finger: a new poll type changes the choices section above it, so the page
+  scrolls by the same amount (`steady` in `CreateForm.tsx`).
+- A list opens with a short slide and fade, and picks change colour softly (only when the phone allows motion).
