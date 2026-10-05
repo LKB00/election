@@ -9,7 +9,7 @@ import { getLang, getT } from '@/lib/lang-server';
 import EmptyState from '@/components/EmptyState';
 import { YouSignIn } from '@/components/Profile';
 import { AskAgainRow, FixTypo, Lengths, MarkOutcome, MilestoneAlert, ResultsCard, ShareLink, Suggestions } from '@/components/MakerTools';
-import { INDIA_TZ, dateLocale } from '@/lib/time';
+import { INDIA_TZ, dateLocale, monthStyle } from '@/lib/time';
 
 export const dynamic = 'force-dynamic';
 export async function generateMetadata(): Promise<Metadata> {
@@ -40,7 +40,7 @@ export default async function ManagePage({ params, searchParams }: { params: Pro
       </div>
     );
   }
-  const when = v.endsAt ? new Date(v.endsAt).toLocaleString(dateLocale(lang), { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: INDIA_TZ }) : '';
+  const when = v.endsAt ? new Date(v.endsAt).toLocaleString(dateLocale(lang), { weekday: 'short', day: 'numeric', month: monthStyle(lang), hour: 'numeric', minute: '2-digit', timeZone: INDIA_TZ }) : '';
   const peak = Math.max(1, ...v.byHour);
   const srcTotal = v.sources.reduce((s, x) => s + x.n, 0);
   return (

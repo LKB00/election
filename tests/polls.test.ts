@@ -449,6 +449,8 @@ describe('round 3: easier to use', () => {
     const { faceLabels } = await import('@/lib/labels');
     expect(faceLabels(['Narendra Modi', 'Rahul Gandhi'])).toEqual(['NM', 'RG']);
     expect(faceLabels(['Chai', 'Coffee'])).toEqual(['Ch', 'Co']);
+    // Hindi: one whole first letter with its vowel sign, not two initials that read as another word.
+    expect(faceLabels(['पुष्पा तीन', 'जवान'])).toEqual(['पु', 'ज']);
     expect(faceLabels(['Chai', 'Chaas', 'Lassi'])).toEqual(['1', '2', 'L']);
     expect(faceLabels(['🔥', 'Pizza'])).toEqual(['🔥', 'P']);
   });

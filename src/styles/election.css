@@ -422,7 +422,7 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 
 /* ---- Start a duel, easier (docs/DESIGN.md, "Create: easier start") ---- */
 /* Ideas: one row you can swipe sideways on a phone; wraps on wide screens. */
-.create-ideas { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px 4px; scroll-snap-type: x proximity; }
+.create-ideas { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px 4px; scroll-snap-type: x proximity; scroll-padding-inline: 16px; }
 .create-ideas::-webkit-scrollbar { display: none; }
 .create-ideas .chip { flex: none; scroll-snap-align: start; }
 @media (min-width: 720px) { .create-ideas { flex-wrap: wrap; overflow: visible; margin: 0; padding: 0; } }
@@ -894,15 +894,18 @@ html { scroll-padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); scr
 .al-row__status { display: flex; flex-wrap: wrap; align-items: center; gap: 0 2px; margin-top: 4px; color: var(--ink-3); font: 500 13px / 18px var(--sans); font-variant-numeric: tabular-nums; }
 .al-row__status .al-row__done { display: inline-flex; align-items: center; gap: 4px; color: var(--ink-2); }
 .poll-search { display: flex; width: 100%; }
-.poll-search .search { flex: 1; max-width: none; height: 44px; }
-.poll-search .btn { flex: none; height: 44px; }
+.poll-search .search { flex: 1; min-width: 0; max-width: none; height: 44px; }
+/* The box shrinks, never the button: on a 320px phone the Hinglish "Dhoondo" pushed the page sideways. */
+.poll-search .search input { min-width: 0; width: 100%; }
+.poll-search .btn { flex: none; height: 44px; white-space: nowrap; }
 .topic-chips.topic-row { margin: 16px -16px 0; }
 @media (max-width: 720px) {
   .page-head { margin-bottom: 24px; }
   .block { margin-top: 32px; }
   .block-tight { margin-top: 16px; }
   .al-block { margin-top: 32px; }
-  .create .create-ideas { margin: 0 -16px; padding: 2px 16px 4px; }
+  /* scroll-padding: the first chip snaps to the 16px gutter, not to the screen edge. */
+  .create .create-ideas { margin: 0 -16px; padding: 2px 16px 4px; scroll-padding-inline: 16px; }
   .search { max-width: none; }
   .row.wrap > .btn { flex: 1 1 auto; }
 }
@@ -968,3 +971,28 @@ html.first-run .splash.is-first-run { display: flex; }
 .onb-alt { min-height: 44px; display: inline-flex; align-items: center; font-weight: 600; }
 /* The footer keeps its height on every card, so the dots and the button never jump. */
 .onb-alt.is-hidden { visibility: hidden; }
+
+/* "See how it looks" (docs/DESIGN.md, "Preview before posting"): the poll as a voter first meets it, on the page ground,
+   so it reads like the poll page; the choices are drawn, not tappable. */
+.builder-preview { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 44px; margin-top: 4px; }
+.builder-preview svg { flex: none; }
+.preview-sheet { gap: 16px; }
+.preview-eyebrow { margin: 0; padding-right: 48px; }
+.preview-card { display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: var(--radius-card); border: var(--hair) solid var(--line); background: var(--sand); pointer-events: none; }
+.preview-card .duel-q { margin: 0; overflow-wrap: anywhere; }
+.preview-card .duel-desc { margin: 0; }
+.preview-card .duel-options { margin-top: 8px; }
+.preview-rules, .preview-lock { margin: 0; }
+.preview-lock { padding: 12px 16px; border-radius: var(--radius-inner); background: var(--hero-bg); color: var(--hero-ink); }
+.preview-actions { display: flex; flex-direction: column; gap: 8px; }
+.preview-actions .btn { width: 100%; }
+@media (min-width: 720px) { .preview-actions { flex-direction: row-reverse; } .preview-actions .btn { width: auto; flex: 1; } }
+
+/* Final result first (docs/DESIGN.md): an ended poll opens on its answer, a white card under the question. Your pick is
+   the yellow "you" chip; a winning pick gets a tick (colour never alone). */
+.final-card { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin: 16px 0 8px; padding: 16px; border-radius: var(--radius-card); border: var(--hair) solid var(--line); background: var(--card); animation: pop 0.35s ease; }
+.final-eyebrow { display: inline-flex; align-items: center; gap: 6px; margin: 0; }
+.final-head { margin: 0; font-family: var(--display); font-size: 28px; line-height: 34px; font-weight: 600; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+.final-sub { margin: 0; }
+.final-you { display: inline-flex; align-items: center; gap: 6px; margin: 4px 0 0; padding: 6px 12px; border-radius: 9999px; background: var(--you-soft); color: var(--on-you-soft); font-size: 14px; line-height: 20px; font-weight: 600; }
+@media (prefers-reduced-motion: reduce) { .final-card { animation: none; } }

@@ -1,7 +1,7 @@
 'use client';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { ArrowRight, CalendarPlus, Check, Flag, Lock, Plus, Repeat, Share2, Target, Users } from 'lucide-react';
+import { ArrowRight, CalendarPlus, Check, Flag, Lock, Plus, Repeat, Share2, Target, Trophy, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type { PollOption, PollView } from '@/lib/polls';
@@ -24,7 +24,7 @@ import SuggestChoice from './SuggestChoice';
 import PeopleGrid from './PeopleGrid';
 import ResultAlert from './ResultAlert';
 import GroupWait from './GroupWait';
-import { INDIA_TZ, dateLocale } from '@/lib/time';
+import { INDIA_TZ, dateLocale, monthStyle } from '@/lib/time';
 import { sharesAddUp, wholePercents } from '@/lib/percent';
 
 // Duels, played like patricka's "This or That": tap a card, see the result on the
@@ -162,7 +162,7 @@ function Tween({ value, render }: { value: number; render: (v: number) => string
 
 // "Sealed till 5 Feb, 6:00 pm": India time, so the server page and the phone print the same.
 const sealedWhen = (iso: string, lang: Lang) =>
-  new Date(iso).toLocaleString(dateLocale(lang), { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: INDIA_TZ });
+  new Date(iso).toLocaleString(dateLocale(lang), { day: 'numeric', month: monthStyle(lang), hour: 'numeric', minute: '2-digit', timeZone: INDIA_TZ });
 
 // "Report this duel" (P3, last on the screen): one tap opens the reasons, one more sends it.
 function ReportDuel({ pollId, t, lang }: { pollId: string; t: Dict; lang: Lang }) {
@@ -357,9 +357,6 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
   const leaderIdx = dates ? bestDate : revealed && poll && poll.totalVotes > 0 && pcts.filter((v) => v === top).length === 1 ? pcts.indexOf(top) : -1;
   // The race line follows the choice in the swing line (else the leader). Two-choice duels only (the trend is the first choice's share).
   const sparkOpt = poll ? poll.options.find((o) => o.id === poll.swing?.optionId) ?? (leaderIdx >= 0 ? poll.options[leaderIdx] : poll.options[0]) : null;
-  // Declared result: the winner and the margin over the runner-up, in votes.
-  const sortedVotes = poll ? poll.options.map((o) => o.votes).sort((a, b) => b - a) : [];
-  const margin = sortedVotes.length > 1 ? sortedVotes[0] - sortedVotes[1] : sortedVotes[0] ?? 0;
   // A declared result gets one celebration, the first time you see it.
   const [declaredBurst, setDeclaredBurst] = useState(false);
   useEffect(() => {
@@ -786,6 +783,31 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
   const ballot = poll.options.length >= 3;
   const happened = poll.calledIt ? poll.outcome : null;
   const happenedIdx = happened ? poll.options.findIndex((o) => o.id === happened) : -1;
+  // The final result card (docs/DESIGN.md, "Final result first"): what won, by how much, and what you picked.
+  // (A 1–5 faces poll already opens on its average, so it needs no second card.)
+  const finalOn = poll.closed && revealed && !counting && !rating;
+  const avg = rating ? ratingAverage(poll.options.map((o) => o.votes)) : null;
+  const tied = leaderIdx < 0 && poll.totalVotes > 0 && !rating ? poll.options.filter((_, n) => pcts[n] === top).map((o) => o.label) : [];
+  const winner = happenedIdx >= 0 ? poll.options[happenedIdx] : leaderIdx >= 0 ? poll.options[leaderIdx] : null;
+  const finalHead =
+    happenedIdx >= 0 ? t.finalHappened(poll.options[happenedIdx].label)
+    : !poll.totalVotes ? t.nobody
+    : rating && avg != null ? `${ratingEmoji(avg)} ${t.rateAvg(avg.toFixed(1))}`
+    : dates && winner ? `${t.bestDate}: ${winner.label}`
+    : winner ? `${winner.label}`
+    : tied.length ? t.finalTie(tied.join(', '))
+    : t.tie;
+  const finalSub =
+    happenedIdx >= 0 ? (mine ? (mine.id === happened ? t.calledRight(pcts[happenedIdx]) : t.calledWrong(pcts[happenedIdx])) : pcts[happenedIdx] ? t.calledPct(pcts[happenedIdx]) : t.calledNobody)
+    : !poll.totalVotes ? ''
+    : rating ? t.rateFrom(poll.participants)
+    : dates && winner ? t.datesResult(winner.votes, winner.maybe)
+    : ranking && winner ? t.finalRankSub(poll.participants)
+    : winner ? t.finalShare(pcts[leaderIdx], poll.participants)
+    : t.votes(poll.participants);
+  // Your pick (the yellow "you" line); for "Called it" the line above already says how you did.
+  const finalWon = !!mine && !!winner && happenedIdx < 0 && !rating && mine.id === winner.id;
+  const finalYou = happenedIdx >= 0 || !mine || ranking || multi || dates ? '' : finalWon ? `${t.finalYouWon} · ${mine.emoji ? `${mine.emoji} ` : ''}${mine.label}` : t.finalYou(rating ? `${mine.emoji ?? ''} ${mine.label}`.trim() : mine.label);
   const numbered = poll.electionMode || ranking;
   // The duel that Next will open (the same rule as goNext): named in the bar, so Next is an invitation, not a guess.
   const upNext = deck.length > 1 ? [...deck.keys()].map((k) => deck[(i + 1 + k) % deck.length]).find((p) => p.id !== poll.id && isOpen(p)) ?? null : null;
@@ -836,6 +858,16 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
           {fresh && fresh.id === poll.id && <span className="duel-fresh"> · {t.newVotes(fresh.n)}</span>}
         </p>
       </div>
+
+      {/* An ended poll opens on its result (P1 of an ended poll): the answer first, then the details below. */}
+      {finalOn && (
+        <section className={'final-card' + (poll.electionMode ? ' is-election' : '')} aria-labelledby="final-head">
+          <p className="label final-eyebrow"><Trophy size={14} strokeWidth={2} aria-hidden /> {poll.electionMode ? t.declaredTitle : t.finalTitle}</p>
+          <p className="final-head" id="final-head" lang={hindiText(finalHead)}>{finalHead}</p>
+          {finalSub && <p className="small muted final-sub">{finalSub}</p>}
+          {finalYou && <p className={'final-you' + (finalWon ? ' is-won' : '')}>{finalWon && <Check size={14} strokeWidth={2.5} aria-hidden />} {finalYou}</p>}
+        </section>
+      )}
 
       {poll.friend.known && !voted && (
         <p className="small duel-friend"><Users size={14} strokeWidth={1.75} aria-hidden /> {t.friendSealed}</p>
@@ -1087,24 +1119,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
               {sealed && !revealed && undoUntil > 0 && !poll.closed && voted && (
                 <button type="button" className="link-like duel-undo small muted" onClick={undo}>{t.undoVote}</button>
               )}
-              {revealed && happenedIdx >= 0 && (
-                <>
-                  <strong>{t.calledResult(poll.options[happenedIdx].label)}</strong>{' '}
-                  {mine ? (mine.id === happened ? <strong className="txt-good">{t.calledRight(pcts[happenedIdx])}</strong> : t.calledWrong(pcts[happenedIdx])) : pcts[happenedIdx] ? t.calledPct(pcts[happenedIdx]) : t.calledNobody}
-                  {mine && <br />}
-                </>
-              )}
-              {revealed && poll.closed && happenedIdx < 0 && (
-                <>
-                  <strong>{poll.electionMode ? t.declared : t.finalResult}</strong>{' '}
-                  {leaderIdx >= 0
-                    ? t.winsBy(poll.options[leaderIdx].label, margin)
-                    : poll.totalVotes
-                      ? t.tie
-                      : t.nobody}
-                  {mine && <br />}
-                </>
-              )}
+              {/* An ended poll's result (and a "Called it" answer) is the card at the top, not repeated here. */}
               {revealed && mine ? (
                 <>
                   {poll.myGuess && (
@@ -1127,7 +1142,8 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
                       <br />
                     </span>
                   )}
-                  {happenedIdx < 0 && <><strong className={rareNow ? 'is-rare' : undefined}>{vTitle}</strong> {vLine}</>}
+                  {/* "Can your friends change that?" is for a running poll; an ended one has its card at the top. */}
+                  {happenedIdx < 0 && !poll.closed && <><strong className={rareNow ? 'is-rare' : undefined}>{vTitle}</strong> {vLine}</>}
                   {poll.friends.agree + poll.friends.disagree > 0 && (
                     <span className="small muted">
                       {' '}{t.dares(poll.friends.agree + poll.friends.disagree, poll.friends.agree, poll.friends.disagree)}

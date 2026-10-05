@@ -970,3 +970,29 @@ Pictures, titles, dots and button stay in the same place on every card (nothing 
 - **One home for each value.** Colours: tokens in `arogya.css`; the places that cannot read CSS (share images, app icon, the phone's top bar, the install screen) use `src/lib/palette.ts`, and `tests/palette.test.ts` fails if the two drift. The vote-moment machine and ink rod got their own tokens (`--machine-*`, `--rod-*`). Size limits (question 120, choice 60, details 300, 2–10 choices, names 2–30, 30 waiting suggestions) live in `src/lib/limits.ts`: the server, the text boxes and the error messages (all three languages) quote them from there. India time (`Asia/Kolkata`, `+05:30`) and the date locale live in `src/lib/time.ts`.
 - **Every word translated.** Page titles, link-preview text, the site name and the screen-reader names of the menus are now in `i18n.ts` (they were English only). Every server error has a Hindi and a Hinglish version.
 - **Edge cases fixed.** The story image no longer shows "friends from my link agree" on a secret link or a hidden result (it could give the pick away). A typo fix or an added choice that names a party now makes the poll a politics poll (review hold, silence window), as making it would. No undo after hidden results were shown straight away (Called it, dates, a group's last vote). Profile pages leave out group (link-only) polls and polls waiting for review. A typo fix and a vote can no longer cross (the poll row is held), two quick "Add" taps cannot pass 10 choices, a marked answer cannot be changed by a second tap of a different answer, "first 10 votes" and "group complete" alerts fire even when two votes land at once, dates polls never ask the crowd guess and "if need be" is not a yes on Your votes, and results-picture percentages add up to 100.
+
+## Preview before posting (owner, Oct 2026: UI/UX round, "see how it looks")
+
+| Element | Priority | Job |
+|---|---|---|
+| "See how it looks" link under the main button | P3 | Shows only once the poll is complete (a question and at least 2 choices). Choices cannot change after the first vote, so this is the moment to catch a typo or a missing choice. |
+| The preview sheet | P2 | The poll drawn with the poll page's own ballot parts (question, details, each choice with its emoji, photo or letters, the Vote keys; the five faces for Rate it; Election mode numbers). Not tappable. Under it, one plain line of the rules people will meet (results after voting or open to all, a group's size, when it ends) and a yellow note: "Check the words: choices can't change after the first vote." |
+| Start poll (ink) / Keep editing (white) | P1 / P2 | Posting from the preview is the same as the main button (signed out, it opens the profile sheet first). |
+
+## Final result first (owner, Oct 2026: UI/UX round)
+
+An ended poll opens on its answer. A white card sits right under the question, before the choices (P1 of an ended poll):
+- Eyebrow with a trophy: "Final result" ("Result declared" in Election mode).
+- The answer in large type: the winner's name; "Tie: A, B"; "Best date: Sat, 14 Nov" for a dates poll; "What happened: CSK" for Called it; "Nobody voted".
+- One quiet line: "57% of 7 voters" (pick one / pick several), "Ranked top by N voters" (rank), the date's yes / if-need-be count, or for Called it how you did ("You called it, like 50% of people" / "Not this time. 50% called it.").
+- Your pick as the yellow "you" chip: "✓ Your pick won · Biryani house" or "You picked Tea". (Not for Called it, rank, pick several or dates, where the line above or the bars already say it.)
+
+It is not shown for 1–5 faces polls (their result already opens on the average) or during Election mode's counting rounds (it appears once counting ends). The pinned bar no longer repeats the result ("Final result: X wins by N votes" moved into the card) and no longer says running-poll lines like "Can your friends change that?" on an ended poll; it keeps Share the result and Next.
+
+## Hindi and Hinglish on small phones (owner, Oct 2026: UI/UX round)
+
+Every main screen opened at 320 and 360 px wide in Hindi and Hinglish (Home, Polls, Create, Your votes, You, Rules, Privacy, a topic, packs, open, voted, ended and Called-it polls, not found), with a check for text that is cut off, spills past the edge or makes the page scroll sideways. Fixed:
+- **Polls search:** on a 320 px phone the Hinglish "Dhoondo" button pushed the page 27 px sideways (the box would not shrink). The box now shrinks; the button never wraps.
+- **Hindi choice badges:** a choice without emoji or photo showed two initials made of bare consonants ("पत" for "पुष्पा तीन"), which reads as another word and drops the vowel sign. Hindi (and other Indian scripts) now show one whole first letter ("पु"); two letters only when two choices would clash.
+- **Hindi dates:** the short month ("5 अक्टू॰") is spelled out ("5 अक्टूबर") everywhere a date is shown (`monthStyle` in `src/lib/time.ts`).
+- **Idea chips on Create:** the scrolling row snapped its first chip to the screen edge; it now lines up with the 16 px gutter.

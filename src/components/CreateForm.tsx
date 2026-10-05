@@ -1,7 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { AlignLeft, CalendarDays, Check, ChevronDown, CircleDot, Clock, EyeOff, ImagePlus, Landmark, Lightbulb, ListChecks, ListOrdered, MessageSquarePlus, Repeat, Shuffle, SlidersHorizontal, Smile, Sparkles, Tag, UserRound, Users, WandSparkles, X } from 'lucide-react';
+import { AlignLeft, CalendarDays, Check, ChevronDown, CircleDot, Clock, Eye, EyeOff, ImagePlus, Landmark, Lightbulb, ListChecks, ListOrdered, MessageSquarePlus, Repeat, Shuffle, SlidersHorizontal, Smile, Sparkles, Tag, UserRound, Users, WandSparkles, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { CATEGORIES } from '@/lib/categories';
 import { useLang, useT } from '@/lib/lang';
@@ -10,11 +10,12 @@ import { choicesFromQuestion, emojiFor } from '@/lib/createHelp';
 import { RATING_EMOJIS, RATING_LABELS, type PollKind } from '@/lib/rating';
 import { rememberMyPoll } from './MyPolls';
 import type { Picture } from './PicturePicker';
-import { dateLocale } from '@/lib/time';
-import { MAX_CHOICE, MAX_CHOICES, MAX_DETAILS, MAX_TITLE } from '@/lib/limits';
+import { dateLocale, monthStyle } from '@/lib/time';
+import { GROUP_DEFAULT_DAYS, MAX_CHOICE, MAX_CHOICES, MAX_DETAILS, MAX_GROUP, MAX_TITLE, MIN_CHOICES, MIN_TITLE } from '@/lib/limits';
 // Loaded only when opened (less code for cheap phones to download before the form works).
 const SignInSheet = dynamic(() => import('./SignIn'), { ssr: false });
 const PicturePicker = dynamic(() => import('./PicturePicker'), { ssr: false });
+const CreatePreview = dynamic(() => import('./CreatePreview'), { ssr: false });
 
 // One settings row: icon disc, name (+ a quiet line), the current value or a switch, and a chevron for rows that open.
 const Row = ({ icon: Icon, name, note, value, on, open: isOpen, onClick, tone = 'var(--sand)' }: { icon: typeof Clock; name: string; note?: string; value?: string; on?: boolean; open?: boolean; onClick: () => void; tone?: string }) => (
@@ -76,7 +77,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   // A group poll: results open for everyone once this many have voted (typed as text; empty = not a group poll).
   const [groupSize, setGroupSize] = useState('');
   const groupN = Number.parseInt(groupSize, 10);
-  const isGroup = Number.isFinite(groupN) && groupN >= 2 && groupN <= 200;
+  const isGroup = Number.isFinite(groupN) && groupN >= 2 && groupN <= MAX_GROUP;
   // Election mode: the full booth ritual for this poll. Politics polls get it anyway (the server decides that).
   const [electionMode, setElectionMode] = useState(false);
   // "I am 18+, and these photos are me or people who said yes": ticked once in the picture sheet, before any photo.
@@ -125,6 +126,8 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   const [showMore, setShowMore] = useState(false);
   // The poll-type row opens a list of the five types, each with one line on what it does.
   const [typeOpen, setTypeOpen] = useState(false);
+  // "See how it looks": the poll as a voter first meets it, before posting.
+  const [previewing, setPreviewing] = useState(false);
 
   // Like a WhatsApp poll: typing in the last box adds the next empty one (up to 10), so there is no "add" step.
   const setChoice = (i: number, v: string) => {
@@ -173,7 +176,8 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   const fromQuestion = typedChoices || kind === 'rating' || kind === 'dates' ? null : choicesFromQuestion(title);
   const filledCount = isDates ? filledDates.length : choices.filter((c) => c.trim()).length;
   // The main button says what is still missing, then "Create duel".
-  const buttonText = busy ? t.creating : title.trim().length < 3 ? t.needQuestion : !isRating && filledCount < 2 ? t.needChoices(2 - filledCount) : t.createDuel;
+  const ready = title.trim().length >= MIN_TITLE && (isRating || filledCount >= MIN_CHOICES);
+  const buttonText = busy ? t.creating : title.trim().length < MIN_TITLE ? t.needQuestion : !isRating && filledCount < MIN_CHOICES ? t.needChoices(MIN_CHOICES - filledCount) : t.createDuel;
   // The end time as the phone shows it (local time, no seconds), for the picker's earliest allowed value.
   const localNow = () => {
     const d = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000);
@@ -202,13 +206,16 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
     return !errs.title && !errs.choices && !errs.end;
   }
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
+  function post() {
     if (busy || !check()) return;
     // Making a poll needs a profile (voting never does). The poll stays filled in behind the sign-in sheet, and is
     // sent as soon as the profile is ready.
     if (!signed) return setAsk(true);
     send();
+  }
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    post();
   }
   async function send() {
     setBusy(true);
@@ -236,7 +243,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
         groupSize: isGroup ? groupN : undefined,
         photoConsent,
         // A group poll with no end time would wait forever for one missing friend: it ends in 3 days unless you pick a time.
-        endsAt: endsAt ? new Date(endsAt).toISOString() : isGroup ? new Date(Date.now() + 3 * 86_400_000).toISOString() : undefined,
+        endsAt: endsAt ? new Date(endsAt).toISOString() : isGroup ? new Date(Date.now() + GROUP_DEFAULT_DAYS * 86_400_000).toISOString() : undefined,
       }),
     }).catch(() => null);
     const data = await res?.json().catch(() => null);
@@ -259,7 +266,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
 
   const TONES = ['input', 'feedback', 'control', 'agents', 'output', 'trust'];
   const toggleOpen = (k: 'ends' | 'topic' | 'details' | 'group') => setOpen((o) => (o === k ? null : k));
-  const endsLabel = endsAt ? new Date(endsAt).toLocaleString(dateLocale(lang), { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : t.setEnds;
+  const endsLabel = endsAt ? new Date(endsAt).toLocaleString(dateLocale(lang), { day: 'numeric', month: monthStyle(lang), hour: 'numeric', minute: '2-digit' }) : t.setEnds;
 
   // Create, top to bottom (docs/DESIGN.md, "Create, tidied"): the question in a real box, the choices, then every
   // setting as one list of rows (the poll type first, the less-used ones behind "More options"). One main button.
@@ -519,10 +526,35 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
           }}
         />
       )}
+      {previewing && (
+        <CreatePreview
+          title={title.trim()}
+          description={description.trim()}
+          kind={kind}
+          calledIt={calledIt}
+          group={isGroup ? groupN : null}
+          electionMode={electionMode}
+          hideUntilVoted={hideUntilVoted}
+          ends={endsAt ? endsLabel : isGroup ? new Date(Date.now() + GROUP_DEFAULT_DAYS * 86_400_000).toLocaleString(dateLocale(lang), { day: 'numeric', month: monthStyle(lang), hour: 'numeric', minute: '2-digit' }) : null}
+          choices={isDates ? filledDates.map((d) => ({ label: dateLabel(d), emoji: '', photo: '' })) : choices.map((c, i) => ({ label: c.trim(), emoji: emojiAt(i), photo: photos[i] ?? '' })).filter((c) => c.label)}
+          rateWords={t.rateWords}
+          rateEmojis={RATING_EMOJIS}
+          postLabel={t.createDuel}
+          busy={busy}
+          onPost={() => { setPreviewing(false); post(); }}
+          onClose={() => setPreviewing(false)}
+        />
+      )}
       {/* The one main step, pinned at thumb height on phones (like Next on a duel). */}
       <div className="builder-go">
         {!signed && <p className="small muted builder-go-hint" role={askedOnce ? 'status' : undefined}>{askedOnce ? t.signKept : t.createSignHint}</p>}
-        <button className={'btn btn-primary btn-lg' + (title.trim().length >= 3 && (isRating || filledCount >= 2) ? ' is-ready' : '')} disabled={busy}>{buttonText}</button>
+        <button className={'btn btn-primary btn-lg' + (ready ? ' is-ready' : '')} disabled={busy}>{buttonText}</button>
+        {/* P3: once the poll is complete, a quiet way to see it as voters will, before it goes out. */}
+        {ready && !busy && (
+          <button type="button" className="link-like builder-preview" onClick={() => check() && setPreviewing(true)}>
+            <Eye size={16} strokeWidth={2} aria-hidden /> {t.previewLink}
+          </button>
+        )}
       </div>
     </form>
   );
