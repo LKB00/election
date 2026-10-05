@@ -380,7 +380,7 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .guess-name { font-family: var(--display); font-weight: 800; font-size: 15px; line-height: 20px; overflow-wrap: anywhere; }
 .guess-card:not(:disabled):active { transform: scale(0.96); box-shadow: inset 0 0 0 2px var(--ink); }
 .guess-card:disabled { opacity: 0.6; cursor: default; }
-@media (hover: hover) { .guess-card:not(:disabled):hover { box-shadow: inset 0 0 0 2px var(--ink); } }
+@media (hover: hover) and (pointer: fine) { .guess-card:not(:disabled):hover { box-shadow: inset 0 0 0 2px var(--ink); } }
 /* 5+ choices: one row each (face, name), so the list stays short. */
 .duel-guess-options.is-many { grid-template-columns: 1fr; }
 .duel-guess-options.is-many .guess-card { flex-direction: row; justify-content: flex-start; padding: 8px 12px; text-align: left; }
@@ -446,7 +446,7 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .face-pick.is-auto span { opacity: 0.75; }
 .face-pick img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
 .face-pick:active { transform: scale(0.94); }
-@media (hover: hover) { .face-pick:hover { box-shadow: 0 0 0 2px var(--ink); } }
+@media (hover: hover) and (pointer: fine) { .face-pick:hover { box-shadow: 0 0 0 2px var(--ink); } }
 
 /* The picture sheet */
 .picker { gap: 16px; }
@@ -469,7 +469,7 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .picker-emoji:active { transform: scale(0.9); }
 .picker-emoji.is-suggested { background: var(--card); box-shadow: inset 0 0 0 2px var(--line); } /* not lime: lime means "you" */
 .picker-emoji.is-on { box-shadow: inset 0 0 0 2px var(--ink); }
-@media (hover: hover) { .picker-emoji:hover { transform: scale(1.08); } }
+@media (hover: hover) and (pointer: fine) { .picker-emoji:hover { transform: scale(1.08); } }
 @media (max-height: 640px) { .picker-grid { grid-template-columns: repeat(8, 1fr); } .picker-emoji { font-size: 22px; border-radius: 10px; } }
 @media (prefers-reduced-motion: reduce) { .picker-preview { animation: none; } .face-pick, .picker-emoji { transition: none; } }
 
@@ -529,7 +529,7 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .rate-step-face { font-size: 36px; line-height: 1; transition: transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.4); }
 .rate-step-word { font-size: 12px; line-height: 16px; font-weight: 700; text-align: center; overflow-wrap: anywhere; }
 .rate-step:not(:disabled):active { transform: scale(0.94); }
-@media (hover: hover) { .rate-step:not(:disabled):hover .rate-step-face { transform: scale(1.18) rotate(-4deg); } }
+@media (hover: hover) and (pointer: fine) { .rate-step:not(:disabled):hover .rate-step-face { transform: scale(1.18) rotate(-4deg); } }
 .rate-step.is-mine { background: var(--lime-badge); box-shadow: inset 0 0 0 2px var(--lime); }
 .rate-step.is-busy { opacity: 0.6; }
 .rate-step:disabled { cursor: default; }
@@ -588,7 +588,7 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .day-vs li { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: baseline; padding: 10px 12px; border-radius: var(--radius-inner); background: var(--card); border: var(--hair) solid var(--line); }
 .day-vs li > .small { grid-column: 2; }
 .day-q { color: var(--ink); font-weight: 600; text-decoration: none; }
-.day-q:hover { text-decoration: underline; }
+@media (hover: hover) and (pointer: fine) { .day-q:hover { text-decoration: underline; } }
 /* "Your polls · 37 votes so far" on Home (P2), from this phone's own list. */
 .my-polls ul { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .my-polls li { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; padding: 10px 12px; border-radius: var(--radius-inner); background: var(--card); border: var(--hair) solid var(--line); }
@@ -749,8 +749,8 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .create-type { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; border: 1px solid transparent; border-radius: var(--radius-inner); background: none; font: inherit; color: var(--ink); text-align: left; cursor: pointer; }
 .create-type > span { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .create-type.is-on { background: var(--p-input); border-color: var(--d-input); }
-.create-type:hover { background: var(--sand); }
-.create-type.is-on:hover { background: var(--p-input); }
+@media (hover: hover) and (pointer: fine) { .create-type:hover { background: var(--sand); } }
+@media (hover: hover) and (pointer: fine) { .create-type.is-on:hover { background: var(--p-input); } }
 /* On/off switch (with the row's words; the disc turns yellow when on). */
 .switch { flex: none; position: relative; width: 44px; height: 26px; border-radius: 999px; background: var(--switch-off); transition: background-color 0.15s ease; }
 .switch > span { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--switch-knob); box-shadow: var(--shadow-card); transition: transform 0.15s ease; }
@@ -832,7 +832,7 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .maker-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding: 12px 16px; border: 1px solid var(--line); border-radius: 18px; background: var(--card); color: var(--ink); font-weight: 600; text-decoration: none; }
 .maker-bar svg:last-child { margin-left: auto; }
 .maker-by { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 12px; color: var(--ink-2); font-size: 14px; text-decoration: none; }
-.maker-by:hover { color: var(--ink); }
+@media (hover: hover) and (pointer: fine) { .maker-by:hover { color: var(--ink); } }
 .maker-by-face { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--lime); box-shadow: inset 0 0 0 1.5px var(--ink); font-size: 16px; }
 .maker-title { overflow-wrap: anywhere; }
 .maker-stats { display: flex; flex-direction: column; gap: 10px; padding: 16px; }

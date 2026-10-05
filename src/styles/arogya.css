@@ -193,7 +193,7 @@ h2 { font-weight: 600; }
   border: 1px solid var(--line);
   box-shadow: var(--shadow-card);
 }
-.tot-option:not(:disabled):hover { transform: none; box-shadow: var(--shadow-raised); }
+@media (hover: hover) and (pointer: fine) { .tot-option:not(:disabled):hover { transform: none; box-shadow: var(--shadow-raised); } }
 .duel-option.is-mine { border-color: transparent; }
 
 /* Buttons: pills; the one main action is ink (as in Arogya), secondary is white with a border */
@@ -213,7 +213,7 @@ h2 { font-weight: 600; }
 /* Poll tiles: Arogya keeps cards white and puts colour in a small round icon (its "Later today" rows).
    The tone that used to fill the tile now fills only the circle behind the topic icon. */
 .game { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-card); box-shadow: var(--shadow-card); padding: 16px; }
-.game:hover { transform: none; box-shadow: var(--shadow-raised); }
+@media (hover: hover) and (pointer: fine) { .game:hover { transform: none; box-shadow: var(--shadow-raised); } }
 .game > svg:first-child { box-sizing: content-box; width: 20px; height: 20px; padding: 10px; margin-bottom: 8px; border-radius: 50%; background: var(--sand); color: var(--ink); }
 .game.game-a > svg:first-child { background: var(--p-output); }
 .game.game-b > svg:first-child { background: var(--p-control); }
@@ -241,7 +241,7 @@ h2 { font-weight: 600; }
 .al-block__title { display: flex; align-items: baseline; gap: 8px; margin: 0; font: 600 20px / 28px var(--display); letter-spacing: -0.01em; }
 .al-block__aside { margin-left: auto; color: var(--ink-3); font: 400 14px / 20px var(--sans); letter-spacing: 0; }
 a.al-block__aside { color: var(--ink-2); font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
-a.al-block__aside:hover { color: var(--ink); }
+@media (hover: hover) and (pointer: fine) { a.al-block__aside:hover { color: var(--ink); } }
 
 /* A list in an outlined card (Material 3, 20px), rows split by hairlines. */
 .al-listcard { list-style: none; margin: 0; padding: 0; overflow: hidden; border-radius: var(--radius-card); background: var(--card); outline: 1px solid var(--line); outline-offset: -1px; }
@@ -250,7 +250,7 @@ a.al-block__aside:hover { color: var(--ink); }
 
 /* A row: tinted disc with an icon, title and quiet meta, a right-hand detail, a chevron. 72px tall at least. */
 .al-row { display: flex; align-items: center; gap: 16px; min-height: 72px; box-sizing: border-box; padding: 12px 16px; color: var(--ink); text-decoration: none; transition: background-color 140ms cubic-bezier(0.2, 0, 0.2, 1); }
-.al-row:hover { background: var(--sand); }
+@media (hover: hover) and (pointer: fine) { .al-row:hover { background: var(--sand); } }
 .al-row:focus-visible { outline: 3px solid var(--ink); outline-offset: -3px; }
 .al-row__disc { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--tone, var(--sand)); color: var(--ink); }
 .al-row__main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
@@ -259,7 +259,7 @@ a.al-block__aside:hover { color: var(--ink); }
 .al-row__when { flex: none; align-self: flex-start; display: flex; flex-direction: column; align-items: flex-end; font: 500 14px / 24px var(--sans); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .al-row__time { color: var(--ink-3); font: 400 12px / 16px var(--sans); }
 .al-row__chevron { flex: none; color: var(--ink-3); transition: transform 140ms cubic-bezier(0.2, 0, 0.2, 1); }
-.al-row:hover .al-row__chevron { transform: translateX(2px); }
+@media (hover: hover) and (pointer: fine) { .al-row:hover .al-row__chevron { transform: translateX(2px); } }
 .al-row.is-done .al-row__title { color: var(--ink-2); }
 .al-row__done { display: inline-flex; align-items: center; gap: 4px; color: var(--positive); font-weight: 600; }
 
@@ -281,7 +281,7 @@ a.al-block__aside:hover { color: var(--ink); }
 .al-hero__name { margin: 4px 0 0; font: 600 24px / 32px var(--display); letter-spacing: -0.015em; }
 .al-hero__fact { margin: 0; font: 500 16px / 24px var(--sans); }
 .al-hero__action { display: flex; align-items: center; justify-content: center; gap: 8px; height: 48px; margin-top: 4px; border-radius: 24px; background: var(--ink); color: var(--on-ink); font: 600 16px / 24px var(--sans); text-decoration: none; transition: filter 140ms, transform 140ms; }
-.al-hero__action:hover { filter: brightness(1.15); }
+@media (hover: hover) and (pointer: fine) { .al-hero__action:hover { filter: brightness(1.15); } }
 .al-hero__action:active { transform: scale(0.98); }
 /* A row disc with the poll's own faces ("🍵☕"): two emoji side by side, tucked together. */
 .al-row__disc.is-faces { font-size: 15px; line-height: 1; letter-spacing: -3px; padding-right: 3px; box-sizing: border-box; }
@@ -290,3 +290,17 @@ a.al-block__aside:hover { color: var(--ink); }
 /* Icons sitting on the brand yellow stay dark in both looks (the yellow "you" disc on a row, the month card's type). */
 .al-row__disc[style*="var(--lime)"] { color: var(--on-lime); }
 .month-card__type svg { color: var(--on-lime) !important; }
+
+
+/* Touch screens (owner, Oct 2026: "why is there a hover state in mobile view"): a tap leaves :hover stuck on the
+   element until the next tap elsewhere, so hover looks belong to a real mouse only. Our own hover rules sit inside
+   (hover: hover) and (pointer: fine); the copied gb/ rules (never edited) are put back to their resting look here. */
+@media (hover: none), (pointer: coarse) {
+  .btn-primary:hover:not(:disabled) { background: var(--ink); transform: none; box-shadow: none; }
+  .btn-ghost:hover:not(:disabled) { background: var(--card); }
+  .icon-btn:hover:not(.icon-on) { background: var(--card); color: var(--ink-2); }
+  .chip:hover:not(:disabled) { background: var(--card); transform: none; }
+  .chip-on:hover:not(:disabled), .chip[aria-checked='true']:hover, .chip[aria-pressed='true']:hover { background: var(--indigo-soft); border-color: transparent; color: var(--on-indigo-soft); }
+  .tot-option:not(:disabled):hover, .game:hover { transform: none; box-shadow: var(--shadow-card); }
+  .topnav-links a:not(.active):hover { background: transparent; color: var(--ink-2); }
+}

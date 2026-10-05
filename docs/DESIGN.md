@@ -1042,3 +1042,7 @@ Top to bottom: who you are (profile card, Edit profile) → **Your polls** (P1: 
 2. **No separate "Photo from your phone" button.** The first tile of the grid adds a photo (camera or gallery), the same size as an emoji tile.
 3. **No "Or type any emoji" box.** The grid (suggested emoji first, then popular ones, five full rows) is the choice; "Remove picture" shows only once something is chosen.
 4. **Nothing shown before you choose.** The preview at the top is an empty dashed "add" circle until you pick, and the choice rows on Create no longer fill in an emoji by themselves (🍕 for "Pizza"): the fitting emoji is offered first in the grid instead. Without a picture, the ballot shows the choice's letters.
+
+### No hover looks on touch screens (owner, Oct 2026: "why is there a hover state in mobile view")
+
+On a phone a tap leaves `:hover` stuck on what was tapped (a grey row, a darker button, a lifted card) until the next tap elsewhere. Rule from now on: **hover looks are for a real mouse only.** Every hover rule in `election.css` and `arogya.css` sits inside `@media (hover: hover) and (pointer: fine)`; the copied `gb/` rules (never edited) are put back to their resting look for `(hover: none), (pointer: coarse)` at the end of `arogya.css`. Press feedback while the finger is down (`:active`, the slight shrink) stays on phones. New hover rules must follow the same pattern.
