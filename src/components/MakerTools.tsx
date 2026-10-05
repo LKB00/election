@@ -2,12 +2,14 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Bell, ChevronRight, Clock, Copy, Image as ImageIcon, MessageCircle, MonitorPlay, PenLine, Plus, Repeat, Square, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { useOverlay } from '@/lib/useOverlay';
 import type { MakerView } from '@/lib/maker';
 import { apiMsg } from '@/lib/i18n';
 import { useLang, useT } from '@/lib/lang';
 import { keyBytes, PUBLIC_KEY } from './ResultAlert';
-import { MAX_CHOICE, MAX_DETAILS, MAX_TITLE } from '@/lib/limits';
+import { DELETED_KEEP_DAYS, MAX_CHOICE, MAX_DETAILS, MAX_TITLE } from '@/lib/limits';
 
 // The poll maker's controls (docs/DESIGN.md, "Poll maker tools"). Everything posts to /api/polls/<id>/manage, which
 // checks the profile again; the page refreshes after each change.
@@ -253,6 +255,64 @@ export function TvRow({ id }: { id: string }) {
       <span className="al-row__main"><span className="al-row__title">{t.tvRow}</span><span className="al-row__meta">{t.tvRowNote}</span></span>
       <ChevronRight size={18} strokeWidth={1.75} className="al-row__chevron" aria-hidden />
     </Link>
+  );
+}
+
+/** "Delete poll" (P3, last on the page): one row, then a sheet that asks once and says plainly what happens. */
+export function DeletePoll({ id }: { id: string }) {
+  const t = useT();
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button type="button" className="al-row maker-delete" onClick={() => setOpen(true)}>
+        <span className="al-row__disc" style={{ '--tone': 'var(--negative-soft)' } as React.CSSProperties}><Trash2 size={20} strokeWidth={1.75} aria-hidden /></span>
+        <span className="al-row__main"><span className="al-row__title">{t.deleteRow}</span><span className="al-row__meta">{t.deleteRowNote}</span></span>
+      </button>
+      {open && <DeleteSheet id={id} onClose={() => setOpen(false)} />}
+    </>
+  );
+}
+
+function DeleteSheet({ id, onClose }: { id: string; onClose: () => void }) {
+  const t = useT();
+  const lang = useLang();
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+  useOverlay(onClose, { back: true });
+  useEffect(() => {
+    const before = document.activeElement as HTMLElement | null;
+    // Focus starts on "Keep it": the safe choice.
+    ref.current?.querySelector<HTMLElement>('.btn-ghost')?.focus({ preventScroll: true });
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      before?.focus?.({ preventScroll: true });
+    };
+  }, [onClose]);
+  async function go() {
+    setBusy(true);
+    setError('');
+    const r = await manage(id, { action: 'delete' });
+    if (r.ok) return router.replace('/you?done=deleted');
+    setBusy(false);
+    setError(r.data?.error ? apiMsg(lang, r.data.error) : t.errGeneric);
+  }
+  return createPortal(
+    <div className="sheet-backdrop" onClick={(e) => e.target === e.currentTarget && !busy && onClose()}>
+      <div ref={ref} className="sheet delete-sheet" role="alertdialog" aria-modal="true" aria-labelledby="delete-title" aria-describedby="delete-line">
+        <h2 id="delete-title" className="delete-title">{t.deleteTitle}</h2>
+        <p id="delete-line" className="small muted">{t.deleteLine(DELETED_KEEP_DAYS)}</p>
+        {error && <p className="duel-error" role="alert">{error}</p>}
+        <div className="preview-actions">
+          <button type="button" className="btn btn-danger btn-lg" onClick={go} disabled={busy}><Trash2 size={18} strokeWidth={2} aria-hidden /> {t.deleteYes}</button>
+          <button type="button" className="btn btn-ghost btn-lg" onClick={onClose} disabled={busy}>{t.deleteNo}</button>
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 }
 

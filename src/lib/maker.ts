@@ -1,9 +1,9 @@
-import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull, lt, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { schema, type Db } from '@/db';
 import { sameKey } from './validation';
 import { namesPolitics } from './moderation';
-import { MAX_CHOICES, MAX_WAITING_SUGGESTIONS } from './limits';
+import { DELETED_KEEP_DAYS, MAX_CHOICES, MAX_WAITING_SUGGESTIONS } from './limits';
 
 // Poll maker tools (docs/DESIGN.md, "Poll maker tools"): only the profile that made a poll can use them. Everything the
 // maker sees is counted for the whole poll (votes per hour, where votes came from), never per voter.
@@ -129,6 +129,29 @@ export async function markOutcome(db: Db, id: string, uid: string, optionId: str
     .where(and(eq(polls.id, id), isNull(polls.outcome)))
     .returning({ id: polls.id });
   return set.length ? 'ok' : 'taken';
+}
+
+/** "Delete poll": the maker takes their poll down for everyone, at once and for good (no undo, and the owner's
+ * "Show again" cannot bring it back). Its record stays hidden for DELETED_KEEP_DAYS, as the Rules promise, then
+ * purgeDeleted erases it with its votes. Works on a poll the owner hid after reports too. */
+export async function deletePoll(db: Db, id: string, uid: string): Promise<'ok' | 'not_found'> {
+  const done = await db
+    .update(polls)
+    .set({ hidden: true, deletedAt: new Date(), featured: false, todayOn: null })
+    .where(and(eq(polls.id, id), eq(polls.ownerId, uid), isNull(polls.deletedAt)))
+    .returning({ id: polls.id });
+  if (!done.length) return 'not_found';
+  // Nobody is told "the result is in" for a poll that is gone.
+  await db.delete(schema.pushWants).where(eq(schema.pushWants.pollId, id));
+  await db.delete(schema.pushMilestones).where(eq(schema.pushMilestones.pollId, id));
+  return 'ok';
+}
+
+/** Erases polls their makers deleted more than DELETED_KEEP_DAYS ago (votes, choices and the rest go with them). */
+export async function purgeDeleted(db: Db, now = Date.now()): Promise<number> {
+  const before = new Date(now - DELETED_KEEP_DAYS * 86_400_000);
+  const gone = await db.delete(polls).where(lt(polls.deletedAt, before)).returning({ id: polls.id });
+  return gone.length;
 }
 
 /** Where a vote came from (counted for the poll only; never kept with the vote). */

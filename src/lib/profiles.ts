@@ -57,7 +57,7 @@ export async function pollsByOwner(db: Db, uid: string, limit = 50): Promise<Own
     .select({ id: polls.id, title: polls.title, endsAt: polls.endsAt, hidden: polls.hidden, calledIt: polls.calledIt, outcome: polls.outcome, votes: sql<number>`count(${votes.id})::int` })
     .from(polls)
     .leftJoin(votes, eq(votes.pollId, polls.id))
-    .where(eq(polls.ownerId, uid))
+    .where(and(eq(polls.ownerId, uid), isNull(polls.deletedAt)))
     .groupBy(polls.id)
     .orderBy(desc(polls.createdAt))
     .limit(limit);

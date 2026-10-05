@@ -1265,3 +1265,29 @@ describe('edge cases, round 4 (server review)', () => {
     expect(wholePercents([0, 0])).toEqual([0, 0]);
   });
 });
+
+describe('the maker deletes a poll', () => {
+  it('takes it down for everyone at once, for good, and erases it after the kept days', async () => {
+    const { deletePoll, purgeDeleted } = await import('@/lib/maker');
+    const { createUser, pollsByOwner } = await import('@/lib/profiles');
+    const { DELETED_KEEP_DAYS } = await import('@/lib/limits');
+    const uid = 'del-' + Math.random().toString(36).slice(2, 8);
+    await createUser(db, { id: uid, name: 'Maker', avatar: '🦁' }, { id: 'cred-' + uid, publicKey: 'pk', counter: 0, transports: [] });
+    const id = await createPoll(db, createPollSchema.parse({ title: 'Delete me?', options: ['Yes', 'No'] }), 'k', undefined, uid);
+    const [o] = (await getPoll(db, id, null))!.options;
+    await castVote(db, id, o.id, 'del-voter');
+    expect(await deletePoll(db, id, 'someone-else')).toBe('not_found');
+    expect(await deletePoll(db, id, uid)).toBe('ok');
+    expect(await getPoll(db, id, 'del-voter')).toBeNull();
+    expect((await pollsByOwner(db, uid)).map((p) => p.id)).not.toContain(id);
+    expect((await getMyVotes(db, 'del-voter')).map((v) => v.pollId)).not.toContain(id);
+    // The owner's "Show again" cannot bring it back.
+    expect(await setPollFlags(db, id, { hidden: false })).toBe(false);
+    expect(await getPoll(db, id, null)).toBeNull();
+    // Kept (hidden) until the days are up, then erased with its votes.
+    expect(await purgeDeleted(db)).toBe(0);
+    expect(await purgeDeleted(db, Date.now() + (DELETED_KEEP_DAYS + 1) * 86_400_000)).toBeGreaterThanOrEqual(1);
+    expect(await db.select().from(schema.polls).where(eq(schema.polls.id, id))).toHaveLength(0);
+    expect(await db.select().from(schema.votes).where(eq(schema.votes.pollId, id))).toHaveLength(0);
+  });
+});

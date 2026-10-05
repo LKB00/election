@@ -1029,3 +1029,11 @@ html.splash-done .splash { animation: splash-out 0.35s ease forwards; }
 .tv-link strong { color: var(--ink); }
 @media (max-aspect-ratio: 1/1) { .tv-main { grid-template-columns: minmax(0, 1fr); align-items: start; } .tv-scan { flex-direction: row; text-align: left; } .tv-scan img { width: 120px; flex: none; } .tv-link { max-width: none; } }
 @media (prefers-reduced-motion: reduce) { .tv-meter span { transition: none; } }
+
+/* "Delete poll" (P3, last on the maker's page) and its sheet: the danger button is the soft pink "negative" signal
+   with an icon and a word (colour never alone); focus starts on "Keep it". */
+button.al-row.maker-delete { width: 100%; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.maker-delete .al-row__title { color: var(--negative); }
+.delete-sheet { gap: 12px; }
+.delete-title { margin: 0; font-size: 22px; line-height: 28px; }
+.delete-sheet .btn-danger { gap: 8px; }

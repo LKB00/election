@@ -17,8 +17,8 @@ export async function generateMetadata(): Promise<Metadata> {
 // You (docs/DESIGN.md, "Profiles"). Signed in: your face and name, the polls you made (P1: how they are doing), and
 // quietly at the bottom, sign out / delete. Signed out: the profile screen with its promises, and the polls made on this
 // phone. Votes are never here: they are not part of a profile (My votes keeps them on this phone).
-export default async function YouPage({ searchParams }: { searchParams: Promise<{ deleted?: string }> }) {
-  const { deleted } = await searchParams;
+export default async function YouPage({ searchParams }: { searchParams: Promise<{ deleted?: string; done?: string }> }) {
+  const { deleted, done } = await searchParams;
   const db = await getDb();
   const [user, t] = await Promise.all([currentUser(db), getT()]);
 
@@ -43,6 +43,8 @@ export default async function YouPage({ searchParams }: { searchParams: Promise<
       <header className="page-head page-head-tight">
         <h1 className="sr-only">{t.you}</h1>
         <ProfileCard user={user} />
+        {/* After "Delete poll" on a poll's page: one line saying it worked. */}
+        {done === 'deleted' && <p className="small duel-friend" role="status">{t.deleteDone}</p>}
       </header>
       {polls.length ? (
         <section className="al-block" aria-label={t.yourPolls}>

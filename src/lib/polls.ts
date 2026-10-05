@@ -1054,7 +1054,8 @@ export async function getReviewQueue(db: Db, limit = 100): Promise<ReviewItem[]>
     .from(polls)
     .leftJoin(reports, eq(reports.pollId, polls.id))
     .groupBy(polls.id)
-    .having(sql`count(${reports.voterKey}) > 0 or not ${polls.reviewed} or ${polls.hidden} or coalesce(${polls.frozenUntil} > now(), false)`)
+    // A poll its maker deleted leaves the queue, unless it was reported (the owner may still have to act on that).
+    .having(sql`(count(${reports.voterKey}) > 0 or not ${polls.reviewed} or ${polls.hidden} or coalesce(${polls.frozenUntil} > now(), false)) and (${polls.deletedAt} is null or count(${reports.voterKey}) > 0)`)
     // Most urgent first: paused by a flood, then reported (photo reports first: the 2-hour rule), then the rest.
     .orderBy(
       sql`coalesce(${polls.frozenUntil} > now(), false) desc`,
@@ -1079,7 +1080,8 @@ export async function getReviewQueue(db: Db, limit = 100): Promise<ReviewItem[]>
 
 /** The owner hides, shows or approves a duel. Approving also clears its reports. */
 export async function setPollFlags(db: Db, id: string, flags: { hidden?: boolean; reviewed?: boolean }): Promise<boolean> {
-  const updated = await db.update(polls).set(flags).where(eq(polls.id, id)).returning({ id: polls.id });
+  // A poll its maker deleted stays down: "Show again" cannot bring it back.
+  const updated = await db.update(polls).set(flags).where(flags.hidden === false ? and(eq(polls.id, id), isNull(polls.deletedAt)) : eq(polls.id, id)).returning({ id: polls.id });
   if (updated.length && flags.reviewed) await db.delete(reports).where(eq(reports.pollId, id));
   return updated.length > 0;
 }

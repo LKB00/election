@@ -138,6 +138,8 @@ ALTER TABLE polls ADD COLUMN IF NOT EXISTS show_maker boolean NOT NULL DEFAULT f
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS shuffle boolean NOT NULL DEFAULT false;
 -- Voters may suggest a missing choice; it shows only after the maker approves it.
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS suggestions_on boolean NOT NULL DEFAULT false;
+-- Deleted by its maker: hidden at once, erased (with its votes) after 180 days.
+ALTER TABLE polls ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
 -- Where votes came from, counted per poll only (never per voter): wa, ig, qr, link, other.
 CREATE TABLE IF NOT EXISTS poll_sources (
   poll_id text NOT NULL REFERENCES polls(id) ON DELETE CASCADE,

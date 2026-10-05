@@ -2,7 +2,7 @@ import { ERR } from '@/lib/limits';
 import { NextResponse } from 'next/server';
 import { getDb } from '@/db';
 import { currentUser } from '@/lib/auth';
-import { decideSuggestion, editPoll, markOutcome, ownPoll, setEnd } from '@/lib/maker';
+import { decideSuggestion, deletePoll, editPoll, markOutcome, ownPoll, setEnd } from '@/lib/maker';
 import { isPushSub, pushEnabled, sendResultAlerts, wantMilestone } from '@/lib/push';
 import { clientIp, rateLimit } from '@/lib/rate-limit';
 import { editPollSchema, isCode } from '@/lib/validation';
@@ -60,6 +60,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (r === 'not_found') return NextResponse.json({ error: 'Poll not found' }, { status: 404 });
     // The answer is in: tell the people who asked for the result.
     if (r === 'ok' && pushEnabled()) await sendResultAlerts(db, [id]).catch(() => 0);
+    return NextResponse.json({ ok: true });
+  }
+  if (action === 'delete') {
+    if ((await deletePoll(db, id, user.id)) !== 'ok') return NextResponse.json({ error: 'Poll not found' }, { status: 404 });
     return NextResponse.json({ ok: true });
   }
   if (action === 'alert') {

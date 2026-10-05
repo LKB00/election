@@ -8,7 +8,7 @@ import { MILESTONE } from '@/lib/push';
 import { getLang, getT } from '@/lib/lang-server';
 import EmptyState from '@/components/EmptyState';
 import { YouSignIn } from '@/components/Profile';
-import { AskAgainRow, FixTypo, Lengths, MarkOutcome, MilestoneAlert, ResultsCard, ShareLink, Suggestions, TvRow } from '@/components/MakerTools';
+import { AskAgainRow, FixTypo, Lengths, MarkOutcome, MilestoneAlert, ResultsCard, ShareLink, Suggestions, TvRow, DeletePoll } from '@/components/MakerTools';
 import { INDIA_TZ, dateLocale, monthStyle } from '@/lib/time';
 
 export const dynamic = 'force-dynamic';
@@ -122,6 +122,13 @@ export default async function ManagePage({ params, searchParams }: { params: Pro
           {!v.closed && v.votes < MILESTONE && <li><MilestoneAlert id={v.id} n={MILESTONE} /></li>}
           <li><TvRow id={v.id} /></li>
           <li><AskAgainRow id={v.id} /></li>
+        </ul>
+      </section>
+
+      {/* P3, last: taking the poll down for everyone. */}
+      <section className="al-block">
+        <ul className="al-listcard">
+          <li><DeletePoll id={v.id} /></li>
         </ul>
       </section>
     </div>
