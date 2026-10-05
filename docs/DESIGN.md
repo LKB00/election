@@ -1046,3 +1046,10 @@ Top to bottom: who you are (profile card, Edit profile) → **Your polls** (P1: 
 ### No hover looks on touch screens (owner, Oct 2026: "why is there a hover state in mobile view")
 
 On a phone a tap leaves `:hover` stuck on what was tapped (a grey row, a darker button, a lifted card) until the next tap elsewhere. Rule from now on: **hover looks are for a real mouse only.** Every hover rule in `election.css` and `arogya.css` sits inside `@media (hover: hover) and (pointer: fine)`; the copied `gb/` rules (never edited) are put back to their resting look for `(hover: none), (pointer: coarse)` at the end of `arogya.css`. Press feedback while the finger is down (`:active`, the slight shrink) stays on phones. New hover rules must follow the same pattern.
+
+### Create settings, one pattern (owner, Oct 2026: "Start a poll UI is breaking, no consistency, specially in Settings")
+
+Two kinds of row only, all 72px high with the same icon disc:
+- **Switch rows** (Results after voting, Show my name, Votes can change, Voters can suggest, Mix the order, Election mode): name, one short line (shortened so it fits on one line on a phone), the switch.
+- **Rows that open** (Poll type, Topic, End time, Group poll, Add details): name, the current value only when there is one (no "Off" next to a chevron, which read like a switch), the chevron.
+An open row keeps its white look and its disc (it used to turn grey, hiding the disc). What opens sits in one panel shape: 16px sides, full-width fields that all look the same (48px, rounded, icon + input), the topic chips, or the poll types (each with its icon in a round disc, the chosen one soft indigo). The Group poll note is one short sentence ("Results open when everyone has voted, or after 3 days. Not in public lists.").

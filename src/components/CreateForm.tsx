@@ -17,7 +17,9 @@ const SignInSheet = dynamic(() => import('./SignIn'), { ssr: false });
 const PicturePicker = dynamic(() => import('./PicturePicker'), { ssr: false });
 const CreatePreview = dynamic(() => import('./CreatePreview'), { ssr: false });
 
-// One settings row: icon disc, name (+ a quiet line), the current value or a switch, and a chevron for rows that open.
+// One settings row, two kinds only (owner, Oct 2026: "Settings, no consistency"): a switch row (icon disc, name, one
+// short line, the switch) or a row that opens (icon disc, name, the current value when there is one, a chevron). The
+// row keeps its look when open; what opens sits in one panel shape underneath.
 const Row = ({ icon: Icon, name, note, value, on, open: isOpen, onClick, tone = 'var(--sand)' }: { icon: typeof Clock; name: string; note?: string; value?: string; on?: boolean; open?: boolean; onClick: () => void; tone?: string }) => (
   <button type="button" className="al-row create-row" onClick={onClick} {...(on === undefined ? { 'aria-expanded': !!isOpen } : { role: 'switch', 'aria-checked': on })}>
     <span className="al-row__disc" style={{ '--tone': on ? 'var(--lime)' : tone } as React.CSSProperties} aria-hidden><Icon size={18} strokeWidth={1.75} /></span>
@@ -419,12 +421,12 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
         <p className="create-label">{t.settingsLabel}</p>
         <ul className="al-listcard create-settings">
           <li>
-            <Row icon={current.Icon} name={t.typeLabel} note={current.desc} value={current.name} open={typeOpen} tone="var(--p-input)" onClick={() => setTypeOpen((v) => !v)} />
+            <Row icon={current.Icon} name={t.typeLabel} value={current.name} open={typeOpen} tone="var(--p-input)" onClick={() => setTypeOpen((v) => !v)} />
             {typeOpen && (
-              <div className="create-types" role="radiogroup" aria-label={t.typeLabel}>
+              <div className="create-panel create-types" role="radiogroup" aria-label={t.typeLabel}>
                 {TYPES.map((x) => (
                   <button key={x.k} type="button" role="radio" aria-checked={x.k === current.k} className={'create-type' + (x.k === current.k ? ' is-on' : '')} onClick={() => { x.pick(); setTypeOpen(false); }}>
-                    <x.Icon size={18} strokeWidth={1.75} aria-hidden />
+                    <span className="create-type__disc" aria-hidden><x.Icon size={18} strokeWidth={1.75} /></span>
                     <span><strong>{x.name}</strong><span className="small muted">{x.desc}</span></span>
                     {x.k === current.k && <Check size={16} strokeWidth={2.25} aria-hidden />}
                   </button>
@@ -449,7 +451,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
           {showMore || endsAt || isGroup || allowChange || electionMode || shuffle || description.trim() || fieldError.end ? (
             <>
               <li>
-                <Row icon={Clock} name={t.setEnds} value={endsAt ? endsLabel : t.offWord} open={open === 'ends' || !!fieldError.end} onClick={() => toggleOpen('ends')} />
+                <Row icon={Clock} name={t.setEnds} value={endsAt ? endsLabel : undefined} open={open === 'ends' || !!fieldError.end} onClick={() => toggleOpen('ends')} />
                 {(open === 'ends' || fieldError.end) && (
                   <div className="create-panel">
                     <span className="search">
@@ -462,14 +464,14 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
                 )}
               </li>
               <li>
-                <Row icon={Users} name={t.setGroup} value={isGroup ? String(groupN) : t.offWord} open={open === 'group'} onClick={() => toggleOpen('group')} />
+                <Row icon={Users} name={t.setGroup} value={isGroup ? String(groupN) : undefined} open={open === 'group'} onClick={() => toggleOpen('group')} />
                 {open === 'group' && (
                   <div className="create-panel">
                     <span className="search">
                       <Users size={14} strokeWidth={1.75} aria-hidden />
-                      <input id="group" type="number" inputMode="numeric" min={2} max={200} value={groupSize} placeholder="12" aria-label={t.grpHow} onChange={(e) => setGroupSize(e.target.value.replace(/\D/g, '').slice(0, 3))} />
+                      <input id="group" type="number" inputMode="numeric" min={2} max={MAX_GROUP} value={groupSize} placeholder="12" aria-label={t.grpHow} onChange={(e) => setGroupSize(e.target.value.replace(/\D/g, '').slice(0, 3))} />
                     </span>
-                    <p className="small muted">{t.grpHow} {t.grpNote}</p>
+                    <p className="small muted">{t.grpHow} {t.grpNote(GROUP_DEFAULT_DAYS)}</p>
                   </div>
                 )}
               </li>
@@ -478,10 +480,11 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
               {(kind === 'choice' || kind === 'multi' || kind === 'rank') && !electionMode && <li><Row icon={Shuffle} name={t.setShuffle} note={t.setShuffleNote} on={shuffle} onClick={() => setShuffle((v) => !v)} /></li>}
               <li><Row icon={Landmark} name={t.setElection} note={t.setElectionShort} on={electionMode} onClick={() => setElectionMode((v) => !v)} /></li>
               <li>
-                <Row icon={AlignLeft} name={t.setDetails} value={description.trim() ? '✓' : t.offWord} open={open === 'details'} onClick={() => toggleOpen('details')} />
+                <Row icon={AlignLeft} name={t.setDetails} value={description.trim() || undefined} open={open === 'details'} onClick={() => toggleOpen('details')} />
                 {open === 'details' && (
                   <div className="create-panel">
                     <span className="search">
+                      <AlignLeft size={14} strokeWidth={1.75} aria-hidden />
                       <input id="desc" enterKeyHint="done" onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), setOpen(null))} value={description} maxLength={MAX_DETAILS} placeholder={t.detailsPh} aria-label={t.details} onChange={(e) => setDescription(e.target.value)} />
                     </span>
                   </div>

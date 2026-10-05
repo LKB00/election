@@ -738,16 +738,24 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .create .create-ideas .chip { flex: none; white-space: nowrap; }
 /* Settings rows: an Arogya list card; a row can open its own box underneath. */
 .create-settings > li + li { border-top: 1px solid var(--line); }
-.create-row { width: 100%; border: 0; background: none; font: inherit; text-align: left; cursor: pointer; min-height: 64px; }
+.create-row { width: 100%; border: 0; background: none; font: inherit; text-align: left; cursor: pointer; min-height: 72px; }
+/* Open or focused, a row keeps its look (it turned grey and its icon disc vanished into the grey). */
+.create-row, .create-row:focus, .create-row[aria-expanded='true'] { background: var(--card); }
 .create-row .al-row__when { align-self: center; color: var(--ink-2); max-width: 40%; overflow: hidden; text-overflow: ellipsis; }
 .create-row__chev { flex: none; color: var(--ink-2); transition: transform 0.15s ease; }
 .create-row__chev.is-open { transform: rotate(180deg); }
-.create-panel { display: flex; flex-direction: column; gap: 8px; padding: 0 16px 16px 72px; }
+/* What a row opens: one panel shape for all of them (types, topics, end time, group size, details). */
+.create-panel { display: flex; flex-direction: column; gap: 8px; padding: 0 16px 16px; }
 .create-panel.row { flex-direction: row; }
-.create-panel .search { max-width: none; }
-.create-types { display: flex; flex-direction: column; padding: 0 12px 12px; gap: 4px; }
+/* Every field in a panel looks the same: a 48px rounded box with its icon, full width. */
+.create-panel .search { max-width: none; width: 100%; box-sizing: border-box; min-height: 48px; padding: 0 14px; border-radius: var(--radius-field); border: var(--hair) solid var(--line-control); background: var(--card); }
+.create-panel .search input { flex: 1; min-width: 0; min-height: 46px; font-size: 16px; }
+.create-panel .row { gap: 8px; }
+.create-types { gap: 4px; }
+.create-type__disc { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--sand); }
+.create-type.is-on .create-type__disc { background: var(--card); }
 .create-type { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; border: 1px solid transparent; border-radius: var(--radius-inner); background: none; font: inherit; color: var(--ink); text-align: left; cursor: pointer; }
-.create-type > span { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.create-type > span:not(.create-type__disc) { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .create-type.is-on { background: var(--p-input); border-color: var(--d-input); }
 @media (hover: hover) and (pointer: fine) { .create-type:hover { background: var(--sand); } }
 @media (hover: hover) and (pointer: fine) { .create-type.is-on:hover { background: var(--p-input); } }
@@ -757,7 +765,7 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .switch.is-on { background: var(--switch-on); }
 .switch.is-on > span { background: var(--switch-knob-on); }
 .switch.is-on > span { transform: translateX(18px); }
-@media (max-width: 380px) { .create-panel { padding-left: 16px; } }
+
 /* Topics on the Polls page: one scrolling row under search. */
 .topic-chips.topic-row { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding: 2px 16px 4px; margin: 0 -16px; }
 .topic-chips.topic-row::-webkit-scrollbar { display: none; }
