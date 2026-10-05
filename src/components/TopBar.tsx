@@ -31,6 +31,8 @@ export default function TopBar() {
   // Create opens full screen (the "+" action, not a tab): a × takes you back to where you were.
   const creating = path.startsWith('/create');
   const close = () => (window.history.length > 1 ? router.back() : router.push('/'));
+  // The big-screen view (/p/<id>/tv) is the whole screen: no bars (after the hooks above, which must always run).
+  if (path.endsWith('/tv')) return null;
   return (
     <header className="topnav">
       <div className={'topnav-inner' + (back || creating ? ' has-back' : '')}>

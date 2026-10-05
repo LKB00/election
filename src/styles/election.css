@@ -996,3 +996,36 @@ html.first-run .splash.is-first-run { display: flex; }
 .final-sub { margin: 0; }
 .final-you { display: inline-flex; align-items: center; gap: 6px; margin: 4px 0 0; padding: 6px 12px; border-radius: 9999px; background: var(--you-soft); color: var(--on-you-soft); font-size: 14px; line-height: 20px; font-weight: 600; }
 @media (prefers-reduced-motion: reduce) { .final-card { animation: none; } }
+
+/* Big screen (docs/DESIGN.md, "Big screen"): the whole viewport, sized to read across a room (type grows with the
+   screen). Landscape: the poll on the left, the QR code on the right. Portrait or a phone: one column. */
+.tv { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; gap: clamp(16px, 3vh, 40px); padding: clamp(16px, 3vw, 48px); overflow-y: auto; background: var(--paper); color: var(--ink); }
+.tv-top { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.tv-brand { display: inline-flex; align-items: center; gap: 8px; margin: 0; font-weight: 700; font-size: clamp(16px, 1.6vw, 28px); }
+.tv-state { display: inline-flex; align-items: center; gap: 8px; margin: 0; color: var(--ink-2); font-size: clamp(14px, 1.4vw, 24px); }
+.tv-count { color: var(--ink-2); }
+.tv-full { margin-left: auto; }
+.tv-main { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: clamp(24px, 4vw, 72px); align-items: center; }
+.tv-poll { display: flex; flex-direction: column; gap: clamp(16px, 2.4vh, 32px); min-width: 0; }
+.tv-q { margin: 0; font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; font-size: clamp(28px, 4.4vw, 88px); line-height: 1.08; overflow-wrap: anywhere; }
+.tv-avg { margin: 0; font-size: clamp(24px, 3vw, 56px); font-weight: 700; }
+.tv-options { display: flex; flex-direction: column; gap: clamp(8px, 1.6vh, 20px); margin: 0; padding: 0; list-style: none; }
+.tv-option { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "face label pct" "face meter meter"; column-gap: clamp(12px, 1.4vw, 24px); row-gap: 8px; align-items: center; padding: clamp(12px, 1.6vh, 20px) clamp(16px, 1.6vw, 28px); border-radius: var(--radius-card); border: var(--hair) solid var(--line); background: var(--card); }
+.tv-face { grid-area: face; display: grid; place-items: center; width: clamp(40px, 4vw, 80px); height: clamp(40px, 4vw, 80px); border-radius: 50%; background: var(--tone); color: var(--on-key); font-weight: 700; font-size: clamp(16px, 1.8vw, 36px); }
+.tv-label { grid-area: label; font-weight: 700; font-size: clamp(18px, 2.2vw, 44px); line-height: 1.15; overflow-wrap: anywhere; }
+.tv-pct { grid-area: pct; font-weight: 700; font-size: clamp(20px, 2.6vw, 52px); font-variant-numeric: tabular-nums; }
+.tv-meter { grid-area: meter; display: block; height: clamp(8px, 1vh, 14px); border-radius: 9999px; background: var(--sand-dark); overflow: hidden; }
+.tv-meter span { display: block; height: 100%; border-radius: inherit; background: var(--ink-2); transition: width 0.8s cubic-bezier(0.2, 0.9, 0.3, 1); }
+/* The one ahead: ink bar and a heavier edge (a shape change, not only a colour). */
+.tv-option.is-lead { border: 2px solid var(--ink); }
+.tv-option.is-lead .tv-meter span { background: var(--ink); }
+.tv-option.is-plain { grid-template-areas: "face label"; grid-template-columns: auto minmax(0, 1fr); }
+.tv-scan-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.tv-note { margin: 0; color: var(--ink-2); font-size: clamp(16px, 1.6vw, 30px); }
+.tv-scan { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: clamp(16px, 2vw, 32px); border-radius: var(--radius-card); background: var(--card); border: var(--hair) solid var(--line); text-align: center; }
+.tv-scan img { width: clamp(160px, 22vw, 420px); height: auto; aspect-ratio: 1; border-radius: var(--radius-inner); background: var(--spot-paper); }
+.tv-scan-title { margin: 0; font-weight: 700; font-size: clamp(18px, 2vw, 40px); }
+.tv-link { margin: 0; color: var(--ink-2); font-size: clamp(13px, 1.2vw, 22px); overflow-wrap: anywhere; max-width: clamp(160px, 22vw, 420px); }
+.tv-link strong { color: var(--ink); }
+@media (max-aspect-ratio: 1/1) { .tv-main { grid-template-columns: minmax(0, 1fr); align-items: start; } .tv-scan { flex-direction: row; text-align: left; } .tv-scan img { width: 120px; flex: none; } .tv-link { max-width: none; } }
+@media (prefers-reduced-motion: reduce) { .tv-meter span { transition: none; } }

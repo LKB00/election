@@ -996,3 +996,15 @@ Every main screen opened at 320 and 360 px wide in Hindi and Hinglish (Home, Pol
 - **Hindi choice badges:** a choice without emoji or photo showed two initials made of bare consonants ("पत" for "पुष्पा तीन"), which reads as another word and drops the vowel sign. Hindi (and other Indian scripts) now show one whole first letter ("पु"); two letters only when two choices would clash.
 - **Hindi dates:** the short month ("5 अक्टू॰") is spelled out ("5 अक्टूबर") everywhere a date is shown (`monthStyle` in `src/lib/time.ts`).
 - **Idea chips on Create:** the scrolling row snapped its first chip to the screen edge; it now lines up with the 16 px gutter.
+
+## Big screen (owner, Oct 2026: UI/UX round, "TV screen mode")
+
+`/p/<id>/tv`: a poll on a TV or projector for a class, an office, a wedding or an IPL watch party. Everyone votes on their own phone; the screen updates by itself every few seconds (paused while the tab is hidden).
+| Element | Priority | Job |
+|---|---|---|
+| The question | P1 | Large enough to read across a room (type grows with the screen). |
+| Choices / live bars | P1 | Before results are public: the choices with their faces and one line ("Results show when voting ends", "4 of 6 have voted", or the silence-window note). Once public: a bar and a whole percentage per choice (adding up to 100 for pick-one); the one ahead has an ink bar and a heavier edge (shape, not only colour). |
+| QR card | P2 | "Scan to vote" (after the end: "Scan to see the result") with the short link under it. The QR link carries `src=qr`, so the maker sees where votes came from. |
+| Top line | P3 | Brand, "Live" (or "Final result" / "Result declared") and the vote count. A quiet "Full screen" button, hidden once full screen. |
+
+Safety: the screen always asks for the public view (`/api/polls/<id>?public=1`, no voter), so a presenter who has voted never puts hidden results on a TV. Not indexed by search engines. Entry point: "Show on a big screen" on the maker's page (anyone with the link can open it; it shows only what the poll page shows to a non-voter). Landscape: poll left, QR right; portrait or phone: one column with a small QR row.

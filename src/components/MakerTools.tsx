@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Bell, ChevronRight, Clock, Copy, Image as ImageIcon, MessageCircle, PenLine, Plus, Repeat, Square, Trash2 } from 'lucide-react';
+import { Bell, ChevronRight, Clock, Copy, Image as ImageIcon, MessageCircle, MonitorPlay, PenLine, Plus, Repeat, Square, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import type { MakerView } from '@/lib/maker';
 import { apiMsg } from '@/lib/i18n';
@@ -244,6 +244,17 @@ export function AskAgainRow({ id }: { id: string }) {
   );
 }
 
+/** The big screen (a TV or projector in a class, office or watch party): live bars and a QR code to vote. */
+export function TvRow({ id }: { id: string }) {
+  const t = useT();
+  return (
+    <Link href={`/p/${id}/tv`} className="al-row">
+      <span className="al-row__disc" style={{ '--tone': 'var(--p-input)' } as React.CSSProperties}><MonitorPlay size={20} strokeWidth={1.75} aria-hidden /></span>
+      <span className="al-row__main"><span className="al-row__title">{t.tvRow}</span><span className="al-row__meta">{t.tvRowNote}</span></span>
+      <ChevronRight size={18} strokeWidth={1.75} className="al-row__chevron" aria-hidden />
+    </Link>
+  );
+}
 
 /** "Called it": mark what happened (asked once more), from the maker's page on any phone. */
 export function MarkOutcome({ id, options }: { id: string; options: { id: string; label: string }[] }) {

@@ -10,7 +10,8 @@ import { useT } from '@/lib/lang';
 export default function BottomNav() {
   const path = usePathname();
   const t = useT();
-  if (path.startsWith('/create')) return null;
+  // Create is full screen; so is the big-screen view of a poll (/p/<id>/tv).
+  if (path.startsWith('/create') || path.endsWith('/tv')) return null;
   const tab = (to: string, label: string, Icon: typeof House, on: boolean) => (
     <Link key={to} href={to} className={'bottomnav-tab' + (on ? ' is-on' : '')} aria-current={on ? 'page' : undefined}>
       <span className="bottomnav-icon"><Icon size={20} strokeWidth={on ? 2.25 : 1.75} aria-hidden /></span>
