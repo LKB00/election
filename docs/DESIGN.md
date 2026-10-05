@@ -950,3 +950,15 @@ One scale on phones (in `election.css`, "Mobile spacing"): 16px page sides; 24px
 - **Voting:** an offline vote on pick-several, rank or dates polls now sends every tick when the phone is back online (it used to send only the first); untouched dates say "Tap to answer" (they looked pre-answered as "Doesn't work"); a waiting group poll shows one share action ("Remind the group"); group polls end in 3 days unless the maker picks a time; dates are saved as "Sat, 7 Nov" for every voter.
 - **Links between places:** Your votes → "Polls you made"; your own maker page → "Manage your polls under You"; Poll not found → "Browse polls" too; the caught-up card → "See your votes".
 - **Start fresh (TEMPORARY test tool)** no longer wipes a maker's private keys or list of polls.
+
+## Splash and onboarding (owner, Oct 2026: "design onboarding and splash screen, intuitive and appealing")
+
+**Who sees what (the rule):** a friend arriving from a WhatsApp link goes straight to the vote: no splash, no cards (the vote is the point; anything in front of it costs votes). The splash and the three cards are for a **first visit to Home** (no voter cookie yet); the installed app shows the splash on **every launch** from the home screen. Nobody sees the cards twice on one phone. Both are off for people who ask their phone for less motion (the splash) and skippable at once (the cards).
+
+**Splash (`Splash.tsx`, about 1.2 seconds):** the Election ballot box on the paper ground; a ballot slip with a yellow tick drops into the slot, the box's label lights up in "you" yellow, three yellow sparkles pop, then the name (yellow dot in an ink ring + "Election") and "What does everyone think?" rise in, and it fades away by itself. Pure HTML and CSS, no script, so the page loads underneath and is ready when it lifts; it can never block a tap. Light and dark from the same tokens.
+
+**Onboarding (`Onboarding.tsx`):** a full-screen layer of three cards, swiped sideways or moved with one ink "Next" button (one main action), with dots that show where you are and "Skip ×" always in the top corner.
+1. **Ask anything** (the chat-bubble ballot box): "Pizza or biryani? CSK or MI? Make a poll in 30 seconds and send it on WhatsApp." The language is picked here: English · हिंदी · Hinglish.
+2. **One tap. Totally secret.** (the locked box): "Nobody sees your pick, not even us. No sign-up to vote."
+3. **Get inked, see where you stand** (the inked finger): "Results open after you vote. Guess the crowd, then see how everyone voted." The button becomes **Start voting** (closes, Today's question is right there), with "Or start a poll" under it.
+Pictures, titles, dots and button stay in the same place on every card (nothing jumps). Phone Back and Escape close it; arrow keys move between cards.

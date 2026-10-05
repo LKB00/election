@@ -8,6 +8,7 @@ import '@fontsource/noto-sans-devanagari/400.css';
 import '@fontsource/noto-sans-devanagari/700.css';
 import { getLang } from '@/lib/lang-server';
 import { LangProvider } from '@/lib/lang';
+import Splash from '@/components/Splash';
 import { dict } from '@/lib/i18n';
 import '@/styles/index.css';
 
@@ -33,6 +34,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang={lang === 'hg' ? 'hi-Latn' : lang}>
       <body>
+        {/* Opening the installed app (from the home screen): the splash, every launch. */}
+        <Splash standaloneOnly line={dict[lang].splashLine} />
         <LangProvider lang={lang}>
         <div className="shell">
           <a href="#main" className="skip-link">{dict[lang].skip}</a>

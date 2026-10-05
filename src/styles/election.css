@@ -931,3 +931,39 @@ html { scroll-padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); scr
 /* Counts use ink (as the vote-per-hour bars and your result); green stays for "good news" signals only. */
 .maker-sources .meter span { background: var(--ink-2); }
 .created-manage { display: inline-flex; align-items: center; gap: 4px; margin-top: 12px; }
+
+/* Splash (docs/DESIGN.md, "Splash and onboarding"): ~1.2s, then it lifts by itself; never blocks a tap after that. */
+.splash { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: var(--paper); color: var(--ink); animation: splash-out 0.35s ease 1.1s forwards; }
+.splash.is-standalone { display: none; }
+@media (display-mode: standalone) { .splash.is-standalone { display: flex; } }
+.splash-slip { animation: splash-drop 0.55s cubic-bezier(0.5, 0, 0.75, 0) 0.15s both; }
+.splash-label { animation: splash-light 0.25s ease 0.62s forwards; }
+.splash-sparks { opacity: 0; transform-origin: 60px 52px; animation: splash-spark 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.3) 0.7s forwards; }
+@keyframes splash-spark { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: none; } }
+.splash-name { margin: 6px 0 0; display: flex; align-items: center; gap: 10px; font: 700 30px / 36px var(--display); letter-spacing: -0.02em; opacity: 0; animation: splash-rise 0.4s ease 0.55s forwards; }
+.splash-name .logo-mark { width: 24px; height: 24px; background: radial-gradient(circle, var(--lime) 0 5px, var(--ink) 5.5px); box-shadow: none; }
+.splash-line { margin: 0; color: var(--ink-2); font-size: 16px; opacity: 0; animation: splash-rise 0.4s ease 0.7s forwards; }
+@keyframes splash-drop { from { transform: translateY(-34px); } 70% { transform: translateY(26px); opacity: 1; } to { transform: translateY(34px); opacity: 0; } }
+@keyframes splash-light { to { fill: var(--lime); } }
+@keyframes splash-rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes splash-out { to { opacity: 0; visibility: hidden; pointer-events: none; } }
+@media (prefers-reduced-motion: reduce) { .splash, .splash.is-standalone { display: none !important; } }
+
+/* Onboarding: a full-screen layer of three swipeable cards over Home (scroll-snap), one ink button, Skip top right. */
+.onb { position: fixed; inset: 0; z-index: 90; display: flex; flex-direction: column; background: var(--paper); color: var(--ink); padding: env(safe-area-inset-top, 0px) 0 calc(16px + env(safe-area-inset-bottom, 0px)); animation: fade-in 0.3s ease; }
+.onb-skip { align-self: flex-end; display: inline-flex; align-items: center; gap: 4px; margin: 12px 12px 0; min-height: 44px; padding: 0 14px; border: 0; border-radius: 9999px; background: none; color: var(--ink-2); font: 600 15px / 1 var(--sans); cursor: pointer; }
+.onb-track { flex: 1; display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior: contain; }
+.onb-track::-webkit-scrollbar { display: none; }
+.onb-card { flex: 0 0 100%; scroll-snap-align: center; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 12px; padding: max(24px, 8vh) 24px 0; text-align: center; box-sizing: border-box; }
+.onb-card .spot { margin-bottom: 8px; }
+.onb-title { margin: 0; max-width: 18ch; font: 700 28px / 34px var(--display); letter-spacing: -0.02em; text-wrap: balance; }
+.onb-line { margin: 0; max-width: 32ch; color: var(--ink-2); font-size: 17px; line-height: 26px; text-wrap: pretty; }
+.onb-langs { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 12px; }
+.onb-foot { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 8px 24px 0; }
+.onb-dots { display: flex; gap: 8px; }
+.onb-dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--line-control); transition: width 0.2s ease, background-color 0.2s ease; }
+.onb-dots span.is-on { width: 24px; border-radius: 4px; background: var(--ink); }
+.onb-go { width: 100%; max-width: 420px; }
+.onb-alt { min-height: 44px; display: inline-flex; align-items: center; font-weight: 600; }
+/* The footer keeps its height on every card, so the dots and the button never jump. */
+.onb-alt.is-hidden { visibility: hidden; }

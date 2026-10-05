@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import DuelGame from '@/components/DuelGame';
 import EmptyState from '@/components/EmptyState';
+import Splash from '@/components/Splash';
+import Onboarding from '@/components/Onboarding';
 import RulesNotice from '@/components/RulesNotice';
 import DuelTiles from '@/components/DuelTiles';
 import PackRows from '@/components/PackRows';
@@ -56,8 +58,12 @@ export default async function Home() {
 
   // An empty site shows only its empty state: no greeting, no rules reminder (nothing to be kind about yet).
   const empty = deck.length === 0 && !tonight.length && !hot.length && !shelves.length && !polls.length;
+  // A first visit (never voted here): the splash, then three short cards. Never on a shared poll link.
+  const first = !voterId;
   return (
     <div className="page page-wide">
+      {first && <Splash line={t.splashLine} />}
+      {first && <Onboarding />}
       {!empty && (
         <header className="al-home">
           <p className="al-home__date" suppressHydrationWarning>{t.homeDate(new Date())}</p>
