@@ -16,6 +16,13 @@ const SignInSheet = dynamic(() => import('./SignIn'), { ssr: false });
 // The You page's moving parts (docs/DESIGN.md, "Profiles").
 
 /** Signed out: the profile screen right on the page; when it is done, the page shows the profile. */
+/** Start a poll, signed out (owner: "when they click on create poll, open the login screen"): the profile screen comes
+ * first, then the empty form (the page refreshes once the profile is ready). Voting never needs this. */
+export function CreateSignIn() {
+  const router = useRouter();
+  return <SignInPanel onDone={() => router.refresh()} />;
+}
+
 export function YouSignIn({ full = false, startBack = false }: { full?: boolean; startBack?: boolean }) {
   const router = useRouter();
   const t = useT();

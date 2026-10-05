@@ -1023,3 +1023,7 @@ What happens: the poll is hidden at once everywhere (its page says "Poll not fou
 
 - **Signing back in:** the picture (smaller), "Welcome back", one line, the fingerprint button, "New here? Make a profile". Nothing else: someone signing in already knows the promises.
 - **Making a profile:** the picture, the title and one line, name, face, the button, and the promise as **one line under the button** ("🔒 Your votes stay secret. No password, phone or email."), where the decision is made. The three-card promise box and the "Just voting? You never need to sign in." footer are gone (the You page behind the sheet already says "Only for making polls").
+
+### Start a poll, signed out: profile first (owner, Oct 2026: "when they click on create poll button, open login screen")
+
+Replaces "fill the form first, sign in at the end". Signed out, Start a poll (the "+", every "Start a poll" link) and Make a pack open the profile screen ("One quick step: your profile", or "Already have a profile? Sign in"); once the profile is ready the page refreshes into the empty form (any ?title / ?topic / ?again from the link is kept). The server already refuses polls and packs without a profile; the sign-in sheet inside Create stays only for a sign-in that ran out mid-form.
