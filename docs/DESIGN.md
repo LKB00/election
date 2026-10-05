@@ -1008,3 +1008,64 @@ Every main screen opened at 320 and 360 px wide in Hindi and Hinglish (Home, Pol
 | Top line | P3 | Brand, "Live" (or "Final result" / "Result declared") and the vote count. A quiet "Full screen" button, hidden once full screen. |
 
 Safety: the screen always asks for the public view (`/api/polls/<id>?public=1`, no voter), so a presenter who has voted never puts hidden results on a TV. Not indexed by search engines. Entry point: "Show on a big screen" on the maker's page (anyone with the link can open it; it shows only what the poll page shows to a non-voter). Landscape: poll left, QR right; portrait or phone: one column with a small QR row.
+
+### Splash: one, painted first, lifts when the page is ready (owner, Oct 2026: "the transition from loading animation to splash screen is not smooth")
+
+Before: on a first visit, Home's grey loading outline painted first and the splash then popped over it; the splash also left on a fixed timer, so a slow page showed the grey outline again before snapping in, and the installed app could play two splashes. Now there is **one** splash, the first thing in `<body>` (layout), switched on by a tiny script before anything paints (installed app: every launch; Home on a first visit of this onboarding version; never a shared poll link; never with Reduce motion). It plays at least 1.15 s, then fades (0.35 s) into the page as soon as the page has arrived, at most 3 s. The onboarding cards open a beat after the fade (`election:splash-done`). Timings and keys: `src/lib/onboard.ts`.
+
+## Delete a poll (owner, Oct 2026: "if users have created a poll, if they want they can delete it")
+
+On the maker's page, last (P3, its own card): **Delete poll** (trash icon, the soft pink "negative" signal, "Take it down for everyone, with its votes"). It opens one sheet: "Delete this poll?" and plainly what happens ("It disappears for everyone straight away, with all its votes, and can't be brought back. As our Rules say, we keep a private record for 180 days, then erase it."), with **Delete poll** (pink, icon + word) and **Keep it** (focus starts here, the safe choice). After deleting: back to You with "Poll deleted."
+
+What happens: the poll is hidden at once everywhere (its page says "Poll not found"; it leaves You, the maker page, lists, search, topics, Today's question, Your votes and alerts). The owner's "Show again" cannot bring it back, and it leaves the review queue unless it was reported. It is erased with its votes `DELETED_KEEP_DAYS` (180) days later by the daily job (`/api/cron/results`, which needs CRON_SECRET; until then records are simply kept longer, which the Rules allow: "at least 180 days").
+
+### Profile sheet, lighter (owner, Oct 2026: "this screen is information heavy, it will give cognitive load")
+
+- **Signing back in:** the picture (smaller), "Welcome back", one line, the fingerprint button, "New here? Make a profile". Nothing else: someone signing in already knows the promises.
+- **Making a profile:** the picture, the title and one line, name, face, the button, and the promise as **one line under the button** ("🔒 Your votes stay secret. No password, phone or email."), where the decision is made. The three-card promise box and the "Just voting? You never need to sign in." footer are gone (the You page behind the sheet already says "Only for making polls").
+
+### Start a poll, signed out: profile first (owner, Oct 2026: "when they click on create poll button, open login screen")
+
+Replaces "fill the form first, sign in at the end". Signed out, Start a poll (the "+", every "Start a poll" link) and Make a pack open the profile screen ("One quick step: your profile", or "Already have a profile? Sign in"); once the profile is ready the page refreshes into the empty form (any ?title / ?topic / ?again from the link is kept). The server already refuses polls and packs without a profile; the sign-in sheet inside Create stays only for a sign-in that ran out mid-form.
+
+### You page, clearer order (owner, Oct 2026: "so many CTAs, no hierarchy, why is there this Your votes CTA")
+
+Top to bottom: who you are (profile card, Edit profile) → **Your polls** (P1: each row opens the poll's page) → **Account** (P3: one quiet list, "Sign out" and "Delete profile" in pink, asked once more inline). Removed: the "Your votes are not part of your profile… Your votes" line and link (Your votes is its own tab; the promise is on the profile screen), and the big outlined Sign out button. An ended poll's row says "Ended · 0 votes", never "no votes yet: share it".
+
+### Edit profile: its own sheet (owner, Oct 2026: "when I click on edit profile why are options visible, this screen should be about edit profile")
+
+"Edit profile" opens a sheet over the dimmed page (it used to open inside the card, with the polls, sign out and the rest still around it): "Edit profile", the picked face large, Your name, Pick a face, **Save** (ink) and **Cancel**, and × / Back / Escape to close. Nothing else can be tapped while it is open. After Save the card shows the new name and face at once (the API returns the saved profile).
+
+### Picture for a choice, simpler (owner, Oct 2026: four points on the picker)
+
+1. **No "I am 18+…" tick in the picker.** The Rules (Photos) say who may add photos, and now also: "Adding a photo means you confirm you are 18 or older and that everyone in it said yes." The server no longer asks for the tick (older pages may still send it).
+2. **No separate "Photo from your phone" button.** The first tile of the grid adds a photo (camera or gallery), the same size as an emoji tile.
+3. **No "Or type any emoji" box.** The grid (suggested emoji first, then popular ones, five full rows) is the choice; "Remove picture" shows only once something is chosen.
+4. **Nothing shown before you choose.** The preview at the top is an empty dashed "add" circle until you pick, and the choice rows on Create no longer fill in an emoji by themselves (🍕 for "Pizza"): the fitting emoji is offered first in the grid instead. Without a picture, the ballot shows the choice's letters.
+
+### No hover looks on touch screens (owner, Oct 2026: "why is there a hover state in mobile view")
+
+On a phone a tap leaves `:hover` stuck on what was tapped (a grey row, a darker button, a lifted card) until the next tap elsewhere. Rule from now on: **hover looks are for a real mouse only.** Every hover rule in `election.css` and `arogya.css` sits inside `@media (hover: hover) and (pointer: fine)`; the copied `gb/` rules (never edited) are put back to their resting look for `(hover: none), (pointer: coarse)` at the end of `arogya.css`. Press feedback while the finger is down (`:active`, the slight shrink) stays on phones. New hover rules must follow the same pattern.
+
+### Create settings, one pattern (owner, Oct 2026: "Start a poll UI is breaking, no consistency, specially in Settings")
+
+Two kinds of row only, all 72px high with the same icon disc:
+- **Switch rows** (Results after voting, Show my name, Votes can change, Voters can suggest, Mix the order, Election mode): name, one short line (shortened so it fits on one line on a phone), the switch.
+- **Rows that open** (Poll type, Topic, End time, Group poll, Add details): name, the current value only when there is one (no "Off" next to a chevron, which read like a switch), the chevron.
+An open row keeps its white look and its disc (it used to turn grey, hiding the disc). What opens sits in one panel shape: 16px sides, full-width fields that all look the same (48px, rounded, icon + input), the topic chips, or the poll types (each with its icon in a round disc, the chosen one soft indigo). The Group poll note is one short sentence ("Results open when everyone has voted, or after 3 days. Not in public lists.").
+
+## Desktop layout (owner, Oct 2026: "the mobile experience is good, desktop needs to be better… the layout of Dashboard")
+
+Phones and tablets are unchanged: every rule is in `election.css` under `min-width: 1024px` ("Desktop").
+
+- **One width.** The top bar's insides line up with the wide pages (1032px of content), so the logo, the page title
+  and the cards share one left edge.
+- **Home.** P1 today's poll on the left (no longer one stretched card). P2 a 360px column on the right: tonight's packs,
+  trending, topic shelves, more polls. The rules reminder stays last, under both. No extra "Start a poll" card: the top
+  bar already has it.
+- **Polls.** A 264px left column that stays in place: search (Enter searches; no button, the column is narrow) and the
+  topics as a vertical list with a small "Topics" label. The list of polls beside it.
+- **Start a poll.** The form on the left; on the right, "How voters will see it", drawn live as you type (the same
+  `PreviewCard` the "See how it looks" sheet uses; empty parts show as faint placeholders). It stays in place while
+  the form scrolls. "See how it looks" is hidden here, since the preview already shows it; Post is still the one
+  ink button.

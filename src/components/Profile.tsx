@@ -1,7 +1,9 @@
 'use client';
-import { LogOut, Trash2 } from 'lucide-react';
+import { LogOut, Trash2, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { useOverlay } from '@/lib/useOverlay';
 import type { Profile } from '@/lib/auth';
 import { AVATARS } from '@/lib/avatars';
 import { apiMsg } from '@/lib/i18n';
@@ -16,12 +18,19 @@ const SignInSheet = dynamic(() => import('./SignIn'), { ssr: false });
 // The You page's moving parts (docs/DESIGN.md, "Profiles").
 
 /** Signed out: the profile screen right on the page; when it is done, the page shows the profile. */
+/** Start a poll, signed out (owner: "when they click on create poll, open the login screen"): the profile screen comes
+ * first, then the empty form (the page refreshes once the profile is ready). Voting never needs this. */
+export function CreateSignIn() {
+  const router = useRouter();
+  return <SignInPanel onDone={() => router.refresh()} />;
+}
+
 export function YouSignIn({ full = false, startBack = false }: { full?: boolean; startBack?: boolean }) {
   const router = useRouter();
   const t = useT();
   const [open, setOpen] = useState<null | 'new' | 'back'>(null);
   // The maker's page (signed out) shows the whole screen; the You tab starts calm: the picture, the one promise that
-  // matters most, one button. The name, faces and the other promises open in the sheet only when tapped.
+  // matters most, one button. The name and faces open in the sheet only when tapped.
   if (full) return <SignInPanel onPage startBack={startBack} onDone={() => router.refresh()} />;
   return (
     <div className="spot-empty">
@@ -38,13 +47,45 @@ export function YouSignIn({ full = false, startBack = false }: { full?: boolean;
 /** Your face and name (yellow = you), with Edit in place. */
 export function ProfileCard({ user }: { user: Profile }) {
   const t = useT();
-  const lang = useLang();
-  const router = useRouter();
   const [editing, setEditing] = useState(false);
+  // Shown at once after Save (closing the sheet steps back in history, which would undo a page refresh made then).
+  const [me, setMe] = useState(user);
+  return (
+    <>
+      <div className="profile-card">
+        <span className="profile-face" aria-hidden>{me.avatar}</span>
+        <span className="profile-who">
+          <span className="profile-name">{me.name}</span>
+          <span className="small muted">{t.youSignedIn}</span>
+        </span>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditing(true)}>{t.editProfile}</button>
+      </div>
+      {editing && <EditProfileSheet user={me} onSaved={setMe} onClose={() => setEditing(false)} />}
+    </>
+  );
+}
+
+/** Edit profile (owner: "this screen should be about edit profile"): its own sheet over the dimmed page, with only the
+ * name, the face and Save / Cancel. Nothing else on the page can be tapped until it is saved or closed. */
+function EditProfileSheet({ user, onSaved, onClose }: { user: Profile; onSaved: (u: Profile) => void; onClose: () => void }) {
+  const t = useT();
+  const lang = useLang();
   const [name, setName] = useState(user.name);
   const [avatar, setAvatar] = useState(user.avatar);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const ref = useRef<HTMLFormElement>(null);
+  useOverlay(onClose, { back: true });
+  useEffect(() => {
+    const before = document.activeElement as HTMLElement | null;
+    ref.current?.querySelector<HTMLElement>('input')?.focus({ preventScroll: true });
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      before?.focus?.({ preventScroll: true });
+    };
+  }, [onClose]);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -53,46 +94,40 @@ export function ProfileCard({ user }: { user: Profile }) {
     const data = await res?.json().catch(() => null);
     setBusy(false);
     if (!res?.ok) return setError(data?.error ? apiMsg(lang, data.error) : t.errGeneric);
-    setError('');
-    setEditing(false);
-    router.refresh();
+    onSaved(data?.user ?? { ...user, name: name.trim(), avatar });
+    onClose();
   }
 
-  if (!editing) {
-    return (
-      <div className="profile-card">
-        <span className="profile-face" aria-hidden>{user.avatar}</span>
-        <span className="profile-who">
-          <span className="profile-name">{user.name}</span>
-          <span className="small muted">{t.youSignedIn}</span>
-        </span>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditing(true)}>{t.editProfile}</button>
-      </div>
-    );
-  }
-  return (
-    <form className="profile-card is-editing" onSubmit={save}>
-      <label className="create-label" htmlFor="profile-name">{t.yourName}</label>
-      <input id="profile-name" className="input" value={name} maxLength={MAX_NAME} autoComplete="nickname" onChange={(e) => setName(e.target.value)} />
-      <fieldset className="signin-faces">
-        <legend className="create-label">{t.pickFace}</legend>
-        {AVATARS.map((a) => (
-          <label key={a} className={'signin-face' + (a === avatar ? ' is-on' : '')}>
-            <input type="radio" name="avatar" value={a} checked={a === avatar} onChange={() => setAvatar(a)} />
-            <span aria-hidden>{a}</span>
-          </label>
-        ))}
-      </fieldset>
-      {error && <p className="duel-error" role="alert">{error}</p>}
-      <span className="row wrap">
-        <button className="btn btn-primary" disabled={busy}>{t.saveProfile}</button>
-        <button type="button" className="btn btn-ghost" onClick={() => { setEditing(false); setName(user.name); setAvatar(user.avatar); setError(''); }}>{t.cancel}</button>
-      </span>
-    </form>
+  return createPortal(
+    <div className="sheet-backdrop" onClick={(e) => e.target === e.currentTarget && !busy && onClose()}>
+      <form ref={ref} className="sheet profile-edit" role="dialog" aria-modal="true" aria-labelledby="profile-edit-title" onSubmit={save}>
+        <button type="button" className="icon-btn sheet-close" onClick={onClose} aria-label={t.close}><X size={18} strokeWidth={2} aria-hidden /></button>
+        <h2 id="profile-edit-title" className="profile-edit-title">{t.editProfile}</h2>
+        {/* The face you picked, large, so the change is seen at once. */}
+        <span className="profile-face profile-edit-face" aria-hidden>{avatar}</span>
+        <label className="create-label" htmlFor="profile-name">{t.yourName}</label>
+        <input id="profile-name" className="input" value={name} maxLength={MAX_NAME} autoComplete="nickname" onChange={(e) => setName(e.target.value)} />
+        <fieldset className="signin-faces">
+          <legend className="create-label">{t.pickFace}</legend>
+          {AVATARS.map((a) => (
+            <label key={a} className={'signin-face' + (a === avatar ? ' is-on' : '')}>
+              <input type="radio" name="avatar" value={a} checked={a === avatar} onChange={() => setAvatar(a)} />
+              <span aria-hidden>{a}</span>
+            </label>
+          ))}
+        </fieldset>
+        {error && <p className="duel-error" role="alert">{error}</p>}
+        <div className="preview-actions">
+          <button className="btn btn-primary btn-lg" disabled={busy}>{t.saveProfile}</button>
+          <button type="button" className="btn btn-ghost btn-lg" onClick={onClose} disabled={busy}>{t.cancel}</button>
+        </div>
+      </form>
+    </div>,
+    document.body,
   );
 }
 
-/** Sign out, and delete the profile (asked once more first). P3: at the bottom, quiet. */
+/** Sign out, and delete the profile (asked once more first). P3: at the bottom, one quiet "Account" list. */
 export function ProfileActions() {
   const t = useT();
   const router = useRouter();
@@ -105,23 +140,32 @@ export function ProfileActions() {
     router.refresh();
   }
   return (
-    <div className="profile-actions">
-      <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => call('/api/auth/logout', 'POST', '/you')}>
-        <LogOut size={16} strokeWidth={2} aria-hidden /> {t.signOut}
-      </button>
-      {asking ? (
-        <div className="duel-group" role="alertdialog" aria-label={t.deleteProfile}>
-          <p className="small">{t.deleteProfileAsk}</p>
-          <span className="row wrap">
-            <button type="button" className="btn btn-danger" disabled={busy} onClick={() => call('/api/me/profile', 'DELETE', '/you?deleted=1')}>{t.deleteProfileYes}</button>
-            <button type="button" className="btn btn-ghost" onClick={() => setAsking(false)}>{t.cancel}</button>
-          </span>
-        </div>
-      ) : (
-        <button type="button" className="text-link profile-delete" onClick={() => setAsking(true)}>
-          <Trash2 size={14} strokeWidth={2} aria-hidden /> {t.deleteProfile}
-        </button>
-      )}
-    </div>
+    <section className="al-block" aria-label={t.accountTitle}>
+      <h2 className="al-block__title">{t.accountTitle}</h2>
+      <ul className="al-listcard">
+        <li>
+          <button type="button" className="al-row profile-row" disabled={busy} onClick={() => call('/api/auth/logout', 'POST', '/you')}>
+            <span className="al-row__disc" style={{ '--tone': 'var(--sand)' } as React.CSSProperties}><LogOut size={20} strokeWidth={1.75} aria-hidden /></span>
+            <span className="al-row__main"><span className="al-row__title">{t.signOut}</span></span>
+          </button>
+        </li>
+        <li>
+          {asking ? (
+            <div className="profile-ask" role="alertdialog" aria-label={t.deleteProfile}>
+              <p className="small">{t.deleteProfileAsk}</p>
+              <span className="row wrap">
+                <button type="button" className="btn btn-danger" disabled={busy} onClick={() => call('/api/me/profile', 'DELETE', '/you?deleted=1')}>{t.deleteProfileYes}</button>
+                <button type="button" className="btn btn-ghost" onClick={() => setAsking(false)}>{t.cancel}</button>
+              </span>
+            </div>
+          ) : (
+            <button type="button" className="al-row profile-row is-danger" onClick={() => setAsking(true)}>
+              <span className="al-row__disc" style={{ '--tone': 'var(--negative-soft)' } as React.CSSProperties}><Trash2 size={20} strokeWidth={1.75} aria-hidden /></span>
+              <span className="al-row__main"><span className="al-row__title">{t.deleteProfile}</span></span>
+            </button>
+          )}
+        </li>
+      </ul>
+    </section>
   );
 }

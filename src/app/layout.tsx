@@ -36,10 +36,10 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const lang = await getLang();
   return (
-    <html lang={lang === 'hg' ? 'hi-Latn' : lang}>
+    <html lang={lang === 'hg' ? 'hi-Latn' : lang} suppressHydrationWarning>
       <body>
-        {/* Opening the installed app (from the home screen): the splash, every launch. */}
-        <Splash standaloneOnly name={dict[lang].siteName} line={dict[lang].splashLine} />
+        {/* The one splash: every launch of the installed app, and Home on a first visit (Splash.tsx decides, before paint). */}
+        <Splash name={dict[lang].siteName} line={dict[lang].splashLine} />
         <LangProvider lang={lang}>
         <div className="shell">
           <a href="#main" className="skip-link">{dict[lang].skip}</a>

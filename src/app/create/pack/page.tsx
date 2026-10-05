@@ -3,6 +3,7 @@ import PackForm from '@/components/PackForm';
 import { getT } from '@/lib/lang-server';
 import { getDb } from '@/db';
 import { currentUser } from '@/lib/auth';
+import { CreateSignIn } from '@/components/Profile';
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getT()).packTitle };
@@ -12,6 +13,16 @@ export default async function PackPage({ searchParams }: { searchParams: Promise
   const { kind } = await searchParams;
   const t = await getT();
   const user = await currentUser(await getDb());
+  if (!user) {
+    return (
+      <div className="page">
+        <h1 className="sr-only">{t.packTitle}</h1>
+        <section className="block block-tight create-signin">
+          <CreateSignIn />
+        </section>
+      </div>
+    );
+  }
   return (
     <div className="page">
       <header className="page-head">

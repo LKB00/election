@@ -9,6 +9,7 @@ import { isCode } from '@/lib/validation';
 import { getT } from '@/lib/lang-server';
 import { getDb } from '@/db';
 import { currentUser } from '@/lib/auth';
+import { CreateSignIn } from '@/components/Profile';
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getT()).create };
@@ -31,8 +32,20 @@ export default async function CreatePage({ searchParams }: { searchParams: Promi
     const p = await getPoll(db, sp.again, null, null, { noPrevious: true });
     if (p) again = { id: p.id, title: p.title, options: p.options.map((o) => o.label), emojis: p.options.map((o) => o.emoji ?? ''), kind: p.kind, calledIt: p.calledIt, category: p.category, showMaker: !!p.maker };
   }
+  // Signed out: the profile screen first; the form opens once there is a profile (the server refuses polls without one).
+  if (!user) {
+    return (
+      <div className="page">
+        <h1 className="sr-only">{t.startDuel}</h1>
+        <section className="block block-tight create-signin">
+          <CreateSignIn />
+        </section>
+      </div>
+    );
+  }
+  // On a computer the page widens so the live preview can sit beside the form (election.css, "Desktop").
   return (
-    <div className="page">
+    <div className="page create-page">
       <header className="page-head">
         <p className="eyebrow"><Timer size={13} strokeWidth={2} aria-hidden />{t.takes30}</p>
         <h1 className="display">{t.startDuel}</h1>

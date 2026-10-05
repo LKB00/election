@@ -1,5 +1,5 @@
 'use client';
-import { EyeOff, Fingerprint, KeyRound, PenLine, X } from 'lucide-react';
+import { Fingerprint, Lock, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { browserSupportsWebAuthn, startAuthentication, startRegistration } from '@simplewebauthn/browser';
@@ -13,11 +13,10 @@ import Spot from './Spot';
 import { MAX_NAME, MIN_NAME } from '@/lib/limits';
 
 // The profile screen (docs/DESIGN.md, "Profiles"). Asked for only when someone makes a poll; voting never needs it.
-// Trust first: the picture (a locked ballot box), then three promises (votes stay secret, no password/phone/email,
-// only for making polls), then the two things we ask for (a name and a face), then one ink button that hands over to
-// the phone's fingerprint, face or screen lock (a passkey). "Already have a profile?" switches to signing in.
-const PROMISE_ICONS = [EyeOff, KeyRound, PenLine];
-const PROMISE_TONES = ['var(--p-input)', 'var(--p-feedback)', 'var(--p-control)'];
+// Light on purpose (owner: "information heavy… cognitive load"): the picture (a locked ballot box), a title and one
+// line, the two things we ask for (a name and a face), one ink button that hands over to the phone's fingerprint, face
+// or screen lock (a passkey), and the promise in one line under it. Signing back in is only the picture, the title,
+// one line and the button. "Already have a profile?" / "New here?" switches between the two.
 
 async function post(url: string, body?: unknown) {
   const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body ?? {}) }).catch(() => null);
@@ -67,20 +66,9 @@ export function SignInPanel({ onDone, startBack = false, onPage = false }: { onD
 
   return (
     <form className="signin" onSubmit={go} noValidate>
-      <Spot kind="lock" size={152} />
+      <Spot kind="lock" size={back ? 104 : 120} />
       <h2 className="signin-title">{back ? t.signTitleBack : onPage ? t.signTitleYou : t.signTitleNew}</h2>
       <p className="signin-lead">{back ? t.signLeadBack : t.signLeadNew}</p>
-      <ul className="signin-promises">
-        {t.promises.map(([head, line], n) => {
-          const Icon = PROMISE_ICONS[n];
-          return (
-            <li key={head}>
-              <span className="signin-promise-icon" style={{ '--tone': PROMISE_TONES[n] } as React.CSSProperties}><Icon size={18} strokeWidth={2} aria-hidden /></span>
-              <span><strong>{head}</strong> {line}</span>
-            </li>
-          );
-        })}
-      </ul>
       {!back && (
         <>
           <label className="create-label" htmlFor="signin-name">{t.yourName}</label>
@@ -104,10 +92,11 @@ export function SignInPanel({ onDone, startBack = false, onPage = false }: { onD
         <p className="duel-error" role="alert">{t.noPasskey}</p>
       )}
       {error && <p className="duel-error" role="alert">{error}</p>}
+      {/* The promise, once, where the decision is made (new profile only: someone signing back in already knows it). */}
+      {!back && <p className="small muted signin-trust"><Lock size={14} strokeWidth={2} aria-hidden /> {t.signTrust}</p>}
       <button type="button" className="text-link signin-switch" onClick={() => { setBack(!back); setError(''); }}>
         {back ? t.newHere : t.haveProfile}
       </button>
-      <p className="small muted signin-foot">{t.justVoting}</p>
     </form>
   );
 }

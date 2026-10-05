@@ -16,6 +16,8 @@ export const MAX_NAME = 30;
 export const MAX_GROUP = 200;
 /** A group poll with no end time ends after this many days (one missing friend must not keep it open for ever). */
 export const GROUP_DEFAULT_DAYS = 3;
+/** A poll its maker deleted is kept (hidden) this long, as the Rules page promises, then erased with its votes. */
+export const DELETED_KEEP_DAYS = 180;
 
 /** Server messages that quote a limit (also the keys of their translations in i18n.ts). */
 export const ERR = {

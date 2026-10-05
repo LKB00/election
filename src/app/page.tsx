@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import DuelGame from '@/components/DuelGame';
 import EmptyState from '@/components/EmptyState';
-import Splash from '@/components/Splash';
 import Onboarding from '@/components/Onboarding';
 import RulesNotice from '@/components/RulesNotice';
 import DuelTiles from '@/components/DuelTiles';
@@ -63,59 +62,66 @@ export default async function Home() {
   // cards. Decided on the phone (it remembers having seen them). Never on a shared poll link.
   return (
     <div className="page page-wide">
-      <Splash firstRun name={t.siteName} line={t.splashLine} />
       <Onboarding />
-      {!empty && (
-        <header className="al-home">
-          <p className="al-home__date" suppressHydrationWarning>{t.homeDate(new Date())}</p>
-          <p className="al-home__title">{t.homeHello}</p>
-        </header>
-      )}
-      {deck.length > 0 && (
-        <section className="home-game duel-first" aria-label={t.pollRegion}>
-          <DuelGame deck={deck} todayId={todayId} daily more={more} />
-        </section>
-      )}
-      {/* Empty: nothing open today (a new site, or a quiet day). */}
-      {deck.length === 0 && (
-        <section className={empty ? 'empty-page' : 'block'}>
-          <EmptyState kind="invite" title={t.homeEmptyTitle} line={t.homeEmptyLine} action={{ href: '/create', label: t.startDuel }} />
-        </section>
-      )}
-
-      {/* P2: tonight's match-day and show-night packs, before predictions close. */}
-      {tonight.length > 0 && (
-        <section className="al-block">
-          <h2 className="al-block__title">{t.tonight}</h2>
-          <PackRows packs={tonight} t={t} lang={lang} />
-        </section>
-      )}
-
-      {hot.length > 0 && (
-        <section className="al-block">
-          <h2 className="al-block__title">{t.trendingNow}<span className="al-block__aside">{t.pollsN(hot.length)}</span></h2>
-          <DuelTiles polls={hot} votedIds={voted} noCreate />
-        </section>
-      )}
-      {shelves.map(([cat, ps]) => (
-        <section className="al-block" key={cat}>
-          <h2 className="al-block__title">
-            {t.categories[cat] ?? cat}
-            <Link href={`/topic/${cat}`} className="al-block__aside">{t.allDuels} <ArrowRight size={14} strokeWidth={1.75} aria-hidden /></Link>
-          </h2>
-          <DuelTiles polls={ps} votedIds={voted} noCreate />
-        </section>
-      ))}
-      {/* Only when there is something left to show (an empty list here would repeat the empty state above). */}
-      {polls.length > 0 && (
-        <section className="al-block">
-          <h2 className="al-block__title">
-            {t.moreDuels}
-            <Link href="/polls" className="al-block__aside">{t.allDuels} <ArrowRight size={14} strokeWidth={1.75} aria-hidden /></Link>
-          </h2>
-          <DuelTiles polls={polls} votedIds={voted} />
-        </section>
-      )}
+      {/* Phones: one column, top to bottom. Computers (election.css, "Desktop"): today's poll on the left as the main
+          thing, everything else to browse in a column on the right, so the screen is not one stretched card. */}
+      <div className={'home-grid' + (empty ? '' : ' has-rail')}>
+        <div className="home-main">
+          {!empty && (
+            <header className="al-home">
+              <p className="al-home__date" suppressHydrationWarning>{t.homeDate(new Date())}</p>
+              <p className="al-home__title">{t.homeHello}</p>
+            </header>
+          )}
+          {deck.length > 0 && (
+            <section className="home-game duel-first" aria-label={t.pollRegion}>
+              <DuelGame deck={deck} todayId={todayId} daily more={more} />
+            </section>
+          )}
+          {/* Empty: nothing open today (a new site, or a quiet day). */}
+          {deck.length === 0 && (
+            <section className={empty ? 'empty-page' : 'block'}>
+              <EmptyState kind="invite" title={t.homeEmptyTitle} line={t.homeEmptyLine} action={{ href: '/create', label: t.startDuel }} />
+            </section>
+          )}
+        </div>
+        {!empty && (
+          <div className="home-rail">
+            {/* P2: tonight's match-day and show-night packs, before predictions close. */}
+            {tonight.length > 0 && (
+              <section className="al-block">
+                <h2 className="al-block__title">{t.tonight}</h2>
+                <PackRows packs={tonight} t={t} lang={lang} />
+              </section>
+            )}
+            {hot.length > 0 && (
+              <section className="al-block">
+                <h2 className="al-block__title">{t.trendingNow}<span className="al-block__aside">{t.pollsN(hot.length)}</span></h2>
+                <DuelTiles polls={hot} votedIds={voted} noCreate />
+              </section>
+            )}
+            {shelves.map(([cat, ps]) => (
+              <section className="al-block" key={cat}>
+                <h2 className="al-block__title">
+                  {t.categories[cat] ?? cat}
+                  <Link href={`/topic/${cat}`} className="al-block__aside">{t.allDuels} <ArrowRight size={14} strokeWidth={1.75} aria-hidden /></Link>
+                </h2>
+                <DuelTiles polls={ps} votedIds={voted} noCreate />
+              </section>
+            ))}
+            {/* Only when there is something left to show (an empty list here would repeat the empty state above). */}
+            {polls.length > 0 && (
+              <section className="al-block">
+                <h2 className="al-block__title">
+                  {t.moreDuels}
+                  <Link href="/polls" className="al-block__aside">{t.allDuels} <ArrowRight size={14} strokeWidth={1.75} aria-hidden /></Link>
+                </h2>
+                <DuelTiles polls={polls} votedIds={voted} />
+              </section>
+            )}
+          </div>
+        )}
+      </div>
       {/* P3: the 3-monthly rules reminder sits last, after everything there is to do. */}
       {!empty && <RulesNotice />}
     </div>

@@ -16,6 +16,8 @@ export const polls = pgTable(
     featured: boolean('featured').notNull().default(false),
     // Taken down by the owner (or by enough reports). Hidden duels act as if they do not exist.
     hidden: boolean('hidden').notNull().default(false),
+    // Deleted by the person who made it: hidden at once (and for good), erased after DELETED_KEEP_DAYS (polls.ts).
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
     // Checked by the owner. Only reviewed duels go into search, and only reviewed politics duels are listed.
     reviewed: boolean('reviewed').notNull().default(false),
     // The creator added photos from their phone: the duel stays out of public lists until the owner has looked.

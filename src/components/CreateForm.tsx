@@ -10,6 +10,7 @@ import { choicesFromQuestion, emojiFor } from '@/lib/createHelp';
 import { RATING_EMOJIS, RATING_LABELS, type PollKind } from '@/lib/rating';
 import { rememberMyPoll } from './MyPolls';
 import type { Picture } from './PicturePicker';
+import PreviewCard, { previewRules, type PreviewPoll } from './PreviewCard';
 import { dateLocale, monthStyle } from '@/lib/time';
 import { GROUP_DEFAULT_DAYS, MAX_CHOICE, MAX_CHOICES, MAX_DETAILS, MAX_GROUP, MAX_TITLE, MIN_CHOICES, MIN_TITLE } from '@/lib/limits';
 // Loaded only when opened (less code for cheap phones to download before the form works).
@@ -17,7 +18,9 @@ const SignInSheet = dynamic(() => import('./SignIn'), { ssr: false });
 const PicturePicker = dynamic(() => import('./PicturePicker'), { ssr: false });
 const CreatePreview = dynamic(() => import('./CreatePreview'), { ssr: false });
 
-// One settings row: icon disc, name (+ a quiet line), the current value or a switch, and a chevron for rows that open.
+// One settings row, two kinds only (owner, Oct 2026: "Settings, no consistency"): a switch row (icon disc, name, one
+// short line, the switch) or a row that opens (icon disc, name, the current value when there is one, a chevron). The
+// row keeps its look when open; what opens sits in one panel shape underneath.
 const Row = ({ icon: Icon, name, note, value, on, open: isOpen, onClick, tone = 'var(--sand)' }: { icon: typeof Clock; name: string; note?: string; value?: string; on?: boolean; open?: boolean; onClick: () => void; tone?: string }) => (
   <button type="button" className="al-row create-row" onClick={onClick} {...(on === undefined ? { 'aria-expanded': !!isOpen } : { role: 'switch', 'aria-checked': on })}>
     <span className="al-row__disc" style={{ '--tone': on ? 'var(--lime)' : tone } as React.CSSProperties} aria-hidden><Icon size={18} strokeWidth={1.75} /></span>
@@ -52,8 +55,6 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   const [choices, setChoices] = useState(startChoices);
   // One optional emoji per choice, kept in step with the choices.
   const [emojis, setEmojis] = useState(startChoices.map((_, n) => again?.emojis[n] ?? ''));
-  // An emoji box you have not touched shows a fitting emoji for the name ("Chai" → 🍵); once you type in it, yours wins.
-  const [touched, setTouched] = useState(startChoices.map((_, n) => !!again?.emojis[n]));
   // One optional photo per choice (a small JPEG made on the phone); a photo shows instead of the emoji.
   const [photos, setPhotos] = useState(startChoices.map(() => ''));
   // "Which dates work?": the dates as the phone's date picker gives them (2026-10-12), growing like the choices.
@@ -70,7 +71,8 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   const [showMaker, setShowMaker] = useState(again?.showMaker ?? false);
   // Which choice's picture sheet is open.
   const [picking, setPicking] = useState<number | null>(null);
-  const emojiAt = (i: number) => (touched[i] ? emojis[i] ?? '' : emojis[i] || emojiFor(choices[i] ?? ''));
+  // Only what the person picked (owner: nothing shown before you choose); the fitting emoji is offered first in the picker.
+  const emojiAt = (i: number) => emojis[i] ?? '';
   const [endsAt, setEndsAt] = useState('');
   const [hideUntilVoted, setHide] = useState(true); // on by default: guess first, then see (the guess game)
   const [allowChange, setChange] = useState(false);
@@ -80,8 +82,6 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   const isGroup = Number.isFinite(groupN) && groupN >= 2 && groupN <= MAX_GROUP;
   // Election mode: the full booth ritual for this poll. Politics polls get it anyway (the server decides that).
   const [electionMode, setElectionMode] = useState(false);
-  // "I am 18+, and these photos are me or people who said yes": ticked once in the picture sheet, before any photo.
-  const [photoConsent, setPhotoConsent] = useState(false);
   // What kind of question: pick one of your choices, or rate it 1–5 with faces.
   const [kind, setKind] = useState<PollKind>(again?.kind ?? 'choice');
   const isRating = kind === 'rating';
@@ -135,26 +135,22 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
     setChoices((c) => [...c.map((x, j) => (j === i ? v : x)), ...(grow ? [''] : [])]);
     if (grow) {
       setEmojis((e) => [...e, '']);
-      setTouched((d) => [...d, false]);
       setPhotos((x) => [...x, '']);
     }
   };
   const setPicture = (i: number, p: Picture) => {
     setEmojis((e) => e.map((x, j) => (j === i ? p.emoji.trim() : x)));
-    setTouched((d) => d.map((x, j) => (j === i ? true : x)));
     setPhotos((x) => x.map((v, j) => (j === i ? p.photo : v)));
   };
   const removeChoice = (i: number) => {
     setChoices((x) => x.filter((_, j) => j !== i));
     setEmojis((x) => x.filter((_, j) => j !== i));
-    setTouched((x) => x.filter((_, j) => j !== i));
     setPhotos((x) => x.filter((_, j) => j !== i));
   };
   const fill = (next: string[]) => {
     const list = [...next, ...(next.length < MAX_CHOICES ? [''] : [])];
     setChoices(list);
     setEmojis(list.map(() => ''));
-    setTouched(list.map(() => false));
     setPhotos(list.map(() => ''));
     setFieldError({});
   };
@@ -241,7 +237,6 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
         allowChange,
         electionMode,
         groupSize: isGroup ? groupN : undefined,
-        photoConsent,
         // A group poll with no end time would wait forever for one missing friend: it ends in 3 days unless you pick a time.
         endsAt: endsAt ? new Date(endsAt).toISOString() : isGroup ? new Date(Date.now() + GROUP_DEFAULT_DAYS * 86_400_000).toISOString() : undefined,
       }),
@@ -280,7 +275,22 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   ];
   const current = TYPES.find((x) => x.k === (calledIt ? 'called' : kind)) ?? TYPES[0];
 
+  // The poll as voters will meet it: drawn in the "See how it looks" sheet, and live beside the form on a computer.
+  const endsText = endsAt ? endsLabel : isGroup ? new Date(Date.now() + GROUP_DEFAULT_DAYS * 86_400_000).toLocaleString(dateLocale(lang), { day: 'numeric', month: monthStyle(lang), hour: 'numeric', minute: '2-digit' }) : null;
+  const preview: PreviewPoll = {
+    title: title.trim(),
+    description: description.trim(),
+    kind,
+    calledIt,
+    group: isGroup ? groupN : null,
+    electionMode,
+    choices: isDates ? filledDates.map((d) => ({ label: dateLabel(d), emoji: '', photo: '' })) : choices.map((c, i) => ({ label: c.trim(), emoji: emojiAt(i), photo: photos[i] ?? '' })).filter((c) => c.label),
+    rateWords: t.rateWords,
+    rateEmojis: RATING_EMOJIS,
+  };
+
   return (
+    <div className="create-grid">
     <form className="builder create" onSubmit={submit}>
       {again && (
         <p className="create-again" role="status">
@@ -379,9 +389,8 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
                     {/* The choice's picture: tap for emoji suggestions, popular emoji, or a photo from the phone. */}
                     <button
                       type="button"
-                      className={'face-pick' + (photos[i] ? ' has-photo' : emojiAt(i) ? (touched[i] ? ' has-emoji' : ' has-emoji is-auto') : '')}
+                      className={'face-pick' + (photos[i] ? ' has-photo' : emojiAt(i) ? ' has-emoji' : '')}
                       aria-label={t.pictureN(i + 1)}
-                      title={!touched[i] && !photos[i] && emojiAt(i) ? t.emojiAuto : undefined}
                       onClick={() => setPicking(i)}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -428,12 +437,12 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
         <p className="create-label">{t.settingsLabel}</p>
         <ul className="al-listcard create-settings">
           <li>
-            <Row icon={current.Icon} name={t.typeLabel} note={current.desc} value={current.name} open={typeOpen} tone="var(--p-input)" onClick={() => setTypeOpen((v) => !v)} />
+            <Row icon={current.Icon} name={t.typeLabel} value={current.name} open={typeOpen} tone="var(--p-input)" onClick={() => setTypeOpen((v) => !v)} />
             {typeOpen && (
-              <div className="create-types" role="radiogroup" aria-label={t.typeLabel}>
+              <div className="create-panel create-types" role="radiogroup" aria-label={t.typeLabel}>
                 {TYPES.map((x) => (
                   <button key={x.k} type="button" role="radio" aria-checked={x.k === current.k} className={'create-type' + (x.k === current.k ? ' is-on' : '')} onClick={() => { x.pick(); setTypeOpen(false); }}>
-                    <x.Icon size={18} strokeWidth={1.75} aria-hidden />
+                    <span className="create-type__disc" aria-hidden><x.Icon size={18} strokeWidth={1.75} /></span>
                     <span><strong>{x.name}</strong><span className="small muted">{x.desc}</span></span>
                     {x.k === current.k && <Check size={16} strokeWidth={2.25} aria-hidden />}
                   </button>
@@ -458,7 +467,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
           {showMore || endsAt || isGroup || allowChange || electionMode || shuffle || description.trim() || fieldError.end ? (
             <>
               <li>
-                <Row icon={Clock} name={t.setEnds} value={endsAt ? endsLabel : t.offWord} open={open === 'ends' || !!fieldError.end} onClick={() => toggleOpen('ends')} />
+                <Row icon={Clock} name={t.setEnds} value={endsAt ? endsLabel : undefined} open={open === 'ends' || !!fieldError.end} onClick={() => toggleOpen('ends')} />
                 {(open === 'ends' || fieldError.end) && (
                   <div className="create-panel">
                     <span className="search">
@@ -471,14 +480,14 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
                 )}
               </li>
               <li>
-                <Row icon={Users} name={t.setGroup} value={isGroup ? String(groupN) : t.offWord} open={open === 'group'} onClick={() => toggleOpen('group')} />
+                <Row icon={Users} name={t.setGroup} value={isGroup ? String(groupN) : undefined} open={open === 'group'} onClick={() => toggleOpen('group')} />
                 {open === 'group' && (
                   <div className="create-panel">
                     <span className="search">
                       <Users size={14} strokeWidth={1.75} aria-hidden />
-                      <input id="group" type="number" inputMode="numeric" min={2} max={200} value={groupSize} placeholder="12" aria-label={t.grpHow} onChange={(e) => setGroupSize(e.target.value.replace(/\D/g, '').slice(0, 3))} />
+                      <input id="group" type="number" inputMode="numeric" min={2} max={MAX_GROUP} value={groupSize} placeholder="12" aria-label={t.grpHow} onChange={(e) => setGroupSize(e.target.value.replace(/\D/g, '').slice(0, 3))} />
                     </span>
-                    <p className="small muted">{t.grpHow} {t.grpNote}</p>
+                    <p className="small muted">{t.grpHow} {t.grpNote(GROUP_DEFAULT_DAYS)}</p>
                   </div>
                 )}
               </li>
@@ -487,10 +496,11 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
               {(kind === 'choice' || kind === 'multi' || kind === 'rank') && !electionMode && <li><Row icon={Shuffle} name={t.setShuffle} note={t.setShuffleNote} on={shuffle} onClick={() => setShuffle((v) => !v)} /></li>}
               <li><Row icon={Landmark} name={t.setElection} note={t.setElectionShort} on={electionMode} onClick={() => setElectionMode((v) => !v)} /></li>
               <li>
-                <Row icon={AlignLeft} name={t.setDetails} value={description.trim() ? '✓' : t.offWord} open={open === 'details'} onClick={() => toggleOpen('details')} />
+                <Row icon={AlignLeft} name={t.setDetails} value={description.trim() || undefined} open={open === 'details'} onClick={() => toggleOpen('details')} />
                 {open === 'details' && (
                   <div className="create-panel">
                     <span className="search">
+                      <AlignLeft size={14} strokeWidth={1.75} aria-hidden />
                       <input id="desc" enterKeyHint="done" onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), setOpen(null))} value={description} maxLength={MAX_DETAILS} placeholder={t.detailsPh} aria-label={t.details} onChange={(e) => setDescription(e.target.value)} />
                     </span>
                   </div>
@@ -512,8 +522,6 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
           suggested={emojiFor(choices[picking] ?? '')}
           onChange={(p) => setPicture(picking, p)}
           onClose={() => setPicking(null)}
-          consent={photoConsent}
-          onConsent={setPhotoConsent}
         />
       )}
       {ask && (
@@ -528,17 +536,9 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
       )}
       {previewing && (
         <CreatePreview
-          title={title.trim()}
-          description={description.trim()}
-          kind={kind}
-          calledIt={calledIt}
-          group={isGroup ? groupN : null}
-          electionMode={electionMode}
+          {...preview}
           hideUntilVoted={hideUntilVoted}
-          ends={endsAt ? endsLabel : isGroup ? new Date(Date.now() + GROUP_DEFAULT_DAYS * 86_400_000).toLocaleString(dateLocale(lang), { day: 'numeric', month: monthStyle(lang), hour: 'numeric', minute: '2-digit' }) : null}
-          choices={isDates ? filledDates.map((d) => ({ label: dateLabel(d), emoji: '', photo: '' })) : choices.map((c, i) => ({ label: c.trim(), emoji: emojiAt(i), photo: photos[i] ?? '' })).filter((c) => c.label)}
-          rateWords={t.rateWords}
-          rateEmojis={RATING_EMOJIS}
+          ends={endsText}
           postLabel={t.createDuel}
           busy={busy}
           onPost={() => { setPreviewing(false); post(); }}
@@ -557,5 +557,13 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
         )}
       </div>
     </form>
+    {/* Computers only (hidden on phones, where "See how it looks" opens the same card as a sheet): the poll drawn live
+        as you type, so the empty space beside the form shows the result of every choice you make. */}
+    <aside className="create-live" aria-label={t.previewTitle}>
+      <p className="label preview-eyebrow">{t.previewTitle}</p>
+      <PreviewCard poll={preview} t={t} live />
+      <p className="small muted preview-rules">{previewRules(t, hideUntilVoted, preview.group, endsText)}</p>
+    </aside>
+    </div>
   );
 }
