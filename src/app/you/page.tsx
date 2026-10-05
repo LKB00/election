@@ -15,7 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 // You (docs/DESIGN.md, "Profiles"). Signed in: your face and name, the polls you made (P1: how they are doing), and
-// quietly at the bottom, sign out / delete. Signed out: the profile screen with its promises, and the polls made on this
+// quietly at the bottom, sign out / delete. Signed out: the profile screen (one-line promise), and the polls made on this
 // phone. Votes are never here: they are not part of a profile (My votes keeps them on this phone).
 export default async function YouPage({ searchParams }: { searchParams: Promise<{ deleted?: string; done?: string }> }) {
   const { deleted, done } = await searchParams;

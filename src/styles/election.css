@@ -805,10 +805,6 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .signin .spot { align-self: center; }
 .signin-title { margin: 0; text-align: center; font: 700 24px / 30px var(--display); letter-spacing: -0.01em; text-wrap: balance; }
 .signin-lead { margin: -4px 0 0; text-align: center; color: var(--ink-2); text-wrap: pretty; }
-.signin-promises { list-style: none; margin: 4px 0; padding: 12px; display: flex; flex-direction: column; gap: 12px; border: 1px solid var(--line); border-radius: 18px; background: var(--card); font-size: 14px; line-height: 20px; color: var(--ink-2); }
-.signin-promises li { display: grid; grid-template-columns: 36px 1fr; gap: 12px; align-items: start; }
-.signin-promises strong { display: block; color: var(--ink); font-weight: 600; }
-.signin-promise-icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--tone); color: var(--ink); }
 .signin-faces { margin: 0; padding: 0; border: 0; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; }
 .signin-faces legend { padding: 0; margin-bottom: 8px; }
 .signin-face { -webkit-tap-highlight-color: transparent; position: relative; display: grid; place-items: center; aspect-ratio: 1; border-radius: 50%; border: 1px solid var(--line); background: var(--card); font-size: 22px; cursor: pointer; transition: transform 0.15s; }
@@ -817,7 +813,8 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .signin-face:has(input:focus-visible) { outline: 3px solid var(--lime); outline-offset: 2px; }
 .signin-go { width: 100%; gap: 8px; margin-top: 4px; }
 .signin-switch { align-self: center; background: none; border: 0; padding: 8px; font: inherit; font-weight: 600; cursor: pointer; }
-.signin-foot { margin: 0; text-align: center; }
+.signin-trust { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 0; text-align: center; }
+.signin-trust svg { flex: none; }
 .signin-sheet { padding-top: 16px; }
 .profile-card { box-sizing: border-box; width: 100%; display: flex; align-items: center; gap: 14px; padding: 16px; margin-top: 12px; border: 1px solid var(--line); border-radius: 18px; background: var(--card); }
 .profile-card.is-editing { flex-direction: column; align-items: stretch; gap: 10px; }
