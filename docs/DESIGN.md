@@ -1027,3 +1027,7 @@ What happens: the poll is hidden at once everywhere (its page says "Poll not fou
 ### Start a poll, signed out: profile first (owner, Oct 2026: "when they click on create poll button, open login screen")
 
 Replaces "fill the form first, sign in at the end". Signed out, Start a poll (the "+", every "Start a poll" link) and Make a pack open the profile screen ("One quick step: your profile", or "Already have a profile? Sign in"); once the profile is ready the page refreshes into the empty form (any ?title / ?topic / ?again from the link is kept). The server already refuses polls and packs without a profile; the sign-in sheet inside Create stays only for a sign-in that ran out mid-form.
+
+### You page, clearer order (owner, Oct 2026: "so many CTAs, no hierarchy, why is there this Your votes CTA")
+
+Top to bottom: who you are (profile card, Edit profile) → **Your polls** (P1: each row opens the poll's page) → **Account** (P3: one quiet list, "Sign out" and "Delete profile" in pink, asked once more inline). Removed: the "Your votes are not part of your profile… Your votes" line and link (Your votes is its own tab; the promise is on the profile screen), and the big outlined Sign out button. An ended poll's row says "Ended · 0 votes", never "no votes yet: share it".

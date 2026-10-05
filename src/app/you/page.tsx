@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ChevronRight, EyeOff, PenLine } from 'lucide-react';
+import { ChevronRight, PenLine } from 'lucide-react';
 import { getDb } from '@/db';
 import { currentUser } from '@/lib/auth';
 import { pollsByOwner } from '@/lib/profiles';
@@ -56,7 +56,8 @@ export default async function YouPage({ searchParams }: { searchParams: Promise<
                   <span className="al-row__disc" style={{ '--tone': 'var(--lime-badge)' } as React.CSSProperties}><PenLine size={20} strokeWidth={1.75} aria-hidden /></span>
                   <span className="al-row__main">
                     <span className="al-row__title">{p.title}</span>
-                    <span className="al-row__meta">{t.votesSoFar(p.votes)}{p.closed ? ` · ${t.pollClosedTag}` : ''}</span>
+                    {/* An ended poll is not asking for votes any more: "Ended · 0 votes", never "share it". */}
+                    <span className="al-row__meta">{p.closed ? `${t.pollClosedTag} · ${t.votes(p.votes)}` : t.votesSoFar(p.votes)}</span>
                   </span>
                   <ChevronRight size={18} strokeWidth={1.75} className="al-row__chevron" aria-hidden />
                 </Link>
@@ -69,9 +70,7 @@ export default async function YouPage({ searchParams }: { searchParams: Promise<
           <EmptyState kind="pen" title={t.myPollsEmpty} line={t.myPollsEmptyLine} action={{ href: '/create', label: t.startDuel }} />
         </section>
       )}
-      <p className="small muted block you-note">
-        <EyeOff size={14} strokeWidth={2} aria-hidden /> {t.youVotesNote} <Link href="/me" className="text-link">{t.myVotes}</Link>
-      </p>
+      {/* P3, last: the account, as one quiet list (Your votes is its own tab, so it is not repeated here). */}
       <ProfileActions />
     </div>
   );

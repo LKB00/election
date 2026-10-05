@@ -99,7 +99,7 @@ export function ProfileCard({ user }: { user: Profile }) {
   );
 }
 
-/** Sign out, and delete the profile (asked once more first). P3: at the bottom, quiet. */
+/** Sign out, and delete the profile (asked once more first). P3: at the bottom, one quiet "Account" list. */
 export function ProfileActions() {
   const t = useT();
   const router = useRouter();
@@ -112,23 +112,32 @@ export function ProfileActions() {
     router.refresh();
   }
   return (
-    <div className="profile-actions">
-      <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => call('/api/auth/logout', 'POST', '/you')}>
-        <LogOut size={16} strokeWidth={2} aria-hidden /> {t.signOut}
-      </button>
-      {asking ? (
-        <div className="duel-group" role="alertdialog" aria-label={t.deleteProfile}>
-          <p className="small">{t.deleteProfileAsk}</p>
-          <span className="row wrap">
-            <button type="button" className="btn btn-danger" disabled={busy} onClick={() => call('/api/me/profile', 'DELETE', '/you?deleted=1')}>{t.deleteProfileYes}</button>
-            <button type="button" className="btn btn-ghost" onClick={() => setAsking(false)}>{t.cancel}</button>
-          </span>
-        </div>
-      ) : (
-        <button type="button" className="text-link profile-delete" onClick={() => setAsking(true)}>
-          <Trash2 size={14} strokeWidth={2} aria-hidden /> {t.deleteProfile}
-        </button>
-      )}
-    </div>
+    <section className="al-block" aria-label={t.accountTitle}>
+      <h2 className="al-block__title">{t.accountTitle}</h2>
+      <ul className="al-listcard">
+        <li>
+          <button type="button" className="al-row profile-row" disabled={busy} onClick={() => call('/api/auth/logout', 'POST', '/you')}>
+            <span className="al-row__disc" style={{ '--tone': 'var(--sand)' } as React.CSSProperties}><LogOut size={20} strokeWidth={1.75} aria-hidden /></span>
+            <span className="al-row__main"><span className="al-row__title">{t.signOut}</span></span>
+          </button>
+        </li>
+        <li>
+          {asking ? (
+            <div className="profile-ask" role="alertdialog" aria-label={t.deleteProfile}>
+              <p className="small">{t.deleteProfileAsk}</p>
+              <span className="row wrap">
+                <button type="button" className="btn btn-danger" disabled={busy} onClick={() => call('/api/me/profile', 'DELETE', '/you?deleted=1')}>{t.deleteProfileYes}</button>
+                <button type="button" className="btn btn-ghost" onClick={() => setAsking(false)}>{t.cancel}</button>
+              </span>
+            </div>
+          ) : (
+            <button type="button" className="al-row profile-row is-danger" onClick={() => setAsking(true)}>
+              <span className="al-row__disc" style={{ '--tone': 'var(--negative-soft)' } as React.CSSProperties}><Trash2 size={20} strokeWidth={1.75} aria-hidden /></span>
+              <span className="al-row__main"><span className="al-row__title">{t.deleteProfile}</span></span>
+            </button>
+          )}
+        </li>
+      </ul>
+    </section>
   );
 }
