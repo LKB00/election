@@ -26,7 +26,9 @@ const standingText = (t: Dict, s: Standing): string | null =>
   : s.kind === 'guess' ? t.meGuess
   : s.kind === 'sealed' ? t.meSealed
   : null;
-export const metadata: Metadata = { title: 'My votes' };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT()).myVotes };
+}
 
 // My votes = your voting record on this phone. No levels or points: nothing here that a real election does not have.
 export default async function MyVotes({ searchParams }: { searchParams: Promise<{ restored?: string; deleted?: string; swap?: string }> }) {

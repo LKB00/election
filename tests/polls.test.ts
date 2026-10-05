@@ -874,7 +874,7 @@ describe('called it', () => {
     expect(await setOutcome(db, id, csk.id, 'wrong-key')).toBe('not_allowed');
     expect(await setOutcome(db, id, 'nope', 'creator-key')).toBe('bad_option');
     expect(await setOutcome(db, id, mi.id, 'creator-key')).toBe('ok');
-    expect(await setOutcome(db, id, csk.id, 'creator-key')).toBe('done'); // cannot be changed
+    expect(await setOutcome(db, id, csk.id, 'creator-key')).toBe('taken'); // cannot be changed
     const after = (await getPoll(db, id, 'fan2'))!;
     expect(after.outcome).toBe(mi.id);
     expect(after.closed).toBe(true);
@@ -1169,5 +1169,97 @@ describe('poll maker tools', () => {
     const quiet = await createPoll(db, createPollSchema.parse({ title: 'Quiet poll', options: ['A', 'B'] }), 'k', undefined, uid);
     expect((await getPoll(db, shown, null))!.maker).toMatchObject({ id: uid, name: 'Maker' });
     expect((await getPoll(db, quiet, null))!.maker).toBeNull();
+  });
+});
+
+describe('edge cases, round 4 (server review)', () => {
+  const owner = async () => {
+    const { createUser } = await import('@/lib/profiles');
+    const uid = 'r4-' + Math.random().toString(36).slice(2, 8);
+    await createUser(db, { id: uid, name: 'Maker', avatar: '🦁' }, { id: 'cred-' + uid, publicKey: 'pk', counter: 0, transports: [] });
+    return uid;
+  };
+
+  it('a typo fix or an added choice that names a party makes it a politics poll', async () => {
+    const { editPoll, suggest, decideSuggestion, makerView } = await import('@/lib/maker');
+    const uid = await owner();
+    const id = await createPoll(db, createPollSchema.parse({ title: 'Tea or coffee?', options: ['Tea', 'Coffee'] }), 'k', undefined, uid);
+    const opts = (await getPoll(db, id, null))!.options.map((o) => ({ id: o.id, label: o.label }));
+    expect(await editPoll(db, id, uid, { title: 'BJP or Congress?', description: '', options: opts })).toBe('ok');
+    const [row] = await db.select().from(schema.polls).where(eq(schema.polls.id, id));
+    expect([row.category, row.reviewed]).toEqual(['politics', false]);
+    const other = await createPoll(db, createPollSchema.parse({ title: 'Best leader?', options: ['A', 'B'], suggestionsOn: true }), 'k', undefined, uid);
+    expect(await suggest(db, other, 'Kejriwal')).toBe('ok');
+    const sid = (await makerView(db, other, uid))!.pending[0].id;
+    expect(await decideSuggestion(db, other, uid, sid, true)).toBe('ok');
+    expect((await db.select().from(schema.polls).where(eq(schema.polls.id, other)))[0].category).toBe('politics');
+  });
+
+  it('a typo fix cannot make two choices the same', async () => {
+    const { editPoll } = await import('@/lib/maker');
+    const uid = await owner();
+    const id = await createPoll(db, createPollSchema.parse({ title: 'Pick one', options: ['Alpha', 'Beta', 'Gamma'] }), 'k', undefined, uid);
+    const [a] = (await getPoll(db, id, null))!.options;
+    expect(await editPoll(db, id, uid, { title: 'Pick one', description: '', options: [{ id: a.id, label: 'beta' }] })).toBe('same');
+  });
+
+  it('a marked answer is final: the same tap again is fine, a different one is refused', async () => {
+    const { markOutcome } = await import('@/lib/maker');
+    const uid = await owner();
+    const id = await createPoll(db, createPollSchema.parse({ title: 'Who wins the final?', options: ['CSK', 'MI'], calledIt: true }), 'k', undefined, uid);
+    const [a, b] = (await getPoll(db, id, null))!.options;
+    expect(await markOutcome(db, id, uid, a.id)).toBe('ok');
+    expect(await markOutcome(db, id, uid, a.id)).toBe('done');
+    expect(await markOutcome(db, id, uid, b.id)).toBe('taken');
+  });
+
+  it('no undo once hidden results were shown straight after the vote', async () => {
+    const called = await createPoll(db, createPollSchema.parse({ title: 'Who wins the toss?', options: ['CSK', 'MI'], calledIt: true, hideUntilVoted: true }));
+    const [c] = (await getPoll(db, called, null))!.options;
+    await castVote(db, called, c.id, 'r4-called');
+    expect(await undoVote(db, called, 'r4-called')).toBe(false);
+    const group = await make({ title: 'Our trio', groupSize: 3, hideUntilVoted: true });
+    const [g] = (await getPoll(db, group, null))!.options;
+    await castVote(db, group, g.id, 'r4-g1');
+    expect(await undoVote(db, group, 'r4-g1')).toBe(true); // nothing seen yet: the group is still voting
+    for (const v of ['r4-g1', 'r4-g2', 'r4-g3']) await castVote(db, group, g.id, v);
+    expect(await undoVote(db, group, 'r4-g3')).toBe(false); // the last vote opened the results
+  });
+
+  it('dates polls: no crowd guess anywhere, and "if need be" is not a yes on My votes', async () => {
+    const id = await createPoll(db, createPollSchema.parse({ title: 'Trip dates?', kind: 'dates', options: ['Sat, 7 Nov', 'Sat, 14 Nov'], hideUntilVoted: true }));
+    const [a, b] = (await getPoll(db, id, null))!.options.map((o) => o.id);
+    await castVote(db, id, a, 'r4-d1', null, [], [b]);
+    await castVote(db, id, a, 'r4-d2', null, [], [b]);
+    await castVote(db, id, b, 'r4-d3', null, [], []);
+    expect(await guessLeader(db, id, 'r4-d1', a)).toBe('not_allowed');
+    const [mine] = await getMyVotes(db, 'r4-d1');
+    expect(mine.standing).toMatchObject({ kind: 'leading', name: 'Sat, 7 Nov' });
+    expect((await listPolls(db, 50)).find((p) => p.id === id)?.kind).toBe('dates');
+  });
+
+  it('two quick "Add" taps cannot pass the choice limit', async () => {
+    const { suggest, decideSuggestion, makerView } = await import('@/lib/maker');
+    const uid = await owner();
+    const id = await createPoll(db, createPollSchema.parse({ title: 'Nine choices', options: ['1', '2', '3', '4', '5', '6', '7', '8', '9'], suggestionsOn: true }), 'k', undefined, uid);
+    await suggest(db, id, 'Ten');
+    await suggest(db, id, 'Eleven');
+    const [x, y] = (await makerView(db, id, uid))!.pending.map((s) => s.id);
+    const r = await Promise.all([decideSuggestion(db, id, uid, x, true), decideSuggestion(db, id, uid, y, true)]);
+    expect(r.sort()).toEqual(['full', 'ok']);
+    expect((await getPoll(db, id, null))!.options).toHaveLength(10);
+  });
+
+  it('a suggestion on an ended poll says it ended; one on a poll without suggestions says so', async () => {
+    const { suggest } = await import('@/lib/maker');
+    const ended = await createPoll(db, createPollSchema.parse({ title: 'Ended poll', options: ['A', 'B'], suggestionsOn: true }));
+    await db.update(schema.polls).set({ endsAt: new Date(Date.now() - 1000) }).where(eq(schema.polls.id, ended));
+    expect(await suggest(db, ended, 'C')).toBe('closed');
+  });
+
+  it('whole percentages add up to 100', async () => {
+    const { wholePercents } = await import('@/lib/percent');
+    expect(wholePercents([100 / 3, 100 / 3, 100 / 3])).toEqual([34, 33, 33]);
+    expect(wholePercents([0, 0])).toEqual([0, 0]);
   });
 });

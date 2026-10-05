@@ -18,7 +18,7 @@ export default function BottomNav() {
     </Link>
   );
   return (
-    <nav className="bottomnav" aria-label="Main">
+    <nav className="bottomnav" aria-label={t.navMain}>
       {tab('/', t.home, House, path === '/' || (path.startsWith('/p/') && !path.endsWith('/manage')) || path.startsWith('/pack/'))}
       {tab('/polls', t.duels, ChartNoAxesColumn, path.startsWith('/polls') || path.startsWith('/topic/'))}
       <Link href="/create" className="bottomnav-plus" aria-label={t.startDuel}>

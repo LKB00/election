@@ -1,5 +1,6 @@
 'use client';
 import { MAX_PHOTO_CHARS } from './limits';
+import { PALETTE } from './palette';
 
 // A photo from the phone, made ready for a choice: turned the right way up, cut to the 4:5 shape of the ballot card
 // (centre, a little above the middle where faces usually are), made small (480×600) and saved as a JPEG. Re-drawing
@@ -28,7 +29,7 @@ export async function photoForChoice(file: File): Promise<string> {
   canvas.height = H;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('no canvas');
-  ctx.fillStyle = '#ffffff';
+  ctx.fillStyle = PALETTE.white; // behind see-through parts (a photo is saved as JPEG)
   ctx.fillRect(0, 0, W, H);
   ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
   for (const q of [0.82, 0.72, 0.6, 0.5]) {

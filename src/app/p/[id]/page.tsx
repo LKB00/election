@@ -25,20 +25,21 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const { f, s, o, l } = await searchParams;
   // The sender's language (from their link), so the chat preview reads like their message.
   const lang = isLang(l) ? l : 'en';
+  const t = dict[lang];
   const poll = await getPoll(await getDb(), id, null);
-  if (!poll) return { title: 'Poll not found' };
+  if (!poll) return { title: t.notFound };
   const names = poll.options.map((o) => o.label).join(' vs ');
   // The preview image says what the sender picked (from their share code), never the split.
   const image = `/api/og/${poll.id}${f ? `?f=${encodeURIComponent(f)}${s === '1' || !o ? '&s=1' : `&o=${encodeURIComponent(o)}`}${lang !== 'en' ? `&l=${lang}` : ''}` : ''}`;
-  const title = f ? (s === '1' || !o ? dict[lang].ogTitleSecret(poll.title) : dict[lang].ogTitleOpen(poll.title)) : poll.title;
+  const title = f ? (s === '1' || !o ? t.ogTitleSecret(poll.title) : t.ogTitleOpen(poll.title)) : poll.title;
   return {
     title: poll.title,
     // Search engines only get polls the owner has checked that enough people voted in (a thin page with two votes
     // looks like spam to Google), and never someone's personal share link.
     robots: poll.reviewed && !f && poll.participants >= INDEX_MIN_VOTES ? undefined : { index: false, follow: true },
     alternates: await langAlternates(`/p/${poll.id}`),
-    description: `${names}. What do you think? Tap to vote.`,
-    openGraph: { title, description: `${names}. Secret vote: nobody sees your pick. Vote in one tap and see where everyone stands.`, images: [{ url: image, width: 1200, height: 630 }] },
+    description: t.metaPollDesc(names),
+    openGraph: { title, description: t.metaPollOg(names), images: [{ url: image, width: 1200, height: 630 }] },
     twitter: { card: 'summary_large_image', images: [image] },
   };
 }
@@ -114,7 +115,7 @@ export default async function DuelPage({ params, searchParams }: Props) {
         </Link>
       )}
       </PollIntro>
-      <section className="home-game duel-first" aria-label="Duel">
+      <section className="home-game duel-first" aria-label={t.pollRegion}>
         <DuelGame deck={deck} start={0} via={f ?? null} />
       </section>
     </div>

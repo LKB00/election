@@ -10,6 +10,8 @@ import { choicesFromQuestion, emojiFor } from '@/lib/createHelp';
 import { RATING_EMOJIS, RATING_LABELS, type PollKind } from '@/lib/rating';
 import { rememberMyPoll } from './MyPolls';
 import type { Picture } from './PicturePicker';
+import { dateLocale } from '@/lib/time';
+import { MAX_CHOICE, MAX_CHOICES, MAX_DETAILS, MAX_TITLE } from '@/lib/limits';
 // Loaded only when opened (less code for cheap phones to download before the form works).
 const SignInSheet = dynamic(() => import('./SignIn'), { ssr: false });
 const PicturePicker = dynamic(() => import('./PicturePicker'), { ssr: false });
@@ -45,7 +47,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   const [title, setTitle] = useState(again?.title ?? initialTitle);
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<string>(again?.category ?? initialTopic ?? 'general');
-  const startChoices = again && again.kind !== 'rating' && again.kind !== 'dates' ? [...again.options, ...(again.options.length < 10 ? [''] : [])] : ['', ''];
+  const startChoices = again && again.kind !== 'rating' && again.kind !== 'dates' ? [...again.options, ...(again.options.length < MAX_CHOICES ? [''] : [])] : ['', ''];
   const [choices, setChoices] = useState(startChoices);
   // One optional emoji per choice, kept in step with the choices.
   const [emojis, setEmojis] = useState(startChoices.map((_, n) => again?.emojis[n] ?? ''));
@@ -55,7 +57,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   const [photos, setPhotos] = useState(startChoices.map(() => ''));
   // "Which dates work?": the dates as the phone's date picker gives them (2026-10-12), growing like the choices.
   const [dateVals, setDateVals] = useState(['', '']);
-  const setDate = (i: number, v: string) => setDateVals((d) => [...d.map((x, j) => (j === i ? v : x)), ...(i === d.length - 1 && v && d.length < 10 ? [''] : [])]);
+  const setDate = (i: number, v: string) => setDateVals((d) => [...d.map((x, j) => (j === i ? v : x)), ...(i === d.length - 1 && v && d.length < MAX_CHOICES ? [''] : [])]);
   // Dates are saved in one form for every voter ("Sat, 7 Nov"), whatever language the maker uses (the share picture can
   // only draw Latin letters).
   const dateLabel = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -126,7 +128,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
 
   // Like a WhatsApp poll: typing in the last box adds the next empty one (up to 10), so there is no "add" step.
   const setChoice = (i: number, v: string) => {
-    const grow = i === choices.length - 1 && v.trim() !== '' && choices.length < 10;
+    const grow = i === choices.length - 1 && v.trim() !== '' && choices.length < MAX_CHOICES;
     setChoices((c) => [...c.map((x, j) => (j === i ? v : x)), ...(grow ? [''] : [])]);
     if (grow) {
       setEmojis((e) => [...e, '']);
@@ -146,7 +148,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
     setPhotos((x) => x.filter((_, j) => j !== i));
   };
   const fill = (next: string[]) => {
-    const list = [...next, ...(next.length < 10 ? [''] : [])];
+    const list = [...next, ...(next.length < MAX_CHOICES ? [''] : [])];
     setChoices(list);
     setEmojis(list.map(() => ''));
     setTouched(list.map(() => false));
@@ -257,7 +259,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
 
   const TONES = ['input', 'feedback', 'control', 'agents', 'output', 'trust'];
   const toggleOpen = (k: 'ends' | 'topic' | 'details' | 'group') => setOpen((o) => (o === k ? null : k));
-  const endsLabel = endsAt ? new Date(endsAt).toLocaleString(lang === 'hi' ? 'hi-IN' : 'en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : t.setEnds;
+  const endsLabel = endsAt ? new Date(endsAt).toLocaleString(dateLocale(lang), { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : t.setEnds;
 
   // Create, top to bottom (docs/DESIGN.md, "Create, tidied"): the question in a real box, the choices, then every
   // setting as one list of rows (the poll type first, the less-used ones behind "More options"). One main button.
@@ -290,7 +292,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
           autoCapitalize="sentences"
           autoComplete="off"
           value={title}
-          maxLength={120}
+          maxLength={MAX_TITLE}
           placeholder={calledIt ? t.calledPh : t.questionPh}
           aria-invalid={!!fieldError.title}
           onKeyDown={(e) => {
@@ -304,7 +306,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
             setFieldError((f) => ({ ...f, title: undefined }));
           }}
         />
-        {title.length >= 100 && <p className="small muted create-count" aria-live="polite">{t.charsLeft(120 - title.length)}</p>}
+        {title.length >= MAX_TITLE - 20 && <p className="small muted create-count" aria-live="polite">{t.charsLeft(MAX_TITLE - title.length)}</p>}
         {fieldError.title && <p className="field-error" role="alert">{fieldError.title}</p>}
         {fromQuestion && (
           <button type="button" className="create-suggest" onClick={() => fill(fromQuestion)}>
@@ -386,7 +388,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
                       autoComplete="off"
                       data-choice
                       value={c}
-                      maxLength={60}
+                      maxLength={MAX_CHOICE}
                       aria-label={t.choiceN(i + 1)}
                       placeholder={isNew ? `+ ${t.addChoiceRow}` : t.choiceN(i + 1)}
                       aria-invalid={!!fieldError.choices}
@@ -482,7 +484,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
                 {open === 'details' && (
                   <div className="create-panel">
                     <span className="search">
-                      <input id="desc" enterKeyHint="done" onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), setOpen(null))} value={description} maxLength={300} placeholder={t.detailsPh} aria-label={t.details} onChange={(e) => setDescription(e.target.value)} />
+                      <input id="desc" enterKeyHint="done" onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), setOpen(null))} value={description} maxLength={MAX_DETAILS} placeholder={t.detailsPh} aria-label={t.details} onChange={(e) => setDescription(e.target.value)} />
                     </span>
                   </div>
                 )}

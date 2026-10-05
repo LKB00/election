@@ -10,7 +10,9 @@ import { getT } from '@/lib/lang-server';
 import { getDb } from '@/db';
 import { currentUser } from '@/lib/auth';
 
-export const metadata: Metadata = { title: 'Start a poll' };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT()).create };
+}
 
 // "Ask it yourself" from an empty search lands here with ?title=…, already typed in.
 export default async function CreatePage({ searchParams }: { searchParams: Promise<{ title?: string | string[]; topic?: string | string[]; again?: string }> }) {

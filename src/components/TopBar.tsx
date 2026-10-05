@@ -48,11 +48,11 @@ export default function TopBar() {
             <ChevronLeft size={20} strokeWidth={2} aria-hidden /> {back.name}
           </button>
         ))}
-        <Link href="/" className="logo" aria-label="Election, home">
+        <Link href="/" className="logo" aria-label={t.logoHome}>
           <span className="logo-mark" aria-hidden />
-          <span className="logo-text"><span className="logo-full">Election</span></span>
+          <span className="logo-text"><span className="logo-full">{t.siteName}</span></span>
         </Link>
-        <nav className="topnav-links" aria-label="Main">
+        <nav className="topnav-links" aria-label={t.navMain}>
           <Link href="/polls" className={path.startsWith('/polls') ? 'active' : ''}>{t.duels}</Link>
           <Link href="/create" className={'topnav-create' + (creating ? ' active' : '')}><Plus size={15} strokeWidth={2.25} aria-hidden /> {t.create}</Link>
           <Link href="/me" className={path === '/me' ? 'active' : ''}>{t.myVotes}</Link>

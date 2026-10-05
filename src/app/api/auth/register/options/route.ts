@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { AVATARS, newUserId, relyingParty, saveChallenge } from '@/lib/auth';
 import { cleanName } from '@/lib/profiles';
 import { clientIp, rateLimit } from '@/lib/rate-limit';
+import { dict } from '@/lib/i18n';
 
 // Step 1 of making a profile: the phone is asked to create a passkey (fingerprint, face or screen lock) for this site.
 export async function POST(req: Request) {
@@ -14,7 +15,7 @@ export async function POST(req: Request) {
   const { rpID } = await relyingParty();
   const uid = newUserId();
   const options = await generateRegistrationOptions({
-    rpName: 'Election',
+    rpName: dict.en.siteName,
     rpID,
     userName: name,
     userDisplayName: name,

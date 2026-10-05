@@ -10,7 +10,9 @@ import MyPolls from '@/components/MyPolls';
 import { ProfileActions, ProfileCard, YouSignIn } from '@/components/Profile';
 
 export const dynamic = 'force-dynamic';
-export const metadata: Metadata = { title: 'You', robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT()).you, robots: { index: false } };
+}
 
 // You (docs/DESIGN.md, "Profiles"). Signed in: your face and name, the polls you made (P1: how they are doing), and
 // quietly at the bottom, sign out / delete. Signed out: the profile screen with its promises, and the polls made on this

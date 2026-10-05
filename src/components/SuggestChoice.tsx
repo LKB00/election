@@ -3,6 +3,7 @@ import { MessageSquarePlus } from 'lucide-react';
 import { useState } from 'react';
 import { apiMsg } from '@/lib/i18n';
 import { useLang, useT } from '@/lib/lang';
+import { MAX_CHOICE } from '@/lib/limits';
 
 // "Missing a choice? Suggest one" (after voting, when the maker allows it). It goes to the maker, who adds it or not;
 // nobody else sees it until then, so no open text is ever shown on a poll.
@@ -32,7 +33,7 @@ export default function SuggestChoice({ pollId }: { pollId: string }) {
       {open ? (
         <form className="suggest-form" onSubmit={send}>
           <span className="search">
-            <input value={label} maxLength={60} placeholder={t.suggestPh} aria-label={t.suggestPh} onChange={(e) => setLabel(e.target.value)} autoFocus enterKeyHint="send" />
+            <input value={label} maxLength={MAX_CHOICE} placeholder={t.suggestPh} aria-label={t.suggestPh} onChange={(e) => setLabel(e.target.value)} autoFocus enterKeyHint="send" />
           </span>
           <button className="btn btn-primary btn-sm" disabled={busy || !label.trim()}>{t.suggestSend}</button>
         </form>

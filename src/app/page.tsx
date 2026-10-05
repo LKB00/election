@@ -20,9 +20,10 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata(): Promise<Metadata> {
   const featured = await getFeaturedId(await getDb());
   const images = featured ? [{ url: `/api/og/${featured}`, width: 1200, height: 630 }] : undefined;
+  const t = await getT();
   return {
     alternates: await langAlternates('/'),
-    openGraph: { title: 'Election · What does everyone think?', description: 'Ask anything. Vote in one tap, then see what everyone thinks. Just for fun.', images },
+    openGraph: { title: `${t.siteName} · ${t.splashLine}`, description: t.metaDesc, images },
     twitter: { card: 'summary_large_image', images: images?.map((i) => i.url) },
   };
 }
@@ -62,7 +63,7 @@ export default async function Home() {
   // cards. Decided on the phone (it remembers having seen them). Never on a shared poll link.
   return (
     <div className="page page-wide">
-      <Splash firstRun line={t.splashLine} />
+      <Splash firstRun name={t.siteName} line={t.splashLine} />
       <Onboarding />
       {!empty && (
         <header className="al-home">
@@ -71,7 +72,7 @@ export default async function Home() {
         </header>
       )}
       {deck.length > 0 && (
-        <section className="home-game duel-first" aria-label="Duel">
+        <section className="home-game duel-first" aria-label={t.pollRegion}>
           <DuelGame deck={deck} todayId={todayId} daily more={more} />
         </section>
       )}

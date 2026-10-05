@@ -10,6 +10,7 @@ import { useLang, useT } from '@/lib/lang';
 import { useOverlay } from '@/lib/useOverlay';
 import { localPollKeys } from './MyPolls';
 import Spot from './Spot';
+import { MAX_NAME, MIN_NAME } from '@/lib/limits';
 
 // The profile screen (docs/DESIGN.md, "Profiles"). Asked for only when someone makes a poll; voting never needs it.
 // Trust first: the picture (a locked ballot box), then three promises (votes stay secret, no password/phone/email,
@@ -37,7 +38,7 @@ export function SignInPanel({ onDone, startBack = false, onPage = false }: { onD
   async function go(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
-    if (!back && name.trim().length < 2) {
+    if (!back && name.trim().length < MIN_NAME) {
       setError(apiMsg(lang, 'Your name needs at least 2 letters.'));
       document.getElementById('signin-name')?.focus();
       return;
@@ -83,7 +84,7 @@ export function SignInPanel({ onDone, startBack = false, onPage = false }: { onD
       {!back && (
         <>
           <label className="create-label" htmlFor="signin-name">{t.yourName}</label>
-          <input id="signin-name" className="input" value={name} maxLength={30} autoComplete="nickname" placeholder={t.namePlaceholder} onChange={(e) => setName(e.target.value)} />
+          <input id="signin-name" className="input" value={name} maxLength={MAX_NAME} autoComplete="nickname" placeholder={t.namePlaceholder} onChange={(e) => setName(e.target.value)} />
           <fieldset className="signin-faces">
             <legend className="create-label">{t.pickFace}</legend>
             {AVATARS.map((a) => (

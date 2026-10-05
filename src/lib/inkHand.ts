@@ -1,3 +1,5 @@
+import { PALETTE } from './palette';
+
 // The inked index finger, drawn (owner: "create one, don't use photos", then a flat reference picture: "something like this").
 // Flat style: one smooth outline for the whole hand (owner: the boxy first try "looks weird"), light skin in a few flat
 // tones, no outlines; a raised index finger, nail towards you, the other fingers folded as rounded humps, and a wavy purple ink mark on the nail, as the polling officer draws it. Our own drawing (not traced).
@@ -21,7 +23,7 @@ export function handSvg(p = 'h', w = 200): string {
   <path d="M63 42 Q67.6 43.5 72 42" fill="none" stroke="#e7a37c" stroke-width="1.2" stroke-linecap="round"/>
   <path d="M59.5 22 C59.5 15 63 11.5 67.6 11.5 C72.2 11.5 75.7 15 75.7 22 L75.7 32.5 C75.7 35 73.8 36.5 71.5 36.5 L63.7 36.5 C61.4 36.5 59.5 35 59.5 32.5 Z" fill="#fbe2d6"/>
   <path d="M60 31 Q67.6 27.5 75.2 31 L75.2 32.5 C75.2 34.6 73.6 36 71.5 36 L63.7 36 C61.6 36 60 34.6 60 32.5 Z" fill="#fff6f1"/>
-  <path class="hand-ink" pathLength="1" d="M68.5 15 C66.5 19 70 23 68 27 C66.5 31 69.5 35 68 41" fill="none" stroke="#5b2fa0" stroke-width="4.6" stroke-linecap="round"/>
+  <path class="hand-ink" pathLength="1" d="M68.5 15 C66.5 19 70 23 68 27 C66.5 31 69.5 35 68 41" fill="none" stroke="${PALETTE.inkMark}" stroke-width="4.6" stroke-linecap="round"/>
 </svg>`;
 }
 

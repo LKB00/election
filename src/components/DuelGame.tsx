@@ -24,6 +24,8 @@ import SuggestChoice from './SuggestChoice';
 import PeopleGrid from './PeopleGrid';
 import ResultAlert from './ResultAlert';
 import GroupWait from './GroupWait';
+import { INDIA_TZ, dateLocale } from '@/lib/time';
+import { sharesAddUp, wholePercents } from '@/lib/percent';
 
 // Duels, played like patricka's "This or That": tap a card, see the result on the
 // cards, then "Next duel". Results stay hidden until you vote.
@@ -51,13 +53,7 @@ let votesThisVisit = 0;
 /** Whole-number percentages that always add up to 100. */
 function rounded(opts: PollOption[], total: number, counts?: Record<string, number>) {
   if (!total) return opts.map(() => 0);
-  const raw = counts ? opts.map((o) => ((counts[o.id] ?? 0) / total) * 100) : opts.map((o) => o.percent);
-  const out = raw.map(Math.floor);
-  let left = 100 - out.reduce((s, n) => s + n, 0);
-  raw.map((r, i) => [r - Math.floor(r), i] as const).sort((a, b) => b[0] - a[0]).forEach(([, i]) => {
-    if (left-- > 0) out[i]++;
-  });
-  return out;
+  return wholePercents(counts ? opts.map((o) => ((counts[o.id] ?? 0) / total) * 100) : opts.map((o) => o.percent));
 }
 
 function verdict(t: Dict, poll: PollView, mine: PollOption): [string, string] {
@@ -166,7 +162,7 @@ function Tween({ value, render }: { value: number; render: (v: number) => string
 
 // "Sealed till 5 Feb, 6:00 pm": India time, so the server page and the phone print the same.
 const sealedWhen = (iso: string, lang: Lang) =>
-  new Date(iso).toLocaleString(lang === 'hi' ? 'hi-IN' : 'en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' });
+  new Date(iso).toLocaleString(dateLocale(lang), { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: INDIA_TZ });
 
 // "Report this duel" (P3, last on the screen): one tap opens the reasons, one more sends it.
 function ReportDuel({ pollId, t, lang }: { pollId: string; t: Dict; lang: Lang }) {
@@ -303,6 +299,8 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
   const revealed = !!poll && !casting && poll.resultsVisible && (voted || poll.closed);
   // Election silence window: no numbers for anyone, but the pinned bar still offers Share and Next.
   const sealed = !!poll?.sealedUntil;
+  // Hidden results shown straight after the vote, with no crowd guess first: no undo (undoVote in polls.ts says the same).
+  const seenAtOnce = poll?.hideUntilVoted && !poll?.sealedUntil && (poll?.calledIt || poll?.kind === 'dates' || (!!poll?.groupSize && !poll?.groupWaiting));
   // A sealed poll or a group poll still waiting: the bar keeps Share and Next even without numbers.
   const barOn = revealed || (!casting && (sealed || !!poll?.groupWaiting) && (voted || !!poll?.closed));
   const votedCount = deck.filter((p) => p.myVote !== null).length;
@@ -334,7 +332,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
   const shownTotal = shown ? Object.values(shown).reduce((a, b) => a + b, 0) : poll?.totalVotes ?? 0;
   // Pick several: each bar is the share of voters who ticked it (they add up to more than 100%).
   const pcts = useMemo(
-    () => (poll ? (poll.kind === 'multi' || poll.kind === 'rank' ? poll.options.map((o) => Math.round(o.percent)) : rounded(poll.options, shownTotal, shown ?? undefined)) : []),
+    () => (poll ? (!sharesAddUp(poll.kind) ? poll.options.map((o) => Math.round(o.percent)) : rounded(poll.options, shownTotal, shown ?? undefined)) : []),
     [poll, shownTotal, shown],
   );
   const votesOf = (o: PollOption) => (shown ? shown[o.id] ?? 0 : o.votes);
@@ -1135,7 +1133,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
                       {' '}{t.dares(poll.friends.agree + poll.friends.disagree, poll.friends.agree, poll.friends.disagree)}
                     </span>
                   )}
-                  {undoUntil > 0 && !poll.closed && (
+                  {undoUntil > 0 && !poll.closed && !seenAtOnce && (
                     <> <button type="button" className="link-like duel-undo small muted" onClick={undo}>{t.undoVote}</button></>
                   )}
                 </>

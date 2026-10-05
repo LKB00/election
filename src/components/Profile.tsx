@@ -9,6 +9,7 @@ import { useLang, useT } from '@/lib/lang';
 import dynamic from 'next/dynamic';
 import { SignInPanel } from './SignIn';
 import Spot from './Spot';
+import { MAX_NAME } from '@/lib/limits';
 
 const SignInSheet = dynamic(() => import('./SignIn'), { ssr: false });
 
@@ -72,7 +73,7 @@ export function ProfileCard({ user }: { user: Profile }) {
   return (
     <form className="profile-card is-editing" onSubmit={save}>
       <label className="create-label" htmlFor="profile-name">{t.yourName}</label>
-      <input id="profile-name" className="input" value={name} maxLength={30} autoComplete="nickname" onChange={(e) => setName(e.target.value)} />
+      <input id="profile-name" className="input" value={name} maxLength={MAX_NAME} autoComplete="nickname" onChange={(e) => setName(e.target.value)} />
       <fieldset className="signin-faces">
         <legend className="create-label">{t.pickFace}</legend>
         {AVATARS.map((a) => (

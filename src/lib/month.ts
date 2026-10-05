@@ -1,6 +1,7 @@
 import { and, eq, gte, inArray, ne, sql } from 'drizzle-orm';
 import { schema, type Db } from '@/db';
 import { indiaDay } from './polls';
+import { INDIA_OFFSET } from './time';
 
 // "Your month in opinions" (docs/DESIGN.md, "Month card"): a description of how this phone voted this month, made
 // fresh each time from its own votes and never saved. It describes, never ranks: no score, no percentile, no
@@ -25,7 +26,7 @@ export type MonthView = {
 /** This month's start in India time, as a Date. */
 function monthStart(now = Date.now()) {
   const day = indiaDay(now).label; // "2026-10-04"
-  return new Date(`${day.slice(0, 8)}01T00:00:00+05:30`);
+  return new Date(`${day.slice(0, 8)}01T00:00:00${INDIA_OFFSET}`);
 }
 
 export async function getMonth(db: Db, voterId: string | null, now = Date.now()): Promise<MonthView | null> {

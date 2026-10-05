@@ -52,10 +52,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   // Where the vote came from, for the maker's view (a count per poll, never kept with the vote).
   if (result === 'ok') await countSource(db, id, parsed.data.src ?? 'other').catch(() => undefined);
   const view = await getPoll(db, id, voterId, parsed.data.via);
-  // The maker asked for one alert when the first votes are in.
-  if (result === 'ok' && view?.participants === MILESTONE && pushEnabled()) after(() => sendMilestone(db, id).then(() => undefined));
+  // The maker asked for one alert when the first votes are in. "At least", not "exactly": two votes at once can go
+  // from 9 to 11. The sender clears its list after sending, so it still goes out once.
+  if (result === 'ok' && (view?.participants ?? 0) >= MILESTONE && pushEnabled()) after(() => sendMilestone(db, id).then(() => undefined));
   // A group poll just got its last vote: its results open now, so tell the people who asked.
-  if (view?.groupSize && !view.groupWaiting && view.participants === view.groupSize && pushEnabled()) after(() => sendResultAlerts(db, [id]).then(() => undefined));
+  if (view?.groupSize && !view.groupWaiting && view.participants >= view.groupSize && result === 'ok' && pushEnabled()) after(() => sendResultAlerts(db, [id]).then(() => undefined));
   return NextResponse.json({ result, poll: view });
 }
 

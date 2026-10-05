@@ -261,12 +261,12 @@ button.link-like { border: 0; background: none; padding: 8px 0; cursor: pointer;
 @keyframes scene-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
 
 /* Beat 2: the VVPAT. A dark machine, a glass window that lights up, the slip prints, then is cut and drops. */
-.vv-machine { position: relative; width: 240px; padding: 16px 16px 32px; border-radius: var(--radius-card); background: var(--ink); box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.2), var(--shadow-pop); }
-.vv-glass { position: relative; height: 104px; overflow: hidden; border-radius: 8px; background: rgba(0, 0, 0, 0.4); box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5); }
+.vv-machine { position: relative; width: 240px; padding: 16px 16px 32px; border-radius: var(--radius-card); background: var(--ink); box-shadow: inset 0 -6px 0 var(--machine-shade), var(--shadow-pop); }
+.vv-glass { position: relative; height: 104px; overflow: hidden; border-radius: 8px; background: var(--machine-glass); box-shadow: inset 0 2px 8px var(--machine-deep); }
 .vv-light { position: absolute; inset: 0; background: radial-gradient(120% 100% at 50% 0%, var(--p-agents), transparent 75%); opacity: 0; animation: vv-light-on 0.25s calc(var(--t-vv) * 1s) ease forwards, vv-light-off 0.3s calc((var(--t-drop) + 0.45) * 1s) ease forwards; }
 @keyframes vv-light-on { from { opacity: 0; } to { opacity: 1; } }
 @keyframes vv-light-off { from { opacity: 1; } to { opacity: 0; } }
-.vv-paper { position: absolute; left: 12px; right: 12px; top: 8px; display: grid; grid-template-columns: 32px 1fr; column-gap: 12px; align-items: center; padding: 12px; border-top: 2px dashed var(--line); border-radius: 2px 2px 4px 4px; background: var(--card); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25); transform: translateY(-130%);
+.vv-paper { position: absolute; left: 12px; right: 12px; top: 8px; display: grid; grid-template-columns: 32px 1fr; column-gap: 12px; align-items: center; padding: 12px; border-top: 2px dashed var(--line); border-radius: 2px 2px 4px 4px; background: var(--card); box-shadow: 0 2px 6px var(--machine-shade); transform: translateY(-130%);
   /* printing: fed down in small mechanical steps; then cut and dropped into the box */
   animation: vv-print 0.7s calc((var(--t-vv) + 0.15) * 1s) steps(7, end) forwards, vv-drop 0.45s calc(var(--t-drop) * 1s) cubic-bezier(0.5, 0, 0.9, 0.5) forwards; }
 @keyframes vv-print { from { transform: translateY(-130%); } to { transform: translateY(0); } }
@@ -275,7 +275,7 @@ button.link-like { border: 0; background: none; padding: 8px 0; cursor: pointer;
 .vv-name { font-family: var(--display); font-weight: 800; font-size: 16px; line-height: 20px; color: var(--ink); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .vv-party { font-size: 12px; line-height: 16px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.5px; }
 /* The sealed drop box's slot: it flashes as the slip lands (with the thud). */
-.vv-slot { position: absolute; left: 50%; bottom: 12px; width: 96px; height: 4px; margin-left: -48px; border-radius: 2px; background: rgba(0, 0, 0, 0.45); animation: vv-slot 0.4s calc((var(--t-drop) + 0.3) * 1s) ease; }
+.vv-slot { position: absolute; left: 50%; bottom: 12px; width: 96px; height: 4px; margin-left: -48px; border-radius: 2px; background: var(--machine-glass); animation: vv-slot 0.4s calc((var(--t-drop) + 0.3) * 1s) ease; }
 @keyframes vv-slot { 40% { background: var(--lime); box-shadow: 0 0 0 3px color-mix(in srgb, var(--lime) 40%, transparent); } }
 
 /* Beat 1: your row on the ballot unit. The blue key goes down; the red light glows while it beeps. */
@@ -297,7 +297,7 @@ button.link-like { border: 0; background: none; padding: 8px 0; cursor: pointer;
 .cast-hand .hand-ink { stroke-dasharray: 1; stroke-dashoffset: 1; animation: ink-stroke 0.85s calc((var(--t-ink) + 0.45) * 1s) cubic-bezier(0.45, 0, 0.35, 1) forwards; }
 @keyframes ink-stroke { to { stroke-dashoffset: 0; } }
 /* The rod is 30% of the drawing's height; its tip follows the end of the line. */
-.cast-rod { position: absolute; left: 34.2%; top: 0; width: 7px; height: 30%; margin-left: -3.5px; border-radius: 4px; background: linear-gradient(90deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.95) 45%, rgba(255, 255, 255, 0.55)); box-shadow: inset 0 0 0 1px var(--shadow-tint), 2px 3px 5px var(--shadow-tint); opacity: 0; transform: translateY(-150%); animation: rod 1.2s calc((var(--t-ink) + 0.3) * 1s) linear forwards; }
+.cast-rod { position: absolute; left: 34.2%; top: 0; width: 7px; height: 30%; margin-left: -3.5px; border-radius: 4px; background: linear-gradient(90deg, var(--rod-edge), var(--rod-shine) 45%, var(--rod-edge)); box-shadow: inset 0 0 0 1px var(--shadow-tint), 2px 3px 5px var(--shadow-tint); opacity: 0; transform: translateY(-150%); animation: rod 1.2s calc((var(--t-ink) + 0.3) * 1s) linear forwards; }
 .cast-rod::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 18%; border-radius: 0 0 4px 4px; background: var(--ink-mark); }
 @keyframes rod {
   0% { transform: translateY(-150%); opacity: 0; }

@@ -4,7 +4,9 @@ import { getT } from '@/lib/lang-server';
 import { getDb } from '@/db';
 import { currentUser } from '@/lib/auth';
 
-export const metadata: Metadata = { title: 'Make a pack' };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT()).packTitle };
+}
 
 export default async function PackPage({ searchParams }: { searchParams: Promise<{ kind?: string }> }) {
   const { kind } = await searchParams;

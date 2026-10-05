@@ -1,7 +1,9 @@
-import { and, asc, desc, eq, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { schema, type Db } from '@/db';
 import { sameKey } from './validation';
+import { namesPolitics } from './moderation';
+import { MAX_CHOICES, MAX_WAITING_SUGGESTIONS } from './limits';
 
 // Poll maker tools (docs/DESIGN.md, "Poll maker tools"): only the profile that made a poll can use them. Everything the
 // maker sees is counted for the whole poll (votes per hour, where votes came from), never per voter.
@@ -85,16 +87,27 @@ export async function setEnd(db: Db, id: string, uid: string, at: Date): Promise
 }
 
 /** Fix a typo: the question, details and choice words, only while nobody has voted (votes never change meaning). */
-export async function editPoll(db: Db, id: string, uid: string, e: { title: string; description: string; options: { id: string; label: string }[] }): Promise<'ok' | 'voted' | 'not_found' | 'bad_option'> {
+/** A fix or an added choice that now names a politician or party makes the poll a politics poll, as making it would
+ * have: the review hold, silence windows and Election mode then apply, and "Called it" is off (createPoll in polls.ts). */
+function politicsNow(p: { category: string }, ...text: string[]) {
+  return p.category !== 'politics' && namesPolitics(...text) ? { category: 'politics', reviewed: false, calledIt: false } : {};
+}
+
+export async function editPoll(db: Db, id: string, uid: string, e: { title: string; description: string; options: { id: string; label: string }[] }): Promise<'ok' | 'voted' | 'not_found' | 'bad_option' | 'same'> {
   const p = await ownPoll(db, id, uid);
   if (!p) return 'not_found';
   if (p.kind === 'rating') e = { ...e, options: [] };
   return db.transaction(async (tx) => {
+    // Hold the poll row until the save, so no vote can land on a choice while its words change (castVote waits).
+    await tx.select({ id: polls.id }).from(polls).where(eq(polls.id, id)).for('update');
     const [{ n }] = await tx.select({ n: sql<number>`count(*)::int` }).from(votes).where(eq(votes.pollId, id));
     if (n > 0) return 'voted';
-    const mine = await tx.select({ id: options.id }).from(options).where(eq(options.pollId, id));
+    const mine = await tx.select({ id: options.id, label: options.label }).from(options).where(eq(options.pollId, id));
     if (e.options.some((o) => !mine.some((m) => m.id === o.id))) return 'bad_option';
-    await tx.update(polls).set({ title: e.title, description: e.description }).where(eq(polls.id, id));
+    // The choices after the fix (sent ones changed, the rest as they are) must still all differ.
+    const after = mine.map((m) => e.options.find((o) => o.id === m.id)?.label ?? m.label);
+    if (new Set(after.map(sameKey)).size !== after.length) return 'same';
+    await tx.update(polls).set({ title: e.title, description: e.description, ...politicsNow(p, e.title, e.description, ...after) }).where(eq(polls.id, id));
     for (const o of e.options) await tx.update(options).set({ label: o.label }).where(and(eq(options.id, o.id), eq(options.pollId, id)));
     return 'ok';
   });
@@ -102,15 +115,20 @@ export async function editPoll(db: Db, id: string, uid: string, e: { title: stri
 
 /** "Called it": the signed-in maker marks what happened (on any phone; the phone key is only for makers without a
  * profile). Closes the poll, like the phone-key path in polls.ts. */
-export async function markOutcome(db: Db, id: string, uid: string, optionId: string): Promise<'ok' | 'done' | 'bad_option' | 'not_found'> {
+export async function markOutcome(db: Db, id: string, uid: string, optionId: string): Promise<'ok' | 'done' | 'taken' | 'bad_option' | 'not_found'> {
   const p = await ownPoll(db, id, uid);
   if (!p || !p.calledIt) return 'not_found';
-  if (p.outcome) return 'done';
+  if (p.outcome) return p.outcome === optionId ? 'done' : 'taken';
   const [opt] = await db.select({ id: options.id }).from(options).where(and(eq(options.id, optionId), eq(options.pollId, id))).limit(1);
   if (!opt) return 'bad_option';
   const now = new Date();
-  await db.update(polls).set({ outcome: optionId, outcomeAt: now, endsAt: p.endsAt && p.endsAt < now ? p.endsAt : now }).where(eq(polls.id, id));
-  return 'ok';
+  // Only if still unmarked (two phones at once: the first answer stands).
+  const set = await db
+    .update(polls)
+    .set({ outcome: optionId, outcomeAt: now, endsAt: p.endsAt && p.endsAt < now ? p.endsAt : now })
+    .where(and(eq(polls.id, id), isNull(polls.outcome)))
+    .returning({ id: polls.id });
+  return set.length ? 'ok' : 'taken';
 }
 
 /** Where a vote came from (counted for the poll only; never kept with the vote). */
@@ -122,37 +140,48 @@ export async function countSource(db: Db, id: string, src: string) {
 }
 
 /** A voter suggests a missing choice. Same words as an existing choice: nothing to add. Same as another suggestion: +1. */
-export async function suggest(db: Db, id: string, label: string): Promise<'ok' | 'exists' | 'off' | 'full' | 'not_found'> {
+export async function suggest(db: Db, id: string, label: string): Promise<'ok' | 'exists' | 'off' | 'closed' | 'full' | 'not_found'> {
   const [p] = await db.select().from(polls).where(and(eq(polls.id, id), eq(polls.hidden, false))).limit(1);
   if (!p) return 'not_found';
-  if (!p.suggestionsOn || p.groupSize || (p.kind !== 'choice' && p.kind !== 'multi') || (p.endsAt && p.endsAt.getTime() <= Date.now())) return 'off';
+  if (p.endsAt && p.endsAt.getTime() <= Date.now()) return 'closed';
+  if (!p.suggestionsOn || p.groupSize || (p.kind !== 'choice' && p.kind !== 'multi')) return 'off';
   const opts = await db.select({ label: options.label }).from(options).where(eq(options.pollId, id));
   if (opts.some((o) => sameKey(o.label) === sameKey(label))) return 'exists';
-  if (opts.length >= 10) return 'full';
-  const [{ waiting }] = await db.select({ waiting: sql<number>`count(*)::int` }).from(suggestions).where(eq(suggestions.pollId, id));
-  const same = (await db.select({ id: suggestions.id, label: suggestions.label }).from(suggestions).where(eq(suggestions.pollId, id))).find((s) => sameKey(s.label) === sameKey(label));
-  if (same) {
-    await db.update(suggestions).set({ n: sql`${suggestions.n} + 1` }).where(eq(suggestions.id, same.id));
+  if (opts.length >= MAX_CHOICES) return 'full';
+  // Held per poll, so the same suggestion sent twice at once is counted twice (n = 2), not saved twice.
+  return db.transaction(async (tx) => {
+    await tx.select({ id: polls.id }).from(polls).where(eq(polls.id, id)).for('update');
+    const waiting = await tx.select({ id: suggestions.id, label: suggestions.label }).from(suggestions).where(eq(suggestions.pollId, id));
+    const same = waiting.find((s) => sameKey(s.label) === sameKey(label));
+    if (same) {
+      await tx.update(suggestions).set({ n: sql`${suggestions.n} + 1` }).where(eq(suggestions.id, same.id));
+      return 'ok';
+    }
+    if (waiting.length >= MAX_WAITING_SUGGESTIONS) return 'full';
+    await tx.insert(suggestions).values({ id: nanoid(10), pollId: id, label }).onConflictDoNothing();
     return 'ok';
-  }
-  if (waiting >= 30) return 'full';
-  await db.insert(suggestions).values({ id: nanoid(10), pollId: id, label }).onConflictDoNothing();
-  return 'ok';
+  });
 }
 
 /** The maker adds a suggestion as a real choice (at the end), or deletes it. */
 export async function decideSuggestion(db: Db, id: string, uid: string, sid: string, add: boolean): Promise<'ok' | 'full' | 'not_found'> {
   const p = await ownPoll(db, id, uid);
   if (!p) return 'not_found';
-  const [s] = await db.select().from(suggestions).where(and(eq(suggestions.id, sid), eq(suggestions.pollId, id))).limit(1);
-  if (!s) return 'not_found';
-  if (add) {
-    const opts = await db.select({ label: options.label, position: options.position }).from(options).where(eq(options.pollId, id));
-    if (opts.length >= 10) return 'full';
-    if (!opts.some((o) => sameKey(o.label) === sameKey(s.label))) {
-      await db.insert(options).values({ id: nanoid(10), pollId: id, label: s.label, position: Math.max(-1, ...opts.map((o) => o.position)) + 1, emoji: s.emoji });
+  // One at a time per poll (the row is held), so two quick "Add" taps cannot pass the choice limit or share a place.
+  return db.transaction(async (tx) => {
+    await tx.select({ id: polls.id }).from(polls).where(eq(polls.id, id)).for('update');
+    const [s] = await tx.select().from(suggestions).where(and(eq(suggestions.id, sid), eq(suggestions.pollId, id))).limit(1);
+    if (!s) return 'not_found';
+    if (add) {
+      const opts = await tx.select({ label: options.label, position: options.position }).from(options).where(eq(options.pollId, id));
+      if (opts.length >= MAX_CHOICES) return 'full';
+      if (!opts.some((o) => sameKey(o.label) === sameKey(s.label))) {
+        await tx.insert(options).values({ id: nanoid(10), pollId: id, label: s.label, position: Math.max(-1, ...opts.map((o) => o.position)) + 1, emoji: s.emoji });
+        const now = politicsNow(p, s.label);
+        if ('category' in now) await tx.update(polls).set(now).where(eq(polls.id, id));
+      }
     }
-  }
-  await db.delete(suggestions).where(eq(suggestions.id, sid));
-  return 'ok';
+    await tx.delete(suggestions).where(eq(suggestions.id, sid));
+    return 'ok';
+  });
 }

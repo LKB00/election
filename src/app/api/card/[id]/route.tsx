@@ -29,7 +29,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const pickId = await pickFromCode(db, id, f);
   const showPick = !!pickId && !secret;
   const target = `${url.origin}/p/${id}${f ? `?f=${encodeURIComponent(f)}${secret ? '&s=1' : `&o=${proof}`}${isLang(lang) && lang !== 'en' ? `&l=${lang}` : ''}&src=qr` : '?src=qr'}`;
-  const qr = await QRCode.toDataURL(target, { margin: 1, width: 300, color: { dark: CARD.ink, light: '#ffffff' } });
+  const qr = await QRCode.toDataURL(target, { margin: 1, width: 300, color: { dark: CARD.ink, light: CARD.white } });
   const abs = (src: string) => new URL(src, url.origin).toString();
   // A rating poll shows its five faces (smaller); other polls their first two choices.
   const rating = poll.kind === 'rating';
@@ -38,7 +38,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const faces = faceLabels(poll.options.map((o) => o.label)).map((f, n) => poll.options[n].emoji ?? (drawable(f) ? f : String(n + 1)));
   const pick = shown.find((o) => o.id === pickId);
   // The social line (P2): how many friends came through your link and agree with you. No spoiler of who leads.
-  const friends = await friendsFromCode(db, id, f, pickId);
+  // Only on an open link to a result anyone may already see: on a secret link, a hidden or sealed result, "agree"
+  // going up after a friend votes would tell them the sender's pick (and how the sender's friends split).
+  const friends = showPick && poll.resultsVisible && !poll.sealedUntil ? await friendsFromCode(db, id, f, pickId) : { all: 0, agree: 0 };
   // My group vs everyone, only where the result is already public to anyone (results not hidden, or the poll ended;
   // getPoll with no voter says so) and your pick shows: then the image gives nothing away.
   const picked = poll.options.find((o) => o.id === pickId);
@@ -53,7 +55,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center', fontSize: 40, fontWeight: 700 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <div style={{ display: 'flex', width: 40, height: 40, borderRadius: 20, background: CARD.ink, border: `10px solid ${CARD.lime}` }} />
-            Election
+            {t.siteName}
           </div>
           <div style={{ display: 'flex', padding: '10px 24px', borderRadius: 999, background: CARD.lime, fontSize: 30 }}>{t.cardFun}</div>
         </div>
@@ -67,7 +69,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
           {shown.map((o, n) => {
             const mine = showPick && o.id === pickId;
             return (
-              <div key={o.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: rating ? 156 : 380, padding: 24, borderRadius: 28, background: mine ? CARD.tints[n % CARD.tints.length] : '#ffffff', border: mine ? `6px solid ${CARD.ink}` : '6px solid transparent', opacity: showPick && !mine ? 0.6 : 1 }}>
+              <div key={o.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: rating ? 156 : 380, padding: 24, borderRadius: 28, background: mine ? CARD.tints[n % CARD.tints.length] : CARD.white, border: mine ? `6px solid ${CARD.ink}` : '6px solid transparent', opacity: showPick && !mine ? 0.6 : 1 }}>
                 {o.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={abs(o.imageUrl)} width={300} height={375} style={{ borderRadius: 20, objectFit: 'cover' }} alt="" />

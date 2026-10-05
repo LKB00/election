@@ -1,3 +1,4 @@
+import { ERR } from '@/lib/limits';
 import { NextResponse } from 'next/server';
 import { getDb } from '@/db';
 import { suggest } from '@/lib/maker';
@@ -12,7 +13,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'One choice is empty. Fill it in or remove it.' }, { status: 400 });
   const r = await suggest(await getDb(), id, parsed.data.label);
   if (r === 'not_found') return NextResponse.json({ error: 'Poll not found.' }, { status: 404 });
-  if (r === 'off') return NextResponse.json({ error: 'This poll has ended.' }, { status: 409 });
-  if (r === 'full') return NextResponse.json({ error: 'You can have up to 10 choices. Remove one to continue.' }, { status: 409 });
+  if (r === 'closed') return NextResponse.json({ error: 'This poll has ended.' }, { status: 409 });
+  if (r === 'off') return NextResponse.json({ error: 'This poll does not take suggestions.' }, { status: 409 });
+  if (r === 'full') return NextResponse.json({ error: ERR.manyChoices }, { status: 409 });
   return NextResponse.json({ ok: true, exists: r === 'exists' });
 }

@@ -15,8 +15,8 @@ const isCategory = (c: string): c is (typeof CATEGORIES)[number] => (CATEGORIES 
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { category } = await params;
-  if (!isCategory(category)) return { title: 'Poll not found' };
   const t = await getT();
+  if (!isCategory(category)) return { title: t.notFound };
   return { title: t.topicTitle(t.categories[category] ?? category), description: `${t.topicTitle(t.categories[category] ?? category)}. ${t.topicLead}`, alternates: await langAlternates(`/topic/${category}`) };
 }
 

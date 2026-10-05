@@ -3,7 +3,9 @@ import Link from 'next/link';
 import { getT } from '@/lib/lang-server';
 import { grievanceContact } from '@/lib/grievance';
 
-export const metadata: Metadata = { title: 'Privacy and reports' };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT()).privacyTitle };
+}
 
 // What we keep, for how long, who sees it, and how to complain (privacy law and the IT Rules ask for all four).
 // The complaints contact comes from NEXT_PUBLIC_GRIEVANCE_NAME / _EMAIL when the owner sets them.

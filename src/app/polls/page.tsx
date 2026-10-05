@@ -14,7 +14,7 @@ import { CATEGORIES } from '@/lib/categories';
 
 export const dynamic = 'force-dynamic';
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: 'Polls', alternates: await langAlternates('/polls') };
+  return { title: (await getT()).duels, alternates: await langAlternates('/polls') };
 }
 
 // P1: the duel of the day (dark banner). P2: browse the tiles. While searching, only the matches (P1) show.

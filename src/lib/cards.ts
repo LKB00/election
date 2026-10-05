@@ -30,8 +30,8 @@ export async function pickFromCode(db: Db, pollId: string, code: string | null) 
   return v?.optionId ?? null;
 }
 
-// The Arogya Line palette (same values as src/styles/arogya.css). "lime" is the brand yellow: the colour of "you".
-export const CARD = { ink: '#1d1b18', paper: '#fbf9f6', sand: '#f5f2ed', lime: '#fcd12a', green: '#2f7d4f', muted: '#5e5a53', tints: ['#e0e3ff', '#fce4ec', '#ddf1e3', '#fdf4df'] };
+// The Arogya Line palette (src/lib/palette.ts, the same values as src/styles/arogya.css). "lime" is the brand yellow: the colour of "you".
+export { PALETTE as CARD } from './palette';
 export { faceLabels } from './labels';
 
 /** Friends who voted from this share link, and how many picked the same as the sender. Never says who leads. */

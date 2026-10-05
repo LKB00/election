@@ -9,9 +9,12 @@ import { getLang, getT } from '@/lib/lang-server';
 import EmptyState from '@/components/EmptyState';
 import { YouSignIn } from '@/components/Profile';
 import { AskAgainRow, FixTypo, Lengths, MarkOutcome, MilestoneAlert, ResultsCard, ShareLink, Suggestions } from '@/components/MakerTools';
+import { INDIA_TZ, dateLocale } from '@/lib/time';
 
 export const dynamic = 'force-dynamic';
-export const metadata: Metadata = { title: 'Your poll', robots: { index: false, follow: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT()).manageTitle, robots: { index: false, follow: false } };
+}
 
 // The poll maker's page (docs/DESIGN.md, "Poll maker tools"). P1: how it's going (votes, the last day, where votes
 // came from), with sharing as the one main action. Then the results picture once the result is public, suggested
@@ -37,7 +40,7 @@ export default async function ManagePage({ params, searchParams }: { params: Pro
       </div>
     );
   }
-  const when = v.endsAt ? new Date(v.endsAt).toLocaleString(lang === 'hi' ? 'hi-IN' : 'en-IN', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' }) : '';
+  const when = v.endsAt ? new Date(v.endsAt).toLocaleString(dateLocale(lang), { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: INDIA_TZ }) : '';
   const peak = Math.max(1, ...v.byHour);
   const srcTotal = v.sources.reduce((s, x) => s + x.n, 0);
   return (

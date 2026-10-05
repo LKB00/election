@@ -7,6 +7,7 @@ import type { MakerView } from '@/lib/maker';
 import { apiMsg } from '@/lib/i18n';
 import { useLang, useT } from '@/lib/lang';
 import { keyBytes, PUBLIC_KEY } from './ResultAlert';
+import { MAX_CHOICE, MAX_DETAILS, MAX_TITLE } from '@/lib/limits';
 
 // The poll maker's controls (docs/DESIGN.md, "Poll maker tools"). Everything posts to /api/polls/<id>/manage, which
 // checks the profile again; the page refreshes after each change.
@@ -182,14 +183,14 @@ export function FixTypo({ view }: { view: MakerView }) {
   return (
     <form className="maker-edit" onSubmit={save}>
       <label className="create-label" htmlFor="edit-title">{t.yourQuestion}</label>
-      <textarea id="edit-title" className="create-q" rows={2} value={title} maxLength={120} onChange={(e) => setTitle(e.target.value)} />
+      <textarea id="edit-title" className="create-q" rows={2} value={title} maxLength={MAX_TITLE} onChange={(e) => setTitle(e.target.value)} />
       <label className="create-label" htmlFor="edit-desc">{t.details}</label>
-      <input id="edit-desc" className="input" value={description} maxLength={300} onChange={(e) => setDescription(e.target.value)} />
+      <input id="edit-desc" className="input" value={description} maxLength={MAX_DETAILS} onChange={(e) => setDescription(e.target.value)} />
       {!rating && (
         <>
           <span className="create-label">{t.choicesTitle}</span>
           {opts.map((o, n) => (
-            <input key={o.id} className="input" aria-label={t.choiceN(n + 1)} value={o.label} maxLength={60} onChange={(e) => setOpts(opts.map((x) => (x.id === o.id ? { ...x, label: e.target.value } : x)))} />
+            <input key={o.id} className="input" aria-label={t.choiceN(n + 1)} value={o.label} maxLength={MAX_CHOICE} onChange={(e) => setOpts(opts.map((x) => (x.id === o.id ? { ...x, label: e.target.value } : x)))} />
           ))}
         </>
       )}

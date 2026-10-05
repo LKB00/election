@@ -2,15 +2,18 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getLang, getT } from '@/lib/lang-server';
 import { grievanceContact, RULES_UPDATED } from '@/lib/grievance';
+import { INDIA_OFFSET, INDIA_TZ, dateLocale } from '@/lib/time';
 
-export const metadata: Metadata = { title: 'Rules' };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT()).termsTitle };
+}
 
 // The rules and the banned-content list, in the reader's language (the IT Rules ask for both), plus the complaints officer.
 // When this text changes, change RULES_UPDATED too.
 export default async function Terms() {
   const [t, lang] = await Promise.all([getT(), getLang()]);
   const { name, email } = grievanceContact();
-  const updated = new Date(`${RULES_UPDATED}T12:00:00+05:30`).toLocaleDateString(lang === 'hi' ? 'hi-IN' : 'en-IN', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata' });
+  const updated = new Date(`${RULES_UPDATED}T12:00:00${INDIA_OFFSET}`).toLocaleDateString(dateLocale(lang), { day: 'numeric', month: 'long', year: 'numeric', timeZone: INDIA_TZ });
   return (
     <div className="page">
       <header className="page-head page-head-tight">
