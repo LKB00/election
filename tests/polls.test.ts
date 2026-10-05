@@ -585,8 +585,8 @@ describe('photos from the phone', () => {
     const [row] = await db.select().from(schema.photos).where(eq(schema.photos.pollId, id));
     expect(Buffer.from(row.data, 'base64')[0]).toBe(0xff);
   });
-  it('needs the 18+ / permission tick for photos, and comes down at the first photo report', async () => {
-    expect(createPollSchema.safeParse({ title: 'No tick', options: ['A', 'B'], photos: [jpeg, ''] }).success).toBe(false);
+  it('takes photos without a tick (the Rules say who may add them), and comes down at the first photo report', async () => {
+    expect(createPollSchema.safeParse({ title: 'No tick', options: ['A', 'B'], photos: [jpeg, ''] }).success).toBe(true);
     expect(createPollSchema.safeParse({ title: 'No photos', options: ['A', 'B'], photos: ['', ''] }).success).toBe(true);
     const id = await createPoll(db, createPollSchema.parse({ title: 'Photo report', options: ['Mine', 'Yours'], photos: [jpeg, ''], photoConsent: true }));
     await setPollFlags(db, id, { reviewed: true });

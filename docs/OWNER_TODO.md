@@ -82,3 +82,7 @@ Say "continue features" and Claude picks up the next one.
 ## Done
 
 - (Move items here when finished.)
+
+## Photo consent (your decision, Oct 2026)
+
+You asked to remove the "I am 18+, and these photos are of me or of people who said yes" tick from the picture screen. It is gone. The Rules page now says that adding a photo means the person confirms they are 18+ and that everyone in it agreed. Before, each person ticked a box for this, and the site kept no record that they did. Now it rests only on the Rules page. Under India's data-protection and IT rules this is a little weaker. If you can, ask a lawyer whether that is enough for photos of people. Photos are still checked before a poll is shown to everyone, and "This is me, remove it" still takes a photo down at once.

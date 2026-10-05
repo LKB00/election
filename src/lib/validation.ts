@@ -53,7 +53,8 @@ export const createPollSchema = z.object({
   hideUntilVoted: z.boolean().default(true),
   allowChange: z.boolean().default(false),
   electionMode: z.boolean().default(false),
-  // "I am 18+, and these photos are me or I have permission" (DPDP: no children's data; consent for other people's faces).
+  // Was the "I am 18+, and these photos are me or I have permission" tick. Since Oct 2026 (owner) the Rules say it and
+  // adding a photo means confirming it; still accepted from older pages, no longer required.
   photoConsent: z.boolean().default(false),
   kind: z.enum(['choice', 'rating', 'multi', 'rank', 'dates']).default('choice'),
   // Each voter sees the choices in their own order (not for rating scales or dates, which have a natural order).
@@ -73,8 +74,7 @@ export const createPollSchema = z.object({
     .datetime()
     .optional()
     .refine((v) => !v || new Date(v).getTime() > Date.now(), 'The end time must be in the future.'),
-}).refine((p) => !hasBlockedWord(p.title, p.description, ...p.options, ...p.emojis), 'Please remove the abusive words.')
-  .refine((p) => p.photoConsent || !p.photos.some(Boolean), 'Tick "I am 18+" to add photos.');
+}).refine((p) => !hasBlockedWord(p.title, p.description, ...p.options, ...p.emojis), 'Please remove the abusive words.');
 export type CreatePollInput = z.infer<typeof createPollSchema>;
 
 /** Ids and share codes are plain letters, digits, "-" and "_"; anything else (a NUL byte, spaces) is refused early. */

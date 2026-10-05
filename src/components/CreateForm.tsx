@@ -52,8 +52,6 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   const [choices, setChoices] = useState(startChoices);
   // One optional emoji per choice, kept in step with the choices.
   const [emojis, setEmojis] = useState(startChoices.map((_, n) => again?.emojis[n] ?? ''));
-  // An emoji box you have not touched shows a fitting emoji for the name ("Chai" → 🍵); once you type in it, yours wins.
-  const [touched, setTouched] = useState(startChoices.map((_, n) => !!again?.emojis[n]));
   // One optional photo per choice (a small JPEG made on the phone); a photo shows instead of the emoji.
   const [photos, setPhotos] = useState(startChoices.map(() => ''));
   // "Which dates work?": the dates as the phone's date picker gives them (2026-10-12), growing like the choices.
@@ -70,7 +68,8 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   const [showMaker, setShowMaker] = useState(again?.showMaker ?? false);
   // Which choice's picture sheet is open.
   const [picking, setPicking] = useState<number | null>(null);
-  const emojiAt = (i: number) => (touched[i] ? emojis[i] ?? '' : emojis[i] || emojiFor(choices[i] ?? ''));
+  // Only what the person picked (owner: nothing shown before you choose); the fitting emoji is offered first in the picker.
+  const emojiAt = (i: number) => emojis[i] ?? '';
   const [endsAt, setEndsAt] = useState('');
   const [hideUntilVoted, setHide] = useState(true); // on by default: guess first, then see (the guess game)
   const [allowChange, setChange] = useState(false);
@@ -80,8 +79,6 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   const isGroup = Number.isFinite(groupN) && groupN >= 2 && groupN <= MAX_GROUP;
   // Election mode: the full booth ritual for this poll. Politics polls get it anyway (the server decides that).
   const [electionMode, setElectionMode] = useState(false);
-  // "I am 18+, and these photos are me or people who said yes": ticked once in the picture sheet, before any photo.
-  const [photoConsent, setPhotoConsent] = useState(false);
   // What kind of question: pick one of your choices, or rate it 1–5 with faces.
   const [kind, setKind] = useState<PollKind>(again?.kind ?? 'choice');
   const isRating = kind === 'rating';
@@ -135,26 +132,22 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
     setChoices((c) => [...c.map((x, j) => (j === i ? v : x)), ...(grow ? [''] : [])]);
     if (grow) {
       setEmojis((e) => [...e, '']);
-      setTouched((d) => [...d, false]);
       setPhotos((x) => [...x, '']);
     }
   };
   const setPicture = (i: number, p: Picture) => {
     setEmojis((e) => e.map((x, j) => (j === i ? p.emoji.trim() : x)));
-    setTouched((d) => d.map((x, j) => (j === i ? true : x)));
     setPhotos((x) => x.map((v, j) => (j === i ? p.photo : v)));
   };
   const removeChoice = (i: number) => {
     setChoices((x) => x.filter((_, j) => j !== i));
     setEmojis((x) => x.filter((_, j) => j !== i));
-    setTouched((x) => x.filter((_, j) => j !== i));
     setPhotos((x) => x.filter((_, j) => j !== i));
   };
   const fill = (next: string[]) => {
     const list = [...next, ...(next.length < MAX_CHOICES ? [''] : [])];
     setChoices(list);
     setEmojis(list.map(() => ''));
-    setTouched(list.map(() => false));
     setPhotos(list.map(() => ''));
     setFieldError({});
   };
@@ -241,7 +234,6 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
         allowChange,
         electionMode,
         groupSize: isGroup ? groupN : undefined,
-        photoConsent,
         // A group poll with no end time would wait forever for one missing friend: it ends in 3 days unless you pick a time.
         endsAt: endsAt ? new Date(endsAt).toISOString() : isGroup ? new Date(Date.now() + GROUP_DEFAULT_DAYS * 86_400_000).toISOString() : undefined,
       }),
@@ -379,9 +371,8 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
                     {/* The choice's picture: tap for emoji suggestions, popular emoji, or a photo from the phone. */}
                     <button
                       type="button"
-                      className={'face-pick' + (photos[i] ? ' has-photo' : emojiAt(i) ? (touched[i] ? ' has-emoji' : ' has-emoji is-auto') : '')}
+                      className={'face-pick' + (photos[i] ? ' has-photo' : emojiAt(i) ? ' has-emoji' : '')}
                       aria-label={t.pictureN(i + 1)}
-                      title={!touched[i] && !photos[i] && emojiAt(i) ? t.emojiAuto : undefined}
                       onClick={() => setPicking(i)}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -512,8 +503,6 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
           suggested={emojiFor(choices[picking] ?? '')}
           onChange={(p) => setPicture(picking, p)}
           onClose={() => setPicking(null)}
-          consent={photoConsent}
-          onConsent={setPhotoConsent}
         />
       )}
       {ask && (

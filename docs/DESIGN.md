@@ -1035,3 +1035,10 @@ Top to bottom: who you are (profile card, Edit profile) → **Your polls** (P1: 
 ### Edit profile: its own sheet (owner, Oct 2026: "when I click on edit profile why are options visible, this screen should be about edit profile")
 
 "Edit profile" opens a sheet over the dimmed page (it used to open inside the card, with the polls, sign out and the rest still around it): "Edit profile", the picked face large, Your name, Pick a face, **Save** (ink) and **Cancel**, and × / Back / Escape to close. Nothing else can be tapped while it is open. After Save the card shows the new name and face at once (the API returns the saved profile).
+
+### Picture for a choice, simpler (owner, Oct 2026: four points on the picker)
+
+1. **No "I am 18+…" tick in the picker.** The Rules (Photos) say who may add photos, and now also: "Adding a photo means you confirm you are 18 or older and that everyone in it said yes." The server no longer asks for the tick (older pages may still send it).
+2. **No separate "Photo from your phone" button.** The first tile of the grid adds a photo (camera or gallery), the same size as an emoji tile.
+3. **No "Or type any emoji" box.** The grid (suggested emoji first, then popular ones, five full rows) is the choice; "Remove picture" shows only once something is chosen.
+4. **Nothing shown before you choose.** The preview at the top is an empty dashed "add" circle until you pick, and the choice rows on Create no longer fill in an emoji by themselves (🍕 for "Pizza"): the fitting emoji is offered first in the grid instead. Without a picture, the ballot shows the choice's letters.
