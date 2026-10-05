@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   if (!body?.id || !ch) return NextResponse.json({ error: 'That took too long. Try again.' }, { status: 400 });
   const db = await getDb();
   const key = await findPasskey(db, String(body.id));
-  if (!key) return NextResponse.json({ error: 'No profile found for this passkey.' }, { status: 404 });
+  if (!key) return NextResponse.json({ error: 'We could not find your profile on this phone. Try the phone you made it on, or make a new profile.' }, { status: 404 });
   const { rpID, origin } = await relyingParty();
   try {
     const v = await verifyAuthenticationResponse({

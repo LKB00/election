@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import type { Dict, Lang } from '@/lib/i18n';
 import type { PackSummary } from '@/lib/packs';
+import { INDIA_TZ, dateLocale } from '@/lib/time';
 
 // "Tonight" on Home: the match-day and show-night packs about to start (or just started), as Arogya list rows.
 export default function PackRows({ packs, t, lang }: { packs: PackSummary[]; t: Dict; lang: Lang }) {
@@ -9,7 +10,7 @@ export default function PackRows({ packs, t, lang }: { packs: PackSummary[]; t: 
     <ul className="al-listcard">
       {packs.map((p) => {
         const started = new Date(p.startsAt).getTime() <= Date.now();
-        const when = new Date(p.startsAt).toLocaleString(lang === 'hi' ? 'hi-IN' : 'en-IN', { weekday: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' });
+        const when = new Date(p.startsAt).toLocaleString(dateLocale(lang), { weekday: 'short', hour: 'numeric', minute: '2-digit', timeZone: INDIA_TZ });
         return (
           <li key={p.id}>
             <Link href={`/pack/${p.id}`} className="al-row">

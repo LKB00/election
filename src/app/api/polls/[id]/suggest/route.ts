@@ -1,3 +1,4 @@
+import { ERR } from '@/lib/limits';
 import { NextResponse } from 'next/server';
 import { getDb } from '@/db';
 import { suggest } from '@/lib/maker';
@@ -6,13 +7,14 @@ import { suggestSchema } from '@/lib/validation';
 
 // "Suggest a choice": waits for the poll maker, who adds it or not. Nobody else sees it until then.
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (!(await rateLimit(`suggest:${clientIp(req)}`, 5, 10 * 60_000))) return NextResponse.json({ error: 'Slow down a little.' }, { status: 429 });
+  if (!(await rateLimit(`suggest:${clientIp(req)}`, 5, 10 * 60_000))) return NextResponse.json({ error: 'Too many taps. Wait a few seconds and try again.' }, { status: 429 });
   const { id } = await params;
   const parsed = suggestSchema.safeParse(await req.json().catch(() => null));
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'A choice is empty.' }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'One choice is empty. Fill it in or remove it.' }, { status: 400 });
   const r = await suggest(await getDb(), id, parsed.data.label);
   if (r === 'not_found') return NextResponse.json({ error: 'Poll not found.' }, { status: 404 });
-  if (r === 'off') return NextResponse.json({ error: 'This poll has ended.' }, { status: 409 });
-  if (r === 'full') return NextResponse.json({ error: 'At most 10 choices.' }, { status: 409 });
+  if (r === 'closed') return NextResponse.json({ error: 'This poll has ended.' }, { status: 409 });
+  if (r === 'off') return NextResponse.json({ error: 'This poll does not take suggestions.' }, { status: 409 });
+  if (r === 'full') return NextResponse.json({ error: ERR.manyChoices }, { status: 409 });
   return NextResponse.json({ ok: true, exists: r === 'exists' });
 }

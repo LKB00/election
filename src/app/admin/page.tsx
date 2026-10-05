@@ -10,7 +10,9 @@ import { getStats } from '@/lib/stats';
 import EmptyState from '@/components/EmptyState';
 
 export const dynamic = 'force-dynamic';
-export const metadata: Metadata = { title: 'Review', robots: { index: false, follow: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT()).adminTitle, robots: { index: false, follow: false } };
+}
 
 // The owner's review page: /admin?key=<ADMIN_SECRET>. Anyone else gets "not found".
 // Reported duels first, then new duels nobody has checked. Hide takes one down at once.

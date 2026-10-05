@@ -15,10 +15,24 @@ export default function TopBar() {
   // EVM beep on/off. Read after loading, so the server page and the phone agree.
   const [sound, setS] = useState(true);
   useEffect(() => setS(soundOn()), []);
-  const back = path.startsWith('/p/') ? { to: '/', name: t.home } : null;
+  // Back: your poll's page goes back to You; a poll, pack, topic or maker page goes back where you came from inside the
+  // site (Polls, My votes, a topic…), or Home when the link was opened from outside (WhatsApp).
+  const managing = /^\/p\/[^/]+\/manage/.test(path);
+  const backable = managing || ['/p/', '/pack/', '/topic/', '/u/'].some((x) => path.startsWith(x));
+  const [fromSite, setFromSite] = useState(false);
+  useEffect(() => {
+    try {
+      setFromSite(!!document.referrer && new URL(document.referrer).host === window.location.host && window.history.length > 1);
+    } catch {
+      setFromSite(false);
+    }
+  }, [path]);
+  const back = !backable ? null : managing ? { to: '/you', name: t.you } : fromSite ? { to: null, name: t.back } : { to: '/', name: t.home };
   // Create opens full screen (the "+" action, not a tab): a × takes you back to where you were.
   const creating = path.startsWith('/create');
   const close = () => (window.history.length > 1 ? router.back() : router.push('/'));
+  // The big-screen view (/p/<id>/tv) is the whole screen: no bars (after the hooks above, which must always run).
+  if (path.endsWith('/tv')) return null;
   return (
     <header className="topnav">
       <div className={'topnav-inner' + (back || creating ? ' has-back' : '')}>
@@ -27,16 +41,20 @@ export default function TopBar() {
             <X size={20} strokeWidth={2} aria-hidden /> {t.close}
           </button>
         )}
-        {back && (
+        {back && (back.to ? (
           <Link href={back.to} className="topnav-back">
             <ChevronLeft size={20} strokeWidth={2} aria-hidden /> {back.name}
           </Link>
-        )}
-        <Link href="/" className="logo" aria-label="Election, home">
+        ) : (
+          <button type="button" className="topnav-back" onClick={() => router.back()}>
+            <ChevronLeft size={20} strokeWidth={2} aria-hidden /> {back.name}
+          </button>
+        ))}
+        <Link href="/" className="logo" aria-label={t.logoHome}>
           <span className="logo-mark" aria-hidden />
-          <span className="logo-text"><span className="logo-full">Election</span></span>
+          <span className="logo-text"><span className="logo-full">{t.siteName}</span></span>
         </Link>
-        <nav className="topnav-links" aria-label="Main">
+        <nav className="topnav-links" aria-label={t.navMain}>
           <Link href="/polls" className={path.startsWith('/polls') ? 'active' : ''}>{t.duels}</Link>
           <Link href="/create" className={'topnav-create' + (creating ? ' active' : '')}><Plus size={15} strokeWidth={2.25} aria-hidden /> {t.create}</Link>
           <Link href="/me" className={path === '/me' ? 'active' : ''}>{t.myVotes}</Link>

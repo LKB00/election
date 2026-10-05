@@ -9,7 +9,7 @@ import { getOrCreateVoterId } from '@/lib/voter';
 // "Report this duel": one report per person per duel. Enough reports take an unreviewed duel down at once.
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await rateLimit(`report:${clientIp(req)}`, 10, 60 * 60_000))) {
-    return NextResponse.json({ error: 'Slow down a little.' }, { status: 429 });
+    return NextResponse.json({ error: 'Too many taps. Wait a few seconds and try again.' }, { status: 429 });
   }
   const { id } = await params;
   const parsed = reportSchema.safeParse(await req.json().catch(() => null));

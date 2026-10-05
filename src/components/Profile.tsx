@@ -9,19 +9,20 @@ import { useLang, useT } from '@/lib/lang';
 import dynamic from 'next/dynamic';
 import { SignInPanel } from './SignIn';
 import Spot from './Spot';
+import { MAX_NAME } from '@/lib/limits';
 
 const SignInSheet = dynamic(() => import('./SignIn'), { ssr: false });
 
 // The You page's moving parts (docs/DESIGN.md, "Profiles").
 
 /** Signed out: the profile screen right on the page; when it is done, the page shows the profile. */
-export function YouSignIn({ full = false }: { full?: boolean }) {
+export function YouSignIn({ full = false, startBack = false }: { full?: boolean; startBack?: boolean }) {
   const router = useRouter();
   const t = useT();
   const [open, setOpen] = useState<null | 'new' | 'back'>(null);
   // The maker's page (signed out) shows the whole screen; the You tab starts calm: the picture, the one promise that
   // matters most, one button. The name, faces and the other promises open in the sheet only when tapped.
-  if (full) return <SignInPanel onPage onDone={() => router.refresh()} />;
+  if (full) return <SignInPanel onPage startBack={startBack} onDone={() => router.refresh()} />;
   return (
     <div className="spot-empty">
       <Spot kind="lock" />
@@ -72,7 +73,7 @@ export function ProfileCard({ user }: { user: Profile }) {
   return (
     <form className="profile-card is-editing" onSubmit={save}>
       <label className="create-label" htmlFor="profile-name">{t.yourName}</label>
-      <input id="profile-name" className="input" value={name} maxLength={30} autoComplete="nickname" onChange={(e) => setName(e.target.value)} />
+      <input id="profile-name" className="input" value={name} maxLength={MAX_NAME} autoComplete="nickname" onChange={(e) => setName(e.target.value)} />
       <fieldset className="signin-faces">
         <legend className="create-label">{t.pickFace}</legend>
         {AVATARS.map((a) => (

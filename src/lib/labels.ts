@@ -4,9 +4,18 @@
 const graphemes = (text: string) =>
   typeof Intl !== 'undefined' && 'Segmenter' in Intl ? [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(text)].map((s) => s.segment) : [...text];
 
+const INDIC = /[\u0900-\u0DFF]/;
+// Hindi (and other Indian scripts): one whole first letter with its vowel sign ("पुष्पा तीन" → "पु"). Two initials
+// read as a different word ("पत"), and a bare consonant drops the vowel mark.
+const indicFirst = (label: string, n: number) => {
+  const word = label.split(/\s+/).map((w) => w.replace(/[^\p{L}\p{M}\p{N}]/gu, '')).find(Boolean) ?? '';
+  return graphemes(word).slice(0, n).join('');
+};
+
 // Only letters and digits count, so "🍕 Pizza" is "P" and a flag never leaves half a character behind.
 // A choice that is only an emoji ("🔥") shows that whole emoji.
 export const initialsOf = (label: string) =>
+  (INDIC.test(label) && indicFirst(label, 1)) ||
   label
     .split(/\s+/)
     .map((w) => [...w.replace(/[^\p{L}\p{N}]/gu, '')][0])
@@ -31,6 +40,7 @@ export function clip(text: string, max: number): string {
 }
 
 const firstTwo = (label: string) => {
+  if (INDIC.test(label)) return indicFirst(label, 2);
   const letters = [...label.replace(/[^\p{L}\p{N}]/gu, '')];
   return letters.length ? letters[0]!.toUpperCase() + (letters[1] ?? '').toLowerCase() : '';
 };

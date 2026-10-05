@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import DuelGame from '@/components/DuelGame';
 import EmptyState from '@/components/EmptyState';
+import Splash from '@/components/Splash';
+import Onboarding from '@/components/Onboarding';
 import RulesNotice from '@/components/RulesNotice';
 import DuelTiles from '@/components/DuelTiles';
 import PackRows from '@/components/PackRows';
@@ -18,9 +20,10 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata(): Promise<Metadata> {
   const featured = await getFeaturedId(await getDb());
   const images = featured ? [{ url: `/api/og/${featured}`, width: 1200, height: 630 }] : undefined;
+  const t = await getT();
   return {
     alternates: await langAlternates('/'),
-    openGraph: { title: 'Election · What does everyone think?', description: 'Ask anything. Vote in one tap, then see what everyone thinks. Just for fun.', images },
+    openGraph: { title: `${t.siteName} · ${t.splashLine}`, description: t.metaDesc, images },
     twitter: { card: 'summary_large_image', images: images?.map((i) => i.url) },
   };
 }
@@ -56,8 +59,12 @@ export default async function Home() {
 
   // An empty site shows only its empty state: no greeting, no rules reminder (nothing to be kind about yet).
   const empty = deck.length === 0 && !tonight.length && !hot.length && !shelves.length && !polls.length;
+  // The first time a phone opens Home (or the first time since a new onboarding version): the splash, then three short
+  // cards. Decided on the phone (it remembers having seen them). Never on a shared poll link.
   return (
     <div className="page page-wide">
+      <Splash firstRun name={t.siteName} line={t.splashLine} />
+      <Onboarding />
       {!empty && (
         <header className="al-home">
           <p className="al-home__date" suppressHydrationWarning>{t.homeDate(new Date())}</p>
@@ -65,7 +72,7 @@ export default async function Home() {
         </header>
       )}
       {deck.length > 0 && (
-        <section className="home-game duel-first" aria-label="Duel">
+        <section className="home-game duel-first" aria-label={t.pollRegion}>
           <DuelGame deck={deck} todayId={todayId} daily more={more} />
         </section>
       )}

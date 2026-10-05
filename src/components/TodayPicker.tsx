@@ -1,13 +1,14 @@
 'use client';
 import { useState } from 'react';
 import { useLang, useT } from '@/lib/lang';
+import { INDIA_OFFSET, INDIA_TZ, dateLocale, monthStyle } from '@/lib/time';
 
 type P = { id: string; title: string };
 type Planned = P & { day: string };
 
 // "Sun 8 Nov": the day a plan is for (India dates, no time zone shifts: it is a calendar day, not a moment).
 const dayName = (day: string, lang: string) =>
-  new Date(`${day}T12:00:00+05:30`).toLocaleDateString(lang === 'hi' ? 'hi-IN' : 'en-IN', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' });
+  new Date(`${day}T12:00:00${INDIA_OFFSET}`).toLocaleDateString(dateLocale(lang), { weekday: 'short', day: 'numeric', month: monthStyle(lang), timeZone: INDIA_TZ });
 
 // The owner's "Today's question" picker on /admin: the current one, what is planned for later days (festivals, match
 // days: they take over by themselves that morning), then the newest polls with "Make today's question" and a date box.

@@ -5,6 +5,7 @@ import { CARD, cardFonts, faceLabels } from '@/lib/cards';
 import { clip, drawable } from '@/lib/labels';
 import { getPoll } from '@/lib/polls';
 import { cardDict } from '@/lib/i18n';
+import { sharesAddUp, wholePercents } from '@/lib/percent';
 import { ratingAverage, ratingEmoji } from '@/lib/rating';
 
 export const dynamic = 'force-dynamic';
@@ -19,15 +20,18 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const poll = await getPoll(await getDb(), id, null);
   if (!poll || !poll.resultsVisible || !poll.participants || poll.groupWaiting) return new Response('Not found', { status: 404 });
   const target = `${url.origin}/p/${id}?src=qr`;
-  const qr = await QRCode.toDataURL(target, { margin: 1, width: 300, color: { dark: CARD.ink, light: '#ffffff' } });
+  const qr = await QRCode.toDataURL(target, { margin: 1, width: 300, color: { dark: CARD.ink, light: CARD.white } });
   const faces = faceLabels(poll.options.map((o) => o.label)).map((f, n) => poll.options[n].emoji ?? (drawable(f) ? f : String(n + 1)));
   const rows = poll.options.map((o, n) => ({ o, n, face: faces[n] })).sort((a, b) => b.o.percent - a.o.percent || b.o.maybe - a.o.maybe).slice(0, 5);
   const avg = poll.kind === 'rating' ? ratingAverage(poll.options.map((o) => o.votes)) : null;
   const top = rows[0];
+  // Pick-one shares add up to 100 (as on the poll page); others are rounded one by one.
+  const whole = sharesAddUp(poll.kind) ? wholePercents(poll.options.map((o) => o.percent)) : poll.options.map((o) => Math.round(o.percent));
+  const pctOf = (id: string) => whole[poll.options.findIndex((o) => o.id === id)] ?? 0;
   const headline =
     poll.kind === 'rating' && avg != null ? t.cardAverage(ratingEmoji(avg), avg.toFixed(1))
     : poll.kind === 'dates' && top && drawable(top.o.label) ? t.cardBestDate(clip(top.o.label, 22))
-    : top && drawable(top.o.label) ? t.cardLeader(clip(top.o.label, 22), Math.round(top.o.percent))
+    : top && drawable(top.o.label) ? t.cardLeader(clip(top.o.label, 22), pctOf(top.o.id))
     : t.cardResultsIn;
 
   return new ImageResponse(
@@ -36,7 +40,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center', fontSize: 40, fontWeight: 700 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <div style={{ display: 'flex', width: 40, height: 40, borderRadius: 20, background: CARD.ink, border: `10px solid ${CARD.lime}` }} />
-            Election
+            {t.siteName}
           </div>
           <div style={{ display: 'flex', padding: '10px 24px', borderRadius: 999, background: CARD.lime, fontSize: 30 }}>{t.cardResultsIn}</div>
         </div>
@@ -45,9 +49,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         <div style={{ display: 'flex', marginTop: 56, fontSize: 76, fontWeight: 700, letterSpacing: -2, lineHeight: 1.1 }}>{headline}</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24, marginTop: 56, padding: 32, borderRadius: 40, background: CARD.sand }}>
           {rows.map(({ o, n, face }, k) => {
-            const pct = Math.round(o.percent);
+            const pct = pctOf(o.id);
             return (
-              <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 24, padding: 20, borderRadius: 28, background: '#ffffff', border: k === 0 ? `6px solid ${CARD.ink}` : '6px solid transparent' }}>
+              <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 24, padding: 20, borderRadius: 28, background: CARD.white, border: k === 0 ? `6px solid ${CARD.ink}` : '6px solid transparent' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 96, height: 96, borderRadius: 48, background: CARD.tints[n % CARD.tints.length], fontSize: o.emoji ? 56 : 44, fontWeight: 700 }}>{face}</div>
                 <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: 12 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 40, fontWeight: 700 }}>

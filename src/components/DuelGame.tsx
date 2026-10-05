@@ -1,7 +1,7 @@
 'use client';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { ArrowRight, CalendarPlus, Check, Flag, Lock, Plus, Repeat, Share2, Target, Users } from 'lucide-react';
+import { ArrowRight, CalendarPlus, Check, Flag, Lock, Plus, Repeat, Share2, Target, Trophy, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type { PollOption, PollView } from '@/lib/polls';
@@ -24,6 +24,8 @@ import SuggestChoice from './SuggestChoice';
 import PeopleGrid from './PeopleGrid';
 import ResultAlert from './ResultAlert';
 import GroupWait from './GroupWait';
+import { INDIA_TZ, dateLocale, monthStyle } from '@/lib/time';
+import { sharesAddUp, wholePercents } from '@/lib/percent';
 
 // Duels, played like patricka's "This or That": tap a card, see the result on the
 // cards, then "Next duel". Results stay hidden until you vote.
@@ -51,13 +53,7 @@ let votesThisVisit = 0;
 /** Whole-number percentages that always add up to 100. */
 function rounded(opts: PollOption[], total: number, counts?: Record<string, number>) {
   if (!total) return opts.map(() => 0);
-  const raw = counts ? opts.map((o) => ((counts[o.id] ?? 0) / total) * 100) : opts.map((o) => o.percent);
-  const out = raw.map(Math.floor);
-  let left = 100 - out.reduce((s, n) => s + n, 0);
-  raw.map((r, i) => [r - Math.floor(r), i] as const).sort((a, b) => b[0] - a[0]).forEach(([, i]) => {
-    if (left-- > 0) out[i]++;
-  });
-  return out;
+  return wholePercents(counts ? opts.map((o) => ((counts[o.id] ?? 0) / total) * 100) : opts.map((o) => o.percent));
 }
 
 function verdict(t: Dict, poll: PollView, mine: PollOption): [string, string] {
@@ -166,7 +162,7 @@ function Tween({ value, render }: { value: number; render: (v: number) => string
 
 // "Sealed till 5 Feb, 6:00 pm": India time, so the server page and the phone print the same.
 const sealedWhen = (iso: string, lang: Lang) =>
-  new Date(iso).toLocaleString(lang === 'hi' ? 'hi-IN' : 'en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' });
+  new Date(iso).toLocaleString(dateLocale(lang), { day: 'numeric', month: monthStyle(lang), hour: 'numeric', minute: '2-digit', timeZone: INDIA_TZ });
 
 // "Report this duel" (P3, last on the screen): one tap opens the reasons, one more sends it.
 function ReportDuel({ pollId, t, lang }: { pollId: string; t: Dict; lang: Lang }) {
@@ -303,6 +299,8 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
   const revealed = !!poll && !casting && poll.resultsVisible && (voted || poll.closed);
   // Election silence window: no numbers for anyone, but the pinned bar still offers Share and Next.
   const sealed = !!poll?.sealedUntil;
+  // Hidden results shown straight after the vote, with no crowd guess first: no undo (undoVote in polls.ts says the same).
+  const seenAtOnce = poll?.hideUntilVoted && !poll?.sealedUntil && (poll?.calledIt || poll?.kind === 'dates' || (!!poll?.groupSize && !poll?.groupWaiting));
   // A sealed poll or a group poll still waiting: the bar keeps Share and Next even without numbers.
   const barOn = revealed || (!casting && (sealed || !!poll?.groupWaiting) && (voted || !!poll?.closed));
   const votedCount = deck.filter((p) => p.myVote !== null).length;
@@ -334,7 +332,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
   const shownTotal = shown ? Object.values(shown).reduce((a, b) => a + b, 0) : poll?.totalVotes ?? 0;
   // Pick several: each bar is the share of voters who ticked it (they add up to more than 100%).
   const pcts = useMemo(
-    () => (poll ? (poll.kind === 'multi' || poll.kind === 'rank' ? poll.options.map((o) => Math.round(o.percent)) : rounded(poll.options, shownTotal, shown ?? undefined)) : []),
+    () => (poll ? (!sharesAddUp(poll.kind) ? poll.options.map((o) => Math.round(o.percent)) : rounded(poll.options, shownTotal, shown ?? undefined)) : []),
     [poll, shownTotal, shown],
   );
   const votesOf = (o: PollOption) => (shown ? shown[o.id] ?? 0 : o.votes);
@@ -359,9 +357,6 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
   const leaderIdx = dates ? bestDate : revealed && poll && poll.totalVotes > 0 && pcts.filter((v) => v === top).length === 1 ? pcts.indexOf(top) : -1;
   // The race line follows the choice in the swing line (else the leader). Two-choice duels only (the trend is the first choice's share).
   const sparkOpt = poll ? poll.options.find((o) => o.id === poll.swing?.optionId) ?? (leaderIdx >= 0 ? poll.options[leaderIdx] : poll.options[0]) : null;
-  // Declared result: the winner and the margin over the runner-up, in votes.
-  const sortedVotes = poll ? poll.options.map((o) => o.votes).sort((a, b) => b - a) : [];
-  const margin = sortedVotes.length > 1 ? sortedVotes[0] - sortedVotes[1] : sortedVotes[0] ?? 0;
   // A declared result gets one celebration, the first time you see it.
   const [declaredBurst, setDeclaredBurst] = useState(false);
   useEffect(() => {
@@ -480,7 +475,8 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
         queued.current = null;
         setMsg('');
         setBusy(null);
-        vote(optionId);
+        // The whole vote goes out (every tick and "if need be" date), not just the first choice.
+        vote(optionId, picks, maybeList);
       };
       queued.current = retry;
       window.addEventListener('online', retry, { once: true });
@@ -635,6 +631,16 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
     } else setMsg(data?.error ? apiMsg(lang, data.error) : t.saveFail2);
   }
 
+  // A shared poll page (/p/<id>): after Next, the address (and Refresh, and the page's own header) follow the poll on
+  // screen, so "Asked by …" never sits above someone else's poll.
+  useEffect(() => {
+    if (!poll || typeof window === 'undefined' || !window.location.pathname.startsWith('/p/')) return;
+    if (window.location.pathname !== `/p/${poll.id}`) {
+      history.replaceState(history.state, '', `/p/${poll.id}`);
+      window.dispatchEvent(new CustomEvent('election:poll', { detail: poll.id }));
+    }
+  }, [poll?.id]);
+
   // Next: the next live duel you have not voted in (wraps around), else "all caught up".
   // Always brings the top of the game into view, so the new question is the first thing you see.
   function next() {
@@ -760,7 +766,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
         <p className="tot-verdict">{t.allDoneNote}</p>
         <div className="row wrap center">
           <Link href="/create" className="btn btn-primary btn-lg"><Plus size={15} strokeWidth={1.75} aria-hidden /> {t.startOwn}</Link>
-          <button type="button" className="btn btn-ghost btn-lg" onClick={() => { setOver(false); setI(0); }}>{t.seeResults}</button>
+          <Link href="/me" className="btn btn-ghost btn-lg">{t.seeYourVotes}</Link>
         </div>
       </div>
     );
@@ -777,6 +783,31 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
   const ballot = poll.options.length >= 3;
   const happened = poll.calledIt ? poll.outcome : null;
   const happenedIdx = happened ? poll.options.findIndex((o) => o.id === happened) : -1;
+  // The final result card (docs/DESIGN.md, "Final result first"): what won, by how much, and what you picked.
+  // (A 1–5 faces poll already opens on its average, so it needs no second card.)
+  const finalOn = poll.closed && revealed && !counting && !rating;
+  const avg = rating ? ratingAverage(poll.options.map((o) => o.votes)) : null;
+  const tied = leaderIdx < 0 && poll.totalVotes > 0 && !rating ? poll.options.filter((_, n) => pcts[n] === top).map((o) => o.label) : [];
+  const winner = happenedIdx >= 0 ? poll.options[happenedIdx] : leaderIdx >= 0 ? poll.options[leaderIdx] : null;
+  const finalHead =
+    happenedIdx >= 0 ? t.finalHappened(poll.options[happenedIdx].label)
+    : !poll.totalVotes ? t.nobody
+    : rating && avg != null ? `${ratingEmoji(avg)} ${t.rateAvg(avg.toFixed(1))}`
+    : dates && winner ? `${t.bestDate}: ${winner.label}`
+    : winner ? `${winner.label}`
+    : tied.length ? t.finalTie(tied.join(', '))
+    : t.tie;
+  const finalSub =
+    happenedIdx >= 0 ? (mine ? (mine.id === happened ? t.calledRight(pcts[happenedIdx]) : t.calledWrong(pcts[happenedIdx])) : pcts[happenedIdx] ? t.calledPct(pcts[happenedIdx]) : t.calledNobody)
+    : !poll.totalVotes ? ''
+    : rating ? t.rateFrom(poll.participants)
+    : dates && winner ? t.datesResult(winner.votes, winner.maybe)
+    : ranking && winner ? t.finalRankSub(poll.participants)
+    : winner ? t.finalShare(pcts[leaderIdx], poll.participants)
+    : t.votes(poll.participants);
+  // Your pick (the yellow "you" line); for "Called it" the line above already says how you did.
+  const finalWon = !!mine && !!winner && happenedIdx < 0 && !rating && mine.id === winner.id;
+  const finalYou = happenedIdx >= 0 || !mine || ranking || multi || dates ? '' : finalWon ? `${t.finalYouWon} · ${mine.emoji ? `${mine.emoji} ` : ''}${mine.label}` : t.finalYou(rating ? `${mine.emoji ?? ''} ${mine.label}`.trim() : mine.label);
   const numbered = poll.electionMode || ranking;
   // The duel that Next will open (the same rule as goNext): named in the bar, so Next is an invitation, not a guess.
   const upNext = deck.length > 1 ? [...deck.keys()].map((k) => deck[(i + 1 + k) % deck.length]).find((p) => p.id !== poll.id && isOpen(p)) ?? null : null;
@@ -827,6 +858,16 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
           {fresh && fresh.id === poll.id && <span className="duel-fresh"> · {t.newVotes(fresh.n)}</span>}
         </p>
       </div>
+
+      {/* An ended poll opens on its result (P1 of an ended poll): the answer first, then the details below. */}
+      {finalOn && (
+        <section className={'final-card' + (poll.electionMode ? ' is-election' : '')} aria-labelledby="final-head">
+          <p className="label final-eyebrow"><Trophy size={14} strokeWidth={2} aria-hidden /> {poll.electionMode ? t.declaredTitle : t.finalTitle}</p>
+          <p className="final-head" id="final-head" lang={hindiText(finalHead)}>{finalHead}</p>
+          {finalSub && <p className="small muted final-sub">{finalSub}</p>}
+          {finalYou && <p className={'final-you' + (finalWon ? ' is-won' : '')}>{finalWon && <Check size={14} strokeWidth={2.5} aria-hidden />} {finalYou}</p>}
+        </section>
+      )}
 
       {poll.friend.known && !voted && (
         <p className="small duel-friend"><Users size={14} strokeWidth={1.75} aria-hidden /> {t.friendSealed}</p>
@@ -882,7 +923,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
               <button
                 key={o.id}
                 type="button"
-                className={'tot-option duel-option' + (isMine || ticked ? ' is-mine' : '') + (maybe ? ' is-maybe' : '') + (revealed && !isMine ? ' is-other' : '') + (busy === o.id ? ' is-busy' : '')}
+                className={'tot-option duel-option' + (isMine ? ' is-mine' : ticked ? ' is-ticked' : '') + (maybe ? ' is-maybe' : '') + (revealed && !isMine ? ' is-other' : '') + (busy === o.id ? ' is-busy' : '')}
                 // --i: the order the result builds in (your pick first, then the rest), so the eye lands on you.
                 style={{ '--pc': `var(--p-${TONES[n % TONES.length]})`, '--dc': `var(--d-${TONES[n % TONES.length]})`, '--i': isMine ? 0 : n + 1 } as React.CSSProperties}
                 onClick={() => (multi ? toggleTick(o.id) : vote(o.id))}
@@ -924,7 +965,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
                 {!revealed && !poll.closed && (
                   <span className="evm-row" aria-hidden>
                     <span className={'evm-led' + (isMine || ticked ? ' is-on' : '')} />
-                    <span className="evm-btn">{dates && !voted ? (ticked ? t.datesWorks : maybe ? t.datesMaybe : t.datesNo) : multi && !voted ? (ranking ? (ticked ? t.rankRemove : t.rankNext(ticks.length + 1)) : ticked ? t.multiTicked : t.multiTick) : isMine ? t.voted : t.vote}</span>
+                    <span className="evm-btn">{dates && !voted ? (ticked ? t.datesWorks : maybe ? t.datesMaybe : ticks.length + maybes.length ? t.datesNo : t.datesTap) : multi && !voted ? (ranking ? (ticked ? t.rankRemove : t.rankNext(ticks.length + 1)) : ticked ? t.multiTicked : t.multiTick) : isMine ? t.voted : t.vote}</span>
                   </span>
                 )}
                 {justVoted === o.id && !counting && <Burst />}
@@ -1078,24 +1119,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
               {sealed && !revealed && undoUntil > 0 && !poll.closed && voted && (
                 <button type="button" className="link-like duel-undo small muted" onClick={undo}>{t.undoVote}</button>
               )}
-              {revealed && happenedIdx >= 0 && (
-                <>
-                  <strong>{t.calledResult(poll.options[happenedIdx].label)}</strong>{' '}
-                  {mine ? (mine.id === happened ? <strong className="txt-good">{t.calledRight(pcts[happenedIdx])}</strong> : t.calledWrong(pcts[happenedIdx])) : pcts[happenedIdx] ? t.calledPct(pcts[happenedIdx]) : t.calledNobody}
-                  {mine && <br />}
-                </>
-              )}
-              {revealed && poll.closed && happenedIdx < 0 && (
-                <>
-                  <strong>{poll.electionMode ? t.declared : t.finalResult}</strong>{' '}
-                  {leaderIdx >= 0
-                    ? t.winsBy(poll.options[leaderIdx].label, margin)
-                    : poll.totalVotes
-                      ? t.tie
-                      : t.nobody}
-                  {mine && <br />}
-                </>
-              )}
+              {/* An ended poll's result (and a "Called it" answer) is the card at the top, not repeated here. */}
               {revealed && mine ? (
                 <>
                   {poll.myGuess && (
@@ -1118,13 +1142,14 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
                       <br />
                     </span>
                   )}
-                  {happenedIdx < 0 && <><strong className={rareNow ? 'is-rare' : undefined}>{vTitle}</strong> {vLine}</>}
+                  {/* "Can your friends change that?" is for a running poll; an ended one has its card at the top. */}
+                  {happenedIdx < 0 && !poll.closed && <><strong className={rareNow ? 'is-rare' : undefined}>{vTitle}</strong> {vLine}</>}
                   {poll.friends.agree + poll.friends.disagree > 0 && (
                     <span className="small muted">
                       {' '}{t.dares(poll.friends.agree + poll.friends.disagree, poll.friends.agree, poll.friends.disagree)}
                     </span>
                   )}
-                  {undoUntil > 0 && !poll.closed && (
+                  {undoUntil > 0 && !poll.closed && !seenAtOnce && (
                     <> <button type="button" className="link-like duel-undo small muted" onClick={undo}>{t.undoVote}</button></>
                   )}
                 </>
@@ -1134,9 +1159,10 @@ null
             </p>
             {upNext && <span className="small muted duel-upnext">{t.upNext(upNext.title)}</span>}
             <span className="row duel-actions">
-              <button type="button" className="btn btn-ghost" onClick={() => (mine && poll.myShareCode ? setSharing(true) : share())}>
+              {/* A group poll still waiting: "Remind the group" (above) is the one share action. */}
+              {!poll.groupWaiting && <button type="button" className="btn btn-ghost" onClick={() => (mine && poll.myShareCode ? setSharing(true) : share())}>
                 <Share2 size={14} strokeWidth={1.75} aria-hidden /> {copied ? t.linkCopied : poll.closed ? t.shareResult : t.shareInk}
-              </button>
+              </button>}
               <button type="button" className="btn btn-primary" onClick={next} ref={nextRef}>
                 {t.next} <ArrowRight size={14} strokeWidth={1.75} aria-hidden />
               </button>

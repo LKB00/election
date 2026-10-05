@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { CATEGORIES } from './categories';
 import { hasBlockedWord } from './moderation';
-import { MAX_PHOTO_CHARS } from './limits';
+import { ERR, MAX_CHOICE, MAX_CHOICES, MAX_DETAILS, MAX_GROUP, MAX_PHOTO_CHARS, MAX_TITLE, MIN_CHOICES, MIN_TITLE } from './limits';
 
 /** One emoji (flags, skin tones and joined emoji like 👨‍👩‍👧 count as one). */
 export const isEmoji = (s: string) =>
@@ -37,19 +37,19 @@ const text = () => z.string().max(1000).transform(cleanText);
 
 export const createPollSchema = z.object({
   title: text()
-    .pipe(z.string().min(3, 'Your question needs at least 3 letters.').max(120, 'Your question is too long (120 letters max).'))
-    .refine(visible, 'Your question needs at least 3 letters.'),
-  description: text().pipe(z.string().max(300)).default(''),
+    .pipe(z.string().min(MIN_TITLE, ERR.titleShort).max(MAX_TITLE, ERR.titleLong))
+    .refine(visible, ERR.titleShort),
+  description: text().pipe(z.string().max(MAX_DETAILS)).default(''),
   category: z.enum(CATEGORIES).default('general'),
   options: z
-    .array(text().pipe(z.string().min(1, 'A choice is empty.').max(60, 'A choice is too long (60 letters max).')).refine(visible, 'A choice is empty.'))
-    .min(2, 'Add at least 2 choices.')
-    .max(10, 'At most 10 choices.')
+    .array(text().pipe(z.string().min(1, 'One choice is empty. Fill it in or remove it.').max(MAX_CHOICE, ERR.choiceLong)).refine(visible, 'One choice is empty. Fill it in or remove it.'))
+    .min(MIN_CHOICES, ERR.fewChoices)
+    .max(MAX_CHOICES, ERR.manyChoices)
     .refine((a) => new Set(a.map(sameKey)).size === a.length, 'Two choices are the same. Make each one different.'),
   // One optional emoji per choice, in the same order as the choices ('' = none).
-  emojis: z.array(z.string().max(16).refine((e) => e === '' || isEmoji(e), 'Pick one emoji per choice.')).max(10).default([]),
+  emojis: z.array(z.string().max(16).refine((e) => e === '' || isEmoji(e), 'Pick one emoji per choice.')).max(MAX_CHOICES).default([]),
   // One optional photo per choice, in the same order ('' = none): a small JPEG made on the phone, as a data URL.
-  photos: z.array(z.string().max(MAX_PHOTO_CHARS).refine((p) => p === '' || isPhoto(p), 'That photo could not be used. Try another one.')).max(10).default([]),
+  photos: z.array(z.string().max(MAX_PHOTO_CHARS).refine((p) => p === '' || isPhoto(p), 'That photo could not be used. Try another one.')).max(MAX_CHOICES).default([]),
   hideUntilVoted: z.boolean().default(true),
   allowChange: z.boolean().default(false),
   electionMode: z.boolean().default(false),
@@ -67,7 +67,7 @@ export const createPollSchema = z.object({
   // "Called it": about a real event that has not happened yet; the creator marks what happened later.
   calledIt: z.boolean().default(false),
   // A group poll: how many people are in the group (results open when they have all voted).
-  groupSize: z.number().int().min(2).max(200).optional(),
+  groupSize: z.number().int().min(2).max(MAX_GROUP).optional(),
   endsAt: z
     .string()
     .datetime()
@@ -83,30 +83,30 @@ export const isCode = (s: string | null | undefined): s is string => !!s && /^[\
 export const editPollSchema = z
   .object({
     key: z.string().max(100).optional(),
-    title: text().pipe(z.string().min(3, 'Your question needs at least 3 letters.').max(120, 'Your question is too long (120 letters max).')).refine(visible, 'Your question needs at least 3 letters.'),
-    description: text().pipe(z.string().max(300)).default(''),
+    title: text().pipe(z.string().min(MIN_TITLE, ERR.titleShort).max(MAX_TITLE, ERR.titleLong)).refine(visible, ERR.titleShort),
+    description: text().pipe(z.string().max(MAX_DETAILS)).default(''),
     options: z
-      .array(z.object({ id: z.string().regex(/^[\w-]{1,64}$/), label: text().pipe(z.string().min(1, 'A choice is empty.').max(60, 'A choice is too long (60 letters max).')).refine(visible, 'A choice is empty.') }))
-      .max(10)
+      .array(z.object({ id: z.string().regex(/^[\w-]{1,64}$/), label: text().pipe(z.string().min(1, 'One choice is empty. Fill it in or remove it.').max(MAX_CHOICE, ERR.choiceLong)).refine(visible, 'One choice is empty. Fill it in or remove it.') }))
+      .max(MAX_CHOICES, ERR.manyChoices)
       .refine((a) => new Set(a.map((o) => sameKey(o.label))).size === a.length, 'Two choices are the same. Make each one different.'),
   })
   .refine((p) => !hasBlockedWord(p.title, p.description, ...p.options.map((o) => o.label)), 'Please remove the abusive words.');
 export const suggestSchema = z
-  .object({ label: text().pipe(z.string().min(1, 'A choice is empty.').max(60, 'A choice is too long (60 letters max).')).refine(visible, 'A choice is empty.') })
+  .object({ label: text().pipe(z.string().min(1, 'One choice is empty. Fill it in or remove it.').max(MAX_CHOICE, ERR.choiceLong)).refine(visible, 'One choice is empty. Fill it in or remove it.') })
   .refine((p) => !hasBlockedWord(p.label), 'Please remove the abusive words.');
 const code = () => z.string().regex(/^[\w-]{1,64}$/);
 export const VOTE_SOURCES = ['wa', 'ig', 'qr', 'link', 'other'] as const;
 export const voteSchema = z.object({
   optionId: code(),
-  picks: z.array(code()).max(10).optional(),
+  picks: z.array(code()).max(MAX_CHOICES).optional(),
   // "Which dates work?": the dates answered "if need be" (the ticked ones in picks are "yes").
-  maybes: z.array(code()).max(10).optional(),
+  maybes: z.array(code()).max(MAX_CHOICES).optional(),
   // Where the link was opened from (counted per poll only, never kept with the vote).
   src: z.enum(VOTE_SOURCES).optional().catch(undefined), via: z.string().max(64).nullish().transform((v) => (isCode(v) ? v : null)), human: z.string().max(4096).nullish() });
 // A pack: one live moment (a match, a show's night) and its 2–4 polls, made together. Predictions close at startsAt.
 export const packSchema = z.object({
   kind: z.enum(['match', 'show']),
-  title: text().pipe(z.string().min(3, 'Your question needs at least 3 letters.').max(80)),
+  title: text().pipe(z.string().min(MIN_TITLE, ERR.titleShort).max(80)),
   startsAt: z
     .string()
     .datetime()

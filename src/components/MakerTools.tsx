@@ -1,12 +1,13 @@
 'use client';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Bell, ChevronRight, Clock, Copy, Image as ImageIcon, MessageCircle, PenLine, Plus, Repeat, Square, Trash2 } from 'lucide-react';
+import { Bell, ChevronRight, Clock, Copy, Image as ImageIcon, MessageCircle, MonitorPlay, PenLine, Plus, Repeat, Square, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import type { MakerView } from '@/lib/maker';
 import { apiMsg } from '@/lib/i18n';
 import { useLang, useT } from '@/lib/lang';
 import { keyBytes, PUBLIC_KEY } from './ResultAlert';
+import { MAX_CHOICE, MAX_DETAILS, MAX_TITLE } from '@/lib/limits';
 
 // The poll maker's controls (docs/DESIGN.md, "Poll maker tools"). Everything posts to /api/polls/<id>/manage, which
 // checks the profile again; the page refreshes after each change.
@@ -123,6 +124,8 @@ export function Lengths({ id }: { id: string }) {
     if (!r.ok) return setError(r.data?.error ? apiMsg(lang, r.data.error) : t.errGeneric);
     setError('');
     setAsking(false);
+    // Say what changed (the page shows it at the top).
+    router.replace(`/p/${id}/manage?done=${body.action === 'end' ? 'end' : 'length'}`);
     router.refresh();
   }
   return (
@@ -180,14 +183,14 @@ export function FixTypo({ view }: { view: MakerView }) {
   return (
     <form className="maker-edit" onSubmit={save}>
       <label className="create-label" htmlFor="edit-title">{t.yourQuestion}</label>
-      <textarea id="edit-title" className="create-q" rows={2} value={title} maxLength={120} onChange={(e) => setTitle(e.target.value)} />
+      <textarea id="edit-title" className="create-q" rows={2} value={title} maxLength={MAX_TITLE} onChange={(e) => setTitle(e.target.value)} />
       <label className="create-label" htmlFor="edit-desc">{t.details}</label>
-      <input id="edit-desc" className="input" value={description} maxLength={300} onChange={(e) => setDescription(e.target.value)} />
+      <input id="edit-desc" className="input" value={description} maxLength={MAX_DETAILS} onChange={(e) => setDescription(e.target.value)} />
       {!rating && (
         <>
           <span className="create-label">{t.choicesTitle}</span>
           {opts.map((o, n) => (
-            <input key={o.id} className="input" aria-label={t.choiceN(n + 1)} value={o.label} maxLength={60} onChange={(e) => setOpts(opts.map((x) => (x.id === o.id ? { ...x, label: e.target.value } : x)))} />
+            <input key={o.id} className="input" aria-label={t.choiceN(n + 1)} value={o.label} maxLength={MAX_CHOICE} onChange={(e) => setOpts(opts.map((x) => (x.id === o.id ? { ...x, label: e.target.value } : x)))} />
           ))}
         </>
       )}
@@ -241,3 +244,43 @@ export function AskAgainRow({ id }: { id: string }) {
   );
 }
 
+/** The big screen (a TV or projector in a class, office or watch party): live bars and a QR code to vote. */
+export function TvRow({ id }: { id: string }) {
+  const t = useT();
+  return (
+    <Link href={`/p/${id}/tv`} className="al-row">
+      <span className="al-row__disc" style={{ '--tone': 'var(--p-input)' } as React.CSSProperties}><MonitorPlay size={20} strokeWidth={1.75} aria-hidden /></span>
+      <span className="al-row__main"><span className="al-row__title">{t.tvRow}</span><span className="al-row__meta">{t.tvRowNote}</span></span>
+      <ChevronRight size={18} strokeWidth={1.75} className="al-row__chevron" aria-hidden />
+    </Link>
+  );
+}
+
+/** "Called it": mark what happened (asked once more), from the maker's page on any phone. */
+export function MarkOutcome({ id, options }: { id: string; options: { id: string; label: string }[] }) {
+  const t = useT();
+  const lang = useLang();
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  async function mark(o: { id: string; label: string }) {
+    if (busy || !window.confirm(t.calledMarkConfirm(o.label))) return;
+    setBusy(true);
+    const r = await manage(id, { action: 'outcome', optionId: o.id });
+    setBusy(false);
+    if (!r.ok) return setError(r.data?.error ? apiMsg(lang, r.data.error) : t.errGeneric);
+    router.replace(`/p/${id}/manage?done=outcome`);
+    router.refresh();
+  }
+  return (
+    <div className="maker-lengths">
+      <p className="small muted">{t.calledMarkNote}</p>
+      <div className="row" role="group" aria-label={t.calledMarkTitle}>
+        {options.map((o) => (
+          <button key={o.id} type="button" className="chip" disabled={busy} onClick={() => mark(o)}>{o.label}</button>
+        ))}
+      </div>
+      {error && <p className="duel-error" role="alert">{error}</p>}
+    </div>
+  );
+}

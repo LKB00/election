@@ -926,3 +926,85 @@ One scale on phones (in `election.css`, "Mobile spacing"): 16px page sides; 24px
 - **Fill the row:** the search box stretches and its button sits at the end (both 44px tall); after voting, Share and Next split the row; on the maker's page, Share the poll (2/3) and Copy link (1/3) share one row, the four lengths are a 2 × 2 grid and End now is full width; the match-day / show-night choice splits evenly.
 - **Edge to edge:** sideways-scrolling chip rows (topics, Create's ideas) run to the screen edge instead of being cut at the page padding, with 16px between them and the search box.
 - **Poll rows:** the count ("4 votes", "Ended · 4 votes", "✓ Voted · 1 vote") moved from a right-hand column to its own line under the choices, so titles get the full width instead of breaking after two words.
+
+## Visual consistency pass (owner, Oct 2026: "check visual consistency, border, fill, colour and everything")
+
+- **One meaning per colour on choice cards:** soft **indigo** = picked but not sent yet (and the vote keys); soft **yellow** = your vote, after voting (yellow = you), for every choice and in both looks. It used to take the choice's own pastel, so your pick was pink on one poll and green on another. Your result bar is ink; other bars are quiet grey.
+- **Corners:** three tokens: `--radius-card` 18px (every card, list card, notice, the vote moment), `--radius-field` 14px (text boxes), `--radius-inner` 12px (photos, messages, picker tiles inside a card). Pills stay round. List cards were 20px; some boxes 16 or 24.
+- **Shadows:** one warm tint. `--shadow-card` (resting), `--shadow-raised` (hover), `--shadow-pop` (sheets, previews, the vote moment), `--shadow-key` / `--shadow-key-pressed` (keys you press), with dark-look values. Fifteen hand-written cool-grey shadows are gone.
+- **Colours:** the indelible ink purple is `--ink-mark` (with `-hi`/`-lo`), the switch knob `--switch-knob`; a leftover green glow from the old lime is now the brand yellow. No colour is written by hand in a rule any more (only inside the token blocks and the share-image palette).
+- **Edges:** fields, switches and face pickers have the stronger `--line-control` edge (WCAG); chips, cards and buttons keep the soft `--line`.
+- **Heights:** buttons side by side are the same height (Share the poll / Copy link 48px).
+- **Counts:** data bars are ink or grey; green is kept for good-news signals.
+
+## UX copy and journey audit, round 2 (owner, Oct 2026: "if there is slight scope of improvement it needs to be improved")
+
+**Naming, the same everywhere (three languages):** "Start a poll" for every way in (the + / top-bar link, empty states, "Start a poll about this" from search); the form's button "Start poll". "Your votes" (tab and page; it sits next to "You"). "Today's question" (never "poll of the day"). "Share the result" (final outcome) / "See the results" (live numbers). "Share your ink" for the after-vote share and its sheet. "Topic", never "category". "Phone", never "device"/"browser"/"cookie" in what people read; "profile", never "account"; "notification", never "alert". "Poll maker" for the person who made a poll. Errors say how to fix them ("check your internet", "wait a few seconds", "remove one to continue"); server messages were rewritten too ("We could not find your profile on this phone…").
+
+**Journeys fixed:**
+- **Next on a shared poll:** the address, Refresh and the header ("Asked by …", the maker's bar, "Someone wants your pick") now follow the poll on screen. "Asked by" replaces the generic "Someone wants your pick" when both would show.
+- **After making a poll:** "See votes as they come in (also under You)" links to the maker's page; Back no longer reopens a filled Create (the history entry is replaced); the note says "Send it to the group" (it used to promise live votes the maker could not see).
+- **Create keeps a draft** (question, choices, type) for the visit: Close, a closed sign-in sheet or no internet never loses a poll. Closing sign-in says "Your poll is kept. Make a profile to post it." No internet says so, instead of "Something went wrong".
+- **Maker's page:** Back goes to You and the You tab is lit; "Called it" answers can be marked here on any phone (not only the phone that made the poll); after a length change, End now or marking the answer, the top says what changed ("Saved. The poll now ends Tue, 9 pm."); "End the poll to make it now · Vote on your poll to see the results" explains a missing results picture; the repeated "Open the poll" row is gone; signed out, it says "Sign in to manage your poll" and starts on "Welcome back".
+- **Back link:** poll, pack, topic and maker pages go back where you came from inside the site (Polls, Your votes, a topic…), or to Home from a WhatsApp link.
+- **Voting:** an offline vote on pick-several, rank or dates polls now sends every tick when the phone is back online (it used to send only the first); untouched dates say "Tap to answer" (they looked pre-answered as "Doesn't work"); a waiting group poll shows one share action ("Remind the group"); group polls end in 3 days unless the maker picks a time; dates are saved as "Sat, 7 Nov" for every voter.
+- **Links between places:** Your votes → "Polls you made"; your own maker page → "Manage your polls under You"; Poll not found → "Browse polls" too; the caught-up card → "See your votes".
+- **Start fresh (TEMPORARY test tool)** no longer wipes a maker's private keys or list of polls.
+
+## Splash and onboarding (owner, Oct 2026: "design onboarding and splash screen, intuitive and appealing")
+
+**Who sees what (the rule):** a friend arriving from a WhatsApp link goes straight to the vote: no splash, no cards (the vote is the point; anything in front of it costs votes). The splash and the three cards are for a **first visit to Home** (no voter cookie yet); the installed app shows the splash on **every launch** from the home screen. Nobody sees the cards twice on one phone. Both are off for people who ask their phone for less motion (the splash) and skippable at once (the cards).
+
+**Splash (`Splash.tsx`, about 1.2 seconds):** the Election ballot box on the paper ground; a ballot slip with a yellow tick drops into the slot, the box's label lights up in "you" yellow, three yellow sparkles pop, then the name (yellow dot in an ink ring + "Election") and "What does everyone think?" rise in, and it fades away by itself. Pure HTML and CSS, no script, so the page loads underneath and is ready when it lifts; it can never block a tap. Light and dark from the same tokens.
+
+**Onboarding (`Onboarding.tsx`):** a full-screen layer of three cards, swiped sideways or moved with one ink "Next" button (one main action), with dots that show where you are and "Skip ×" always in the top corner.
+1. **Ask anything** (the chat-bubble ballot box): "Pizza or biryani? CSK or MI? Make a poll in 30 seconds and send it on WhatsApp." The language is picked here: English · हिंदी · Hinglish.
+2. **One tap. Totally secret.** (the locked box): "Nobody sees your pick, not even us. No sign-up to vote."
+3. **Get inked, see where you stand** (the inked finger): "Results open after you vote. Guess the crowd, then see how everyone voted." The button becomes **Start voting** (closes, Today's question is right there), with "Or start a poll" under it.
+Pictures, titles, dots and button stay in the same place on every card (nothing jumps). Phone Back and Escape close it; arrow keys move between cards.
+
+**Show it again to everyone (owner, Oct 2026: "reset it, it should start from onboarding in the next release"):** the phone remembers which *version* of the onboarding it has seen (`election-onboarded` = `ONBOARD_VERSION` in `Onboarding.tsx`, read by `Splash.tsx` before the page paints). Bumping the version (now `2`) shows the Home splash and the three cards once more to every phone the next time it opens Home, people who already voted included. Shared poll links still never show them. The TEMPORARY "Start fresh on this phone" button clears it too.
+
+## Nothing hard-coded, and edge cases (owner, Oct 2026: "check if there is any edge case, nothing should be hard coded")
+
+- **One home for each value.** Colours: tokens in `arogya.css`; the places that cannot read CSS (share images, app icon, the phone's top bar, the install screen) use `src/lib/palette.ts`, and `tests/palette.test.ts` fails if the two drift. The vote-moment machine and ink rod got their own tokens (`--machine-*`, `--rod-*`). Size limits (question 120, choice 60, details 300, 2–10 choices, names 2–30, 30 waiting suggestions) live in `src/lib/limits.ts`: the server, the text boxes and the error messages (all three languages) quote them from there. India time (`Asia/Kolkata`, `+05:30`) and the date locale live in `src/lib/time.ts`.
+- **Every word translated.** Page titles, link-preview text, the site name and the screen-reader names of the menus are now in `i18n.ts` (they were English only). Every server error has a Hindi and a Hinglish version.
+- **Edge cases fixed.** The story image no longer shows "friends from my link agree" on a secret link or a hidden result (it could give the pick away). A typo fix or an added choice that names a party now makes the poll a politics poll (review hold, silence window), as making it would. No undo after hidden results were shown straight away (Called it, dates, a group's last vote). Profile pages leave out group (link-only) polls and polls waiting for review. A typo fix and a vote can no longer cross (the poll row is held), two quick "Add" taps cannot pass 10 choices, a marked answer cannot be changed by a second tap of a different answer, "first 10 votes" and "group complete" alerts fire even when two votes land at once, dates polls never ask the crowd guess and "if need be" is not a yes on Your votes, and results-picture percentages add up to 100.
+
+## Preview before posting (owner, Oct 2026: UI/UX round, "see how it looks")
+
+| Element | Priority | Job |
+|---|---|---|
+| "See how it looks" link under the main button | P3 | Shows only once the poll is complete (a question and at least 2 choices). Choices cannot change after the first vote, so this is the moment to catch a typo or a missing choice. |
+| The preview sheet | P2 | The poll drawn with the poll page's own ballot parts (question, details, each choice with its emoji, photo or letters, the Vote keys; the five faces for Rate it; Election mode numbers). Not tappable. Under it, one plain line of the rules people will meet (results after voting or open to all, a group's size, when it ends) and a yellow note: "Check the words: choices can't change after the first vote." |
+| Start poll (ink) / Keep editing (white) | P1 / P2 | Posting from the preview is the same as the main button (signed out, it opens the profile sheet first). |
+
+## Final result first (owner, Oct 2026: UI/UX round)
+
+An ended poll opens on its answer. A white card sits right under the question, before the choices (P1 of an ended poll):
+- Eyebrow with a trophy: "Final result" ("Result declared" in Election mode).
+- The answer in large type: the winner's name; "Tie: A, B"; "Best date: Sat, 14 Nov" for a dates poll; "What happened: CSK" for Called it; "Nobody voted".
+- One quiet line: "57% of 7 voters" (pick one / pick several), "Ranked top by N voters" (rank), the date's yes / if-need-be count, or for Called it how you did ("You called it, like 50% of people" / "Not this time. 50% called it.").
+- Your pick as the yellow "you" chip: "✓ Your pick won · Biryani house" or "You picked Tea". (Not for Called it, rank, pick several or dates, where the line above or the bars already say it.)
+
+It is not shown for 1–5 faces polls (their result already opens on the average) or during Election mode's counting rounds (it appears once counting ends). The pinned bar no longer repeats the result ("Final result: X wins by N votes" moved into the card) and no longer says running-poll lines like "Can your friends change that?" on an ended poll; it keeps Share the result and Next.
+
+## Hindi and Hinglish on small phones (owner, Oct 2026: UI/UX round)
+
+Every main screen opened at 320 and 360 px wide in Hindi and Hinglish (Home, Polls, Create, Your votes, You, Rules, Privacy, a topic, packs, open, voted, ended and Called-it polls, not found), with a check for text that is cut off, spills past the edge or makes the page scroll sideways. Fixed:
+- **Polls search:** on a 320 px phone the Hinglish "Dhoondo" button pushed the page 27 px sideways (the box would not shrink). The box now shrinks; the button never wraps.
+- **Hindi choice badges:** a choice without emoji or photo showed two initials made of bare consonants ("पत" for "पुष्पा तीन"), which reads as another word and drops the vowel sign. Hindi (and other Indian scripts) now show one whole first letter ("पु"); two letters only when two choices would clash.
+- **Hindi dates:** the short month ("5 अक्टू॰") is spelled out ("5 अक्टूबर") everywhere a date is shown (`monthStyle` in `src/lib/time.ts`).
+- **Idea chips on Create:** the scrolling row snapped its first chip to the screen edge; it now lines up with the 16 px gutter.
+
+## Big screen (owner, Oct 2026: UI/UX round, "TV screen mode")
+
+`/p/<id>/tv`: a poll on a TV or projector for a class, an office, a wedding or an IPL watch party. Everyone votes on their own phone; the screen updates by itself every few seconds (paused while the tab is hidden).
+| Element | Priority | Job |
+|---|---|---|
+| The question | P1 | Large enough to read across a room (type grows with the screen). |
+| Choices / live bars | P1 | Before results are public: the choices with their faces and one line ("Results show when voting ends", "4 of 6 have voted", or the silence-window note). Once public: a bar and a whole percentage per choice (adding up to 100 for pick-one); the one ahead has an ink bar and a heavier edge (shape, not only colour). |
+| QR card | P2 | "Scan to vote" (after the end: "Scan to see the result") with the short link under it. The QR link carries `src=qr`, so the maker sees where votes came from. |
+| Top line | P3 | Brand, "Live" (or "Final result" / "Result declared") and the vote count. A quiet "Full screen" button, hidden once full screen. |
+
+Safety: the screen always asks for the public view (`/api/polls/<id>?public=1`, no voter), so a presenter who has voted never puts hidden results on a TV. Not indexed by search engines. Entry point: "Show on a big screen" on the maker's page (anyone with the link can open it; it shows only what the poll page shows to a non-voter). Landscape: poll left, QR right; portrait or phone: one column with a small QR row.

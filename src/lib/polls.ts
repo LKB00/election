@@ -9,6 +9,7 @@ import { namesPolitics } from './moderation';
 import { sealedUntil } from './silence';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { isAdminKey } from './admin';
+import { INDIA_OFFSET, INDIA_TZ } from './time';
 
 const { polls, options, votes, reactions, reports, photos, votePicks } = schema;
 
@@ -521,6 +522,7 @@ export async function castVote(db: Db, id: string, optionId: string, voterId: st
   if (poll.allowChange) {
     // One atomic statement: first vote inserts, a later vote moves it.
     return db.transaction(async (tx) => {
+      await lockPoll(tx as unknown as Db, id);
       const [row] = await tx
         .insert(votes)
         .values(newVote)
@@ -532,6 +534,7 @@ export async function castVote(db: Db, id: string, optionId: string, voterId: st
   }
   // Unique index decides, so two fast taps can never count twice.
   return db.transaction(async (tx) => {
+    await lockPoll(tx as unknown as Db, id);
     const inserted = await tx
       .insert(votes)
       .values(newVote)
@@ -543,16 +546,22 @@ export async function castVote(db: Db, id: string, optionId: string, voterId: st
   });
 }
 
+/** A vote holds the poll row (shared) while it is written, so a typo fix (which takes it whole) cannot change a
+ * choice's words between its "nobody has voted" check and its save. */
+async function lockPoll(tx: Db, id: string) {
+  await tx.select({ id: polls.id }).from(polls).where(eq(polls.id, id)).for('share');
+}
+
 /** "Who's winning right now?": checked against the live count (your vote included) at the moment you answer. */
 export async function guessLeader(db: Db, id: string, voterId: string, choice: string): Promise<'ok' | 'not_found' | 'not_allowed' | 'bad_option'> {
   const [poll] = await db
-    .select({ category: polls.category, hidden: polls.hidden, hideUntilVoted: polls.hideUntilVoted, endsAt: polls.endsAt, groupSize: polls.groupSize, calledIt: polls.calledIt })
+    .select({ category: polls.category, hidden: polls.hidden, hideUntilVoted: polls.hideUntilVoted, endsAt: polls.endsAt, groupSize: polls.groupSize, calledIt: polls.calledIt, kind: polls.kind })
     .from(polls)
     .where(eq(polls.id, id))
     .limit(1);
   if (!poll || poll.hidden) return 'not_found';
-  // Group polls and "Called it" ask no crowd guess (getPoll never offers one; this stops a hand-made request too).
-  if (poll.groupSize || poll.calledIt) return 'not_allowed';
+  // Group, "Called it" and dates polls ask no crowd guess (getPoll never offers one; this stops a hand-made request too).
+  if (poll.groupSize || poll.calledIt || poll.kind === 'dates') return 'not_allowed';
   // Only while the numbers are still hidden: a "guess" made while looking at the results is not a guess.
   const closed = !!poll.endsAt && poll.endsAt.getTime() <= Date.now();
   if (sealedUntil(poll.category) || !poll.hideUntilVoted || closed) return 'not_allowed';
@@ -641,7 +650,7 @@ export async function listPolls(db: Db, limit = 20, filter: { category?: string;
     id: r.id,
     title: r.title,
     category: r.category,
-    kind: r.kind === 'rating' || r.kind === 'multi' || r.kind === 'rank' ? r.kind : 'choice',
+    kind: r.kind === 'rating' || r.kind === 'multi' || r.kind === 'rank' || r.kind === 'dates' ? r.kind : 'choice',
     totalVotes: r.totalVotes,
     lastHour: r.lastHour,
     closed: !!r.endsAt && r.endsAt.getTime() <= Date.now(),
@@ -725,7 +734,7 @@ export async function getVoterStats(db: Db, voterId: string | null): Promise<Vot
   const [mineRow] = await db
     .select({
       votes: sql<number>`count(*)::int`,
-      today: sql<number>`count(*) filter (where ${votes.createdAt} >= (date_trunc('day', now() at time zone 'Asia/Kolkata') at time zone 'Asia/Kolkata'))::int`,
+      today: sql<number>`count(*) filter (where ${votes.createdAt} >= (date_trunc('day', now() at time zone ${INDIA_TZ}) at time zone ${INDIA_TZ}))::int`,
       guesses: sql<number>`count(*) filter (where ${votes.predictionCorrect} is not null)::int`,
       correct: sql<number>`count(*) filter (where ${votes.predictionCorrect})::int`,
     })
@@ -743,7 +752,7 @@ export async function getVoterStats(db: Db, voterId: string | null): Promise<Vot
 export const FINAL_HOUR_IST = 21;
 export function nextFinalCount(now = Date.now()): Date {
   const { label } = indiaDay(now);
-  const tonight = new Date(`${label}T${String(FINAL_HOUR_IST).padStart(2, '0')}:00:00+05:30`);
+  const tonight = new Date(`${label}T${String(FINAL_HOUR_IST).padStart(2, '0')}:00:00${INDIA_OFFSET}`);
   return tonight.getTime() > now + 30 * 60_000 ? tonight : new Date(tonight.getTime() + 86400_000);
 }
 
@@ -813,7 +822,7 @@ export const SET_SIZE = 5;
 export function indiaDay(now = Date.now()) {
   const ist = new Date(now + 5.5 * 3600_000);
   const label = ist.toISOString().slice(0, 10);
-  return { label, start: new Date(`${label}T00:00:00+05:30`) };
+  return { label, start: new Date(`${label}T00:00:00${INDIA_OFFSET}`) };
 }
 
 // A fixed shuffle for the day: the same order for everyone, a new one tomorrow (FNV-1a hash of day + id).
@@ -899,7 +908,8 @@ export async function getMyVotes(db: Db, voterId: string | null, limit = 50): Pr
         db
           .select({ pollId: options.pollId, label: options.label, n: sql<number>`count(${votePicks.voteId})::int` })
           .from(options)
-          .leftJoin(votePicks, eq(votePicks.optionId, options.id))
+          // A dates poll's "if need be" (rank 2) is not a yes, as in getPoll. (Rank polls' rows here are not used.)
+          .leftJoin(votePicks, and(eq(votePicks.optionId, options.id), or(isNull(votePicks.rank), ne(votePicks.rank, 2))))
           .where(inArray(options.pollId, multiIds))
           .groupBy(options.pollId, options.id, options.label),
         db
@@ -925,7 +935,7 @@ export async function getMyVotes(db: Db, voterId: string | null, limit = 50): Pr
     else if (r.groupSize && !closed && total < r.groupSize) standing = { kind: 'group', voted: total, of: r.groupSize };
     else if (sealedUntil(r.category)) standing = { kind: 'sealed' };
     // (Group and "Called it" polls never ask for a crowd guess.)
-    else if (!r.groupSize && !r.calledIt && r.hideUntilVoted && !closed && r.prediction == null && mine.length >= 2 && total >= 2) standing = { kind: 'guess' };
+    else if (!r.groupSize && !r.calledIt && r.pollKind !== 'dates' && r.hideUntilVoted && !closed && r.prediction == null && mine.length >= 2 && total >= 2) standing = { kind: 'guess' };
     else if (!total) standing = { kind: 'none' };
     else if (r.pollKind === 'rating') standing = { kind: 'rating', average: ratingAverage([1, 2, 3, 4, 5].map((v) => mine.find((c) => c.label === String(v))?.n ?? 0)) ?? 0 };
     else if (mine.length > 1 && mine[0].n === mine[1].n) standing = { kind: closed ? 'tied' : 'tie' };
@@ -966,6 +976,14 @@ export const UNDO_SECONDS = 30;
 /** Removes your vote (and its reactions) if you cast it in the last few seconds. */
 export async function undoVote(db: Db, id: string, voterId: string): Promise<boolean> {
   if (!(await isVisible(db, id))) return false;
+  // Polls that show hidden results straight after the vote, with no crowd guess first ("Called it", dates, a group
+  // poll its last voter completes): the voter has seen the numbers, so no undo (they could vote again for the leader).
+  const [p] = await db.select().from(polls).where(eq(polls.id, id)).limit(1);
+  if (p?.hideUntilVoted && !sealedUntil(p.category) && (p.calledIt || p.kind === 'dates' || p.groupSize)) {
+    if (!p.groupSize) return false;
+    const [{ n }] = await db.select({ n: sql<number>`count(*)::int` }).from(votes).where(eq(votes.pollId, id));
+    if (n >= p.groupSize) return false;
+  }
   const removed = await db
     .delete(votes)
     .where(
@@ -1077,19 +1095,21 @@ export async function deleteVoterData(db: Db, voterId: string): Promise<number> 
 }
 
 /** "Called it": the creator (with their private key) or the owner marks which choice came true. Voting closes then. */
-export async function setOutcome(db: Db, id: string, optionId: string, key: string): Promise<'ok' | 'not_found' | 'not_allowed' | 'bad_option' | 'done'> {
+export async function setOutcome(db: Db, id: string, optionId: string, key: string): Promise<'ok' | 'not_found' | 'not_allowed' | 'bad_option' | 'done' | 'taken'> {
   const [poll] = await db.select().from(polls).where(and(eq(polls.id, id), eq(polls.hidden, false))).limit(1);
   if (!poll || !poll.calledIt) return 'not_found';
   const creator = !!poll.manageHash && poll.manageHash.length === 64 && timingSafeEqual(Buffer.from(poll.manageHash), Buffer.from(hashKey(key)));
   if (!creator && !isAdminKey(key)) return 'not_allowed';
-  if (poll.outcome) return 'done';
+  // Marked already: the same answer again is fine (a second tap), a different one is refused (it is final).
+  if (poll.outcome) return poll.outcome === optionId ? 'done' : 'taken';
   const [opt] = await db.select({ id: options.id }).from(options).where(and(eq(options.id, optionId), eq(options.pollId, id))).limit(1);
   if (!opt) return 'bad_option';
   const now = new Date();
   // Closing it (end time = now) lets every "closed" rule apply: no more votes, results open to all.
-  await db
+  const set = await db
     .update(polls)
     .set({ outcome: optionId, outcomeAt: now, endsAt: poll.endsAt && poll.endsAt < now ? poll.endsAt : now })
-    .where(and(eq(polls.id, id), isNull(polls.outcome)));
-  return 'ok';
+    .where(and(eq(polls.id, id), isNull(polls.outcome)))
+    .returning({ id: polls.id });
+  return set.length ? 'ok' : 'taken';
 }

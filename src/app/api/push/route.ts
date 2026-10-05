@@ -8,7 +8,7 @@ import { isCode } from '@/lib/validation';
 // "Tell me the result": this phone wants one alert when this poll's result is in (POST), or no longer (DELETE).
 export async function POST(req: Request) {
   if (!pushEnabled()) return NextResponse.json({ error: 'Not available.' }, { status: 404 });
-  if (!(await rateLimit(`push:${clientIp(req)}`, 30, 60_000))) return NextResponse.json({ error: 'Slow down a little.' }, { status: 429 });
+  if (!(await rateLimit(`push:${clientIp(req)}`, 30, 60_000))) return NextResponse.json({ error: 'Too many taps. Wait a few seconds and try again.' }, { status: 429 });
   const body = await req.json().catch(() => null);
   const voter = await readVoterId();
   if (!voter || !isCode(body?.pollId) || !isPushSub(body?.subscription)) return NextResponse.json({ error: 'Vote first.' }, { status: 400 });

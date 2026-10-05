@@ -8,17 +8,19 @@ import { getDb } from '@/db';
 import { getPack } from '@/lib/packs';
 import { readVoterId } from '@/lib/voter';
 import { getLang, getT } from '@/lib/lang-server';
+import { INDIA_TZ, dateLocale } from '@/lib/time';
 
 export const dynamic = 'force-dynamic';
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ new?: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const pack = await getPack(await getDb(), (await params).id, null);
-  if (!pack) return { title: 'Pack not found' };
+  const t = await getT();
+  if (!pack) return { title: t.packNotFound };
   return {
     title: pack.title,
     robots: { index: false, follow: true },
-    openGraph: { title: `${pack.title}: make your calls`, description: pack.views.map((v) => v.title).join(' · ') },
+    openGraph: { title: t.metaPackOg(pack.title), description: pack.views.map((v) => v.title).join(' · ') },
   };
 }
 
@@ -32,7 +34,7 @@ export default async function PackPage({ params, searchParams }: Props) {
   const pack = await getPack(db, id, await readVoterId());
   if (!pack) notFound();
   const started = new Date(pack.startsAt).getTime() <= Date.now();
-  const when = new Date(pack.startsAt).toLocaleString(lang === 'hi' ? 'hi-IN' : 'en-IN', { weekday: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' });
+  const when = new Date(pack.startsAt).toLocaleString(dateLocale(lang), { weekday: 'short', hour: 'numeric', minute: '2-digit', timeZone: INDIA_TZ });
   return (
     <div className="page page-wide">
       <header className="page-head page-head-tight">

@@ -19,7 +19,10 @@ export default function ResetFresh() {
       return;
     }
     try {
-      localStorage.clear();
+      // Everything this phone remembers about voting, but never a poll maker's private keys or their list of polls
+      // (those would lose the polls they made here).
+      const keep = new Set(['election-manage-keys', 'election-my-polls']);
+      Object.keys(localStorage).forEach((k) => keep.has(k) || localStorage.removeItem(k));
       sessionStorage.clear();
     } catch {
       /* private mode */

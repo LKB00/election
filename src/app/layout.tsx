@@ -8,23 +8,28 @@ import '@fontsource/noto-sans-devanagari/400.css';
 import '@fontsource/noto-sans-devanagari/700.css';
 import { getLang } from '@/lib/lang-server';
 import { LangProvider } from '@/lib/lang';
+import Splash from '@/components/Splash';
 import { dict } from '@/lib/i18n';
+import { PALETTE } from '@/lib/palette';
 import '@/styles/index.css';
 
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: { default: 'Election · What does everyone think?', template: '%s · Election' },
-  description: 'Ask anything. Vote in one tap, then see what everyone thinks. Just for fun, not official.',
-  // Lets Google Discover and search show the big share picture.
-  robots: { 'max-image-preview': 'large' },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = dict[await getLang()];
+  return {
+    metadataBase: new URL(SITE_URL),
+    title: { default: `${t.siteName} · ${t.splashLine}`, template: `%s · ${t.siteName}` },
+    description: t.metaDesc,
+    // Lets Google Discover and search show the big share picture.
+    robots: { 'max-image-preview': 'large' },
+  };
+}
 
 export const viewport: Viewport = {
   // Use the whole screen on phones with a notch or a home bar; the bars add the safe-area space themselves.
   viewportFit: 'cover',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#fbf9f6' },
-    { media: '(prefers-color-scheme: dark)', color: '#141311' },
+    { media: '(prefers-color-scheme: light)', color: PALETTE.paper },
+    { media: '(prefers-color-scheme: dark)', color: PALETTE.paperDark },
   ],
 };
 
@@ -33,6 +38,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang={lang === 'hg' ? 'hi-Latn' : lang}>
       <body>
+        {/* Opening the installed app (from the home screen): the splash, every launch. */}
+        <Splash standaloneOnly name={dict[lang].siteName} line={dict[lang].splashLine} />
         <LangProvider lang={lang}>
         <div className="shell">
           <a href="#main" className="skip-link">{dict[lang].skip}</a>

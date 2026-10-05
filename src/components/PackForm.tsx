@@ -80,7 +80,8 @@ export default function PackForm({ initialKind = 'match', signedIn = false }: { 
     if (res?.ok && data?.id) {
       // The same private key marks each "Called it" result in the pack, from this phone.
       for (const id of data.pollIds as string[]) rememberMyPoll(id, data.manageKey);
-      return router.push(`/pack/${data.id}?new=1`);
+      // Replace, not push: Back must not reopen the filled pack form.
+      return router.replace(`/pack/${data.id}?new=1`);
     }
     setBusy(false);
     // Signed out on another tab, or the sign-in ran out: ask again.

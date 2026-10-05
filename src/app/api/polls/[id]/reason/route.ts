@@ -9,7 +9,7 @@ const body = z.object({ reason: z.string().min(1).max(60) });
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await rateLimit(`reason:${clientIp(req)}`, 30, 60_000))) {
-    return NextResponse.json({ error: 'Slow down a little.' }, { status: 429 });
+    return NextResponse.json({ error: 'Too many taps. Wait a few seconds and try again.' }, { status: 429 });
   }
   const { id } = await params;
   const parsed = body.safeParse(await req.json().catch(() => null));

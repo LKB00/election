@@ -40,7 +40,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 26, fontWeight: 700 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ display: 'flex', width: 26, height: 26, borderRadius: 13, background: CARD.ink, border: `7px solid ${CARD.lime}` }} />
-            Election
+            {t.siteName}
           </div>
           <div style={{ display: 'flex', padding: '6px 16px', borderRadius: 999, background: CARD.lime, fontSize: 22 }}>{t.cardFun}</div>
         </div>
@@ -54,7 +54,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
               {shown.map((o, n) => {
                 const mine = showPick && o.id === pickId;
                 return (
-                  <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: 12, paddingRight: 24, borderRadius: 20, background: mine ? CARD.tints[n % CARD.tints.length] : '#ffffff', border: mine ? `4px solid ${CARD.ink}` : `4px solid ${CARD.sand}`, opacity: showPick && !mine ? 0.6 : 1 }}>
+                  <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: 12, paddingRight: 24, borderRadius: 20, background: mine ? CARD.tints[n % CARD.tints.length] : CARD.white, border: mine ? `4px solid ${CARD.ink}` : `4px solid ${CARD.sand}`, opacity: showPick && !mine ? 0.6 : 1 }}>
                     {o.imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={abs(o.imageUrl)} width={120} height={150} style={{ borderRadius: 12, objectFit: 'cover' }} alt="" />

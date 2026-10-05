@@ -3,14 +3,15 @@ import { and, desc, eq, isNull, sql } from 'drizzle-orm';
 import { schema, type Db } from '@/db';
 import { cleanText } from './validation';
 import { hasBlockedWord } from './moderation';
+import { MAX_NAME, MIN_NAME } from './limits';
 
 // Profiles (docs/DESIGN.md, "Profiles"). Only a name, an avatar and the passkeys' public keys are kept. Votes are never
 // linked to a profile: nothing here reads or writes the votes table.
 const { users, passkeys, polls, votes } = schema;
 
 export const cleanName = (raw: unknown): string | null => {
-  const name = cleanText(String(raw ?? '')).slice(0, 30);
-  return name.length >= 2 && !hasBlockedWord(name) ? name : null;
+  const name = cleanText(String(raw ?? '')).slice(0, MAX_NAME);
+  return name.length >= MIN_NAME && !hasBlockedWord(name) ? name : null;
 };
 
 export async function createUser(db: Db, u: { id: string; name: string; avatar: string }, key: { id: string; publicKey: string; counter: number; transports: string[] }) {
