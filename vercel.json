@@ -1,3 +1,8 @@
 {
-  "crons": [{ "path": "/api/cron/results", "schedule": "35 15 * * *" }]
+  "crons": [{ "path": "/api/cron/results", "schedule": "35 15 * * *" }],
+  "git": {
+    "deploymentEnabled": {
+      "claude/**": false
+    }
+  }
 }

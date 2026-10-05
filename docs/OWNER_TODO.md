@@ -70,6 +70,8 @@ Say "continue features" and Claude picks up the next one.
 
 ## 7. Good to know
 
+- **Vercel builds:** saving work no longer builds a preview copy on Vercel (that was using up the free daily limit). Only "make live" builds the site, once. Nothing to do; if you ever want preview links back, ask Claude.
+
 - **Every poll is made by people now.** The site's own polls (Modi or Rahul?, Virat/Rohit/Dhoni, IPL 2027, UP 2027, Chai or coffee) were hidden once. Their votes are kept. To bring one back, open it on `/admin` and press **Show again**.
 - **Today's question** is always one of people's polls that you pick on `/admin`. If you pick none, Home shows the day's set of people's polls.
 - **Early days:** with few polls, ask friends and groups to make the first ones (or make a few yourself, as a person). A match-day pack is the quickest way to get several at once.
