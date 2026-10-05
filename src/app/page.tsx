@@ -58,12 +58,12 @@ export default async function Home() {
 
   // An empty site shows only its empty state: no greeting, no rules reminder (nothing to be kind about yet).
   const empty = deck.length === 0 && !tonight.length && !hot.length && !shelves.length && !polls.length;
-  // A first visit (never voted here): the splash, then three short cards. Never on a shared poll link.
-  const first = !voterId;
+  // The first time a phone opens Home (or the first time since a new onboarding version): the splash, then three short
+  // cards. Decided on the phone (it remembers having seen them). Never on a shared poll link.
   return (
     <div className="page page-wide">
-      {first && <Splash line={t.splashLine} />}
-      {first && <Onboarding />}
+      <Splash firstRun line={t.splashLine} />
+      <Onboarding />
       {!empty && (
         <header className="al-home">
           <p className="al-home__date" suppressHydrationWarning>{t.homeDate(new Date())}</p>

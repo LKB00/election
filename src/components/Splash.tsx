@@ -3,9 +3,14 @@
 // Pure HTML and CSS (no script), so it never delays the page: the page loads underneath and is ready when it lifts.
 // `standalone`: shown on every launch from the home screen (the installed app); otherwise only where it is placed (Home
 // on a first visit). Off for people who ask their phone for less motion. Hidden from screen readers.
-export default function Splash({ line, standaloneOnly = false }: { line: string; standaloneOnly?: boolean }) {
+export default function Splash({ line, standaloneOnly = false, firstRun = false }: { line: string; standaloneOnly?: boolean; /** Home: shown only to a phone that has not seen this version of the onboarding (checked before paint). */ firstRun?: boolean }) {
   return (
-    <div className={'splash' + (standaloneOnly ? ' is-standalone' : '')} aria-hidden>
+    <>
+    {firstRun && (
+      // Runs while the page is being read, before anything is painted: no flash of Home before the splash.
+      <script dangerouslySetInnerHTML={{ __html: "try{if(localStorage.getItem('election-onboarded')!=='2')document.documentElement.classList.add('first-run')}catch(e){}" }} />
+    )}
+    <div className={'splash' + (standaloneOnly ? ' is-standalone' : '') + (firstRun ? ' is-first-run' : '')} aria-hidden>
       <svg className="splash-box" width="168" height="146" viewBox="0 0 120 104" focusable="false">
         <ellipse cx="60" cy="98" rx="46" ry="5" fill="var(--line)" />
         <g className="splash-slip">
@@ -27,5 +32,6 @@ export default function Splash({ line, standaloneOnly = false }: { line: string;
       <p className="splash-name"><span className="logo-mark" aria-hidden /> Election</p>
       <p className="splash-line">{line}</p>
     </div>
+    </>
   );
 }

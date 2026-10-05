@@ -962,3 +962,5 @@ One scale on phones (in `election.css`, "Mobile spacing"): 16px page sides; 24px
 2. **One tap. Totally secret.** (the locked box): "Nobody sees your pick, not even us. No sign-up to vote."
 3. **Get inked, see where you stand** (the inked finger): "Results open after you vote. Guess the crowd, then see how everyone voted." The button becomes **Start voting** (closes, Today's question is right there), with "Or start a poll" under it.
 Pictures, titles, dots and button stay in the same place on every card (nothing jumps). Phone Back and Escape close it; arrow keys move between cards.
+
+**Show it again to everyone (owner, Oct 2026: "reset it, it should start from onboarding in the next release"):** the phone remembers which *version* of the onboarding it has seen (`election-onboarded` = `ONBOARD_VERSION` in `Onboarding.tsx`, read by `Splash.tsx` before the page paints). Bumping the version (now `2`) shows the Home splash and the three cards once more to every phone the next time it opens Home, people who already voted included. Shared poll links still never show them. The TEMPORARY "Start fresh on this phone" button clears it too.

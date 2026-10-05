@@ -11,7 +11,10 @@ import Spot, { type SpotKind } from './Spot';
 // First-visit onboarding (docs/DESIGN.md, "Splash and onboarding"): three short cards, only on Home for someone who has
 // never voted here, never on a shared poll link (a friend's link goes straight to the vote). Swipe or tap Next; Skip is
 // always there. The first card also picks the language. Seen once per phone.
-const SEEN = 'election-onboarded';
+// Bump ONBOARD_VERSION to show the cards (and the Home splash) once more to every phone, voters included: the owner's
+// "start from onboarding in the next release". Splash.tsx reads the same key and version before the page paints.
+export const SEEN = 'election-onboarded';
+export const ONBOARD_VERSION = '2';
 const KINDS: SpotKind[] = ['invite', 'lock', 'finger'];
 
 export default function Onboarding() {
@@ -23,7 +26,7 @@ export default function Onboarding() {
   const track = useRef<HTMLDivElement>(null);
   useEffect(() => {
     try {
-      if (localStorage.getItem(SEEN)) return;
+      if (localStorage.getItem(SEEN) === ONBOARD_VERSION) return;
     } catch {
       return;
     }
@@ -33,7 +36,7 @@ export default function Onboarding() {
   }, []);
   const close = () => {
     try {
-      localStorage.setItem(SEEN, '1');
+      localStorage.setItem(SEEN, ONBOARD_VERSION);
     } catch {}
     setOpen(false);
   };
