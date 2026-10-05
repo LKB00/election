@@ -43,8 +43,9 @@ export default async function CreatePage({ searchParams }: { searchParams: Promi
       </div>
     );
   }
+  // On a computer the page widens so the live preview can sit beside the form (election.css, "Desktop").
   return (
-    <div className="page">
+    <div className="page create-page">
       <header className="page-head">
         <p className="eyebrow"><Timer size={13} strokeWidth={2} aria-hidden />{t.takes30}</p>
         <h1 className="display">{t.startDuel}</h1>

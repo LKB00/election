@@ -10,6 +10,7 @@ import { choicesFromQuestion, emojiFor } from '@/lib/createHelp';
 import { RATING_EMOJIS, RATING_LABELS, type PollKind } from '@/lib/rating';
 import { rememberMyPoll } from './MyPolls';
 import type { Picture } from './PicturePicker';
+import PreviewCard, { previewRules, type PreviewPoll } from './PreviewCard';
 import { dateLocale, monthStyle } from '@/lib/time';
 import { GROUP_DEFAULT_DAYS, MAX_CHOICE, MAX_CHOICES, MAX_DETAILS, MAX_GROUP, MAX_TITLE, MIN_CHOICES, MIN_TITLE } from '@/lib/limits';
 // Loaded only when opened (less code for cheap phones to download before the form works).
@@ -274,7 +275,22 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   ];
   const current = TYPES.find((x) => x.k === (calledIt ? 'called' : kind)) ?? TYPES[0];
 
+  // The poll as voters will meet it: drawn in the "See how it looks" sheet, and live beside the form on a computer.
+  const endsText = endsAt ? endsLabel : isGroup ? new Date(Date.now() + GROUP_DEFAULT_DAYS * 86_400_000).toLocaleString(dateLocale(lang), { day: 'numeric', month: monthStyle(lang), hour: 'numeric', minute: '2-digit' }) : null;
+  const preview: PreviewPoll = {
+    title: title.trim(),
+    description: description.trim(),
+    kind,
+    calledIt,
+    group: isGroup ? groupN : null,
+    electionMode,
+    choices: isDates ? filledDates.map((d) => ({ label: dateLabel(d), emoji: '', photo: '' })) : choices.map((c, i) => ({ label: c.trim(), emoji: emojiAt(i), photo: photos[i] ?? '' })).filter((c) => c.label),
+    rateWords: t.rateWords,
+    rateEmojis: RATING_EMOJIS,
+  };
+
   return (
+    <div className="create-grid">
     <form className="builder create" onSubmit={submit}>
       {again && (
         <p className="create-again" role="status">
@@ -520,17 +536,9 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
       )}
       {previewing && (
         <CreatePreview
-          title={title.trim()}
-          description={description.trim()}
-          kind={kind}
-          calledIt={calledIt}
-          group={isGroup ? groupN : null}
-          electionMode={electionMode}
+          {...preview}
           hideUntilVoted={hideUntilVoted}
-          ends={endsAt ? endsLabel : isGroup ? new Date(Date.now() + GROUP_DEFAULT_DAYS * 86_400_000).toLocaleString(dateLocale(lang), { day: 'numeric', month: monthStyle(lang), hour: 'numeric', minute: '2-digit' }) : null}
-          choices={isDates ? filledDates.map((d) => ({ label: dateLabel(d), emoji: '', photo: '' })) : choices.map((c, i) => ({ label: c.trim(), emoji: emojiAt(i), photo: photos[i] ?? '' })).filter((c) => c.label)}
-          rateWords={t.rateWords}
-          rateEmojis={RATING_EMOJIS}
+          ends={endsText}
           postLabel={t.createDuel}
           busy={busy}
           onPost={() => { setPreviewing(false); post(); }}
@@ -549,5 +557,13 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
         )}
       </div>
     </form>
+    {/* Computers only (hidden on phones, where "See how it looks" opens the same card as a sheet): the poll drawn live
+        as you type, so the empty space beside the form shows the result of every choice you make. */}
+    <aside className="create-live" aria-label={t.previewTitle}>
+      <p className="label preview-eyebrow">{t.previewTitle}</p>
+      <PreviewCard poll={preview} t={t} live />
+      <p className="small muted preview-rules">{previewRules(t, hideUntilVoted, preview.group, endsText)}</p>
+    </aside>
+    </div>
   );
 }

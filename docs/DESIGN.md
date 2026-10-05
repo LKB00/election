@@ -1053,3 +1053,19 @@ Two kinds of row only, all 72px high with the same icon disc:
 - **Switch rows** (Results after voting, Show my name, Votes can change, Voters can suggest, Mix the order, Election mode): name, one short line (shortened so it fits on one line on a phone), the switch.
 - **Rows that open** (Poll type, Topic, End time, Group poll, Add details): name, the current value only when there is one (no "Off" next to a chevron, which read like a switch), the chevron.
 An open row keeps its white look and its disc (it used to turn grey, hiding the disc). What opens sits in one panel shape: 16px sides, full-width fields that all look the same (48px, rounded, icon + input), the topic chips, or the poll types (each with its icon in a round disc, the chosen one soft indigo). The Group poll note is one short sentence ("Results open when everyone has voted, or after 3 days. Not in public lists.").
+
+## Desktop layout (owner, Oct 2026: "the mobile experience is good, desktop needs to be better… the layout of Dashboard")
+
+Phones and tablets are unchanged: every rule is in `election.css` under `min-width: 1024px` ("Desktop").
+
+- **One width.** The top bar's insides line up with the wide pages (1032px of content), so the logo, the page title
+  and the cards share one left edge.
+- **Home.** P1 today's poll on the left (no longer one stretched card). P2 a 360px column on the right: tonight's packs,
+  trending, topic shelves, more polls. The rules reminder stays last, under both. No extra "Start a poll" card: the top
+  bar already has it.
+- **Polls.** A 264px left column that stays in place: search (Enter searches; no button, the column is narrow) and the
+  topics as a vertical list with a small "Topics" label. The list of polls beside it.
+- **Start a poll.** The form on the left; on the right, "How voters will see it", drawn live as you type (the same
+  `PreviewCard` the "See how it looks" sheet uses; empty parts show as faint placeholders). It stays in place while
+  the form scrolls. "See how it looks" is hidden here, since the preview already shows it; Post is still the one
+  ink button.

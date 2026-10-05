@@ -43,7 +43,10 @@ export default async function Duels({ searchParams }: { searchParams: Promise<{ 
     );
   }
   return (
-    <div className="page page-wide">
+    <div className="page page-wide polls-grid">
+      {/* Computers (election.css, "Desktop"): search and topics in a left column that stays in place while the list
+          scrolls beside it. Phones: the same parts, top to bottom. */}
+      <div className="polls-side">
       <header className="page-head">
         <h1 className="sr-only">{t.duels}</h1>
         {/* P2: search. A plain form, so it works before the page's script loads and the result has its own link. */}
@@ -56,6 +59,8 @@ export default async function Duels({ searchParams }: { searchParams: Promise<{ 
         </form>
       </header>
       {/* P2: browse by topic, right under search (one scrolling row of pictures + words). */}
+      {/* Computers only: names the topic list in the left column (on phones the row of pictures says it). */}
+      {!q && <p className="label polls-side__label" aria-hidden>{t.topics}</p>}
       {!q && (
         <nav className="topic-chips topic-row block-tight" aria-label={t.topics}>
           {CATEGORIES.map((c) => (
@@ -66,6 +71,8 @@ export default async function Duels({ searchParams }: { searchParams: Promise<{ 
           ))}
         </nav>
       )}
+      </div>
+      <div className="polls-main">
       {q && (
         <section className="al-block" aria-live="polite">
           {/* No matches: the empty picture says so; a heading above it would say it twice. */}
@@ -103,6 +110,7 @@ export default async function Duels({ searchParams }: { searchParams: Promise<{ 
         </section>
       )}
       </>)}
+      </div>
     </div>
   );
 }
