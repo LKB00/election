@@ -936,10 +936,10 @@ html { scroll-padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); scr
 .created-manage { display: inline-flex; align-items: center; gap: 4px; margin-top: 12px; }
 
 /* Splash (docs/DESIGN.md, "Splash and onboarding"): ~1.2s, then it lifts by itself; never blocks a tap after that. */
-.splash { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: var(--paper); color: var(--ink); animation: splash-out 0.35s ease 1.1s forwards; }
-.splash.is-standalone, .splash.is-first-run { display: none; }
-html.first-run .splash.is-first-run { display: flex; }
-@media (display-mode: standalone) { .splash.is-standalone { display: flex; } }
+.splash { position: fixed; inset: 0; z-index: 100; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: var(--paper); color: var(--ink); }
+/* On only while html has .splash-on (Splash.tsx); .splash-done fades it into the page once the page is ready. */
+html.splash-on .splash { display: flex; }
+html.splash-done .splash { animation: splash-out 0.35s ease forwards; }
 .splash-slip { animation: splash-drop 0.55s cubic-bezier(0.5, 0, 0.75, 0) 0.15s both; }
 .splash-label { animation: splash-light 0.25s ease 0.62s forwards; }
 .splash-sparks { opacity: 0; transform-origin: 60px 52px; animation: splash-spark 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.3) 0.7s forwards; }
@@ -951,7 +951,7 @@ html.first-run .splash.is-first-run { display: flex; }
 @keyframes splash-light { to { fill: var(--lime); } }
 @keyframes splash-rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @keyframes splash-out { to { opacity: 0; visibility: hidden; pointer-events: none; } }
-@media (prefers-reduced-motion: reduce) { .splash, .splash.is-standalone, html.first-run .splash.is-first-run { display: none !important; } }
+@media (prefers-reduced-motion: reduce) { .splash { display: none !important; } }
 
 /* Onboarding: a full-screen layer of three swipeable cards over Home (scroll-snap), one ink button, Skip top right. */
 .onb { position: fixed; inset: 0; z-index: 90; display: flex; flex-direction: column; background: var(--paper); color: var(--ink); padding: env(safe-area-inset-top, 0px) 0 calc(16px + env(safe-area-inset-bottom, 0px)); animation: fade-in 0.3s ease; }

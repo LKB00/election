@@ -6,15 +6,15 @@ import { useEffect, useRef, useState } from 'react';
 import { LANG_NAMES, LANGS, type Lang } from '@/lib/i18n';
 import { setLangCookie, useLang, useT } from '@/lib/lang';
 import { useOverlay } from '@/lib/useOverlay';
+import { ONBOARD_VERSION, SEEN, SPLASH_DONE } from '@/lib/onboard';
 import Spot, { type SpotKind } from './Spot';
 
 // First-visit onboarding (docs/DESIGN.md, "Splash and onboarding"): three short cards, only on Home for someone who has
 // never voted here, never on a shared poll link (a friend's link goes straight to the vote). Swipe or tap Next; Skip is
 // always there. The first card also picks the language. Seen once per phone.
 // Bump ONBOARD_VERSION to show the cards (and the Home splash) once more to every phone, voters included: the owner's
-// "start from onboarding in the next release". Splash.tsx reads the same key and version before the page paints.
-export const SEEN = 'election-onboarded';
-export const ONBOARD_VERSION = '2';
+// "start from onboarding in the next release". Splash.tsx reads the same key and version before the page paints
+// (both live in src/lib/onboard.ts).
 const KINDS: SpotKind[] = ['invite', 'lock', 'finger'];
 
 export default function Onboarding() {
@@ -30,9 +30,16 @@ export default function Onboarding() {
     } catch {
       return;
     }
-    // After the splash has lifted.
-    const id = setTimeout(() => setOpen(true), 1200);
-    return () => clearTimeout(id);
+    // Right after the splash has lifted (a short beat, so the page is seen first); with no splash (less motion, or the
+    // page was opened inside the site), after the same beat.
+    let id: ReturnType<typeof setTimeout>;
+    const show = () => (id = setTimeout(() => setOpen(true), 250));
+    if (document.documentElement.classList.contains('splash-on')) window.addEventListener(SPLASH_DONE, show, { once: true });
+    else show();
+    return () => {
+      clearTimeout(id);
+      window.removeEventListener(SPLASH_DONE, show);
+    };
   }, []);
   const close = () => {
     try {

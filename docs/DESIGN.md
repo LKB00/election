@@ -1008,3 +1008,7 @@ Every main screen opened at 320 and 360 px wide in Hindi and Hinglish (Home, Pol
 | Top line | P3 | Brand, "Live" (or "Final result" / "Result declared") and the vote count. A quiet "Full screen" button, hidden once full screen. |
 
 Safety: the screen always asks for the public view (`/api/polls/<id>?public=1`, no voter), so a presenter who has voted never puts hidden results on a TV. Not indexed by search engines. Entry point: "Show on a big screen" on the maker's page (anyone with the link can open it; it shows only what the poll page shows to a non-voter). Landscape: poll left, QR right; portrait or phone: one column with a small QR row.
+
+### Splash: one, painted first, lifts when the page is ready (owner, Oct 2026: "the transition from loading animation to splash screen is not smooth")
+
+Before: on a first visit, Home's grey loading outline painted first and the splash then popped over it; the splash also left on a fixed timer, so a slow page showed the grey outline again before snapping in, and the installed app could play two splashes. Now there is **one** splash, the first thing in `<body>` (layout), switched on by a tiny script before anything paints (installed app: every launch; Home on a first visit of this onboarding version; never a shared poll link; never with Reduce motion). It plays at least 1.15 s, then fades (0.35 s) into the page as soon as the page has arrived, at most 3 s. The onboarding cards open a beat after the fade (`election:splash-done`). Timings and keys: `src/lib/onboard.ts`.

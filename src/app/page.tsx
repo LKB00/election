@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import DuelGame from '@/components/DuelGame';
 import EmptyState from '@/components/EmptyState';
-import Splash from '@/components/Splash';
 import Onboarding from '@/components/Onboarding';
 import RulesNotice from '@/components/RulesNotice';
 import DuelTiles from '@/components/DuelTiles';
@@ -63,7 +62,6 @@ export default async function Home() {
   // cards. Decided on the phone (it remembers having seen them). Never on a shared poll link.
   return (
     <div className="page page-wide">
-      <Splash firstRun name={t.siteName} line={t.splashLine} />
       <Onboarding />
       {!empty && (
         <header className="al-home">
