@@ -1202,7 +1202,7 @@ Step counter: "Guess the crowd" answered / skipped (not counted when yours was t
 bottom", "make it subtle", then "we will show views, not visitors; I want the number big"): one quiet row at the bottom of
 Home, before the rules reminder (on an empty site, under the empty state), no card: three small overlapping faces (the
 first three profile faces on yellow, indigo and pink soft grounds; decoration only, never real visitors) and a small soft
-"+", then the number big (32px, bold) and small muted words: "views", and "M have voted" under it once 25 people have
+"+", then the number bold and a little bigger than the words (22px, in balance with the 24px faces; owner: "57 looks too big") and small muted words: "views", and "M have voted" under it once 25 people have
 voted. Not ink (ink is the one main action) and not tappable. Shown from the first view (`VIEWS_SHOW_MIN`).
 Views = every page opened, all days added up (`viewTotal`): Home and polls count themselves (`home_view`, `poll_view`,
 so views from before this change are included) and `PageView` in the layout counts every other page (`page_view`).
