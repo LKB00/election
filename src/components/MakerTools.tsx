@@ -87,10 +87,19 @@ export function Suggestions({ id, items }: { id: string; items: MakerView['pendi
   const lang = useLang();
   const router = useRouter();
   const [error, setError] = useState('');
+  // One at a time: a second tap while the first is saving does nothing (it could add the same choice twice).
+  const [busy, setBusy] = useState<string | null>(null);
   async function decide(sid: string, add: boolean) {
+    if (busy) return;
+    setBusy(sid);
+    setError('');
     const r = await manage(id, { action: add ? 'add' : 'drop', sid });
-    if (!r.ok) return setError(r.data?.error ? apiMsg(lang, r.data.error) : t.errGeneric);
+    if (!r.ok) {
+      setBusy(null);
+      return setError(r.data?.error ? apiMsg(lang, r.data.error) : t.errGeneric);
+    }
     router.refresh();
+    setBusy(null);
   }
   return (
     <>
@@ -101,8 +110,8 @@ export function Suggestions({ id, items }: { id: string; items: MakerView['pendi
               <span className="al-row__title">{s.label}</span>
               <span className="al-row__meta">{t.suggestedBy(s.n)}</span>
             </span>
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => decide(s.id, true)}><Plus size={14} strokeWidth={2.25} aria-hidden /> {t.addChoice}</button>
-            <button type="button" className="icon-btn" aria-label={`${t.dropChoice}: ${s.label}`} onClick={() => decide(s.id, false)}><Trash2 size={16} strokeWidth={2} aria-hidden /></button>
+            <button type="button" className="btn btn-ghost btn-sm" disabled={!!busy} onClick={() => decide(s.id, true)}><Plus size={14} strokeWidth={2.25} aria-hidden /> {t.addChoice}</button>
+            <button type="button" className="icon-btn" disabled={!!busy} aria-label={`${t.dropChoice}: ${s.label}`} onClick={() => decide(s.id, false)}><Trash2 size={16} strokeWidth={2} aria-hidden /></button>
           </li>
         ))}
       </ul>
@@ -165,10 +174,15 @@ export function FixTypo({ view }: { view: MakerView }) {
   const [description, setDescription] = useState(view.description);
   const [opts, setOpts] = useState(view.options);
   const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
   const rating = view.kind === 'rating';
   async function save(e: React.FormEvent) {
     e.preventDefault();
+    if (saving) return;
+    setSaving(true);
+    setError('');
     const r = await manage(view.id, { action: 'edit', title, description, options: rating ? [] : opts });
+    setSaving(false);
     if (!r.ok) return setError(r.data?.error ? apiMsg(lang, r.data.error) : t.errGeneric);
     setOpen(false);
     router.refresh();
@@ -198,7 +212,7 @@ export function FixTypo({ view }: { view: MakerView }) {
       )}
       {error && <p className="duel-error" role="alert">{error}</p>}
       <span className="row wrap">
-        <button className="btn btn-primary">{t.saveChanges}</button>
+        <button className="btn btn-primary" disabled={saving}>{t.saveChanges}</button>
         <button type="button" className="btn btn-ghost" onClick={() => setOpen(false)}>{t.cancel}</button>
       </span>
     </form>

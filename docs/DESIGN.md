@@ -1266,3 +1266,6 @@ pack predictions close at kick-off; "Ask again" only links your own earlier poll
 paused, or on a complete group; group polls always end (3 days by default); editing refuses duplicate or "Other" ids;
 no new choices on an ended poll and "Other" stays last; a skip never overwrites a guess; trends use India days; a
 planned day must exist; the health check never shows database errors; the evening job's secret is compared safely.
+Then (owner: "fix both"): the top bar's Back remembers moving inside the site (a link opened from WhatsApp, then Polls →
+a poll, goes Back to Polls, not Home); Add / Delete a suggested choice and Fix a typo's Save ignore a second tap while
+saving.
