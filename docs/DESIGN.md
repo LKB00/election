@@ -1300,13 +1300,14 @@ Measure it on the step counter before making it the default anywhere else.
 
 ## The Chunav mark (owner, Oct 2026: "a better icon that says what the app is and carries the brand")
 
-**A solid dark hand, one finger up from a closed fist (knuckles and a thumb drawn in), with a light grey election-ink
-line on the nail, on the brand yellow** (owner, Oct 2026: "follow the guidelines of app icon and in place of purple use
-light gray"). It is India's sign for "I voted" and our own signature (the inked finger after every vote). The finger rises
+**A solid dark hand, one slim finger up from a broad closed fist (knuckles and a thumb drawn in), with the election-ink
+line on the nail cut out in the brand yellow, on that yellow: two colours only** (owner, Oct 2026: "follow the guidelines
+of app icon"; then "the finger looks too big compared to the hand, make it balanced; in two colours, use yellow for the
+ink"). Balance: the finger is a third of the fist's width and stands about two thirds of the fist's height above the
+knuckles. It is India's sign for "I voted" and our own signature (the inked finger after every vote). The finger rises
 from the **left edge** of the fist, the ☝ gesture: a finger in the middle with fingers beside it reads as a rude gesture,
 so never draw it that way. App-icon rules: a solid square with no transparency, no words, bold simple shapes, the whole
-hand centred inside the middle 80% (the safe zone), so circle, squircle and rounded-square crops never cut it. The light
-grey ink needs the dark hand behind it to show. One drawing (`src/lib/brandMark.ts`) for the app icon and browser tab
+hand centred inside the middle 80% (the safe zone), so circle, squircle and rounded-square crops never cut it. One drawing (`src/lib/brandMark.ts`) for the app icon and browser tab
 (full bleed: the phone rounds it), the top bar, the splash and the big screen (`LogoMark.tsx`, soft square), and the share
-pictures. Its colours are its own tokens (`--mark-ground`, `--mark-hand`, `--mark-ink`), which do not change in the dark
+pictures. Its colours are its own tokens (`--mark-ground`, `--mark-hand`), which do not change in the dark
 look: a logo does not invert. Readable down to 16 px (the browser tab).
