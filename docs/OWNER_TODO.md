@@ -59,7 +59,16 @@ Say "continue features" and Claude picks up the next one.
 
 ## 6b. From the round 2 research (needs you)
 
-- [ ] **Move to Mumbai, both parts on the same day:** Vercel → Settings → Functions → Region → **Mumbai (bom1)**, and in Neon make a new project in **Singapore** and move the data (Claude can do the moving with you; say "move the database"). Doing only one makes pages slower, not faster.
+- [ ] **Move to Mumbai, both parts on the same day** (do it at night, when few people vote; about 15 minutes):
+  1. **Neon → New project**, region **AWS Asia Pacific (Singapore)**, same Postgres version as the old one.
+  2. In the new project, use Neon's **Import data** (it copies everything from your old database: paste the old
+     project's connection string into Neon's own box, never into a chat). If you don't see it, tell Claude and it
+     will give you the other way.
+  3. **Vercel → Settings → Environment Variables → `DATABASE_URL`** → replace it with the **new** project's
+     connection string (the "pooled" one), for Production. Save.
+  4. Tell Claude "database moved". Claude then makes the site run in **Mumbai** (already prepared in `vercel.json`),
+     puts it live and checks every page and that your polls and votes are all there.
+  5. Keep the old Neon project for a week, then delete it.
 - [ ] **Google Search Console** (free, 10 minutes): search.google.com/search-console → Add property → your site address → verify (Vercel lets you add the TXT record) → Sitemaps → submit `sitemap.xml`. It shows which searches find you. Hindi and Hinglish pages are now offered to Google too.
 - [ ] **Test on an old Android phone inside WhatsApp:** send yourself a poll link, check the preview picture shows, open it, time how long until you can vote.
 - [ ] **Should poll makers see their own poll's results without voting?** Today they must vote (or end the poll) like everyone else, so the maker's page says "Vote on your poll to see the results". Say "let makers see results" if you want that.
