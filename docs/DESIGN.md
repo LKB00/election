@@ -1116,3 +1116,11 @@ moment per screen; nothing moves with "Reduce motion"; no game effects (points, 
 | 4 | Signs of life: open polls' counts are asked for again every 45 s (at most 10 times, only while the tab is on screen, `/api/polls/counts`, limits in `limits.ts`); a count that went up ticks with a yellow flash. "Trending now" has the pulsing live dot | Home, Polls, topic pages, the poll page's side list | P3 | The site feels alive: other people are voting right now. |
 | 5 | The pictures breathe (sparkles, floating slips, existing); the padlock's shackle now clicks now and then | Empty pages, sign-in | P3 | Friendly, never still. |
 | 6 | With a mouse only: ballot cards, Guess-the-crowd cards and banners lift 2px with a shadow | Computers | P3 | Shows what can be pressed. Never on touch screens. |
+
+## You on computers (owner, Oct 2026: "make the You page better on desktop too")
+
+Phones unchanged. On a computer (≥1024px):
+- **Signed in:** a 340px left column with you (face, name, Edit profile, laid out as a card, face larger) and the Account
+  list under it; P1 **Your polls** beside it, full height. Same parts and order for screen readers as on a phone.
+- **Signed out:** the profile screen as a white card on the left; Settings (Voting sound), and polls made on this
+  computer, in a 400px column on the right.
