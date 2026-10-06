@@ -23,7 +23,6 @@ import { apiMsg, reasonLabel, type Dict, type Lang } from '@/lib/i18n';
 import { faceLabels } from '@/lib/labels';
 import { manageKeyFor } from './MyPolls';
 import SuggestChoice from './SuggestChoice';
-import PeopleGrid from './PeopleGrid';
 import ResultAlert from './ResultAlert';
 import GroupWait from './GroupWait';
 import { INDIA_TZ, dateLocale, monthStyle } from '@/lib/time';
@@ -822,8 +821,11 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
   const finalYou = happenedIdx >= 0 || !mine || ranking || multi || dates ? '' : finalWon ? `${t.finalYouWon} · ${mine.emoji ? `${mine.emoji} ` : ''}${mine.label}` : t.finalYou(rating ? `${mine.emoji ?? ''} ${mine.label}`.trim() : mine.label);
   const numbered = poll.electionMode || ranking;
   // The duel that Next will open (the same rule as goNext): named in the bar, so Next is an invitation, not a guess.
-  const upNext = deck.length > 1 ? [...deck.keys()].map((k) => deck[(i + 1 + k) % deck.length]).find((p) => p.id !== poll.id && isOpen(p)) ?? null : null;
 
+  // The card under the result (P1 after voting): shown once the numbers are in and counting day has finished.
+  const verdictOn = revealed && !!mine && !counting;
+  // What the main button leads to, said on it (owner, Oct 2026: "what does Next mean?"): another poll, or the end.
+  const hasNext = deck.some((p, k) => k !== i && p.id !== poll.id && isOpen(p));
   return (
     <div
       className={'tot duel' + (revealed ? ' is-revealed' : '') + (poll.electionMode ? '' : ' is-light')}
@@ -971,8 +973,6 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
                 {revealed && (
                   <span className="duel-result">
                     <span className="duel-pct"><Tween value={pcts[n]} render={(v) => `${v}%`} /></span>
-                    {/* The line at 50% is the majority mark, as on counting-day tallies. */}
-                    <span className="meter duel-meter" aria-hidden><span style={{ width: `${pcts[n]}%` }} /></span>
                     <span className="small muted">{ranking ? (o.avgPlace != null ? t.rankAvg(o.avgPlace.toFixed(1)) : '') : dates ? t.datesResult(o.votes, o.maybe) : <Tween value={votesOf(o)} render={(v) => t.votes(v)} />}</span>
                     {/* Your crowd guess, drawn on the real result: you see at once how close you were. */}
                     {poll.myGuess?.optionId === o.id && <span className="guess-tag"><Target size={12} strokeWidth={2} aria-hidden /> {t.yourGuess}</span>}
@@ -1018,10 +1018,6 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
         <GroupWait pollId={poll.id} title={poll.title} voted={poll.participants} of={poll.groupSize} mine={voted} />
       )}
 
-      {/* Where you stand, as people (P2): 100 dots, yours in yellow. Pick-one polls once there is a crowd to stand in. */}
-      {revealed && !counting && mine && poll.kind === 'choice' && poll.totalVotes >= 2 && (
-        <PeopleGrid pct={pcts[poll.options.indexOf(mine)]} label={t.gridLabel} caption={t.gridMine(mine.label)} />
-      )}
 
       {/* Pick several: the one main step is the Vote button under the ticks; it says how many you picked. */}
       {multi && !voted && !poll.closed && (
@@ -1047,13 +1043,6 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
         </div>
       )}
       {multi && revealed && <p className="small muted">{ranking ? t.rankNote : dates ? t.datesNote : t.multiNote}</p>}
-      {/* "Ask again": how the same question went last time (only as far as anyone may see it). */}
-      {revealed && poll.previous && (
-        <p className="small muted prev-line">
-          <Repeat size={14} strokeWidth={2} aria-hidden /> {poll.previous.leader && poll.previous.percent != null ? t.lastTime(poll.previous.leader, poll.previous.percent, poll.previous.voters) : t.lastTimeHidden(poll.previous.voters)}
-        </p>
-      )}
-      {voted && poll.suggestionsOn && !counting && <SuggestChoice pollId={poll.id} />}
 
       {!voted && !poll.closed && (
         <p className="small muted duel-hint" data-hint>{t.ballotHint}</p>
@@ -1080,7 +1069,40 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
         <p className="small duel-sealed" role="note"><Lock size={13} strokeWidth={1.75} aria-hidden /> {t.sealed(sealedWhen(poll.sealedUntil!, lang))}</p>
       )}
 
-      {!casting && voted && mine && !poll.closed && (
+      {verdictOn && (
+        // P1 after voting, right under the result (owner, Oct 2026: "too much information, no hierarchy"): one card says
+        // where you stand, once. It holds what the floating bar used to say (guess, friend, verdict) and the ink record.
+        <div className={'duel-verdict' + (inkedFor === poll.id ? ' is-new' : '')} aria-live="polite">
+          {!poll.closed && <InkFinger size={32} />}
+          <div className="duel-verdict__text">
+            {poll.myGuess && (
+              <p className={'duel-guessed' + (justGuessed ? ' is-new' : '')}>
+                {poll.myGuess.correct ? <strong className="txt-good">{t.exitRight}</strong> : <strong className="txt-bad">{t.exitWrong}</strong>}
+                {!poll.myGuess.correct && leaderIdx >= 0 && <> {t.isAhead(poll.options[leaderIdx].label)}</>}
+              </p>
+            )}
+            {/* Came from a friend's link: agree or disagree with them is the headline of this moment. */}
+            {poll.friend.optionId && (
+              <p className={'duel-friend-line' + (poll.friend.optionId === poll.myVote ? ' is-agree' : '')}>
+                <Users size={14} strokeWidth={1.75} aria-hidden />{' '}
+                <strong>{poll.friend.optionId === poll.myVote ? t.friendAgree : t.friendDisagree}</strong>{' '}
+                {t.friendTheyPicked(poll.options.find((o) => o.id === poll.friend.optionId)?.label ?? '')}
+              </p>
+            )}
+            {happenedIdx < 0 && !poll.closed && <p><strong className={rareNow ? 'is-rare' : undefined}>{vTitle}</strong> {vLine}</p>}
+            {poll.friends.agree + poll.friends.disagree > 0 && <p className="small muted">{t.dares(poll.friends.agree + poll.friends.disagree, poll.friends.agree, poll.friends.disagree)}</p>}
+            {!poll.closed && (
+              <p className="small muted">
+                {t.inked}.
+                {poll.electionMode && poll.myVoterNumber ? <> {t.voterId} EL-{String(poll.myVoterNumber).padStart(6, '0')}</> : null}
+                {undoUntil > 0 && !seenAtOnce && <> · <button type="button" className="link-like duel-undo" onClick={undo}>{t.undoVote}</button></>}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {!casting && voted && mine && !poll.closed && !verdictOn && (
         // The record of the ink moment (the moment itself plays in CastVote).
         <div className={'duel-inked' + (inkedFor === poll.id ? ' is-new' : '')}>
           <InkFinger size={32} />
@@ -1115,98 +1137,11 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
         </div>
       )}
 
-      {/* The trend under the result, only when there is one (a swing, or the share over time). The "line on each bar =
-          majority" note and mark belong to Election mode's counting-day look; elsewhere they were noise. */}
-      {revealed && poll.totalVotes > 0 && !counting && (poll.swing || (poll.trend.length > 2 && sparkOpt) || (poll.electionMode && !rating && !ranking)) && (
-        <div className="duel-swing">
-          {poll.trend.length > 2 && sparkOpt && <Sparkline points={poll.trend.map((p) => (sparkOpt.id === poll.options[0].id ? p.a : 100 - p.a))} label={sparkOpt.label} aria={t.shareOverTime} />}
-          <p className="small muted">
-            {[
-              poll.swing ? (
-                <span key="s">
-                  <strong className="duel-swing-name">{t.swing24}</strong> {poll.options.find((o) => o.id === poll.swing!.optionId)?.label}{' '}
-                  <span className={poll.swing.points > 0 ? 'txt-good' : 'txt-bad'}>{poll.swing.points > 0 ? '▲' : '▼'} {Math.abs(poll.swing.points)}{t.pts}</span>
-                </span>
-              ) : poll.trend.length > 2 && sparkOpt ? (
-                <span key="t">{t.shareOverTime(sparkOpt.label)}</span>
-              ) : null,
-              poll.electionMode && !rating && !ranking ? <span key="m">{t.majorityLine}</span> : null,
-            ]
-              .filter(Boolean)
-              .flatMap((x, n) => (n ? [' · ', x] : [x]))}
-          </p>
-        </div>
-      )}
-
       {poll.options.some((o) => o.imageCredit) && (
         <p className="duel-credit">{t.photos}: {poll.options.filter((o) => o.imageCredit).map((o) => o.imageCredit).join(' · ')}</p>
       )}
 
       {msg && <p className="duel-error" role="alert">{msg}</p>}
-
-      {/* The one next step, pinned at thumb height on phones. */}
-      <div className={'tot-result' + (barOn ? ' is-shown' : '')} aria-live="polite">
-        {revealed && counting && (
-          <p className="duel-counting"><span className="live-dot" aria-hidden /> <span><strong>{t.counting}</strong> · {t.round(countRound! + 1)}: {ticker}</span></p>
-        )}
-        {barOn && !counting && (
-          <>
-            <p>
-              {/* Sealed: the note under the cards already says why there are no numbers; the bar keeps Undo, Share and Next. */}
-              {sealed && !revealed && undoUntil > 0 && !poll.closed && voted && (
-                <button type="button" className="link-like duel-undo small muted" onClick={undo}>{t.undoVote}</button>
-              )}
-              {/* An ended poll's result (and a "Called it" answer) is the card at the top, not repeated here. */}
-              {revealed && mine ? (
-                <>
-                  {poll.myGuess && (
-                    <span className={'duel-guessed' + (justGuessed ? ' is-new' : '')}>
-                      {poll.myGuess.correct ? (
-                        <strong className="txt-good">{t.exitRight}</strong>
-                      ) : (
-                        <strong className="txt-bad">{t.exitWrong}</strong>
-                      )}
-                      {!poll.myGuess.correct && leaderIdx >= 0 && <> {t.isAhead(poll.options[leaderIdx].label)}</>}
-                      <br />
-                    </span>
-                  )}
-                  {/* Came from a friend's link: agree or disagree with them is the headline of this moment (P1). */}
-                  {poll.friend.optionId && (
-                    <span className={'duel-friend-line' + (poll.friend.optionId === poll.myVote ? ' is-agree' : '')}>
-                      <Users size={14} strokeWidth={1.75} aria-hidden />{' '}
-                      <strong>{poll.friend.optionId === poll.myVote ? t.friendAgree : t.friendDisagree}</strong>{' '}
-                      {t.friendTheyPicked(poll.options.find((o) => o.id === poll.friend.optionId)?.label ?? '')}
-                      <br />
-                    </span>
-                  )}
-                  {/* "Can your friends change that?" is for a running poll; an ended one has its card at the top. */}
-                  {happenedIdx < 0 && !poll.closed && <><strong className={rareNow ? 'is-rare' : undefined}>{vTitle}</strong> {vLine}</>}
-                  {poll.friends.agree + poll.friends.disagree > 0 && (
-                    <span className="small muted">
-                      {' '}{t.dares(poll.friends.agree + poll.friends.disagree, poll.friends.agree, poll.friends.disagree)}
-                    </span>
-                  )}
-                  {undoUntil > 0 && !poll.closed && !seenAtOnce && (
-                    <> <button type="button" className="link-like duel-undo small muted" onClick={undo}>{t.undoVote}</button></>
-                  )}
-                </>
-              ) : (
-null
-              )}
-            </p>
-            {upNext && <span className="small muted duel-upnext">{t.upNext(upNext.title)}</span>}
-            <span className="row duel-actions">
-              {/* A group poll still waiting: "Remind the group" (above) is the one share action. */}
-              {!poll.groupWaiting && <button type="button" className="btn btn-ghost" onClick={() => (mine && poll.myShareCode ? setSharing(true) : share())}>
-                <Share2 size={14} strokeWidth={1.75} aria-hidden /> {copied ? t.linkCopied : poll.closed ? t.shareResult : t.shareInk}
-              </button>}
-              <button type="button" className="btn btn-primary" onClick={next} ref={nextRef}>
-                {t.next} <ArrowRight size={14} strokeWidth={1.75} aria-hidden />
-              </button>
-            </span>
-          </>
-        )}
-      </div>
 
       {declaredBurst && <Burst count={24} />}
 
@@ -1228,24 +1163,10 @@ null
       )}
 
       {/* P3, optional: after the pinned bar, so the bar never covers it. */}
-      {(revealed || sealed || poll.groupWaiting) && mine && (
+      {/* Everything about THIS poll comes before the buttons that leave it (owner, Oct 2026: "the reactions belong to
+          the current poll"). */}
+      {(revealed || sealed || poll.groupWaiting) && mine && !counting && (
         <div className="duel-after">
-          {/* P2, first after the result (owner, Oct 2026, from the product audit): the voter → maker step. Someone who
-              just answered a friend's question is asked, once and gently, for a question of their own. */}
-          {revealed && (
-            <ul className="al-listcard own-question">
-              <li>
-                <Link href="/create" className="al-row" onClick={() => track('create_after_vote')}>
-                  <span className="al-row__disc" style={{ '--tone': 'var(--lime-badge)' } as React.CSSProperties} aria-hidden><Plus size={20} strokeWidth={1.75} /></span>
-                  <span className="al-row__main">
-                    <span className="al-row__title">{t.ownQuestion}</span>
-                    <span className="al-row__meta">{t.startOwnLine}</span>
-                  </span>
-                  <ArrowRight size={18} strokeWidth={1.75} className="al-row__chevron" aria-hidden />
-                </Link>
-              </li>
-            </ul>
-          )}
           {/* P2: your group (you + friends from your link) vs everyone, for your pick. Lime = you. */}
           {revealed && poll.group && (
             <div className="duel-group group-vs">
@@ -1287,20 +1208,6 @@ null
               )}
             </div>
           )}
-          {/* What everyone's reasons say (only once results are open): the reward for answering "why". */}
-          {revealed && poll.options.some((o) => o.reasons.length > 0) && (
-            <div className="duel-group duel-whys">
-              {poll.options.filter((o) => o.reasons.length > 0).map((o) => {
-                const sum = o.reasons.reduce((a, r) => a + r.n, 0);
-                return (
-                  <p key={o.id} className="small">
-                    <span className="label">{t.whyPeople(o.label)}</span>
-                    <span className="muted">{o.reasons.slice(0, 3).map((r) => `${reasonLabel(t, r.reason)} ${Math.round((r.n / sum) * 100)}%`).join(' · ')}</span>
-                  </p>
-                );
-              })}
-            </div>
-          )}
           <div className="duel-group">
             <p className="label">{t.react}</p>
             <div className="row wrap" role="group" aria-label={t.react}>
@@ -1314,10 +1221,105 @@ null
               })}
             </div>
           </div>
+          {/* P3: everything else, folded into one row so the page stays calm: the trend, last time, everyone's reasons,
+              suggest a choice, report. */}
+          <details className="duel-more">
+            <summary>{t.pollMore}</summary>
+            <div className="duel-more__body">
+        {/* The trend under the result, only when there is one (a swing, or the share over time). The "line on each bar =
+            majority" note and mark belong to Election mode's counting-day look; elsewhere they were noise. */}
+        {revealed && poll.totalVotes > 0 && !counting && (poll.swing || (poll.trend.length > 2 && sparkOpt)) && (
+          <div className="duel-swing">
+            {poll.trend.length > 2 && sparkOpt && <Sparkline points={poll.trend.map((p) => (sparkOpt.id === poll.options[0].id ? p.a : 100 - p.a))} label={sparkOpt.label} aria={t.shareOverTime} />}
+            <p className="small muted">
+              {[
+                poll.swing ? (
+                  <span key="s">
+                    <strong className="duel-swing-name">{t.swing24}</strong> {poll.options.find((o) => o.id === poll.swing!.optionId)?.label}{' '}
+                    <span className={poll.swing.points > 0 ? 'txt-good' : 'txt-bad'}>{poll.swing.points > 0 ? '▲' : '▼'} {Math.abs(poll.swing.points)}{t.pts}</span>
+                  </span>
+                ) : poll.trend.length > 2 && sparkOpt ? (
+                  <span key="t">{t.shareOverTime(sparkOpt.label)}</span>
+                ) : null,
+              ]
+                .filter(Boolean)
+                .flatMap((x, n) => (n ? [' · ', x] : [x]))}
+            </p>
+          </div>
+        )}
+              {/* "Ask again": how the same question went last time (only as far as anyone may see it). */}
+              {revealed && poll.previous && (
+                <p className="small muted prev-line">
+                  <Repeat size={14} strokeWidth={2} aria-hidden /> {poll.previous.leader && poll.previous.percent != null ? t.lastTime(poll.previous.leader, poll.previous.percent, poll.previous.voters) : t.lastTimeHidden(poll.previous.voters)}
+                </p>
+              )}
+              {/* What everyone's reasons say (only once results are open): the reward for answering "why". */}
+              {revealed && poll.options.some((o) => o.reasons.length > 0) && (
+                <div className="duel-group duel-whys">
+                  {poll.options.filter((o) => o.reasons.length > 0).map((o) => {
+                    const sum = o.reasons.reduce((a, r) => a + r.n, 0);
+                    return (
+                      <p key={o.id} className="small">
+                        <span className="label">{t.whyPeople(o.label)}</span>
+                        <span className="muted">{o.reasons.slice(0, 3).map((r) => `${reasonLabel(t, r.reason)} ${Math.round((r.n / sum) * 100)}%`).join(' · ')}</span>
+                      </p>
+                    );
+                  })}
+                </div>
+              )}
+              {poll.suggestionsOn && !counting && <SuggestChoice pollId={poll.id} />}
+              <ReportDuel pollId={poll.id} t={t} lang={lang} />
+            </div>
+          </details>
         </div>
       )}
 
-      <ReportDuel pollId={poll.id} t={t} lang={lang} />
+      {/* Before voting (or without a pick) Report stays at the bottom; after, it is under "More about this poll". */}
+      {/* Then what to do now: Share and Next poll, in the page (not a floating bar: owner, Oct 2026), after this poll's parts. */}
+      <div className={'tot-result' + (barOn ? ' is-shown' : '')} aria-live="polite">
+        {revealed && counting && (
+          <p className="duel-counting"><span className="live-dot" aria-hidden /> <span><strong>{t.counting}</strong> · {t.round(countRound! + 1)}: {ticker}</span></p>
+        )}
+        {barOn && !counting && (
+          <>
+            {/* Only the two next steps (owner, Oct 2026): what the bar used to say is in the card under the result. */}
+            <p>
+              {/* Sealed: the note under the cards already says why there are no numbers; the bar keeps Undo, Share and Next. */}
+              {sealed && !revealed && undoUntil > 0 && !poll.closed && voted && (
+                <button type="button" className="link-like duel-undo small muted" onClick={undo}>{t.undoVote}</button>
+              )}
+            </p>
+            <span className="row duel-actions">
+              {/* A group poll still waiting: "Remind the group" (above) is the one share action. */}
+              {!poll.groupWaiting && <button type="button" className="btn btn-ghost" onClick={() => (mine && poll.myShareCode ? setSharing(true) : share())}>
+                <Share2 size={14} strokeWidth={1.75} aria-hidden /> {copied ? t.linkCopied : poll.closed ? t.shareResult : t.shareInk}
+              </button>}
+              <button type="button" className="btn btn-primary" onClick={next} ref={nextRef}>
+                {hasNext ? t.nextPoll : t.nextFinish} {hasNext && <ArrowRight size={14} strokeWidth={1.75} aria-hidden />}
+              </button>
+            </span>
+          </>
+        )}
+      </div>
+
+      {/* Last, because it also leaves this poll: the voter → maker step (owner, Oct 2026, product audit). Someone who just
+          answered a friend's question is asked, once and gently, for a question of their own. */}
+      {revealed && mine && !counting && (
+        <ul className="al-listcard own-question">
+          <li>
+            <Link href="/create" className="al-row" onClick={() => track('create_after_vote')}>
+              <span className="al-row__disc" style={{ '--tone': 'var(--lime-badge)' } as React.CSSProperties} aria-hidden><Plus size={20} strokeWidth={1.75} /></span>
+              <span className="al-row__main">
+                <span className="al-row__title">{t.ownQuestion}</span>
+                <span className="al-row__meta">{t.startOwnLine}</span>
+              </span>
+              <ArrowRight size={18} strokeWidth={1.75} className="al-row__chevron" aria-hidden />
+            </Link>
+          </li>
+        </ul>
+      )}
+      {/* On Home (the daily set) Report is on the poll's own page instead; after voting it is under "More". */}
+      {!daily && !((revealed || sealed || poll.groupWaiting) && mine) && <ReportDuel pollId={poll.id} t={t} lang={lang} />}
     </div>
   );
 }

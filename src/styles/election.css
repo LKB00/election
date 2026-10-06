@@ -126,9 +126,6 @@
 .tick { display: inline-block; animation: tick 0.4s ease; font-variant-numeric: tabular-nums; }
 @keyframes tick { from { transform: translateY(40%); opacity: 0; } }
 /* Majority mark at 50% on every result bar. */
-.duel-meter { position: relative; }
-.is-election .duel-meter::after { content: ''; position: absolute; left: calc(50% - 1px); top: -6px; bottom: -6px; width: 2px; border-radius: 1px; background: var(--ink); opacity: 0.75; }
-.duel-meter > span { transition: width 0.55s cubic-bezier(0.2, 0.9, 0.3, 1); }
 .duel-pct { transition: color 0.2s; }
 .duel-counting { margin: 0; display: flex; align-items: center; gap: 4px; }
 /* Swing and the race line */
@@ -139,7 +136,6 @@
 .duel-spark-line { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 @media (prefers-reduced-motion: reduce) {
   .live-dot, .tick, .duel-photo img, .duel-guess { animation: none; }
-  .duel-meter > span { transition: none; }
 }
 
 /* ---- Batch 4: feels like an app ---- */
@@ -225,8 +221,7 @@ button.link-like { border: 0; background: none; padding: 8px 0; cursor: pointer;
 .is-ballot .tot-caption { position: static; grid-area: side; font-size: 12px; line-height: 16px; text-align: right; }
 .is-ballot .duel-result { grid-area: result; flex-direction: row; align-items: center; gap: 12px; padding: 0; }
 .is-ballot .duel-pct { font-size: 18px; line-height: 24px; min-width: 48px; }
-.is-ballot .duel-meter { flex: 1; }
-.is-ballot .duel-result .small { white-space: nowrap; }
+.is-ballot .duel-result .small { white-space: nowrap; margin-left: auto; }
 /* The Vote button looks pressable: raised, like the real EVM's blue key (it read as switched off when flat). */
 .evm-btn { box-shadow: var(--shadow-key); }
 .duel-option:not(:disabled):active .evm-btn { box-shadow: var(--shadow-key-pressed); }
@@ -387,7 +382,6 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .duel-guess-options.is-many .guess-card .duel-face, .duel-guess-options.is-many .guess-card .duel-photo { width: 32px; height: 32px; font-size: 12px; }
 
 /* "Up next: …" above the Next button: one line, cut with … */
-.duel-upnext { display: block; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 /* "3 new votes just now": appears softly, goes away by itself. */
 .duel-fresh { color: var(--positive); animation: fade-in 0.4s ease; }
 
@@ -603,7 +597,6 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
    All of it stops with "Reduce motion". */
 @media (prefers-reduced-motion: no-preference) {
   /* The result builds: your pick's bar first, then the others (--i is the order), numbers rise in with them. */
-  .duel-option .duel-meter > span { transform-origin: left center; animation: bar-grow 0.6s calc(var(--i, 0) * 90ms) cubic-bezier(0.22, 1, 0.36, 1) backwards; }
   .duel-option .duel-pct { display: inline-block; animation: pct-rise 0.4s calc(var(--i, 0) * 90ms) cubic-bezier(0.22, 1, 0.36, 1) backwards; }
   .duel-option .tot-caption { animation: pct-rise 0.35s 0.25s ease backwards; }
   @keyframes bar-grow { from { transform: scaleX(0); } }
@@ -660,18 +653,6 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .duel-options.no-num:not(.is-ballot) .tot-caption { left: 12px; }
 
 /* ---- Visual communication (docs/DESIGN.md, "Visual communication") ---- */
-/* People grid: 100 dots, yours in yellow with an ink ring on your own dot. */
-.people-grid { margin: 4px 0 0; display: flex; flex-direction: column; gap: 8px; }
-.people-grid__dots { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; max-width: 360px; }
-.people-grid__dot { aspect-ratio: 1; border-radius: 50%; background: var(--line); }
-.people-grid__dot.is-mine { background: var(--lime); }
-.people-grid__dot.is-you { box-shadow: 0 0 0 2px var(--ink); }
-.people-grid figcaption { font-size: 15px; line-height: 22px; }
-.people-grid__big { font-size: 28px; line-height: 32px; font-weight: 800; margin-right: 2px; }
-@media (prefers-reduced-motion: no-preference) {
-  .people-grid__dot.is-mine { animation: dot-in 0.3s calc(var(--n) * 6ms) ease backwards; }
-}
-@keyframes dot-in { from { transform: scale(0); } to { transform: scale(1); } }
 /* Spot pictures on empty pages: picture, one line, one action. */
 .spot { display: block; }
 .spot-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 24px 8px 32px; text-align: center; }
@@ -981,9 +962,10 @@ html.splash-done .splash { animation: splash-out 0.45s ease forwards; }
 .onb-card.is-on > :nth-child(3) { animation-delay: 0.34s; }
 .onb-card.is-on > :nth-child(4) { animation-delay: 0.42s; }
 @keyframes onb-in { from { opacity: 0; transform: translate(calc(var(--dx, 1) * 24px), 8px); } }
-/* Opened under the splash: no fade of its own (it is already there when the splash lifts), and the first card waits to
-   rise in until the splash starts to fade. */
-html.splash-on .onb { animation: none; }
+/* Opened under the splash: no fade of its own, ever (it is already there when the splash lifts; a rule that only held while
+   the splash was on let the fade restart from invisible when it ended, and Home flashed). The first card waits to rise in
+   until the splash starts to fade. */
+.onb.is-under { animation: none; }
 html.splash-on:not(.splash-done) .onb-card > * { animation-play-state: paused; }
 @media (prefers-reduced-motion: reduce) { .onb-card, .onb-card.is-on { transition: none; } .onb-card.is-on > * { animation: none; } }
 .onb-title { margin: 0; max-width: 18ch; font: 700 28px / 34px var(--display); letter-spacing: -0.02em; text-wrap: balance; }
@@ -1225,3 +1207,26 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
 .admin-steps__table th[scope='row'] { text-align: left; font-weight: 500; }
 /* "Have a question of your own?" after voting: the full width of the result, like the other list rows. */
 .own-question { align-self: stretch; }
+
+/* Poll page after voting (owner, Oct 2026: "too much information, no hierarchy"). One card under the result says where
+   you stand, once (with the inked finger); the pinned bar holds only Share and Next; the extras fold into "More". */
+.duel-verdict { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-radius: var(--radius-card); background: var(--card); outline: 1px solid var(--line); outline-offset: -1px; }
+.duel-verdict svg { flex: none; }
+.duel-verdict__text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.duel-verdict__text p { margin: 0; }
+.duel-verdict.is-new .duel-verdict__text { animation: fade-in 0.3s backwards; }
+@media (prefers-reduced-motion: reduce) { .duel-verdict.is-new .duel-verdict__text { animation: none; } }
+.duel-more { align-self: stretch; border-top: 1px solid var(--line); padding-top: 4px; }
+.duel-more > summary { display: flex; align-items: center; justify-content: space-between; min-height: 44px; padding: 0 4px; color: var(--ink-2); font-weight: 600; cursor: pointer; list-style: none; }
+.duel-more > summary::-webkit-details-marker { display: none; }
+.duel-more > summary::after { content: ''; width: 8px; height: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg) translateY(-2px); transition: transform 0.2s ease; }
+.duel-more[open] > summary::after { transform: rotate(-135deg) translateY(-2px); }
+.duel-more__body { display: flex; flex-direction: column; gap: 16px; padding: 8px 4px 4px; }
+/* "Someone wants your pick" is the reason to vote; once you have voted it is gone. */
+.poll-main:has(.duel.is-revealed, .duel-inked, .duel-verdict) .poll-ask { display: none; }
+
+/* Share / Next poll: part of the page, right under the result card, not a floating box (owner, Oct 2026: "this looks off,
+   not part of the UI"). gb's phone.css pins .tot-result as a white card with a shadow; this undoes it for the poll. */
+.duel .tot-result.is-shown { position: static; margin: 0; padding: 0; border-radius: 0; background: none; box-shadow: none; }
+.duel .tot-result.is-shown .duel-actions { width: 100%; justify-content: stretch; gap: 10px; }
+.duel .tot-result.is-shown .duel-actions .btn { flex: 1 1 0; justify-content: center; min-height: 48px; }

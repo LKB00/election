@@ -98,13 +98,10 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
             })}
           </ul>
         )}
-        {mine.length > 0 && <p className="small muted block-tight">{t.deviceOnly}</p>}
       </section>
       {/* The rest only matters once you have votes: keeping them, the rules. */}
       {mine.length > 0 && (
         <div className="me-rest">
-          {/* The polls you made live under You. */}
-          <p className="small block-tight"><Link href="/you" className="text-link">{t.pollsYouMade} →</Link></p>
           <KeepVotes voterKey={voterKey} />
           <p className="small block row wrap">
             <Link href="/terms" className="text-link">{t.termsLink}</Link>

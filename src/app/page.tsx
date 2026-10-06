@@ -79,7 +79,6 @@ export default async function Home() {
         <div className="home-main">
           {!empty && (
             <header className="al-home">
-              <p className="al-home__date" suppressHydrationWarning>{t.homeDate(new Date())}</p>
               <p className="al-home__title">{t.homeHello}</p>
             </header>
           )}

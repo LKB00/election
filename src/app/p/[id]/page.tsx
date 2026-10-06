@@ -102,7 +102,7 @@ export default async function DuelPage({ params, searchParams }: Props) {
       <div className="poll-main">
       <PollIntro pollId={poll.id}>
       {label && (
-        <p className="eyebrow">
+        <p className={'eyebrow' + (!poll.myVote && !poll.closed ? ' poll-ask' : '')}>
           {/* Arogya's chip: an icon with the word. */}
           {poll.closed ? <Clock size={13} strokeWidth={2} aria-hidden /> : poll.myVote ? <Check size={13} strokeWidth={2.25} aria-hidden /> : poll.friend.known ? <Users size={13} strokeWidth={2} aria-hidden /> : <Vote size={13} strokeWidth={2} aria-hidden />}
           {label}
