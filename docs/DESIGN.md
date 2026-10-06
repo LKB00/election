@@ -1198,9 +1198,12 @@ Step counter: "Guess the crowd" answered / skipped (not counted when yours was t
 - Still no points, badges, streaks, coins or leaderboards: engagement comes from curiosity, people, disagreement and
   surprise.
 
-**Visitor count on Home** (owner, Oct 2026: "show visitor count on the website"): the people line under the Home
-greeting says "N people have visited" from the first visitor (`VISITORS_SHOW_MIN`, owner: "show it from 1 visitor"), and "N people have visited ·
-M have voted" once 25 people have voted. Each phone is counted once: `FirstVisit` (in the layout, so a first visit from a
+**Visitor count on Home** (owner, Oct 2026: "show visitor count on the website", then "three avatars, then a plus, then
+the number, somewhere at the bottom"): a small white card at the bottom of Home, before the rules reminder (on an empty
+site, under the empty state): three overlapping faces (the first three profile faces, on yellow, indigo and pink soft
+grounds; decoration only, never real visitors), a soft "+" circle once there are more than three, then the number in bold
+and "people have visited"; "M have voted" under it once 25 people have voted. Not ink (ink is the one main action) and not
+tappable. Shown from the first visitor (`VISITORS_SHOW_MIN`); "1 person has visited" in the singular. The faces pop in one
+after another (off for less motion). Each phone is counted once: `FirstVisit` (in the layout, so a first visit from a
 shared poll counts too) remembers `election-visited` and sends the `visitor` step; a phone that cannot remember is not
-counted. The total is every day's `visitor` steps added up; it is never shown smaller than the voter count. P3, plain
-text with the live dot, no card. On an empty site (no polls yet, so no greeting) it sits under the empty state.
+counted. The total is every day's `visitor` steps added up, never shown smaller than the voter count. P3.

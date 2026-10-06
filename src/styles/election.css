@@ -1203,8 +1203,21 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
 .other-write .btn { flex: none; height: 44px; }
 .other-top { display: block; margin-top: 2px; overflow-wrap: anywhere; }
 /* Home: "12,345 people have voted here", under the greeting (shown from VOTERS_SHOW_MIN people). */
-.al-home .al-home__people { align-items: center; gap: 0; margin-top: 6px; }
-.empty-people { align-items: center; justify-content: center; gap: 0; margin-top: 16px; }
+/* Home, bottom: "how many people have been here". Three overlapping faces, a "+" once there are more, then the number.
+   The faces pop in one after another (not for people who ask for less motion). */
+.people-count { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 28px auto 8px; padding: 14px 18px; max-width: 420px; border-radius: var(--radius-card); background: var(--card); outline: 1px solid var(--line); outline-offset: -1px; }
+.people-faces { display: flex; flex: none; }
+.people-face { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; border: 2.5px solid var(--card); font-size: 20px; line-height: 1; animation: people-pop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.3) both; }
+.people-face + .people-face { margin-left: -12px; }
+.people-face:nth-child(1) { background: var(--lime-badge); }
+.people-face:nth-child(2) { background: var(--indigo-soft); animation-delay: 0.08s; }
+.people-face:nth-child(3) { background: var(--p-feedback); animation-delay: 0.16s; }
+.people-more { background: var(--paper); color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--line); animation-delay: 0.24s; }
+@keyframes people-pop { from { opacity: 0; transform: scale(0.6); } }
+.people-text { display: flex; flex-direction: column; margin: 0; color: var(--ink-2); font-size: 15px; line-height: 21px; }
+.people-n { color: var(--ink); font: 700 20px / 1 var(--display); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.people-sub { font-size: 13px; line-height: 18px; }
+@media (prefers-reduced-motion: reduce) { .people-face { animation: none; } }
 /* Admin: the step counter table (owner only). */
 .admin-steps__table { width: 100%; max-width: 560px; border-collapse: collapse; margin-top: 8px; }
 .admin-steps__table th, .admin-steps__table td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: right; font-variant-numeric: tabular-nums; }
