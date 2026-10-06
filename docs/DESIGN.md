@@ -456,11 +456,7 @@ Found by testing every screen and API with odd inputs. Rules that came out of it
 | Sounds silent after an app switch on iPhone | Sound wakes up again on the next tap. |
 | Hindi typed into a duel drawn broken on share images | The image renderer cannot join Hindi letters, so such text is left out of images (the ballot numbers show instead). |
 
-## Temporary: "Reset this phone" (owner: "add a temporary reset content button")
-
-| Element | Screen | Priority | Job |
-|---|---|---|---|
-| "Testing · Reset this phone" (dashed box, last on the page) | My votes | P3 | The owner tests the site as a first-time visitor again. Removes this phone's votes, exit poll calls and reactions (same as "Delete my votes") and clears what the browser remembered, then opens Home. Never touches other people's votes or the duels. Remove before a public launch: `src/components/ResetFresh.tsx` and its line in `src/app/me/page.tsx`. |
+## Temporary: "Reset this phone" (removed for the public launch, Oct 2026; see "Public launch")
 
 ### Create: pictures (owner: "add images option… suggest emojis… add image from device… intuitive and beautiful")
 
@@ -1142,3 +1138,8 @@ Phones unchanged; all of it under min-width 1024px.
   alert, big screen, ask again) and Delete in a 360px column on the right.
 - **A maker's public page (/u/…):** the same shape as You: the maker's card on the left, their polls beside it.
 - **Packs:** the pack's polls on the left (like a poll page); what it is, when predictions close and Share on the right.
+
+## Public launch (owner, Oct 2026: "ready to make it live for public")
+
+The temporary "Reset this phone" box on Your votes (for the owner's testing) is gone. "Delete my votes" (Keep your
+votes) stays: that is the visitor's own right to remove their votes.
