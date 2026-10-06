@@ -1377,6 +1377,19 @@ describe('visitor count (Home)', () => {
   });
 });
 
+describe('held for review (after posting)', () => {
+  it('says politics polls wait for the check, not everyday polls, and stops once approved', async () => {
+    const plain = await make();
+    expect((await getPoll(db, plain, null))!.heldForReview).toBe(false);
+    const pol = await make({ category: 'politics' });
+    expect((await getPoll(db, pol, null))!.heldForReview).toBe(true);
+    expect((await listPolls(db, 200)).some((p) => p.id === pol)).toBe(false);
+    await db.update(schema.polls).set({ reviewed: true }).where(eq(schema.polls.id, pol));
+    expect((await getPoll(db, pol, null))!.heldForReview).toBe(false);
+    expect((await listPolls(db, 200)).some((p) => p.id === pol)).toBe(true);
+  });
+});
+
 describe('views count (Home)', () => {
   it('adds up Home, poll and other page views on every day, and nothing else', async () => {
     const { countEvent, viewTotal } = await import('@/lib/events');

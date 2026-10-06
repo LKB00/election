@@ -1,4 +1,4 @@
-// Election's service worker: only for "Tell me the result" alerts (one per poll, asked for by the person).
+// Chunav's service worker: only for "Tell me the result" alerts (one per poll, asked for by the person).
 // It shows the alert and opens the poll when tapped. It does not cache pages.
 self.addEventListener('push', (event) => {
   let data = {};
@@ -6,7 +6,7 @@ self.addEventListener('push', (event) => {
     data = event.data ? event.data.json() : {};
   } catch (e) {}
   event.waitUntil(
-    self.registration.showNotification(data.title || 'Election', {
+    self.registration.showNotification(data.title || 'Chunav', {
       body: data.body || '',
       icon: '/icon',
       badge: '/icon',

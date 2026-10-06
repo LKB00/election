@@ -1,4 +1,6 @@
-# About Election
+# About Chunav
+
+> **Name (Oct 2026):** the site is now called **Chunav** (चुनाव in Hindi screens). Older sections below say "Election".
 
 > **Update (Phase 1, opinions about anything):** Election is now a place to see what people think about *anything*. Polls are "polls" (not "duels"), the exit poll is "Guess the crowd", and the full booth ritual (EVM, VVPAT, voter ID, counting day) is **Election mode**: always on for politics and the flagship, optional for everything else. The plan and research are in `docs/OPINIONS.md`; the rules are in `CLAUDE.md` and `docs/DESIGN.md`. Older sections below still describe the election-first version.
 

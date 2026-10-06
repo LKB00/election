@@ -108,7 +108,7 @@ export default async function DuelPage({ params, searchParams }: Props) {
           {label}
         </p>
       )}
-      {justCreated && <CreatedPanel id={poll.id} title={poll.title} manageHref={`/p/${poll.id}/manage`} />}
+      {justCreated && <CreatedPanel id={poll.id} title={poll.title} manageHref={`/p/${poll.id}/manage`} held={poll.heldForReview} />}
       {mine && !justCreated && (
         <Link href={`/p/${poll.id}/manage`} className="maker-bar">
           <SlidersHorizontal size={16} strokeWidth={2} aria-hidden /> {t.manageLink}

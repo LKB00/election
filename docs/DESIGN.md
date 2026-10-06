@@ -1202,9 +1202,15 @@ Step counter: "Guess the crowd" answered / skipped (not counted when yours was t
 bottom", "make it subtle", then "we will show views, not visitors; I want the number big"): one quiet row at the bottom of
 Home, before the rules reminder (on an empty site, under the empty state), no card: three small overlapping faces (the
 first three profile faces on yellow, indigo and pink soft grounds; decoration only, never real visitors) and a small soft
-"+", then the number big (32px, bold) and small muted words: "views", and "M have voted" under it once 25 people have
+"+", then the number only a touch bolder than the words (16px semibold; owner: "57 looks too big", "it should be subtle") and small muted words: "views", and "M have voted" under it once 25 people have
 voted. Not ink (ink is the one main action) and not tappable. Shown from the first view (`VIEWS_SHOW_MIN`).
 Views = every page opened, all days added up (`viewTotal`): Home and polls count themselves (`home_view`, `poll_view`,
 so views from before this change are included) and `PageView` in the layout counts every other page (`page_view`).
 Never shown smaller than the voter count. New visitors (each phone once, `FirstVisit` + `election-visited`) are still
 counted, for the owner's admin page only. P3.
+
+**"Waiting for a check" note after posting** (owner, Oct 2026: "I created a poll but it is not showing in the Polls
+section"): politics polls and polls with photos stay out of public lists until the owner approves them on /admin (their
+link works at once). The panel after posting now says so in one soft line with a clock: "Works by link now. It shows in
+the Polls list after a quick check." (`heldForReview` from `getPoll`, same rule as `listPolls`). P2, under the share
+buttons' note; not shown for everyday polls.

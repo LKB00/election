@@ -1,6 +1,6 @@
 # Notes for AI assistants
 
-- Product: "Election", a place to see what people think about anything (fun/fan polls, not official, not legal elections). Owner is not a developer: explain in easy English. The plan for this direction is `docs/OPINIONS.md`.
+- Product: **Chunav** (owner, Oct 2026: "we will call it chunav"; it was "Election"; Hindi screens say चुनाव; the repo, folders and class names keep the old name), a place to see what people think about anything (fun/fan polls, not official, not legal elections). Owner is not a developer: explain in easy English. The plan for this direction is `docs/OPINIONS.md`.
 - Stack: Next.js 15 (App Router) + TypeScript 6 (TypeScript 7 breaks Next 15) + Drizzle + Postgres. No `DATABASE_URL` means a local PGlite database in `.data/`.
 - All poll and vote rules live in `src/lib/polls.ts`. One vote per voter is enforced by a unique index; keep it that way.
 - Every poll is made by a person (owner, Oct 2026). The site never adds polls of its own: no seeded, sample or "starter" polls (the old ones are retired once by `src/db/retire.ts`). Templates are fine only when a person chooses them (ideas on Create, packs) and the poll is theirs.
