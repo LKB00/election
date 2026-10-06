@@ -807,7 +807,13 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
   .bottomnav-plus:focus-visible > span { outline: 3px solid var(--lime); outline-offset: 2px; }
 }
 .topnav-close { border: 0; background: none; font: inherit; color: inherit; cursor: pointer; }
-.topnav-create { display: inline-flex; align-items: center; gap: 4px; }
+/* Top bar on computers (docs/DESIGN.md, "Top bar"): Home · Polls · Your votes as tabs with the bottom bar's pictures;
+   on the right the one main button (Start a poll), the language and sound buttons, then you (yellow when you are there). */
+.topnav-links a { gap: 6px; }
+.topnav-start { height: 40px; padding: 0 16px 0 12px; gap: 6px; margin-right: 8px; font-size: 14px; white-space: nowrap; }
+.topnav-you { text-decoration: none; color: var(--ink-2); }
+.topnav-you.is-on { background: var(--lime); color: var(--on-lime); }
+@media (max-width: 900px) { .topnav-links svg { display: none; } }
 @media (prefers-reduced-motion: no-preference) {
   .spot-write { animation: spot-write 2.4s ease-in-out infinite; }
 }

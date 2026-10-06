@@ -1077,3 +1077,14 @@ Phones and tablets are unchanged: every rule is in `election.css` under `min-wid
 - The option you tapped stays under your finger: a new poll type changes the choices section above it, so the page
   scrolls by the same amount (`steady` in `CreateForm.tsx`).
 - A list opens with a short slide and fade, and picks change colour softly (only when the phone allows motion).
+
+## Top bar on computers (owner, Oct 2026: "I don't like the top navigation bar layout, there can be intuitive layout")
+
+Phones are unchanged (logo, language, sound on top; the bottom bar below). On bigger screens the top bar now says the same
+thing as the phone's bottom bar, in the same order and with the same pictures:
+
+- **Left:** the logo, then three tabs, Home · Polls · Your votes, each with its bottom-bar icon. The tab you are on is a
+  soft pill in bold (the same "which tab" rules as `BottomNav.tsx`). Under 900px wide the icons drop so the words fit.
+- **Right:** P1 "Start a poll" as the ink button (it was a fourth tab, which hid that it is the main action; hidden on
+  Create itself, where Post is the ink button), then language and sound, then **you** as a round profile button at the
+  far right, where people look for their account. It turns yellow while you are on your pages (yellow = you).
