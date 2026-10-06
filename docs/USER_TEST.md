@@ -24,7 +24,7 @@ Give them the link https://election-three-ruby.vercel.app and say only:
 Watch for:
 
 - [ ] How many seconds until they first tap something?
-- [ ] Do they find "Start a poll"?
+- [ ] Do they find "Ask your friends" (the button to make a poll)?
 - [ ] Do they understand they need a quick profile? Any worry about it?
 - [ ] Do they open "Settings"? Which ones do they change?
 - [ ] How long until the poll is made? (Goal: under 1 minute.)

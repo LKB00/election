@@ -11,7 +11,8 @@ import PackRows from '@/components/PackRows';
 import { upcomingPacks } from '@/lib/packs';
 import { getDb } from '@/db';
 import { getDeck, getFeaturedId, getTodaySet, listPolls, trendingPolls, voterCount } from '@/lib/polls';
-import { VOTERS_SHOW_MIN } from '@/lib/limits';
+import { VISITORS_SHOW_MIN, VOTERS_SHOW_MIN } from '@/lib/limits';
+import { visitorTotal } from '@/lib/events';
 import { dateLocale } from '@/lib/time';
 import { readVoterId } from '@/lib/voter';
 import { getLang, getT, langAlternates } from '@/lib/lang-server';
@@ -38,8 +39,12 @@ export default async function Home() {
   const voterId = await readVoterId();
   // Today's set (the same few polls for everyone today, with an end), then more polls only if you ask for them.
   const [deck, extra, recent, todayId, trending] = await Promise.all([getTodaySet(db, voterId), getDeck(db, voterId), listPolls(db, 40), getFeaturedId(db), trendingPolls(db, 4)]);
-  const [tonight, lang, voters] = await Promise.all([upcomingPacks(db), getLang(), voterCount(db)]);
+  const [tonight, lang, voters, visitors] = await Promise.all([upcomingPacks(db), getLang(), voterCount(db), visitorTotal(db)]);
   const more = extra.filter((p) => !deck.some((d) => d.id === p.id));
+  // Everyone who voted has visited too (the visitor count only started in Oct 2026), so never show fewer visitors.
+  const fmt = (n: number) => n.toLocaleString(dateLocale(lang));
+  const seen = Math.max(visitors, voters);
+  const people = seen < VISITORS_SHOW_MIN ? null : voters >= VOTERS_SHOW_MIN ? t.peopleBoth(fmt(seen), fmt(voters)) : t.peopleVisited(fmt(seen));
   const voted = [...deck, ...more].filter((p) => p.myVote !== null).map((p) => p.id);
   // P2 shelves under today's question: what is hot right now, then two topics with the most open polls.
   // Each poll shows once on Home: today's set first, then trending, topic shelves and "More polls" without repeats.
@@ -75,8 +80,9 @@ export default async function Home() {
             <header className="al-home">
               <p className="al-home__date" suppressHydrationWarning>{t.homeDate(new Date())}</p>
               <p className="al-home__title">{t.homeHello}</p>
-              {/* Social proof, once there is some: real people, counted once each (votes are never linked to a person). */}
-              {voters >= VOTERS_SHOW_MIN && <p className="al-home__sub al-home__people"><span className="live-dot" aria-hidden />{t.peopleVoted(voters.toLocaleString(dateLocale(lang)))}</p>}
+              {/* Social proof, once there is some: phones that have visited and people who voted, each counted once (votes are
+                  never linked to a person). Each number shows only once it is big enough not to put people off. */}
+              {people && <p className="al-home__sub al-home__people"><span className="live-dot" aria-hidden />{people}</p>}
             </header>
           )}
           {deck.length > 0 && (
