@@ -12,6 +12,8 @@ export const MAX_CHOICES = 10;
 /** Suggested choices waiting for the maker, per poll. */
 export const MAX_WAITING_SUGGESTIONS = 30;
 export const MIN_NAME = 2;
+/** The optional name drawn on the "I voted" picture ("Lokesh voted"); kept on the phone, never stored with a vote. */
+export const MAX_CARD_NAME = 20;
 export const MAX_NAME = 30;
 export const MAX_GROUP = 200;
 /** A group poll with no end time ends after this many days (one missing friend must not keep it open for ever). */
@@ -44,3 +46,7 @@ export const ERR = {
   manyChoices: `You can have up to ${MAX_CHOICES} choices. Remove one to continue.`,
   otherBad: `Write who you choose (${MAX_OTHER} letters max, no abusive words).`,
 } as const;
+
+/** "Show results" at a set time: the choices on Create (minutes from now; 'ninepm' is tonight's 9 pm final count). */
+export const REVEAL_IN = ['now', 'm30', 'h1', 'ninepm'] as const;
+export const REVEAL_MINUTES: Record<string, number> = { m30: 30, h1: 60 };

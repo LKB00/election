@@ -6,8 +6,8 @@ import { cleanText, isCode } from './validation';
 import { schema, type Db } from '@/db';
 import type { CreatePollInput } from './validation';
 import { hasBlockedWord, namesPolitics } from './moderation';
-import { GROUP_DEFAULT_DAYS, MAX_OTHER, OTHER_MIN_PEOPLE, OTHER_TOP } from './limits';
-import { sealedUntil } from './silence';
+import { GROUP_DEFAULT_DAYS, REVEAL_MINUTES, MAX_OTHER, OTHER_MIN_PEOPLE, OTHER_TOP } from './limits';
+import { sealedUntil as silenceUntil } from './silence';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { isAdminKey } from './admin';
 import { INDIA_OFFSET, INDIA_TZ } from './time';
@@ -60,8 +60,10 @@ export type PollView = {
   heldForReview: boolean;
   /** Voting paused after a sudden flood of votes, until this time (results stay visible). */
   pausedUntil: string | null;
-  /** Election silence window: results of this politics duel stay sealed for everyone until this time. */
+  /** Results stay sealed for everyone until this time (an election silence window, or a planned reveal). */
   sealedUntil: string | null;
+  /** The maker's planned reveal ("Show results at 9 pm"), when it is still ahead. */
+  revealAt: string | null;
   /** Choices for the one-tap "why?" question. Empty means the poll does not ask. */
   reasons: string[];
   myReason: string | null;
@@ -137,6 +139,10 @@ export function groupSplit(friendsAll: number, friendsAgree: number, everyoneMin
   return { size: friendsAll + 1, mine: Math.round(((friendsAgree + 1) / (friendsAll + 1)) * 100), everyone: Math.round((everyoneMine / everyoneTotal) * 100) };
 }
 
+/** Results hidden for everyone until this time: an election silence window (politics), or the maker's planned
+ * reveal ("Show results in 1 hour", Today's question at 9 pm). The planned one is also returned on its own. */
+const plannedReveal = (p: { revealAt: Date | null }, now = Date.now()) => (p.revealAt && p.revealAt.getTime() > now ? p.revealAt.toISOString() : null);
+const sealedUntil = (p: { category: string; revealAt: Date | null }, now = Date.now()) => silenceUntil(p.category, now) ?? plannedReveal(p, now);
 const hashKey = (key: string) => createHash('sha256').update(key).digest('hex');
 /** "Ask again" may only point at an earlier poll by the same person. */
 async function ownsPoll(db: Db, id: string, ownerId: string): Promise<boolean> {
@@ -183,6 +189,9 @@ export async function createPoll(db: Db, raw: CreatePollInput, manageKey?: strin
     allowChange: input.allowChange && !calledIt,
     // A group poll always has an end, so one friend who never votes cannot keep the group waiting for ever.
     endsAt: input.endsAt ? new Date(input.endsAt) : input.groupSize ? new Date(Date.now() + GROUP_DEFAULT_DAYS * 86_400_000) : null,
+    // "Show results at a set time": from the server's clock. Not for group polls (they open when the group is in) or
+    // "Called it" (the answer opens it).
+    revealAt: input.groupSize || calledIt || input.revealIn === 'now' ? null : input.revealIn === 'ninepm' ? nextFinalCount() : new Date(Date.now() + (REVEAL_MINUTES[input.revealIn] ?? 0) * 60_000),
   });
   if (hasPhotos) {
     await tx.insert(photos).values(
@@ -327,7 +336,7 @@ export async function getPoll(
   const myVote = mine[0]?.optionId ?? null;
   // Guess first, then see: on hidden-results duels you answer "who's winning?" before the numbers show.
   // During an election silence window, politics duels show no numbers and ask no exit poll, to anyone.
-  const sealed = sealedUntil(poll.category);
+  const sealed = sealedUntil(poll);
   // Not while yours is the only vote: "who's winning?" needs someone else's vote to be a question.
   // A group poll waiting for its group: closed results for everyone. Group polls ask no crowd guess at all: while
   // waiting its answer would tell who leads, and once all have voted there is no crowd left to guess.
@@ -409,6 +418,7 @@ export async function getPoll(
     // Same rule as listPolls: held until the owner looks (politics, photos); group polls are never listed anyway.
     heldForReview: !poll.reviewed && !poll.groupSize && (poll.category === 'politics' || poll.hasPhotos),
     sealedUntil: sealed,
+    revealAt: plannedReveal(poll),
     pausedUntil: poll.frozenUntil && poll.frozenUntil.getTime() > Date.now() ? poll.frozenUntil.toISOString() : null,
     reasons: parseReasons(poll.reasons),
     myReason: mine[0]?.reason ?? null,
@@ -610,7 +620,7 @@ async function lockPoll(tx: Db, id: string) {
 /** "Who's winning right now?": checked against the live count (your vote included) at the moment you answer. */
 export async function guessLeader(db: Db, id: string, voterId: string, choice: string): Promise<'ok' | 'not_found' | 'not_allowed' | 'bad_option'> {
   const [poll] = await db
-    .select({ category: polls.category, hidden: polls.hidden, hideUntilVoted: polls.hideUntilVoted, endsAt: polls.endsAt, groupSize: polls.groupSize, calledIt: polls.calledIt, kind: polls.kind })
+    .select({ category: polls.category, hidden: polls.hidden, hideUntilVoted: polls.hideUntilVoted, endsAt: polls.endsAt, groupSize: polls.groupSize, calledIt: polls.calledIt, kind: polls.kind, revealAt: polls.revealAt })
     .from(polls)
     .where(eq(polls.id, id))
     .limit(1);
@@ -619,7 +629,7 @@ export async function guessLeader(db: Db, id: string, voterId: string, choice: s
   if (poll.groupSize || poll.calledIt || poll.kind === 'dates') return 'not_allowed';
   // Only while the numbers are still hidden: a "guess" made while looking at the results is not a guess.
   const closed = !!poll.endsAt && poll.endsAt.getTime() <= Date.now();
-  if (sealedUntil(poll.category) || !poll.hideUntilVoted || closed) return 'not_allowed';
+  if (sealedUntil(poll) || !poll.hideUntilVoted || closed) return 'not_allowed';
   const [v] = await db
     .select({ prediction: votes.prediction })
     .from(votes)
@@ -840,14 +850,15 @@ export function nextFinalCount(now = Date.now()): Date {
  */
 export async function setToday(db: Db, id: string, closeTonight = false): Promise<boolean> {
   return db.transaction(async (tx) => {
-    const [row] = await tx.select({ id: polls.id, endsAt: polls.endsAt }).from(polls).where(and(eq(polls.id, id), eq(polls.hidden, false))).limit(1);
+    const [row] = await tx.select({ id: polls.id, endsAt: polls.endsAt, revealAt: polls.revealAt }).from(polls).where(and(eq(polls.id, id), eq(polls.hidden, false))).limit(1);
     if (!row) return false;
     const final = nextFinalCount();
     const endsAt = closeTonight && (!row.endsAt || row.endsAt.getTime() > final.getTime()) ? final : row.endsAt;
     await tx.update(polls).set({ featured: false }).where(eq(polls.featured, true));
     // Picked by hand today: it wins over anything else planned for today.
     await tx.update(polls).set({ todayOn: null }).where(and(eq(polls.todayOn, indiaDay().label), ne(polls.id, id)));
-    await tx.update(polls).set({ featured: true, reviewed: true, endsAt }).where(eq(polls.id, id));
+    // With the 9 pm final count the result also opens then, for everyone at once (owner, Oct 2026: a reason to come back).
+    await tx.update(polls).set({ featured: true, reviewed: true, endsAt, revealAt: closeTonight ? endsAt : row.revealAt }).where(eq(polls.id, id));
     return true;
   });
 }
@@ -941,6 +952,8 @@ export type Standing =
   | { kind: 'group'; voted: number; of: number }
   /** "Called it": what happened, and whether your pick was it. */
   | { kind: 'called'; name: string; right: boolean }
+  /** Results open at a set time (the maker's choice). */
+  | { kind: 'reveal'; at: string }
   | { kind: 'tie' | 'tied' | 'guess' | 'sealed' | 'none' };
 export type MyVote = { pollId: string; title: string; pick: string; at: string; standing: Standing; voters: number };
 
@@ -961,6 +974,7 @@ export async function getMyVotes(db: Db, voterId: string | null, limit = 50): Pr
       endsAt: polls.endsAt,
       optionId: votes.optionId,
       outcome: polls.outcome,
+      revealAt: polls.revealAt,
       groupSize: polls.groupSize,
       calledIt: polls.calledIt,
     })
@@ -1010,7 +1024,7 @@ export async function getMyVotes(db: Db, voterId: string | null, limit = 50): Pr
     const happened = r.outcome ? counts.find((c) => c.optionId === r.outcome) : undefined;
     if (happened) standing = { kind: 'called', name: happened.label, right: r.optionId === r.outcome };
     else if (r.groupSize && !closed && total < r.groupSize) standing = { kind: 'group', voted: total, of: r.groupSize };
-    else if (sealedUntil(r.category)) standing = { kind: 'sealed' };
+    else if (sealedUntil(r)) standing = r.revealAt && !silenceUntil(r.category) ? { kind: 'reveal', at: r.revealAt.toISOString() } : { kind: 'sealed' };
     // (Group and "Called it" polls never ask for a crowd guess.)
     else if (!r.groupSize && !r.calledIt && r.pollKind !== 'dates' && r.hideUntilVoted && !closed && r.prediction == null && mine.length >= 2 && total >= 2) standing = { kind: 'guess' };
     else if (!total) standing = { kind: 'none' };
@@ -1060,7 +1074,7 @@ export async function undoVote(db: Db, id: string, voterId: string): Promise<boo
   // Not once the poll has ended (or while it is paused): the final count and its alerts must not change afterwards.
   if (!p || (p.endsAt && p.endsAt.getTime() <= Date.now()) || (p.frozenUntil && p.frozenUntil.getTime() > Date.now())) return false;
   // A group poll's results open for everyone when the group is complete, whatever "hide results" says.
-  if (!sealedUntil(p.category) && (p.groupSize || (p.hideUntilVoted && (p.calledIt || p.kind === 'dates')))) {
+  if (!sealedUntil(p) && (p.groupSize || (p.hideUntilVoted && (p.calledIt || p.kind === 'dates')))) {
     if (!p.groupSize) return false;
     const [{ n }] = await db.select({ n: sql<number>`count(*)::int` }).from(votes).where(eq(votes.pollId, id));
     if (n >= p.groupSize) return false;

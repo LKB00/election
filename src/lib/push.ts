@@ -1,4 +1,4 @@
-import { and, eq, gt, inArray, isNotNull, lte, or } from 'drizzle-orm';
+import { and, eq, gt, inArray, isNotNull, isNull, lte, or } from 'drizzle-orm';
 import webpush from 'web-push';
 import { schema, type Db } from '@/db';
 import { dict, isLang } from './i18n';
@@ -55,11 +55,17 @@ export async function duePolls(db: Db): Promise<string[]> {
     .from(polls)
     .innerJoin(pushWants, eq(pushWants.pollId, polls.id))
     .where(
-      and(
-        isNotNull(polls.endsAt),
-        lte(polls.endsAt, new Date()),
-        gt(polls.endsAt, new Date(Date.now() - 26 * 3_600_000)),
-        or(eq(polls.calledIt, false), isNotNull(polls.outcome)),
+      or(
+        and(
+          isNotNull(polls.endsAt),
+          lte(polls.endsAt, new Date()),
+          gt(polls.endsAt, new Date(Date.now() - 26 * 3_600_000)),
+          or(eq(polls.calledIt, false), isNotNull(polls.outcome)),
+          // An ended poll whose planned reveal is still ahead waits for it.
+          or(isNull(polls.revealAt), lte(polls.revealAt, new Date())),
+        ),
+        // A planned reveal ("Show results at 9 pm") that has come: its result is in, even while voting goes on.
+        and(isNotNull(polls.revealAt), lte(polls.revealAt, new Date()), gt(polls.revealAt, new Date(Date.now() - 26 * 3_600_000))),
       ),
     );
   return rows.map((r) => r.id);

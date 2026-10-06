@@ -31,7 +31,7 @@ Where: Vercel → your project **election** → Settings → Environment Variabl
 
 ## 2. Daily habits (5–10 minutes a day)
 
-- [ ] **Pick Today's question** on `/admin?key=…` (it is the first poll on Home and what `/today` opens). Morning is best: most Indians check their phone within 15 minutes of waking. Leave "Final count at 9 pm" ticked: voting on it closes at 9 pm and people come back in the evening for the result. In the evening, post "here's how it ended" in your Channel.
+- [ ] **Pick Today's question** on `/admin?key=…` (it is the first poll on Home and what `/today` opens). Morning is best: most Indians check their phone within 15 minutes of waking. Leave "Final count at 9 pm" ticked: voting on it closes at 9 pm and **its result opens for everyone at 9 pm** (nobody sees numbers before), so people come back in the evening. In the evening, post "here's how it ended" in your Channel.
 - [ ] **Post `/today` in your WhatsApp Channel** each morning (see below). One post a day, never at night.
 - [ ] **Check /admin**: paused polls and **photo reports first** (the law gives 2 hours for private or sexual photos). Approve good new polls so they can appear in search.
 

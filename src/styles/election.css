@@ -1237,3 +1237,21 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
 .duel .tot-result:empty { display: none; }
 /* Long unbroken text (a pasted link, a very long word) wraps instead of being cut off at the screen edge. */
 .duel-desc, .duel-q, .duel-name, .al-hero__name, .sheet-message, .al-row__title, .al-row__meta, .duel-verdict__text, .final-head, .tv-q, .tv-label { overflow-wrap: anywhere; }
+/* Share your ink (owner, Oct 2026: "better, intuitive, personal, not only WhatsApp"): the picture with an optional name,
+   the message in three styles and editable, one Share button (the phone's own menu: any app), then quick app buttons. */
+.sheet-name { width: 100%; min-height: 44px; padding: 0 14px; border: 0; border-radius: var(--radius-field); background: var(--card); color: var(--ink); font: 500 16px / 22px var(--sans); outline: 1px solid var(--line); outline-offset: -1px; }
+.sheet-name:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+.sheet-msg { display: flex; flex-direction: column; gap: 8px; }
+.sheet-tones { display: flex; flex-wrap: wrap; gap: 8px; }
+.sheet-edit { width: 100%; min-height: 112px; resize: vertical; border: 0; font: inherit; color: inherit; line-height: 22px; field-sizing: content; max-height: 200px; }
+.sheet-edit:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.sheet-or { margin: 4px 0 0; text-align: center; }
+.sheet-or.is-hint { color: var(--ink); }
+.sheet-apps { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; }
+.sheet-app { display: flex; flex-direction: column; align-items: center; gap: 6px; min-height: 44px; padding: 4px 0; border: 0; background: none; color: var(--ink); font: 500 11px / 14px var(--sans); text-decoration: none; cursor: pointer; }
+.sheet-app__disc { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: var(--card); outline: 1px solid var(--line); outline-offset: -1px; }
+.sheet-app__name { max-width: 100%; text-align: center; color: var(--ink-2); overflow-wrap: anywhere; }
+.sheet-app:disabled { opacity: 0.5; }
+.sheet-app:focus-visible .sheet-app__disc { outline: 3px solid var(--ink); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) { .sheet-app:hover .sheet-app__disc { background: var(--sand); } }
+@media (max-width: 360px) { .sheet-apps { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 12px; } }

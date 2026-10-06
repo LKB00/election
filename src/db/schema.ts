@@ -26,6 +26,8 @@ export const polls = pgTable(
     frozenUntil: timestamp('frozen_until', { withTimezone: true }),
     // Planned as Today's question on this India day ("2026-11-08"); it takes over that morning by itself.
     todayOn: text('today_on'),
+    // "Show results at a set time" (the maker's choice, or 9 pm for Today's question): numbers stay hidden for everyone until then.
+    revealAt: timestamp('reveal_at', { withTimezone: true }),
     // Election mode: the full booth ritual (EVM, VVPAT slip, voter ID, counting day). Politics polls always have it.
     electionMode: boolean('election_mode').notNull().default(false),
     // What kind of question: 'choice' (pick one) or 'rating' (a 1–5 scale of faces). See src/lib/rating.ts.

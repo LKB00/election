@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { CATEGORIES } from './categories';
 import { hasBlockedWord } from './moderation';
+import { REVEAL_IN } from './limits';
 import { ERR, MAX_CHOICE, MAX_CHOICES, MAX_DETAILS, MAX_GROUP, MAX_PHOTO_CHARS, MAX_TITLE, MIN_CHOICES, MIN_TITLE } from './limits';
 
 /** One emoji (flags, skin tones and joined emoji like 👨‍👩‍👧 count as one). */
@@ -63,6 +64,8 @@ export const createPollSchema = z.object({
   suggestionsOn: z.boolean().default(false),
   // "Other (write your own)" at the end of a pick-one ballot.
   allowOther: z.boolean().default(false),
+  // Show results at a set time (worked out on the server, from its own clock).
+  revealIn: z.enum(REVEAL_IN).default('now'),
   // The maker's name and face shown on the poll (their choice; off by default).
   showMaker: z.boolean().default(false),
   // "Ask again": the earlier poll (made by the same person) this one repeats.
@@ -97,7 +100,7 @@ export const suggestSchema = z
   .object({ label: text().pipe(z.string().min(1, 'One choice is empty. Fill it in or remove it.').max(MAX_CHOICE, ERR.choiceLong)).refine(visible, 'One choice is empty. Fill it in or remove it.') })
   .refine((p) => !hasBlockedWord(p.label), 'Please remove the abusive words.');
 const code = () => z.string().regex(/^[\w-]{1,64}$/);
-export const VOTE_SOURCES = ['wa', 'ig', 'qr', 'link', 'other'] as const;
+export const VOTE_SOURCES = ['wa', 'ig', 'x', 'fb', 'tg', 'qr', 'link', 'other'] as const;
 export const voteSchema = z.object({
   optionId: code(),
   picks: z.array(code()).max(MAX_CHOICES).optional(),

@@ -1269,3 +1269,31 @@ planned day must exist; the health check never shows database errors; the evenin
 Then (owner: "fix both"): the top bar's Back remembers moving inside the site (a link opened from WhatsApp, then Polls →
 a poll, goes Back to Polls, not Home); Add / Delete a suggested choice and Fix a typo's Save ignore a second tap while
 saving.
+
+## Share your ink, rebuilt (owner, Oct 2026: "better, intuitive; the I voted card needs to be better; a better message;
+## not forced to WhatsApp: Insta, Twitter, anywhere; more personal")
+
+- **The picture** (`/api/card/[id]`, 1080×1920): "**Lokesh voted**" (or "I voted") next to the inked finger, with how many
+  people have voted; the **question as the hero** on a white card; the two choices, with a dark "SECRET BALLOT" seal and
+  "Guess who I picked?" (or your pick marked and "I picked X. You?"); "**Your turn** · Scan to vote" with the QR on a
+  yellow band. The name is optional, typed once in the panel and kept on the phone (`chunav-card-name`, at most
+  `MAX_CARD_NAME` letters); it is only sent to draw the picture (cleaned, word filter), never stored with the vote.
+- **The message**: three styles, Dare / Ask / Short, each for a secret pick and an open one, in all three languages;
+  the text box can be edited. Turning "Keep my vote secret" on or off, or picking a style, brings back the suggestion.
+- **Sharing**: one ink **Share** button opens the phone's own share menu with the picture and the message together,
+  so it goes to any app (Instagram, X, WhatsApp, Telegram, Snapchat…). Under "Or send to": WhatsApp, X, Facebook,
+  Telegram, Save image (for a story from a computer) and Copy link, as round buttons with names. Links carry `src=`
+  (wa / x / fb / tg / other) so the maker's page can count where votes came from.
+
+## Show results at a set time (owner, Oct 2026: "the result will be published in 30 minutes or an hour, for engagement")
+
+Not the default: seeing the result is the reward for voting, and most people will not come back by themselves. It is a
+**maker's choice** on Create (Settings → "Show results": Right after voting · In 30 minutes · In 1 hour · Tonight at
+9 pm), and **Today's question** with the 9 pm final count opens its result at 9 pm. Not offered for group polls (they
+open when the group is in) or "Called it" (the answer opens it).
+Until the time, the numbers are hidden for everyone (voters, the maker, the big screen, share pictures), the same sealed
+path as an election silence window (`revealAt` on the poll; `sealedUntil` covers both). Voting stays open. The poll shows
+"⏱ Results open at 7:30 pm (in 24 min). Voting is on till then." (it ticks every 30 s and the poll reloads itself the
+moment results open), the "Tell me the result" alert is offered, and My votes says "Results at 7:30 pm". Alerts for a
+reveal go out with the evening job (9:05 pm), so they fit the 9 pm choice best.
+Measure it on the step counter before making it the default anywhere else.

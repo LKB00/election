@@ -3,18 +3,19 @@ import Link from 'next/link';
 import { Check, ChevronRight, Vote } from 'lucide-react';
 import { getDb } from '@/db';
 import { getMyVotes, getVoterStats, listPolls, type Standing } from '@/lib/polls';
-import type { Dict } from '@/lib/i18n';
+import type { Dict, Lang } from '@/lib/i18n';
 import { readVoterId, voterKeyForLink } from '@/lib/voter';
 import KeepVotes from '@/components/KeepVotes';
 import SinceLastLook from '@/components/SinceLastLook';
 import MonthCard from '@/components/MonthCard';
 import { getMonth } from '@/lib/month';
 import EmptyState from '@/components/EmptyState';
-import { getT } from '@/lib/lang-server';
+import { getLang, getT } from '@/lib/lang-server';
+import { INDIA_TZ, dateLocale, monthStyle } from '@/lib/time';
 
 export const dynamic = 'force-dynamic';
 
-const standingText = (t: Dict, s: Standing): string | null =>
+const standingText = (t: Dict, s: Standing, lang: Lang): string | null =>
   s.kind === 'leading' ? t.meLeading(s.name, s.percent)
   : s.kind === 'won' ? t.meWon(s.name)
   : s.kind === 'group' ? t.meGroupWaiting(s.voted, s.of)
@@ -24,6 +25,7 @@ const standingText = (t: Dict, s: Standing): string | null =>
   : s.kind === 'tied' ? t.meTied
   : s.kind === 'guess' ? t.meGuess
   : s.kind === 'sealed' ? t.meSealed
+  : s.kind === 'reveal' ? t.meReveal(new Date(s.at).toLocaleString(dateLocale(lang), { hour: 'numeric', minute: '2-digit', day: 'numeric', month: monthStyle(lang), timeZone: INDIA_TZ }))
   : null;
 export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getT()).myVotes };
@@ -37,6 +39,7 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
   const voterKey = await voterKeyForLink();
   const [stats, mine, month, open] = await Promise.all([getVoterStats(db, voterId), getMyVotes(db, voterId), getMonth(db, voterId), listPolls(db, 1)]);
   const t = await getT();
+  const lang = await getLang();
 
   return (
     // Computers (election.css, "Desktop"): your votes (P1) on the left; your record, your month and keeping your votes
@@ -87,7 +90,7 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
                       <span className="al-row__title">{v.title}</span>
                       <span className="al-row__meta">{t.youPicked(v.pick)}</span>
                       {/* Where it stands now: a reason to come back (same visibility rules as the poll itself). */}
-                      {standingText(t, v.standing) && <span className="al-row__meta">{standingText(t, v.standing)}</span>}
+                      {standingText(t, v.standing, lang) && <span className="al-row__meta">{standingText(t, v.standing, lang)}</span>}
                       {/* What changed since you last looked (this phone only). */}
                       <SinceLastLook pollId={v.pollId} voters={v.voters} lead={v.standing.kind === 'leading' || v.standing.kind === 'won' ? v.standing.name : null} />
                     </span>

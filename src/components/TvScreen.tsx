@@ -57,6 +57,7 @@ export default function TvScreen({ initial, qr, link }: { initial: PollView; qr:
   const avg = poll.kind === 'rating' && shown ? ratingAverage(poll.options.map((o) => o.votes)) : null;
   const when = (iso: string) => new Date(iso).toLocaleString(dateLocale(lang), { day: 'numeric', month: monthStyle(lang), hour: 'numeric', minute: '2-digit', timeZone: INDIA_TZ });
   const note = poll.groupWaiting && poll.groupSize ? t.tvGroup(poll.participants, poll.groupSize)
+    : poll.revealAt ? t.meReveal(when(poll.revealAt))
     : poll.sealedUntil ? t.sealed(when(poll.sealedUntil))
     : !poll.resultsVisible ? t.tvHidden
     : '';

@@ -72,7 +72,7 @@ export async function makerView(db: Db, id: string, uid: string): Promise<MakerV
     options: opts,
     canEdit: n === 0 && !closed,
     suggestionsOn: p.suggestionsOn,
-    resultsPublic: n > 0 && p.category !== 'politics' && (closed || (!p.hideUntilVoted && groupDone)),
+    resultsPublic: n > 0 && p.category !== 'politics' && !(p.revealAt && p.revealAt.getTime() > Date.now()) && (closed || (!p.hideUntilVoted && groupDone)),
     groupSize: p.groupSize,
     calledOpen: p.calledIt && !p.outcome,
   };
