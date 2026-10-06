@@ -1,7 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { AlignLeft, CalendarDays, Check, ChevronDown, CircleDot, Clock, Eye, EyeOff, ImagePlus, Landmark, Lightbulb, ListChecks, ListOrdered, MessageSquarePlus, PenLine, Repeat, Shuffle, SlidersHorizontal, Smile, Sparkles, Tag, UserRound, Users, WandSparkles, X } from 'lucide-react';
+import { AlignLeft, CalendarDays, Check, ChevronDown, CircleDot, Clock, Eye, EyeOff, ImagePlus, Landmark, Lightbulb, ListChecks, ListOrdered, MessageSquarePlus, PenLine, Flame, Repeat, Shuffle, SlidersHorizontal, Smile, Sparkles, Tag, UserRound, Users, WandSparkles, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { CATEGORIES } from '@/lib/categories';
 import { useLang, useT } from '@/lib/lang';
@@ -15,6 +15,8 @@ import PreviewCard, { previewRules, type PreviewPoll } from './PreviewCard';
 import { dateLocale, monthStyle } from '@/lib/time';
 import { GROUP_DEFAULT_DAYS, MAX_CHOICE, MAX_CHOICES, MAX_DETAILS, MAX_GROUP, MAX_TITLE, MIN_CHOICES, MIN_TITLE } from '@/lib/limits';
 // Loaded only when opened (less code for cheap phones to download before the form works).
+/** "Hot take": the faces for Agree / Depends / Disagree (the words come from i18n, in the maker's language). */
+const HOT_EMOJIS = ['🔥', '🤔', '🙅'];
 const SignInSheet = dynamic(() => import('./SignIn'), { ssr: false });
 const PicturePicker = dynamic(() => import('./PicturePicker'), { ssr: false });
 const CreatePreview = dynamic(() => import('./CreatePreview'), { ssr: false });
@@ -140,6 +142,8 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   const [open, setOpen] = useState<'ends' | 'topic' | 'details' | 'group' | null>(null);
   // The less-used settings (Election mode, votes can change, end time, details) wait behind "More options".
   const [showMore, setShowMore] = useState(false);
+  // "Hot take" chosen in the formats (a pick-one poll with Agree / Depends / Disagree ready).
+  const [hot, setHot] = useState(false);
   // All settings sit behind one "Settings" row until opened (an "Ask again" poll opens with them shown).
   const [settingsOpen, setSettingsOpen] = useState(!!again);
   // The poll-type row opens a list of the five types, each with one line on what it does.
@@ -285,15 +289,26 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
 
   // Create, top to bottom (docs/DESIGN.md, "Create, tidied"): the question in a real box, the choices, then every
   // setting as one list of rows (the poll type first, the less-used ones behind "More options"). One main button.
+  // Social formats (owner, Oct 2026: "expose social formats, not poll types"): the same poll kinds underneath, named
+  // for what people do with them. "Hot take" is a pick-one poll that starts with 🔥 Agree / 🤔 Depends / 🙅 Disagree.
+  const pickHot = () => {
+    pickKind('choice');
+    setHot(true);
+    if (choices.every((c) => !c.trim())) {
+      fill(t.hotChoices);
+      setEmojis([...HOT_EMOJIS, ''].slice(0, t.hotChoices.length + 1));
+    }
+  };
   const TYPES = [
-    { k: 'choice', Icon: CircleDot, name: t.typePickOne, desc: t.typeDesc.choice, pick: () => pickKind('choice') },
-    { k: 'called', Icon: WandSparkles, name: t.formatCalled, desc: t.typeDesc.called, pick: () => pickKind('choice', true) },
-    { k: 'multi', Icon: ListChecks, name: t.formatMulti, desc: t.typeDesc.multi, pick: () => pickKind('multi') },
-    { k: 'rank', Icon: ListOrdered, name: t.formatRank, desc: t.typeDesc.rank, pick: () => pickKind('rank') },
-    { k: 'rating', Icon: Smile, name: t.formatRate, desc: t.typeDesc.rating, pick: () => pickKind('rating') },
-    { k: 'dates', Icon: CalendarDays, name: t.formatDates, desc: t.typeDesc.dates, pick: () => pickKind('dates') },
+    { k: 'choice', Icon: CircleDot, name: t.fmtAsk, desc: t.typeDesc.choice, pick: () => { setHot(false); pickKind('choice'); } },
+    { k: 'hot', Icon: Flame, name: t.fmtHot, desc: t.typeDesc.hot, pick: pickHot },
+    { k: 'called', Icon: WandSparkles, name: t.fmtPredict, desc: t.typeDesc.called, pick: () => { setHot(false); pickKind('choice', true); } },
+    { k: 'multi', Icon: ListChecks, name: t.formatMulti, desc: t.typeDesc.multi, pick: () => { setHot(false); pickKind('multi'); } },
+    { k: 'rank', Icon: ListOrdered, name: t.formatRank, desc: t.typeDesc.rank, pick: () => { setHot(false); pickKind('rank'); } },
+    { k: 'rating', Icon: Smile, name: t.fmtRate, desc: t.typeDesc.rating, pick: () => { setHot(false); pickKind('rating'); } },
+    { k: 'dates', Icon: CalendarDays, name: t.fmtDecide, desc: t.typeDesc.dates, pick: () => { setHot(false); pickKind('dates'); } },
   ];
-  const current = TYPES.find((x) => x.k === (calledIt ? 'called' : kind)) ?? TYPES[0];
+  const current = TYPES.find((x) => x.k === (calledIt ? 'called' : kind === 'choice' && hot ? 'hot' : kind)) ?? TYPES[0];
   // What the folded Settings row says: the poll type and the topic (the two people most often look for).
   const settingsSummary = `${current.name} · ${t.categories[category] ?? category}`;
 
@@ -333,7 +348,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
           autoComplete="off"
           value={title}
           maxLength={MAX_TITLE}
-          placeholder={calledIt ? t.calledPh : t.questionPh}
+          placeholder={calledIt ? t.calledPh : hot && kind === 'choice' ? t.hotPh : t.questionPh}
           aria-invalid={!!fieldError.title}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {

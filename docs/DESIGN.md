@@ -1182,3 +1182,17 @@ again" polls. The live preview on computers still shows the effect of every sett
 
 Step counter: "Guess the crowd" answered / skipped (not counted when yours was the only vote), with one more rate line on
 /admin: "Asked to guess the crowd → answered". Test plan for the first real users: `docs/USER_TEST.md`.
+
+## Engagement round (owner, Oct 2026: "the product is social engagement; polls are the mechanism")
+
+- **"Ask your friends"** is the main button everywhere it said "Start a poll" (top bar, Home, empty pages, after voting,
+  search with no results), in 3 languages. People don't want to "create a poll"; they want to know what friends think.
+  The form's own submit button stays "Start poll".
+- **Social formats** in Settings → Poll type: Ask (pick one), **Hot take** (new), Predict (was "Called it"), Pick
+  several, Rank, Rate it, Decide a date. Same poll kinds underneath. Hot take = a pick-one poll that starts with
+  🔥 Agree / 🤔 Depends / 🙅 Disagree (filled only while the choices are empty) and a statement placeholder.
+- **Engagement score** on /admin (`getEngagement` in `src/lib/stats.ts`): for polls made in the last 30 days with 3+
+  votes, 0–100 = half votes through friends' links, a quarter reactions per vote, a quarter voters who said why. Top 5
+  polls and every topic's average. From rows already kept; counts only.
+- Still no points, badges, streaks, coins or leaderboards: engagement comes from curiosity, people, disagreement and
+  surprise.
