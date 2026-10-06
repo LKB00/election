@@ -1,19 +1,21 @@
-import { ONBOARD_VERSION, SEEN, SPLASH_DONE, SPLASH_FADE_MS, SPLASH_MAX_MS, SPLASH_MIN_MS } from '@/lib/onboard';
+import { ONB_READY, ONBOARD_VERSION, SEEN, SPLASH_DONE, SPLASH_FADE_MS, SPLASH_MAX_MS, SPLASH_MIN_MS } from '@/lib/onboard';
 
-// The splash (docs/DESIGN.md, "Splash and onboarding"): about one second of brand while the app opens. A ballot slip
+// The splash (docs/DESIGN.md, "Splash and onboarding"): about two seconds of brand while the app opens. A ballot slip
 // drops into the box, the label lights up in "you" yellow, the name and line rise, and it fades into the page.
 // One splash, placed first in <body> by the layout, so it is the first thing painted: the page's grey loading outline
 // never shows before it. Its tiny script (run before anything paints) turns it on for the installed app (every launch)
 // and for Home on a phone that has not seen this version of the onboarding; never on a shared poll link. It lifts once
 // the page is ready (at least SPLASH_MIN_MS, at most SPLASH_MAX_MS), so it fades into the real page, not into a
-// half-loaded one. Off for people who ask their phone for less motion. Hidden from screen readers.
+// half-loaded one. On a first visit "ready" means the onboarding cards are on screen under it, so it fades straight
+// into them (Home never flashes in between). Off for people who ask their phone for less motion. Hidden from screen readers.
 const script = `(function(){try{
 var d=document.documentElement,m=function(q){return window.matchMedia&&matchMedia(q).matches};
 var app=m('(display-mode: standalone)'),first=location.pathname==='/'&&localStorage.getItem('${SEEN}')!=='${ONBOARD_VERSION}';
 if(!(app||first)||m('(prefers-reduced-motion: reduce)'))return;
 d.classList.add('splash-on');var t0=Date.now();
 var lift=function(){d.classList.add('splash-done');setTimeout(function(){d.classList.remove('splash-on','splash-done');window.dispatchEvent(new Event('${SPLASH_DONE}'))},${SPLASH_FADE_MS})};
-var check=function(){var e=Date.now()-t0;if(e>=${SPLASH_MAX_MS}||document.readyState!=='loading')lift();else setTimeout(check,100)};
+var ready=function(){return first?d.dataset.onb==='${ONB_READY}':document.readyState!=='loading'};
+var check=function(){var e=Date.now()-t0;if(e>=${SPLASH_MAX_MS}||ready())lift();else setTimeout(check,100)};
 setTimeout(check,${SPLASH_MIN_MS});
 }catch(e){}})()`;
 
