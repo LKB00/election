@@ -83,7 +83,7 @@ export default function TvScreen({ initial, qr, link }: { initial: PollView; qr:
             {poll.options.map((o, n) => (
               <li key={o.id} className={'tv-option' + (shown ? '' : ' is-plain') + (n === leader ? ' is-lead' : '')} style={{ '--tone': `var(--p-${TONES[n % TONES.length]})` } as React.CSSProperties}>
                 <span className="tv-face" aria-hidden>{o.emoji ?? letters[n]}</span>
-                <span className="tv-label">{o.label}</span>
+                <span className="tv-label">{o.isOther ? t.otherChoice : o.label}</span>
                 {shown && <span className="tv-pct">{pcts[n]}%</span>}
                 {shown && <span className="tv-meter" aria-hidden><span style={{ width: `${pcts[n]}%` }} /></span>}
               </li>

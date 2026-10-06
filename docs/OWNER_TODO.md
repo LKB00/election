@@ -8,10 +8,10 @@ Where: Vercel → your project **election** → Settings → Environment Variabl
 
 | Setting | What to put | Why | Without it |
 |---|---|---|---|
-| [ ] `ADMIN_SECRET` | Any long random text (16+ letters), keep it private | Opens your review page: `/admin?key=<this text>` | You cannot review polls, hide bad ones, resume paused polls or pick Today's question |
-| [ ] `NEXT_PUBLIC_GRIEVANCE_NAME` | The complaints officer's name (can be you) | Indian IT Rules ask for a named person | Rules page says "use Report this poll" instead |
-| [ ] `NEXT_PUBLIC_GRIEVANCE_EMAIL` | An email you check daily | Same rule; shown on Rules and Privacy pages | Same as above |
-| [ ] `REPORT_ALERT_URL` | `https://ntfy.sh/<a long secret name>` | A phone alert for every report and every paused poll | You only find reports by opening /admin |
+| [x] `ADMIN_SECRET` | Any long random text (16+ letters), keep it private | Opens your review page: `/admin?key=<this text>` | You cannot review polls, hide bad ones, resume paused polls or pick Today's question |
+| [x] `NEXT_PUBLIC_GRIEVANCE_NAME` | The complaints officer's name (can be you) | Indian IT Rules ask for a named person | Rules page says "use Report this poll" instead |
+| [x] `NEXT_PUBLIC_GRIEVANCE_EMAIL` | An email you check daily | Same rule; shown on Rules and Privacy pages | Same as above |
+| [x] `REPORT_ALERT_URL` | `https://ntfy.sh/<a long secret name>` | A phone alert for every report and every paused poll | You only find reports by opening /admin |
 | [ ] `NEXT_PUBLIC_TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` | From a free Cloudflare account → Turnstile → add site | Invisible "are you a person?" check on every vote | Bots can vote more easily |
 | [ ] `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` | From a free account at upstash.com → Redis database → REST API | Makes speed limits work across all of Vercel's servers | Limits are weaker (each server counts on its own) |
 | [ ] `NEXT_PUBLIC_VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` | A key pair Claude can make for you (ask "make the alert keys"), or run `npx web-push generate-vapid-keys` | Turns on "Tell me the result" phone alerts | The button does not appear |
@@ -22,6 +22,10 @@ Where: Vercel → your project **election** → Settings → Environment Variabl
 **Phone alerts (ntfy), step by step:** install the free **ntfy** app → tap + → subscribe to a long secret name you make up (like `election-alerts-7f3k9q`) → put `https://ntfy.sh/election-alerts-7f3k9q` in `REPORT_ALERT_URL`. Keep the name secret: anyone who knows it can read the alerts.
 
 **Optional:** Vercel → Settings → Deployment Protection. Turn off the login wall if you want preview links (not just the main address) to open without a Vercel login.
+
+- [ ] **Switch on visitor numbers (free, 1 minute):** Vercel → your project **election** → **Analytics** (top menu) → **Enable**. From then on that page shows how many people visit each day, which pages, from which countries. No cookies; the Privacy page already says so.
+
+- [ ] **Read your step counter once a week** (bottom of your admin page, "Steps people take"). The five lines at the top say where people drop off: if few people who open a friend's link vote, the poll page needs work; if few voters open Share, sharing needs work; if few who open Start a poll make one, Create is too hard. Tell Claude the numbers and it will suggest the fix.
 
 ## 2. Daily habits (5–10 minutes a day)
 

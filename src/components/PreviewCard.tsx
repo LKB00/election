@@ -17,6 +17,8 @@ export type PreviewPoll = {
   choices: PreviewChoice[];
   rateWords: string[];
   rateEmojis: string[];
+  /** "Other (write your own)" at the end of the ballot. */
+  other?: boolean;
 };
 
 // The poll's rules in one quiet line under the card: who sees results when, and when it ends.
@@ -27,9 +29,11 @@ export function previewRules(t: Dict, hideUntilVoted: boolean, group: number | n
 export default function PreviewCard({ poll, t, live = false }: { poll: PreviewPoll; t: Dict; /** Desktop live preview: empty parts show as faint placeholders. */ live?: boolean }) {
   const { title, description, kind, calledIt, group, electionMode, rateWords, rateEmojis } = poll;
   // Live preview while typing: an empty question or fewer than two choices show their placeholders, so the shape is there.
-  const choices = live && kind !== 'dates' && poll.choices.length < 2
+  let choices: (PreviewChoice & { ph?: boolean })[] = live && kind !== 'dates' && poll.choices.length < 2
     ? [...poll.choices, ...Array.from({ length: 2 - poll.choices.length }, (_, n) => ({ label: t.choiceN(poll.choices.length + n + 1), emoji: '', photo: '', ph: true }))]
     : poll.choices;
+  // "Other (write your own)" sits last, after the placeholders, as on the real ballot.
+  if (poll.other && kind === 'choice') choices = [...choices, { label: t.otherChoice, emoji: '✍️', photo: '' }];
   const dates = kind === 'dates';
   const letters = dates ? choices.map((c) => /\d{1,2}/.exec(c.label)?.[0] ?? '📅') : faceLabels(choices.map((c) => c.label));
   const key = dates ? t.datesTap : kind === 'multi' ? t.multiTick : kind === 'rank' ? t.rankNext(1) : t.vote;

@@ -1,7 +1,9 @@
 'use client';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { ArrowRight, CalendarPlus, Check, Flag, Lock, Plus, Repeat, Share2, Target, Trophy, Users } from 'lucide-react';
+import { ArrowRight, CalendarPlus, Check, Flag, Lock, PenLine, Plus, Repeat, Share2, Target, Trophy, Users } from 'lucide-react';
+import { MAX_OTHER } from '@/lib/limits';
+import { track } from '@/lib/track';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type { PollOption, PollView } from '@/lib/polls';
@@ -266,10 +268,20 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
 
   // A rating poll's steps are stored as "1"…"5"; on screen they are the words ("Love it"), in your language.
   const raw = deck[i];
+  // "Other (write your own)" is stored as "Other"; on screen it is "Other" in your language, with a pen, and once you
+  // voted for it, what you wrote ("Other (Yogi Adityanath)").
   const poll = useMemo(
-    () => (raw && raw.kind === 'rating' ? { ...raw, options: raw.options.map((o, n) => ({ ...o, label: t.rateWords[n] ?? o.label })) } : raw),
+    () =>
+      raw && raw.kind === 'rating'
+        ? { ...raw, options: raw.options.map((o, n) => ({ ...o, label: t.rateWords[n] ?? o.label })) }
+        : raw && raw.options.some((o) => o.isOther)
+          ? { ...raw, options: raw.options.map((o) => (o.isOther ? { ...o, emoji: o.emoji ?? '✍️', label: o.id === raw.myVote && raw.myOther ? t.otherMine(raw.myOther) : t.otherChoice } : o)) }
+          : raw,
     [raw, t],
   );
+  // The write-in box under the ballot, open on the poll whose "Other" you tapped.
+  const [writing, setWriting] = useState<string | null>(null);
+  const [otherText, setOtherText] = useState('');
   const rating = poll?.kind === 'rating';
   // "Pick several": tick choices first (kept here until you press Vote), then one vote carries them all.
   // "Which dates work?": like pick several, with three answers per date (works → if need be → doesn't work).
@@ -434,7 +446,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
     },
     [countId],
   );
-  async function vote(optionId: string, picks: string[] = [], maybeList: string[] = []) {
+  async function vote(optionId: string, picks: string[] = [], maybeList: string[] = [], other?: string) {
     if (!poll || voted || busy || poll.closed) return;
     gen.current++;
     setBusy(optionId);
@@ -446,7 +458,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
     const res = await fetch(`/api/polls/${poll.id}/vote`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ optionId, picks, maybes: maybeList, via: viaHere, human, src: voteSource(poll.id) }),
+      body: JSON.stringify({ optionId, picks, maybes: maybeList, other, via: viaHere, human, src: voteSource(poll.id) }),
     }).catch(() => null);
     const data = await res?.json().catch(() => null);
     if (res?.ok && data?.poll) {
@@ -476,7 +488,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
         setMsg('');
         setBusy(null);
         // The whole vote goes out (every tick and "if need be" date), not just the first choice.
-        vote(optionId, picks, maybeList);
+        vote(optionId, picks, maybeList, other);
       };
       queued.current = retry;
       window.addEventListener('online', retry, { once: true });
@@ -743,7 +755,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
           </ul>
         </div>
         <div className="row wrap center">
-          <a className="btn btn-primary btn-lg" href={`https://wa.me/?text=${encodeURIComponent(text.replace(link(), `${link()}${link().includes('?') ? '&' : '?'}src=wa`))}`} target="_blank" rel="noopener noreferrer">
+          <a className="btn btn-primary btn-lg" href={`https://wa.me/?text=${encodeURIComponent(text.replace(link(), `${link()}${link().includes('?') ? '&' : '?'}src=wa`))}`} target="_blank" rel="noopener noreferrer" onClick={() => track('whatsapp')}>
             <Share2 size={15} strokeWidth={1.75} aria-hidden /> {t.shareDay}
           </a>
           {more.some((m) => isOpen(m) && !deck.some((d) => d.id === m.id)) ? (
@@ -926,7 +938,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
                 className={'tot-option duel-option' + (isMine ? ' is-mine' : ticked ? ' is-ticked' : '') + (maybe ? ' is-maybe' : '') + (revealed && !isMine ? ' is-other' : '') + (revealed && lead ? ' is-lead' : '') + (busy === o.id ? ' is-busy' : '')}
                 // --i: the order the result builds in (your pick first, then the rest), so the eye lands on you.
                 style={{ '--pc': `var(--p-${TONES[n % TONES.length]})`, '--dc': `var(--d-${TONES[n % TONES.length]})`, '--i': isMine ? 0 : n + 1 } as React.CSSProperties}
-                onClick={() => (multi ? toggleTick(o.id) : vote(o.id))}
+                onClick={() => (multi ? toggleTick(o.id) : o.isOther ? setWriting(poll.id) : vote(o.id))}
                 disabled={voted || !!busy || poll.closed || !!poll.pausedUntil}
                 aria-pressed={multi && !voted && !dates ? ticked : undefined}
                 aria-label={dates && !voted ? `${o.label}: ${ticked ? t.datesWorks : maybe ? t.datesMaybe : t.datesNo}` : `${voted || multi || revealed ? o.label : t.voteFor(o.label)}${revealed ? `, ${t.percent(pcts[n])}` : ''}`}
@@ -950,6 +962,10 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
                   <span className="duel-text">
                     {o.subtitle && <span className="label">{o.subtitle}</span>}
                     <span className="duel-name" lang={hindiText(o.label)}>{o.label}</span>
+                    {/* "Other": the names written most often (by 2+ people), once the results show. */}
+                    {o.isOther && revealed && poll.otherTop.length > 0 && (
+                      <span className="small muted other-top">{t.otherMost(poll.otherTop.map((x) => `${x.name} (${x.n})`).join(', '))}</span>
+                    )}
                   </span>
                 </span>
                 {revealed && (
@@ -974,6 +990,27 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
             );
           })}
         </div>
+      )}
+
+      {/* "Other (write your own)": the name box, right under the ballot, once you tap Other. One main button: Vote. */}
+      {writing === poll.id && !voted && !poll.closed && (
+        <form
+          className="other-write"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const other = poll.options.find((o) => o.isOther);
+            if (other && otherText.trim()) vote(other.id, [], [], otherText.trim());
+          }}
+        >
+          <label htmlFor="other-name" className="label">{t.otherAsk}</label>
+          <span className="row">
+            <span className="search">
+              <PenLine size={14} strokeWidth={1.75} aria-hidden />
+              <input id="other-name" autoFocus value={otherText} maxLength={MAX_OTHER} placeholder={t.otherPh} enterKeyHint="send" autoComplete="off" onChange={(e) => setOtherText(e.target.value)} />
+            </span>
+            <button type="submit" className="btn btn-primary" disabled={!otherText.trim() || !!busy}>{t.vote}</button>
+          </span>
+        </form>
       )}
 
       {/* A group poll waiting for its group (P1 while waiting): how many have voted, and remind them. */}
@@ -1193,6 +1230,22 @@ null
       {/* P3, optional: after the pinned bar, so the bar never covers it. */}
       {(revealed || sealed || poll.groupWaiting) && mine && (
         <div className="duel-after">
+          {/* P2, first after the result (owner, Oct 2026, from the product audit): the voter → maker step. Someone who
+              just answered a friend's question is asked, once and gently, for a question of their own. */}
+          {revealed && (
+            <ul className="al-listcard own-question">
+              <li>
+                <Link href="/create" className="al-row" onClick={() => track('create_after_vote')}>
+                  <span className="al-row__disc" style={{ '--tone': 'var(--lime-badge)' } as React.CSSProperties} aria-hidden><Plus size={20} strokeWidth={1.75} /></span>
+                  <span className="al-row__main">
+                    <span className="al-row__title">{t.ownQuestion}</span>
+                    <span className="al-row__meta">{t.startOwnLine}</span>
+                  </span>
+                  <ArrowRight size={18} strokeWidth={1.75} className="al-row__chevron" aria-hidden />
+                </Link>
+              </li>
+            </ul>
+          )}
           {/* P2: your group (you + friends from your link) vs everyone, for your pick. Lime = you. */}
           {revealed && poll.group && (
             <div className="duel-group group-vs">

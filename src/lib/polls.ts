@@ -2,10 +2,11 @@ import { and, desc, eq, inArray, isNull, lt, ne, or, sql } from 'drizzle-orm';
 import { nanoid, customAlphabet } from 'nanoid';
 import { shareProof } from './secret';
 import { RATING_EMOJIS, RATING_LABELS, ratingAverage, usesPicks, type PollKind } from './rating';
-import { isCode } from './validation';
+import { cleanText, isCode } from './validation';
 import { schema, type Db } from '@/db';
 import type { CreatePollInput } from './validation';
-import { namesPolitics } from './moderation';
+import { hasBlockedWord, namesPolitics } from './moderation';
+import { MAX_OTHER, OTHER_MIN_PEOPLE, OTHER_TOP } from './limits';
 import { sealedUntil } from './silence';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { isAdminKey } from './admin';
@@ -25,6 +26,8 @@ export type PollOption = {
   imageCredit: string | null;
   /** The creator's emoji for this choice, if any. */
   emoji: string | null;
+  /** The "Other (write your own)" choice: shown in the voter's language, tapping it asks for a name. */
+  isOther: boolean;
   votes: number;
   percent: number;
   /** Rank polls: the average place voters gave it (1 = first), when results are visible. */
@@ -107,6 +110,10 @@ export type PollView = {
   previous: { id: string; title: string; leader: string | null; percent: number | null; voters: number } | null;
   /** "Which dates work?": this voter's "if need be" dates. */
   myMaybes: string[];
+  /** "Other (write your own)": the names written most often (by at least OTHER_MIN_PEOPLE people), only when results
+   *  are visible; and what this voter wrote. */
+  otherTop: { name: string; n: number }[];
+  myOther: string | null;
   options: PollOption[];
 };
 
@@ -141,10 +148,14 @@ export async function createPoll(db: Db, raw: CreatePollInput, manageKey?: strin
   // One transaction: a duel is never saved without its choices (or with half its photos).
   await db.transaction(async (tx) => {
   const category = namesPolitics(input.title, input.description, ...input.options) ? 'politics' : input.category;
+  const calledIt = input.calledIt && input.kind === 'choice' && category !== 'politics';
+  // "Other (write your own)": pick-one ballots only, and not "Called it" (the maker marks one of the listed answers).
+  const allowOther = input.allowOther && input.kind === 'choice' && !calledIt;
   await tx.insert(polls).values({
     hasPhotos,
+    allowOther,
     // "Called it" is for pick-one questions about sport, films, shows and the like; never politics (election law).
-    calledIt: input.calledIt && input.kind === 'choice' && category !== 'politics',
+    calledIt,
     manageHash: manageKey ? hashKey(manageKey) : null,
     packId: packId ?? null,
     ownerId: ownerId ?? null,
@@ -179,6 +190,7 @@ export async function createPoll(db: Db, raw: CreatePollInput, manageKey?: strin
       imageUrl: photoIds[position] ? `/api/img/${photoIds[position]}` : null,
     })),
   );
+  if (allowOther) await tx.insert(options).values({ id: nanoid(10), pollId: id, label: 'Other', position: input.options.length, isOther: true });
   });
   return id;
 }
@@ -221,6 +233,7 @@ export async function getPoll(
           .select({
             optionId: votes.optionId,
             reason: votes.reason,
+            otherText: votes.otherText,
             createdAt: votes.createdAt,
             prediction: votes.prediction,
             predictionCorrect: votes.predictionCorrect,
@@ -230,7 +243,7 @@ export async function getPoll(
           .where(and(eq(votes.pollId, id), eq(votes.voterKey, voterId)))
           .limit(1)
       : Promise.resolve(
-          [] as { optionId: string; reason: string | null; createdAt: Date; prediction: string | null; predictionCorrect: boolean | null; shareCode: string | null }[],
+          [] as { optionId: string; reason: string | null; otherText: string | null; createdAt: Date; prediction: string | null; predictionCorrect: boolean | null; shareCode: string | null }[],
         ),
     db
       .select({ optionId: votes.optionId, reason: votes.reason, n: sql<number>`count(*)::int` })
@@ -350,6 +363,24 @@ export async function getPoll(
   const trend = !picksKind && resultsVisible && opts.length === 2 && total > 1 ? await shareOverTime(db, id, poll.createdAt, opts[0].id) : [];
   const [rounds, swing] = !picksKind && resultsVisible && total > 0 ? await Promise.all([countingRounds(db, id), swingSince(db, id, byOption, total)]) : [[], null];
   const lastVote = pulseRows[0]?.lastVoteAt;
+  // "Other (write your own)": names written by several people, grouped however they were typed ("yogi" = "Yogi "),
+  // shown with their most common spelling. Hidden results stay hidden: nothing here until the numbers show.
+  const otherTop =
+    poll.allowOther && resultsVisible
+      ? (
+          await db
+            .select({
+              name: sql<string>`mode() within group (order by ${votes.otherText})`,
+              n: sql<number>`count(*)::int`,
+            })
+            .from(votes)
+            .where(and(eq(votes.pollId, id), sql`${votes.otherText} is not null`))
+            .groupBy(sql`lower(regexp_replace(trim(${votes.otherText}), '[[:space:]]+', ' ', 'g'))`)
+            .having(sql`count(*) >= ${OTHER_MIN_PEOPLE}`)
+            .orderBy(sql`count(*) desc`, sql`1`)
+            .limit(OTHER_TOP)
+        ).map((r) => ({ name: r.name, n: r.n }))
+      : [];
 
   return {
     id: poll.id,
@@ -385,6 +416,8 @@ export async function getPoll(
     electionMode: poll.electionMode || poll.category === 'politics',
     kind: poll.kind === 'rating' || poll.kind === 'multi' || poll.kind === 'rank' || poll.kind === 'dates' ? poll.kind : 'choice',
     myMaybes,
+    otherTop,
+    myOther: mine[0]?.otherText ?? null,
     maker: poll.showMaker && poll.ownerId ? await makerOf(db, poll.ownerId) : null,
     suggestionsOn: poll.suggestionsOn && (poll.kind === 'choice' || poll.kind === 'multi') && !poll.groupSize && !closed,
     previous: poll.previousId && !flags.noPrevious ? await previousResult(db, poll.previousId) : null,
@@ -411,6 +444,7 @@ export async function getPoll(
         subtitle: o.subtitle,
         imageCredit: o.imageCredit,
         emoji: o.emoji,
+        isOther: o.isOther,
         votes: n,
         // Rank: score as a share of the most points possible; others: share of voters.
         percent: resultsVisible && total ? (ranked ? (n / maxPoints) * 100 : (n / total) * 100) : 0,
@@ -484,9 +518,9 @@ async function shareOverTime(db: Db, id: string, createdAt: Date, firstOptionId:
   return points.slice(-48);
 }
 
-export type VoteResult = 'ok' | 'changed' | 'already_voted' | 'closed' | 'not_found' | 'bad_option' | 'frozen';
+export type VoteResult = 'ok' | 'changed' | 'already_voted' | 'closed' | 'not_found' | 'bad_option' | 'bad_other' | 'frozen';
 
-export async function castVote(db: Db, id: string, optionId: string, voterId: string, via?: string | null, morePicks: string[] = [], maybes: string[] = []): Promise<VoteResult> {
+export async function castVote(db: Db, id: string, optionId: string, voterId: string, via?: string | null, morePicks: string[] = [], maybes: string[] = [], other?: string | null): Promise<VoteResult> {
   const [poll] = await db.select().from(polls).where(eq(polls.id, id)).limit(1);
   if (!poll || poll.hidden) return 'not_found';
   if (poll.endsAt && poll.endsAt.getTime() <= Date.now()) return 'closed';
@@ -497,8 +531,12 @@ export async function castVote(db: Db, id: string, optionId: string, voterId: st
   // "Which dates work?": the yes dates and the "if need be" dates (a date is one or the other).
   const maybeSet = new Set(poll.kind === 'dates' ? maybes : []);
   const picks = usesPicks(poll.kind) ? [...new Set([optionId, ...morePicks, ...maybeSet])] : [optionId];
-  const valid = await db.select({ id: options.id }).from(options).where(and(eq(options.pollId, id), inArray(options.id, picks)));
+  const valid = await db.select({ id: options.id, isOther: options.isOther }).from(options).where(and(eq(options.pollId, id), inArray(options.id, picks)));
   if (valid.length !== picks.length) return 'bad_option';
+  // "Other (write your own)": the name is required, short, and passes the word filter. Any other choice keeps none.
+  const isOther = poll.kind === 'choice' && valid.some((o) => o.id === optionId && o.isOther);
+  const otherText = isOther ? cleanText(other ?? '').slice(0, MAX_OTHER + 1) : null;
+  if (isOther && (!otherText || otherText.length > MAX_OTHER || !/[\p{L}\p{N}]/u.test(otherText) || hasBlockedWord(otherText))) return 'bad_other';
   if (poll.kind === 'rank') {
     const [{ n }] = await db.select({ n: sql<number>`count(*)::int` }).from(options).where(eq(options.pollId, id));
     if (picks.length !== n) return 'bad_option';
@@ -510,7 +548,7 @@ export async function castVote(db: Db, id: string, optionId: string, voterId: st
     const [ref] = await db.select({ voterKey: votes.voterKey }).from(votes).where(and(eq(votes.pollId, id), eq(votes.shareCode, via))).limit(1);
     if (ref && ref.voterKey !== voterId) viaCode = via;
   }
-  const newVote = { id: nanoid(12), pollId: id, optionId, voterKey: voterId, prediction: null, shareCode: shareCodeId(), via: viaCode };
+  const newVote = { id: nanoid(12), pollId: id, optionId, otherText, voterKey: voterId, prediction: null, shareCode: shareCodeId(), via: viaCode };
 
   // The ticks of a "pick several" vote, written with the vote itself (all or nothing).
   const savePicks = async (tx: Db, voteId: string) => {
@@ -526,7 +564,7 @@ export async function castVote(db: Db, id: string, optionId: string, voterId: st
       const [row] = await tx
         .insert(votes)
         .values(newVote)
-        .onConflictDoUpdate({ target: [votes.pollId, votes.voterKey], set: { optionId } })
+        .onConflictDoUpdate({ target: [votes.pollId, votes.voterKey], set: { optionId, otherText } })
         .returning({ id: votes.id, created: sql<boolean>`(xmax = 0)` });
       await savePicks(tx as unknown as Db, row.id);
       return row?.created ? 'ok' : 'changed';
@@ -615,6 +653,12 @@ export async function voteTotals(db: Db, ids: string[]): Promise<Record<string, 
     .where(and(inArray(polls.id, ids), eq(polls.hidden, false), isNull(polls.groupSize)))
     .groupBy(polls.id);
   return Object.fromEntries(rows.map((r) => [r.id, r.total]));
+}
+
+/** How many different people (voter numbers) have voted on the site, for Home's "N people have voted here". */
+export async function voterCount(db: Db): Promise<number> {
+  const [row] = await db.select({ n: sql<number>`count(distinct ${votes.voterKey})::int` }).from(votes);
+  return row?.n ?? 0;
 }
 
 /** Public duels, newest first. Hidden duels never; unreviewed politics duels not until the owner checks them. */
@@ -887,7 +931,7 @@ export async function getMyVotes(db: Db, voterId: string | null, limit = 50): Pr
     .select({
       pollId: votes.pollId,
       title: polls.title,
-      pick: options.label,
+      pick: sql<string>`coalesce(${votes.otherText}, ${options.label})`,
       pickEmoji: options.emoji,
       pollKind: polls.kind,
       at: votes.createdAt,

@@ -11,7 +11,7 @@ import { useOverlay } from '@/lib/useOverlay';
 // Choices cannot change after the first vote, so this is the moment to catch a typo. One main button: Post.
 
 export default function CreatePreview({
-  title, description, kind, calledIt, group, electionMode, hideUntilVoted, ends, choices, rateWords, rateEmojis, postLabel, busy, onPost, onClose,
+  title, description, kind, calledIt, group, electionMode, hideUntilVoted, ends, choices, rateWords, rateEmojis, other, postLabel, busy, onPost, onClose,
 }: {
   title: string;
   description: string;
@@ -25,6 +25,7 @@ export default function CreatePreview({
   choices: PreviewChoice[];
   rateWords: string[];
   rateEmojis: string[];
+  other?: boolean;
   postLabel: string;
   busy: boolean;
   onPost: () => void;
@@ -52,7 +53,7 @@ export default function CreatePreview({
         <button type="button" className="icon-btn sheet-close" onClick={onClose} aria-label={t.close}><X size={18} strokeWidth={2} aria-hidden /></button>
         <p className="label preview-eyebrow">{t.previewTitle}</p>
         {/* What a voter sees: not tappable here (aria-hidden), the words are read out once below. */}
-        <PreviewCard poll={{ title, description, kind, calledIt, group, electionMode, choices, rateWords, rateEmojis }} t={t} />
+        <PreviewCard poll={{ title, description, kind, calledIt, group, electionMode, choices, rateWords, rateEmojis, other }} t={t} />
         <p className="sr-only">{[title, description, ...choices.map((c) => c.label)].filter(Boolean).join('. ')}</p>
         <p className="small muted preview-rules">{rules}</p>
         {kind !== 'rating' && <p className="small preview-lock">{t.previewLock}</p>}

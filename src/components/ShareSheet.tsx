@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { useOverlay } from '@/lib/useOverlay';
 import type { PollOption, PollView } from '@/lib/polls';
 import { useLang, useT } from '@/lib/lang';
+import { track } from '@/lib/track';
 
 // "Show your ink": the moment after voting when people share. Built for the least drop-off:
 // WhatsApp first (one tap, message already written), the secret ballot on by default
@@ -37,6 +38,7 @@ export default function ShareSheet({ poll, pick, shareCode, onClose }: { poll: P
 
   // Like any sheet: Escape closes it, focus moves into it, Tab stays inside, and focus goes back to the Share button after.
   const sheetRef = useRef<HTMLElement>(null);
+  useEffect(() => track('share_open'), []);
   useEffect(() => {
     const before = document.activeElement as HTMLElement | null;
     sheetRef.current?.querySelector<HTMLElement>('button, a')?.focus({ preventScroll: true });
@@ -62,6 +64,7 @@ export default function ShareSheet({ poll, pick, shareCode, onClose }: { poll: P
   }, [onClose]);
 
   async function copy() {
+    track('copy_link');
     try {
       await navigator.clipboard.writeText(link());
       setCopied(true);
@@ -139,7 +142,7 @@ export default function ShareSheet({ poll, pick, shareCode, onClose }: { poll: P
           <span className={'switch' + (secret ? ' is-on' : '')} aria-hidden />
         </button>
 
-        <a className="btn btn-primary btn-lg sheet-main" href={`https://wa.me/?text=${encodeURIComponent(`${message} ${link()}&src=wa`)}`} target="_blank" rel="noopener noreferrer">
+        <a className="btn btn-primary btn-lg sheet-main" href={`https://wa.me/?text=${encodeURIComponent(`${message} ${link()}&src=wa`)}`} target="_blank" rel="noopener noreferrer" onClick={() => track('whatsapp')}>
           <MessageCircle size={16} strokeWidth={1.75} aria-hidden /> {t.sendWhatsApp}
         </a>
         <div className="sheet-row">

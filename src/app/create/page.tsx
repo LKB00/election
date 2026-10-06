@@ -10,6 +10,7 @@ import { getT } from '@/lib/lang-server';
 import { getDb } from '@/db';
 import { currentUser } from '@/lib/auth';
 import { CreateSignIn } from '@/components/Profile';
+import Step from '@/components/Step';
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getT()).create };
@@ -36,6 +37,7 @@ export default async function CreatePage({ searchParams }: { searchParams: Promi
   if (!user) {
     return (
       <div className="page">
+        <Step e="create_open" />
         <h1 className="sr-only">{t.startDuel}</h1>
         <section className="block block-tight create-signin">
           <CreateSignIn />
@@ -46,6 +48,7 @@ export default async function CreatePage({ searchParams }: { searchParams: Promi
   // On a computer the page widens so the live preview can sit beside the form (election.css, "Desktop").
   return (
     <div className="page create-page">
+      <Step e="create_open" />
       <header className="page-head">
         <p className="eyebrow"><Timer size={13} strokeWidth={2} aria-hidden />{t.takes30}</p>
         <h1 className="display">{t.startDuel}</h1>

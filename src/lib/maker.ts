@@ -44,7 +44,8 @@ export async function makerView(db: Db, id: string, uid: string): Promise<MakerV
   const p = await ownPoll(db, id, uid);
   if (!p) return null;
   const [opts, [{ n }], hours, srcs, pend] = await Promise.all([
-    db.select({ id: options.id, label: options.label }).from(options).where(eq(options.pollId, id)).orderBy(asc(options.position)),
+    // The "Other" choice is never edited (its words are the site's, in each voter's language).
+    db.select({ id: options.id, label: options.label }).from(options).where(and(eq(options.pollId, id), eq(options.isOther, false))).orderBy(asc(options.position)),
     db.select({ n: sql<number>`count(*)::int` }).from(votes).where(eq(votes.pollId, id)),
     db
       .select({ h: sql<number>`floor(extract(epoch from (now() - ${votes.createdAt})) / 3600)::int`, n: sql<number>`count(*)::int` })

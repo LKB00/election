@@ -138,6 +138,15 @@ ALTER TABLE polls ADD COLUMN IF NOT EXISTS show_maker boolean NOT NULL DEFAULT f
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS shuffle boolean NOT NULL DEFAULT false;
 -- Voters may suggest a missing choice; it shows only after the maker approves it.
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS suggestions_on boolean NOT NULL DEFAULT false;
+ALTER TABLE polls ADD COLUMN IF NOT EXISTS allow_other boolean NOT NULL DEFAULT false;
+ALTER TABLE options ADD COLUMN IF NOT EXISTS is_other boolean NOT NULL DEFAULT false;
+ALTER TABLE votes ADD COLUMN IF NOT EXISTS other_text text;
+CREATE TABLE IF NOT EXISTS daily_events (
+  day text NOT NULL,
+  event text NOT NULL,
+  n integer NOT NULL DEFAULT 0,
+  PRIMARY KEY (day, event)
+);
 -- Deleted by its maker: hidden at once, erased (with its votes) after 180 days.
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
 -- Where votes came from, counted per poll only (never per voter): wa, ig, qr, link, other.

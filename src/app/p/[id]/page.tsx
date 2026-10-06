@@ -8,6 +8,7 @@ import { notFound } from 'next/navigation';
 import CreatedPanel from '@/components/CreatedPanel';
 import PollIntro from '@/components/PollIntro';
 import DuelGame from '@/components/DuelGame';
+import Step from '@/components/Step';
 import { getDb } from '@/db';
 import { SITE_URL } from '@/lib/site';
 import { getDeck, getMyVotes, getPoll, INDEX_MIN_VOTES, listPolls } from '@/lib/polls';
@@ -97,6 +98,7 @@ export default async function DuelPage({ params, searchParams }: Props) {
   return (
     <div className={'page page-wide' + (others.length ? ' poll-grid' : '')}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, '\\u003c') }} />
+      <Step e="poll_view" sharedCheck />
       <div className="poll-main">
       <PollIntro pollId={poll.id}>
       {label && (
