@@ -7,6 +7,7 @@ import Onboarding from '@/components/Onboarding';
 import PeopleCount from '@/components/PeopleCount';
 import Step from '@/components/Step';
 import RulesNotice from '@/components/RulesNotice';
+import MadeBy from '@/components/MadeBy';
 import DuelTiles from '@/components/DuelTiles';
 import PackRows from '@/components/PackRows';
 import { upcomingPacks } from '@/lib/packs';
@@ -16,19 +17,19 @@ import { VIEWS_SHOW_MIN, VOTERS_SHOW_MIN } from '@/lib/limits';
 import { viewTotal } from '@/lib/events';
 import { dateLocale } from '@/lib/time';
 import { readVoterId } from '@/lib/voter';
+import { ogBase, siteImage } from '@/lib/og';
 import { getLang, getT, langAlternates } from '@/lib/lang-server';
 
 export const dynamic = 'force-dynamic';
 
-// The bare site link is the one shared most, so it gets a preview card too: today's duel.
+// The bare site link is the one shared most: the brand picture (what Chunav is, and a Start voting button), the same
+// every day, so a chat's saved preview never shows a poll that has ended.
 export async function generateMetadata(): Promise<Metadata> {
-  const featured = await getFeaturedId(await getDb());
-  const images = featured ? [{ url: `/api/og/${featured}`, width: 1200, height: 630 }] : undefined;
-  const t = await getT();
+  const [t, lang] = await Promise.all([getT(), getLang()]);
   return {
     alternates: await langAlternates('/'),
-    openGraph: { title: `${t.siteName} · ${t.splashLine}`, description: t.metaDesc, images },
-    twitter: { card: 'summary_large_image', images: images?.map((i) => i.url) },
+    openGraph: { ...ogBase(lang), title: `${t.siteName} · ${t.splashLine}`, description: t.metaDesc, images: [siteImage(lang)] },
+    twitter: { card: 'summary_large_image', images: [siteImage(lang).url] },
   };
 }
 
@@ -136,6 +137,8 @@ export default async function Home() {
       {people}
       {/* P3: the 3-monthly rules reminder sits last, after everything there is to do. */}
       {!empty && <RulesNotice />}
+      {/* P3, the very last line: who made Chunav. */}
+      <MadeBy t={t} />
     </div>
   );
 }

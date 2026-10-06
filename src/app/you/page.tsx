@@ -9,6 +9,7 @@ import EmptyState from '@/components/EmptyState';
 import MyPolls from '@/components/MyPolls';
 import SoundRow from '@/components/SoundRow';
 import { ProfileActions, ProfileCard, YouSignIn } from '@/components/Profile';
+import MadeBy from '@/components/MadeBy';
 
 export const dynamic = 'force-dynamic';
 export async function generateMetadata(): Promise<Metadata> {
@@ -41,6 +42,7 @@ export default async function YouPage({ searchParams }: { searchParams: Promise<
           <h2 className="al-block__title">{t.settingsLabel}</h2>
           <ul className="al-listcard"><SoundRow /></ul>
         </section>
+        <MadeBy t={t} />
         </div>
       </div>
     );
@@ -82,6 +84,7 @@ export default async function YouPage({ searchParams }: { searchParams: Promise<
       )}
       {/* P3, last: the account, as one quiet list (Your votes is its own tab, so it is not repeated here). */}
       <div className="you-account"><ProfileActions /></div>
+      <MadeBy t={t} />
     </div>
   );
 }

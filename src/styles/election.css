@@ -1194,6 +1194,10 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
 /* Home, bottom: "N views", kept quiet but with a big number (owner, Oct 2026: "make it subtle", then "show views, I want
    the number big"): no card, small faces in soft colours and a "+", the number only a touch bolder than the words
    (16px, owner: "57 looks too big", "it should be subtle"), then small muted words. */
+/* "Designed and developed by" (owner, Oct 2026: "subtle, at the bottom; no arrow, colour or bold", then "underline
+   Lokesh Bhatia"): the last, quietest line of Home and You. Only the name is the link: underlined, same grey, plain. */
+.made-by { margin: 32px auto 4px; text-align: center; font-size: 12px; font-weight: 400; color: var(--ink-3); }
+.made-by a { color: inherit; font-weight: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .people-count { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 24px auto 4px; color: var(--ink-2); }
 .people-faces { display: flex; flex: none; opacity: 0.85; }
 .people-face { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--paper); font-size: 12px; line-height: 1; }

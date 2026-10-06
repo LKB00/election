@@ -200,7 +200,21 @@ Every element below borrows a real voting moment.
 3. **What the message says** (short, ends with the link):
    - secret: “I just voted in “Modi or Rahul?” 🗳️☝️ Guess who I picked? Vote and find out: link”
    - open: “I voted for Modi in “Modi or Rahul?” 🗳️☝️ Who would you pick? link”
-4. **Link preview** (WhatsApp/X, 1200×630): inked finger, "I VOTED", both photos, my pick or "Guess who I picked?". **No QR**: the link is already tappable in a chat.
+4. **Link preview** (WhatsApp/X/Telegram/Instagram DMs, 1200×630; owner, Oct 2026: "it should not just be a link: some
+   text, a thumbnail, designed so people open it"). Every page has a picture, a title, a line of text and the site name
+   (`src/lib/og.ts`), never a bare link. Two pictures:
+   - **A poll** (`/api/og/[id]`): the brand (mark + Chunav, P3) and "Fun poll · not official" on top; the question, big
+     (P1), with its first two choices and a **VS** between (or the five faces of a rating poll, or "+N more"); at the
+     bottom an **ink band like the site's main button**: what to do ("What would you pick?" / "How would you rate it?") or,
+     from a friend's link, the inked finger, "I VOTED" and "Guess who I picked?", with a yellow **Vote now →** (or **Your
+     turn →**) pill. Under it "N people have voted" once there are 10 (`OG_VOTERS_MIN`; a crowd makes people tap), else
+     "Secret vote · one tap · see results after you vote". The text under the picture repeats the choices and the count.
+   - **The site** (`/api/og/site`, the bare link and every page without its own picture, packs too): "What does
+     everyone think?" big, one line on what it is, three points (Secret vote, One tap, Free), an ink **Start voting →**
+     button, and the big mark on a yellow panel (what people remember). The same every day, so a chat's saved preview
+     never shows an ended poll.
+   **No QR**: the link is already tappable in a chat. **Never the split.** English or Hinglish only (the renderer cannot
+   shape Hindi).
 5. **Story image** (1080×1920, for Status/Instagram where links cannot be tapped): big inked finger, "I voted", both photos, pick or "Guess who I picked?", and a **small QR code in the bottom corner** with "Scan to vote". Small, so it never competes with the message.
 6. **The friend's landing**: label "Your friend voted. Your turn", the ballot right away, no sign-up, one tap. Their friend's pick stays hidden until they vote (that is the hook).
 7. **Never the split** on any shared image: friends have to vote to see it.
@@ -1297,6 +1311,12 @@ path as an election silence window (`revealAt` on the poll; `sealedUntil` covers
 moment results open), the "Tell me the result" alert is offered, and My votes says "Results at 7:30 pm". Alerts for a
 reveal go out with the evening job (9:05 pm), so they fit the 9 pm choice best.
 Measure it on the step counter before making it the default anywhere else.
+
+## Designed and developed by (owner, Oct 2026: "add at the bottom that this is created by me: my name or a link to lokeshbhatia.com")
+
+| Element | Level | Job / why |
+|---|---|---|
+| "Designed and developed by Lokesh Bhatia" | P3 | Who made Chunav (owner, Oct 2026: "subtle, at the bottom; no underline, arrow, colour or bold"). One small (12 px) line in the quiet grey (`--ink-3`), plain weight, no icon; only the name is the link, underlined in the same grey ("underline Lokesh Bhatia"), to the portfolio (`MAKER_URL` in `src/lib/site.ts`, new tab). The very last line of Home and You (`MadeBy.tsx`), below the rules reminder: it never competes with voting. Keyboard users still get the focus ring. |
 
 ## The Chunav mark (owner, Oct 2026: "a better icon that says what the app is and carries the brand")
 

@@ -8,6 +8,7 @@ import { getDb } from '@/db';
 import { getPack } from '@/lib/packs';
 import { readVoterId } from '@/lib/voter';
 import { getLang, getT } from '@/lib/lang-server';
+import { ogBase, siteImage } from '@/lib/og';
 import { INDIA_TZ, dateLocale } from '@/lib/time';
 
 export const dynamic = 'force-dynamic';
@@ -15,12 +16,13 @@ type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ new?: st
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const pack = await getPack(await getDb(), (await params).id, null);
-  const t = await getT();
+  const [t, lang] = await Promise.all([getT(), getLang()]);
   if (!pack) return { title: t.packNotFound };
   return {
     title: pack.title,
     robots: { index: false, follow: true },
-    openGraph: { title: t.metaPackOg(pack.title), description: pack.views.map((v) => v.title).join(' · ') },
+    openGraph: { ...ogBase(lang), title: t.metaPackOg(pack.title), description: pack.views.map((v) => v.title).join(' · '), images: [siteImage(lang)] },
+    twitter: { card: 'summary_large_image', images: [siteImage(lang).url] },
   };
 }
 
