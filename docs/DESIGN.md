@@ -1223,12 +1223,14 @@ Now, top to bottom:
 2. **P1 · one card under the result** (`duel-verdict`): the inked finger, then where you stand, once: your guess
    (right/wrong), your friend's pick (agree/disagree), "You're with the 82%…", friends from your link, and a small
    "Vote cast. Your finger is inked." line with Undo. This is everything the floating bar used to say.
-3. **P1 · two buttons in the page** (not a floating bar; owner: "looks off, not part of the UI"): **Share your ink** and
-   **Next poll →** (the next poll you have not voted on), or **Finish** when there is none left (the "you're done" screen).
-   Owner: "what does Next mean?": the button now names where it goes. Swipe left still does the same.
-4. **P2:** "Have a question of your own?", my group vs everyone, why you picked it, reactions, the result alert.
-5. **P3 · "More about this poll"** (one folded row, `duel-more`): the trend / last 24 hours, last time, everyone's
-   reasons, "Missing a choice? Suggest one", Report.
+3. **This poll's own parts** (owner, Oct 2026: "the reactions belong to the current poll; why are they below Next?"):
+   my group vs everyone, why you picked it, reactions, the result alert, and **"More about this poll"** (one folded row,
+   `duel-more`: the trend / last 24 hours, last time, everyone's reasons, "Missing a choice? Suggest one", Report).
+4. **P1 · what to do now, two buttons in the page** (not a floating bar; owner: "looks off, not part of the UI"):
+   **Share your ink** and **Next poll →** (the next poll you have not voted on), or **Finish** when none is left.
+   Owner: "what does Next mean?": the button names where it goes. Swipe left does the same.
+5. **Last, also leaving this poll:** "Have a question of your own?".
+Rule: everything about the current poll comes before anything that leaves it.
 Removed: the 100-dot people grid (it repeated the percentage), "Up next: …" in the bar, and the "Someone wants your
 pick" label once you have voted. Before voting nothing changed: question, choices, the secret-vote line, Report.
 

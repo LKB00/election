@@ -1143,33 +1143,6 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
 
       {msg && <p className="duel-error" role="alert">{msg}</p>}
 
-      {/* The two next steps, in the page right under the result card (not a floating bar: owner, Oct 2026). */}
-      <div className={'tot-result' + (barOn ? ' is-shown' : '')} aria-live="polite">
-        {revealed && counting && (
-          <p className="duel-counting"><span className="live-dot" aria-hidden /> <span><strong>{t.counting}</strong> · {t.round(countRound! + 1)}: {ticker}</span></p>
-        )}
-        {barOn && !counting && (
-          <>
-            {/* Only the two next steps (owner, Oct 2026): what the bar used to say is in the card under the result. */}
-            <p>
-              {/* Sealed: the note under the cards already says why there are no numbers; the bar keeps Undo, Share and Next. */}
-              {sealed && !revealed && undoUntil > 0 && !poll.closed && voted && (
-                <button type="button" className="link-like duel-undo small muted" onClick={undo}>{t.undoVote}</button>
-              )}
-            </p>
-            <span className="row duel-actions">
-              {/* A group poll still waiting: "Remind the group" (above) is the one share action. */}
-              {!poll.groupWaiting && <button type="button" className="btn btn-ghost" onClick={() => (mine && poll.myShareCode ? setSharing(true) : share())}>
-                <Share2 size={14} strokeWidth={1.75} aria-hidden /> {copied ? t.linkCopied : poll.closed ? t.shareResult : t.shareInk}
-              </button>}
-              <button type="button" className="btn btn-primary" onClick={next} ref={nextRef}>
-                {hasNext ? t.nextPoll : t.nextFinish} {hasNext && <ArrowRight size={14} strokeWidth={1.75} aria-hidden />}
-              </button>
-            </span>
-          </>
-        )}
-      </div>
-
       {declaredBurst && <Burst count={24} />}
 
       {casting && castOpt && (
@@ -1190,24 +1163,10 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
       )}
 
       {/* P3, optional: after the pinned bar, so the bar never covers it. */}
-      {(revealed || sealed || poll.groupWaiting) && mine && (
+      {/* Everything about THIS poll comes before the buttons that leave it (owner, Oct 2026: "the reactions belong to
+          the current poll"). */}
+      {(revealed || sealed || poll.groupWaiting) && mine && !counting && (
         <div className="duel-after">
-          {/* P2, first after the result (owner, Oct 2026, from the product audit): the voter → maker step. Someone who
-              just answered a friend's question is asked, once and gently, for a question of their own. */}
-          {revealed && (
-            <ul className="al-listcard own-question">
-              <li>
-                <Link href="/create" className="al-row" onClick={() => track('create_after_vote')}>
-                  <span className="al-row__disc" style={{ '--tone': 'var(--lime-badge)' } as React.CSSProperties} aria-hidden><Plus size={20} strokeWidth={1.75} /></span>
-                  <span className="al-row__main">
-                    <span className="al-row__title">{t.ownQuestion}</span>
-                    <span className="al-row__meta">{t.startOwnLine}</span>
-                  </span>
-                  <ArrowRight size={18} strokeWidth={1.75} className="al-row__chevron" aria-hidden />
-                </Link>
-              </li>
-            </ul>
-          )}
           {/* P2: your group (you + friends from your link) vs everyone, for your pick. Lime = you. */}
           {revealed && poll.group && (
             <div className="duel-group group-vs">
@@ -1316,6 +1275,49 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
       )}
 
       {/* Before voting (or without a pick) Report stays at the bottom; after, it is under "More about this poll". */}
+      {/* Then what to do now: Share and Next poll, in the page (not a floating bar: owner, Oct 2026), after this poll's parts. */}
+      <div className={'tot-result' + (barOn ? ' is-shown' : '')} aria-live="polite">
+        {revealed && counting && (
+          <p className="duel-counting"><span className="live-dot" aria-hidden /> <span><strong>{t.counting}</strong> · {t.round(countRound! + 1)}: {ticker}</span></p>
+        )}
+        {barOn && !counting && (
+          <>
+            {/* Only the two next steps (owner, Oct 2026): what the bar used to say is in the card under the result. */}
+            <p>
+              {/* Sealed: the note under the cards already says why there are no numbers; the bar keeps Undo, Share and Next. */}
+              {sealed && !revealed && undoUntil > 0 && !poll.closed && voted && (
+                <button type="button" className="link-like duel-undo small muted" onClick={undo}>{t.undoVote}</button>
+              )}
+            </p>
+            <span className="row duel-actions">
+              {/* A group poll still waiting: "Remind the group" (above) is the one share action. */}
+              {!poll.groupWaiting && <button type="button" className="btn btn-ghost" onClick={() => (mine && poll.myShareCode ? setSharing(true) : share())}>
+                <Share2 size={14} strokeWidth={1.75} aria-hidden /> {copied ? t.linkCopied : poll.closed ? t.shareResult : t.shareInk}
+              </button>}
+              <button type="button" className="btn btn-primary" onClick={next} ref={nextRef}>
+                {hasNext ? t.nextPoll : t.nextFinish} {hasNext && <ArrowRight size={14} strokeWidth={1.75} aria-hidden />}
+              </button>
+            </span>
+          </>
+        )}
+      </div>
+
+      {/* Last, because it also leaves this poll: the voter → maker step (owner, Oct 2026, product audit). Someone who just
+          answered a friend's question is asked, once and gently, for a question of their own. */}
+      {revealed && mine && !counting && (
+        <ul className="al-listcard own-question">
+          <li>
+            <Link href="/create" className="al-row" onClick={() => track('create_after_vote')}>
+              <span className="al-row__disc" style={{ '--tone': 'var(--lime-badge)' } as React.CSSProperties} aria-hidden><Plus size={20} strokeWidth={1.75} /></span>
+              <span className="al-row__main">
+                <span className="al-row__title">{t.ownQuestion}</span>
+                <span className="al-row__meta">{t.startOwnLine}</span>
+              </span>
+              <ArrowRight size={18} strokeWidth={1.75} className="al-row__chevron" aria-hidden />
+            </Link>
+          </li>
+        </ul>
+      )}
       {/* On Home (the daily set) Report is on the poll's own page instead; after voting it is under "More". */}
       {!daily && !((revealed || sealed || poll.groupWaiting) && mine) && <ReportDuel pollId={poll.id} t={t} lang={lang} />}
     </div>
