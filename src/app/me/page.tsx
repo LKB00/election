@@ -6,7 +6,6 @@ import { getMyVotes, getVoterStats, listPolls, type Standing } from '@/lib/polls
 import type { Dict } from '@/lib/i18n';
 import { readVoterId, voterKeyForLink } from '@/lib/voter';
 import KeepVotes from '@/components/KeepVotes';
-import ResetFresh from '@/components/ResetFresh';
 import SinceLastLook from '@/components/SinceLastLook';
 import MonthCard from '@/components/MonthCard';
 import { getMonth } from '@/lib/month';
@@ -101,13 +100,12 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
         )}
         {mine.length > 0 && <p className="small muted block-tight">{t.deviceOnly}</p>}
       </section>
-      {/* The rest only matters once you have votes: keeping them, starting fresh (TEMPORARY, for testing), the rules. */}
+      {/* The rest only matters once you have votes: keeping them, the rules. */}
       {mine.length > 0 && (
         <div className="me-rest">
           {/* The polls you made live under You. */}
           <p className="small block-tight"><Link href="/you" className="text-link">{t.pollsYouMade} →</Link></p>
           <KeepVotes voterKey={voterKey} />
-          <ResetFresh />
           <p className="small block row wrap">
             <Link href="/terms" className="text-link">{t.termsLink}</Link>
             <Link href="/privacy" className="text-link">{t.privacyLink}</Link>

@@ -43,7 +43,7 @@ Where: Vercel → your project **election** → Settings → Environment Variabl
 
 ## 5. Decisions waiting for you
 
-- [ ] **Remove the temporary "Reset this phone" button** on My votes before a public launch. Just say "remove the reset button".
+- [x] **"Reset this phone" removed** for the public launch (Oct 2026).
 - [ ] **Name and domain:** the research suggested a broader name than "Election" one day. You chose to keep it for now; revisit when you are ready.
 - [ ] **Watch one number weekly:** "returning voters" at the bottom of `/admin` (people who voted on 2 or more days this week). Aim for 20–25% or more of the week's voters.
 
