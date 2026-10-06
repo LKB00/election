@@ -1204,9 +1204,9 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
 .other-top { display: block; margin-top: 2px; overflow-wrap: anywhere; }
 /* Home: "12,345 people have voted here", under the greeting (shown from VOTERS_SHOW_MIN people). */
 /* Home, bottom: "N views", kept quiet but with a big number (owner, Oct 2026: "make it subtle", then "show views, I want
-   the number big"): no card, small faces in soft colours and a "+", the number a little bigger than the words
-   (22px next to 24px faces: balanced, owner: "57 looks too big"), then small muted words. */
-.people-count { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 24px auto 4px; color: var(--ink-2); }
+   the number big"): no card, small faces in soft colours and a "+", the number only a touch bolder than the words
+   (16px, owner: "57 looks too big", "it should be subtle"), then small muted words. */
+.people-count { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 24px auto 4px; color: var(--ink-2); }
 .people-faces { display: flex; flex: none; opacity: 0.85; }
 .people-face { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--paper); font-size: 12px; line-height: 1; }
 .people-face + .people-face { margin-left: -7px; }
@@ -1214,8 +1214,8 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
 .people-face:nth-child(2) { background: var(--indigo-soft); }
 .people-face:nth-child(3) { background: var(--p-feedback); }
 .people-more { background: var(--paper); color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--line); }
-.people-text { display: flex; flex-direction: column; font-size: 14px; line-height: 18px; }
-.people-n { color: var(--ink); font: 700 22px / 1 var(--display); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.people-text { display: flex; flex-direction: column; font-size: 13px; line-height: 17px; }
+.people-n { color: var(--ink); font: 600 16px / 1 var(--display); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 /* Admin: the step counter table (owner only). */
 .admin-steps__table { width: 100%; max-width: 560px; border-collapse: collapse; margin-top: 8px; }
 .admin-steps__table th, .admin-steps__table td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: right; font-variant-numeric: tabular-nums; }
