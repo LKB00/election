@@ -1124,3 +1124,10 @@ Phones unchanged. On a computer (≥1024px):
   list under it; P1 **Your polls** beside it, full height. Same parts and order for screen readers as on a phone.
 - **Signed out:** the profile screen as a white card on the left; Settings (Voting sound), and polls made on this
   computer, in a 400px column on the right.
+
+## Your votes on computers (owner, Oct 2026: "make the Your votes page better on desktop too")
+
+Phones unchanged. On a computer (≥1024px): P1 your votes (where each of your picks stands) as the main column on the
+left; a 360px column on the right with your record ("You voted in 6 polls."), your month card, "Polls you made", Keep
+your votes, Start fresh and the Rules / Privacy links. Same order for screen readers as on a phone (grid areas, not
+moved markup). The list of votes comes in row by row like the other poll lists.

@@ -1098,6 +1098,14 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
   .you-side { grid-area: side; }
   .you-side > :first-child { margin-top: 0; }
 
+  .me-page { max-width: 1128px; display: grid; grid-template-columns: minmax(0, 1fr) 360px; grid-template-areas: 'list head' 'list month' 'list rest'; grid-template-rows: auto auto 1fr; column-gap: 48px; align-items: start; }
+  .me-head { grid-area: head; margin: 0; }
+  .me-month { grid-area: month; }
+  .me-list { grid-area: list; margin-top: 0; }
+  .me-list > .al-listcard { margin-top: 0; }
+  .me-rest { grid-area: rest; }
+  .me-rest > :first-child { margin-top: 16px; }
+
   .create-page { max-width: 1128px; }
   .create-page > .page-head, .create-page > .al-block, .create-page > p { max-width: 600px; }
   .create-grid { display: grid; grid-template-columns: minmax(0, 1fr) 384px; gap: 48px; align-items: start; }
