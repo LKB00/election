@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og';
+import { markDataUri } from '@/lib/brandMark';
 import QRCode from 'qrcode';
 import { getDb } from '@/db';
 import { CARD, cardFonts, faceLabels } from '@/lib/cards';
@@ -39,7 +40,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', padding: '96px 72px 72px', background: CARD.paper, color: CARD.ink, fontFamily: 'Figtree' }}>
         <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center', fontSize: 40, fontWeight: 700 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ display: 'flex', width: 40, height: 40, borderRadius: 20, background: CARD.ink, border: `10px solid ${CARD.lime}` }} />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={markDataUri(48)} width={48} height={48} alt="" />
             {t.siteName}
           </div>
           <div style={{ display: 'flex', padding: '10px 24px', borderRadius: 999, background: CARD.lime, fontSize: 30 }}>{t.cardResultsIn}</div>

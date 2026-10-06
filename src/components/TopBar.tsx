@@ -5,6 +5,7 @@ import { ChartNoAxesColumn, ChevronLeft, House, Languages, Plus, UserRound, Vote
 import { useEffect, useState } from 'react';
 import { setLangCookie, useLang, useT } from '@/lib/lang';
 import { LANG_NAMES, LANG_SHORT, LANGS, type Lang } from '@/lib/i18n';
+import LogoMark from './LogoMark';
 
 // Set once you move from one page to another inside the site (the browser's "where you came from" only knows the page
 // you first arrived from, e.g. WhatsApp, so it used to send Back to Home after Polls → a poll).
@@ -63,7 +64,7 @@ export default function TopBar() {
           </button>
         ))}
         <Link href="/" className="logo" aria-label={t.logoHome}>
-          <span className="logo-mark" aria-hidden />
+          <LogoMark size={24} />
           <span className="logo-text"><span className="logo-full">{t.siteName}</span></span>
         </Link>
         {/* Computers (hidden on phones, which have the bottom bar): the same places in the same order, with the same

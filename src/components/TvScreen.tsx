@@ -1,5 +1,6 @@
 'use client';
 import { Maximize2, Minimize2 } from 'lucide-react';
+import LogoMark from './LogoMark';
 import { useEffect, useState } from 'react';
 import { faceLabels } from '@/lib/labels';
 import { useLang, useT } from '@/lib/lang';
@@ -65,7 +66,7 @@ export default function TvScreen({ initial, qr, link }: { initial: PollView; qr:
   return (
     <div className={'tv' + (poll.closed ? ' is-closed' : '')}>
       <header className="tv-top">
-        <p className="tv-brand"><span className="logo-mark" aria-hidden /> {t.siteName}</p>
+        <p className="tv-brand"><LogoMark size={40} /> {t.siteName}</p>
         <p className="tv-state">
           {poll.closed ? <strong>{poll.electionMode ? t.declaredTitle : t.finalTitle}</strong> : <><span className="live-dot" aria-hidden /> {t.tvLive}</>}
           <span className="tv-count"> · {t.votes(poll.participants)}</span>
