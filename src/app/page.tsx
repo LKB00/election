@@ -44,7 +44,7 @@ export default async function Home() {
   // Everyone who voted has visited too (the visitor count only started in Oct 2026), so never show fewer visitors.
   const fmt = (n: number) => n.toLocaleString(dateLocale(lang));
   const seen = Math.max(visitors, voters);
-  const people = seen < VISITORS_SHOW_MIN ? null : voters >= VOTERS_SHOW_MIN ? t.peopleBoth(fmt(seen), fmt(voters)) : t.peopleVisited(fmt(seen));
+  const people = seen < VISITORS_SHOW_MIN ? null : voters >= VOTERS_SHOW_MIN ? t.peopleBoth(fmt(seen), fmt(voters)) : t.peopleVisited(fmt(seen), seen === 1);
   const voted = [...deck, ...more].filter((p) => p.myVote !== null).map((p) => p.id);
   // P2 shelves under today's question: what is hot right now, then two topics with the most open polls.
   // Each poll shows once on Home: today's set first, then trending, topic shelves and "More polls" without repeats.
@@ -94,6 +94,8 @@ export default async function Home() {
           {deck.length === 0 && (
             <section className={empty ? 'empty-page' : 'block'}>
               <EmptyState kind="invite" title={t.homeEmptyTitle} line={t.homeEmptyLine} action={{ href: '/create', label: t.startDuel }} />
+              {/* A new site has no greeting to carry the people line, so it sits under the empty state. */}
+              {empty && people && <p className="al-home__sub empty-people"><span className="live-dot" aria-hidden />{people}</p>}
             </section>
           )}
         </div>

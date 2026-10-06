@@ -1198,8 +1198,8 @@ Step counter: "Guess the crowd" answered / skipped (not counted when yours was t
   surprise.
 
 **Visitor count on Home** (owner, Oct 2026: "show visitor count on the website"): the people line under the Home
-greeting says "N people have visited" once 10 phones have been here (`VISITORS_SHOW_MIN`), and "N people have visited ·
+greeting says "N people have visited" from the first visitor (`VISITORS_SHOW_MIN`, owner: "show it from 1 visitor"), and "N people have visited ·
 M have voted" once 25 people have voted. Each phone is counted once: `FirstVisit` (in the layout, so a first visit from a
 shared poll counts too) remembers `election-visited` and sends the `visitor` step; a phone that cannot remember is not
 counted. The total is every day's `visitor` steps added up; it is never shown smaller than the voter count. P3, plain
-text with the live dot, no card.
+text with the live dot, no card. On an empty site (no polls yet, so no greeting) it sits under the empty state.

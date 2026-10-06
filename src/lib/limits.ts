@@ -30,8 +30,9 @@ export const LIVE_COUNTS_MAX = 24;
 export const MAX_OTHER = 40;
 /** Home says "N people have voted here" once at least this many have (a tiny number would put people off). */
 export const VOTERS_SHOW_MIN = 25;
-/** Home says "N people have visited" once at least this many phones have been here (owner, Oct 2026). */
-export const VISITORS_SHOW_MIN = 10;
+/** Home says "N people have visited" once at least this many phones have been here (owner, Oct 2026: "show it from 1
+ * visitor"). */
+export const VISITORS_SHOW_MIN = 1;
 export const OTHER_MIN_PEOPLE = 2;
 export const OTHER_TOP = 3;
 
