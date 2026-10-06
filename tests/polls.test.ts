@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
   AUTO_HIDE_REPORTS, castVote, createPoll, deleteVoterData, getDeck, getFeaturedId, getMyVotes, getPoll, getReviewQueue, getVoterStats, guessLeader, listPolls,
-  GROUP_MIN, groupSplit, reportPoll, setPollFlags, setReason, setToday, toggleReaction, undoVote, voteTotals,
+  GROUP_MIN, groupSplit, reportPoll, setPollFlags, setReason, setToday, toggleReaction, undoVote, voteTotals, voterCount,
 } from '@/lib/polls';
 import { hasBlockedWord, namesPolitics } from '@/lib/moderation';
 import { activeSilence } from '@/lib/silence';
@@ -1294,5 +1294,59 @@ describe('the maker deletes a poll', () => {
     expect(await purgeDeleted(db, Date.now() + (DELETED_KEEP_DAYS + 1) * 86_400_000)).toBeGreaterThanOrEqual(1);
     expect(await db.select().from(schema.polls).where(eq(schema.polls.id, id))).toHaveLength(0);
     expect(await db.select().from(schema.votes).where(eq(schema.votes.pollId, id))).toHaveLength(0);
+  });
+});
+
+describe('"Other (write your own)"', () => {
+  it('adds one Other choice at the end, needs a clean name, and shows names written by 2+ people', async () => {
+    const id = await make({ allowOther: true });
+    const p = (await getPoll(db, id, null))!;
+    const other = p.options.at(-1)!;
+    expect(p.options.length).toBe(4);
+    expect(other.isOther).toBe(true);
+    expect(p.options.filter((o) => o.isOther).length).toBe(1);
+    // No name, too long, or an abusive word: refused. A normal choice keeps no text.
+    expect(await castVote(db, id, other.id, 'o0', null, [], [], '   ')).toBe('bad_other');
+    expect(await castVote(db, id, other.id, 'o0', null, [], [], 'x'.repeat(41))).toBe('bad_other');
+    expect(await castVote(db, id, other.id, 'o0', null, [], [], 'chutiya')).toBe('bad_other');
+    expect(await castVote(db, id, p.options[0].id, 'o1', null, [], [], 'ignored')).toBe('ok');
+    expect((await getPoll(db, id, 'o1'))!.myOther).toBeNull();
+    // Same name, typed differently, counts together; a name only one person wrote never shows.
+    expect(await castVote(db, id, other.id, 'o2', null, [], [], 'Yogi Adityanath')).toBe('ok');
+    expect(await castVote(db, id, other.id, 'o3', null, [], [], '  yogi   adityanath ')).toBe('ok');
+    expect(await castVote(db, id, other.id, 'o4', null, [], [], 'Yogi Adityanath')).toBe('ok');
+    expect(await castVote(db, id, other.id, 'o5', null, [], [], 'Someone Once')).toBe('ok');
+    const v = (await getPoll(db, id, 'o2'))!;
+    expect(v.myOther).toBe('Yogi Adityanath');
+    expect(v.otherTop).toEqual([{ name: 'Yogi Adityanath', n: 3 }]);
+    expect(v.options.at(-1)!.votes).toBe(4);
+    // My votes shows what you wrote, not "Other".
+    expect((await getMyVotes(db, 'o2')).find((m) => m.pollId === id)!.pick).toBe('Yogi Adityanath');
+  });
+
+  it('keeps written names hidden while results are hidden, and is off for other poll kinds and Called it', async () => {
+    const id = await make({ allowOther: true, hideUntilVoted: true });
+    const p = (await getPoll(db, id, null))!;
+    const other = p.options.at(-1)!;
+    for (const k of [1, 2, 3]) await castVote(db, id, other.id, `h${k}`, null, [], [], 'Nitish Kumar');
+    expect((await getPoll(db, id, 'h9'))!.otherTop).toEqual([]);
+    const multi = await make({ allowOther: true, kind: 'multi' });
+    expect((await getPoll(db, multi, null))!.options.some((o) => o.isOther)).toBe(false);
+    const called = await make({ allowOther: true, calledIt: true });
+    expect((await getPoll(db, called, null))!.options.some((o) => o.isOther)).toBe(false);
+  });
+});
+
+describe('people who voted (Home)', () => {
+  it('counts each voter once, however many polls they voted on', async () => {
+    const before = await voterCount(db);
+    const a = await make();
+    const b = await make();
+    const pa = (await getPoll(db, a, null))!;
+    const pb = (await getPoll(db, b, null))!;
+    await castVote(db, a, pa.options[0].id, 'vc1');
+    await castVote(db, b, pb.options[0].id, 'vc1');
+    await castVote(db, a, pa.options[1].id, 'vc2');
+    expect((await voterCount(db)) - before).toBe(2);
   });
 });

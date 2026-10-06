@@ -9,7 +9,9 @@ import DuelTiles from '@/components/DuelTiles';
 import PackRows from '@/components/PackRows';
 import { upcomingPacks } from '@/lib/packs';
 import { getDb } from '@/db';
-import { getDeck, getFeaturedId, getTodaySet, listPolls, trendingPolls } from '@/lib/polls';
+import { getDeck, getFeaturedId, getTodaySet, listPolls, trendingPolls, voterCount } from '@/lib/polls';
+import { VOTERS_SHOW_MIN } from '@/lib/limits';
+import { dateLocale } from '@/lib/time';
 import { readVoterId } from '@/lib/voter';
 import { getLang, getT, langAlternates } from '@/lib/lang-server';
 
@@ -35,7 +37,7 @@ export default async function Home() {
   const voterId = await readVoterId();
   // Today's set (the same few polls for everyone today, with an end), then more polls only if you ask for them.
   const [deck, extra, recent, todayId, trending] = await Promise.all([getTodaySet(db, voterId), getDeck(db, voterId), listPolls(db, 40), getFeaturedId(db), trendingPolls(db, 4)]);
-  const [tonight, lang] = await Promise.all([upcomingPacks(db), getLang()]);
+  const [tonight, lang, voters] = await Promise.all([upcomingPacks(db), getLang(), voterCount(db)]);
   const more = extra.filter((p) => !deck.some((d) => d.id === p.id));
   const voted = [...deck, ...more].filter((p) => p.myVote !== null).map((p) => p.id);
   // P2 shelves under today's question: what is hot right now, then two topics with the most open polls.
@@ -71,6 +73,8 @@ export default async function Home() {
             <header className="al-home">
               <p className="al-home__date" suppressHydrationWarning>{t.homeDate(new Date())}</p>
               <p className="al-home__title">{t.homeHello}</p>
+              {/* Social proof, once there is some: real people, counted once each (votes are never linked to a person). */}
+              {voters >= VOTERS_SHOW_MIN && <p className="al-home__sub al-home__people"><span className="live-dot" aria-hidden />{t.peopleVoted(voters.toLocaleString(dateLocale(lang)))}</p>}
             </header>
           )}
           {deck.length > 0 && (

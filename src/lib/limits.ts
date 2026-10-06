@@ -25,6 +25,14 @@ export const LIVE_COUNTS_MS = 45_000;
 export const LIVE_COUNTS_TIMES = 10;
 export const LIVE_COUNTS_MAX = 24;
 
+/** "Other (write your own)": the longest name a voter can write, how many people must write the same name before it
+ * shows in the results (one person's odd entry never does), and how many names show. */
+export const MAX_OTHER = 40;
+/** Home says "N people have voted here" once at least this many have (a tiny number would put people off). */
+export const VOTERS_SHOW_MIN = 25;
+export const OTHER_MIN_PEOPLE = 2;
+export const OTHER_TOP = 3;
+
 /** Server messages that quote a limit (also the keys of their translations in i18n.ts). */
 export const ERR = {
   titleShort: `Your question needs at least ${MIN_TITLE} letters.`,
@@ -32,4 +40,5 @@ export const ERR = {
   choiceLong: `A choice is too long (${MAX_CHOICE} letters max).`,
   fewChoices: `Add at least ${MIN_CHOICES} choices.`,
   manyChoices: `You can have up to ${MAX_CHOICES} choices. Remove one to continue.`,
+  otherBad: `Write who you choose (${MAX_OTHER} letters max, no abusive words).`,
 } as const;

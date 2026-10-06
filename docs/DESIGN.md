@@ -1143,3 +1143,19 @@ Phones unchanged; all of it under min-width 1024px.
 
 The temporary "Reset this phone" box on Your votes (for the owner's testing) is gone. "Delete my votes" (Keep your
 votes) stays: that is the visitor's own right to remove their votes.
+
+## "Other (write your own)" (owner, Oct 2026: "Modi vs Rahul Gandhi… there should be an option for Other… show the most chosen apart from these")
+
+| Element | Screen | Priority | Job |
+|---|---|---|---|
+| Switch "Let people write their own" | Start a poll, settings (pick-one polls, not Called it) | P3 | Adds "Other" as the last choice. Off by default; **on by default when the topic is Politics or the question/choices name a politician or party** (a two-name ballot leaves everyone else out). The live preview shows it. |
+| "Other" choice with a pen (✍️), in the voter's language | Ballot | P2 | One more way to vote. Tapping it opens a name box under the ballot ("Who do you choose?", ink Vote button) instead of voting at once. 40 letters max; the word filter applies. |
+| "Most named under Other: Yogi Adityanath (12), …" | Results, under the Other row | P2 | The answer to "who else?". Names are grouped however they were typed ("yogi  adityanath" = "Yogi Adityanath") and shown with their most common spelling. **Only names written by 2+ people**, top 3, and only once results are visible (hidden results never leak). |
+| "Other (Yogi Adityanath)" | Your own row after voting; Your votes shows the name you wrote | P2 | You see what you said. |
+
+Rules in `src/lib/polls.ts` (`createPoll`, `castVote`, `getPoll.otherTop`); limits in `limits.ts` (`MAX_OTHER`, `OTHER_MIN_PEOPLE`, `OTHER_TOP`). The Other choice is never offered for "fix a typo" on the maker's page.
+
+## People counter and visitor numbers (owner, Oct 2026: "show how many visitors… and I want to know as well… free")
+
+- **Home**, under the greeting: "● 12,345 people have voted here" (different voter numbers, each counted once; votes are never linked to a person). Shown from 25 people (`VOTERS_SHOW_MIN`), so a new site never says "3 people".
+- **For the owner:** Vercel Web Analytics (free on Hobby): daily visitors, pages, countries, devices. No cookies, nothing that identifies a person; the Privacy page says so in 3 languages. Switched on once in Vercel (docs/OWNER_TODO.md). The admin page already shows voters and returning voters.

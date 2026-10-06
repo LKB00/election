@@ -1,12 +1,13 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { AlignLeft, CalendarDays, Check, ChevronDown, CircleDot, Clock, Eye, EyeOff, ImagePlus, Landmark, Lightbulb, ListChecks, ListOrdered, MessageSquarePlus, Repeat, Shuffle, SlidersHorizontal, Smile, Sparkles, Tag, UserRound, Users, WandSparkles, X } from 'lucide-react';
+import { AlignLeft, CalendarDays, Check, ChevronDown, CircleDot, Clock, Eye, EyeOff, ImagePlus, Landmark, Lightbulb, ListChecks, ListOrdered, MessageSquarePlus, PenLine, Repeat, Shuffle, SlidersHorizontal, Smile, Sparkles, Tag, UserRound, Users, WandSparkles, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { CATEGORIES } from '@/lib/categories';
 import { useLang, useT } from '@/lib/lang';
 import { apiMsg } from '@/lib/i18n';
 import { choicesFromQuestion, emojiFor } from '@/lib/createHelp';
+import { namesPolitics } from '@/lib/moderation';
 import { RATING_EMOJIS, RATING_LABELS, type PollKind } from '@/lib/rating';
 import { rememberMyPoll } from './MyPolls';
 import type { Picture } from './PicturePicker';
@@ -79,6 +80,11 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   const [suggestionsOn, setSuggestionsOn] = useState(true);
   // The maker's name on the poll: their choice, off unless they turn it on.
   const [showMaker, setShowMaker] = useState(again?.showMaker ?? false);
+  // "Other (write your own)" at the end of the ballot. Until you touch it, it follows the topic: on for politics (a
+  // two-name ballot leaves out everyone else; also when the question or choices name a politician or party), off
+  // otherwise.
+  const [otherSet, setOtherSet] = useState<boolean | null>(null);
+  const otherOn = otherSet ?? (category === 'politics' || namesPolitics(title, ...choices));
   // Which choice's picture sheet is open.
   const [picking, setPicking] = useState<number | null>(null);
   // Only what the person picked (owner: nothing shown before you choose); the fitting emoji is offered first in the picker.
@@ -241,6 +247,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
         photos: isRating || isDates ? [] : kept.map((x) => x.p),
         shuffle: shuffle && !isDates && !isRating,
         suggestionsOn: suggestionsOn && (kind === 'choice' || kind === 'multi'),
+        allowOther: otherOn && kind === 'choice' && !calledIt,
         showMaker,
         previousId: again?.id,
         hideUntilVoted,
@@ -297,6 +304,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
     choices: isDates ? filledDates.map((d) => ({ label: dateLabel(d), emoji: '', photo: '' })) : choices.map((c, i) => ({ label: c.trim(), emoji: emojiAt(i), photo: photos[i] ?? '' })).filter((c) => c.label),
     rateWords: t.rateWords,
     rateEmojis: RATING_EMOJIS,
+    other: otherOn && kind === 'choice' && !calledIt,
   };
 
   return (
@@ -462,6 +470,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
           </li>
           <li><Row icon={EyeOff} name={t.setHidden} note={t.hideResultsNote} on={hideUntilVoted} onClick={() => setHide((v) => !v)} /></li>
           <li><Row icon={UserRound} name={t.setShowMe} note={t.setShowMeNote} on={showMaker} onClick={() => setShowMaker((v) => !v)} /></li>
+          {kind === 'choice' && !calledIt && <li><Row icon={PenLine} name={t.setOther} note={t.setOtherNote} on={otherOn} onClick={() => setOtherSet(!otherOn)} /></li>}
           <li>
             <Row icon={Tag} name={t.category} value={t.categories[category] ?? category} open={open === 'topic'} onClick={() => toggleOpen('topic')} />
             {open === 'topic' && (

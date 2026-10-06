@@ -23,6 +23,8 @@ Where: Vercel → your project **election** → Settings → Environment Variabl
 
 **Optional:** Vercel → Settings → Deployment Protection. Turn off the login wall if you want preview links (not just the main address) to open without a Vercel login.
 
+- [ ] **Switch on visitor numbers (free, 1 minute):** Vercel → your project **election** → **Analytics** (top menu) → **Enable**. From then on that page shows how many people visit each day, which pages, from which countries. No cookies; the Privacy page already says so.
+
 ## 2. Daily habits (5–10 minutes a day)
 
 - [ ] **Pick Today's question** on `/admin?key=…` (it is the first poll on Home and what `/today` opens). Morning is best: most Indians check their phone within 15 minutes of waking. Leave "Final count at 9 pm" ticked: voting on it closes at 9 pm and people come back in the evening for the result. In the evening, post "here's how it ended" in your Channel.

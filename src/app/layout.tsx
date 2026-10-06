@@ -9,6 +9,8 @@ import '@fontsource/noto-sans-devanagari/700.css';
 import { getLang } from '@/lib/lang-server';
 import { LangProvider } from '@/lib/lang';
 import Splash from '@/components/Splash';
+// Visitor numbers for the owner (Vercel Web Analytics: no cookies, no personal data; switched on in Vercel → Analytics).
+import { Analytics } from '@vercel/analytics/next';
 import { dict } from '@/lib/i18n';
 import { PALETTE } from '@/lib/palette';
 import '@/styles/index.css';
@@ -50,6 +52,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </main>
           <BottomNav />
         </div>
+        <Analytics />
         </LangProvider>
       </body>
     </html>

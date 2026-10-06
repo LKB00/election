@@ -61,6 +61,8 @@ export const createPollSchema = z.object({
   shuffle: z.boolean().default(false),
   // Voters may suggest a missing choice (the maker approves it before anyone sees it).
   suggestionsOn: z.boolean().default(false),
+  // "Other (write your own)" at the end of a pick-one ballot.
+  allowOther: z.boolean().default(false),
   // The maker's name and face shown on the poll (their choice; off by default).
   showMaker: z.boolean().default(false),
   // "Ask again": the earlier poll (made by the same person) this one repeats.
@@ -101,6 +103,8 @@ export const voteSchema = z.object({
   picks: z.array(code()).max(MAX_CHOICES).optional(),
   // "Which dates work?": the dates answered "if need be" (the ticked ones in picks are "yes").
   maybes: z.array(code()).max(MAX_CHOICES).optional(),
+  // What the voter wrote under "Other" (checked in castVote: length and the word filter).
+  other: z.string().max(400).optional(),
   // Where the link was opened from (counted per poll only, never kept with the vote).
   src: z.enum(VOTE_SOURCES).optional().catch(undefined), via: z.string().max(64).nullish().transform((v) => (isCode(v) ? v : null)), human: z.string().max(4096).nullish() });
 // A pack: one live moment (a match, a show's night) and its 2–4 polls, made together. Predictions close at startsAt.

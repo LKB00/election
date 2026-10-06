@@ -9,6 +9,7 @@ import { countSource } from '@/lib/maker';
 import { clientIp, rateLimit } from '@/lib/rate-limit';
 import { verifyHuman } from '@/lib/turnstile';
 import { voteSchema } from '@/lib/validation';
+import { ERR } from '@/lib/limits';
 import { getOrCreateVoterId, readVoterId } from '@/lib/voter';
 
 const MESSAGES = {
@@ -16,6 +17,7 @@ const MESSAGES = {
   closed: 'This poll has ended.',
   not_found: 'Poll not found.',
   bad_option: 'That choice is not in this poll.',
+  bad_other: ERR.otherBad,
   frozen: 'Voting on this poll is paused for a few minutes: we saw unusual activity. Results are still open.',
   busy: 'Lots of votes from your network on this poll just now. Try again in a few minutes.',
 } as const;
@@ -40,7 +42,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const flow = await checkFlow(db, id, net, meta.category);
     if (flow !== 'ok') return NextResponse.json({ error: MESSAGES[flow], result: flow }, { status: flow === 'frozen' ? 423 : 429 });
   }
-  const result = await castVote(db, id, parsed.data.optionId, voterId, parsed.data.via, parsed.data.picks ?? [], parsed.data.maybes ?? []);
+  const result = await castVote(db, id, parsed.data.optionId, voterId, parsed.data.via, parsed.data.picks ?? [], parsed.data.maybes ?? [], parsed.data.other);
 
   if (result !== 'ok' && result !== 'changed') {
     const status = result === 'not_found' ? 404 : result === 'already_voted' ? 409 : result === 'frozen' ? 423 : 400;

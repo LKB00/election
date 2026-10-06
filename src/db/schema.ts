@@ -51,6 +51,8 @@ export const polls = pgTable(
     shuffle: boolean('shuffle').notNull().default(false),
     // Voters may suggest a missing choice; the maker approves it first.
     suggestionsOn: boolean('suggestions_on').notNull().default(false),
+    // "Other (write your own)": the ballot ends with an Other choice where voters write a name of their own.
+    allowOther: boolean('allow_other').notNull().default(false),
     endsAt: timestamp('ends_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -70,6 +72,8 @@ export const options = pgTable(
     imageCredit: text('image_credit'),
     // Optional emoji the creator picked for this choice (shown in the face circle when there is no photo).
     emoji: text('emoji'),
+    // The "Other (write your own)" choice (one per poll, last). Shown in the voter's language, never edited.
+    isOther: boolean('is_other').notNull().default(false),
     position: integer('position').notNull(),
   },
   (t) => [index('options_poll_idx').on(t.pollId)],
@@ -84,6 +88,8 @@ export const votes = pgTable(
     // Who voted. Today: a signed cookie id. Later: a user id after sign-in.
     voterKey: text('voter_key').notNull(),
     reason: text('reason'),
+    // What a voter wrote under "Other" (only on the Other choice).
+    otherText: text('other_text'),
     // "Who's winning right now?" guess: an option id, 'skip', or null = not asked yet.
     prediction: text('prediction'),
     predictionCorrect: boolean('prediction_correct'),
