@@ -35,9 +35,10 @@ export default async function PackPage({ params, searchParams }: Props) {
   if (!pack) notFound();
   const started = new Date(pack.startsAt).getTime() <= Date.now();
   const when = new Date(pack.startsAt).toLocaleString(dateLocale(lang), { weekday: 'short', hour: 'numeric', minute: '2-digit', timeZone: INDIA_TZ });
+  // Computers (election.css, "Desktop"): the pack's polls on the left; what it is, when it closes and sharing on the right.
   return (
-    <div className="page page-wide">
-      <header className="page-head page-head-tight">
+    <div className="page page-wide pack-page">
+      <header className="page-head page-head-tight pack-head">
         <p className="eyebrow">{pack.kind === 'match' ? '🏏' : '📺'} {pack.kind === 'match' ? t.packMatch : t.packShow}</p>
         <h1 className="display">{pack.title}</h1>
         <p className="small muted pack-head__when">
@@ -45,12 +46,14 @@ export default async function PackPage({ params, searchParams }: Props) {
         </p>
         {pack.kind === 'show' && <p className="small muted">{t.packFanNote}</p>}
       </header>
+      <div className="pack-share">
       {isNew === '1' ? (
         <CreatedPanel id={pack.id} title={pack.title} path={`/pack/${pack.id}`} heading={t.packCreated} text={t.packShare(pack.title)} button={t.packShareBtn} />
       ) : (
         <PackShare id={pack.id} title={pack.title} />
       )}
-      <section className="home-game duel-first" aria-label={pack.title}>
+      </div>
+      <section className="home-game duel-first pack-game" aria-label={pack.title}>
         <DuelGame deck={pack.views} start={0} />
       </section>
     </div>
