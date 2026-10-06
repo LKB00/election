@@ -44,7 +44,8 @@ export default async function ManagePage({ params, searchParams }: { params: Pro
   const peak = Math.max(1, ...v.byHour);
   const srcTotal = v.sources.reduce((s, x) => s + x.n, 0);
   return (
-    <div className="page">
+    // Computers (election.css, "Desktop"): how it is going on the left; length, tools and delete in a column beside it.
+    <div className="page maker-page">
       <header className="page-head page-head-tight">
         <p className="eyebrow"><Clock size={13} strokeWidth={2} aria-hidden />{v.closed ? t.statusEnded : v.endsAt ? t.statusEnds(when) : t.statusOpenNoEnd}</p>
         <h1 className="display maker-title">{v.title}</h1>
@@ -55,6 +56,7 @@ export default async function ManagePage({ params, searchParams }: { params: Pro
         {done === 'outcome' && <p className="small duel-friend" role="status">{t.outcomeSaved}</p>}
       </header>
 
+      <div className="maker-main">
       {/* "Called it": mark what happened (only the maker, on any phone). */}
       {v.calledOpen && (
         <section className="al-block" aria-label={t.calledMarkTitle}>
@@ -109,6 +111,8 @@ export default async function ManagePage({ params, searchParams }: { params: Pro
         </section>
       )}
 
+      </div>
+      <div className="maker-side">
       {!v.closed && (
         <section className="al-block" aria-label={t.lengthTitle}>
           <h2 className="al-block__title">{t.lengthTitle}</h2>
@@ -131,6 +135,7 @@ export default async function ManagePage({ params, searchParams }: { params: Pro
           <li><DeletePoll id={v.id} /></li>
         </ul>
       </section>
+      </div>
     </div>
   );
 }

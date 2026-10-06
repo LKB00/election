@@ -1124,3 +1124,21 @@ Phones unchanged. On a computer (≥1024px):
   list under it; P1 **Your polls** beside it, full height. Same parts and order for screen readers as on a phone.
 - **Signed out:** the profile screen as a white card on the left; Settings (Voting sound), and polls made on this
   computer, in a 400px column on the right.
+
+## Your votes on computers (owner, Oct 2026: "make the Your votes page better on desktop too")
+
+Phones unchanged. On a computer (≥1024px): P1 your votes (where each of your picks stands) as the main column on the
+left; a 360px column on the right with your record ("You voted in 6 polls."), your month card, "Polls you made", Keep
+your votes, Start fresh and the Rules / Privacy links. Same order for screen readers as on a phone (grid areas, not
+moved markup). The list of votes comes in row by row like the other poll lists.
+
+## The rest of the pages on computers (owner, Oct 2026: "build next")
+
+Phones unchanged; all of it under min-width 1024px.
+- **Topic pages:** the Polls page's left column of topics (this topic marked in indigo), the topic's polls beside it.
+  A long topic shows 12 polls, then "Show N more" (as on Polls).
+- **Your poll's page (maker):** title and status across the top; P1 how it's going (votes by hour, where votes came
+  from, Share), the result picture and suggested choices on the left; how long it runs, the tools (fix a typo, first-10
+  alert, big screen, ask again) and Delete in a 360px column on the right.
+- **A maker's public page (/u/…):** the same shape as You: the maker's card on the left, their polls beside it.
+- **Packs:** the pack's polls on the left (like a poll page); what it is, when predictions close and Share on the right.

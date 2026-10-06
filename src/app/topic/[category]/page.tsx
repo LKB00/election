@@ -1,5 +1,6 @@
 import { topicIcon, topicTone } from '@/lib/topicIcons';
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import DuelBanner from '@/components/DuelBanner';
 import DuelTiles from '@/components/DuelTiles';
@@ -35,8 +36,24 @@ export default async function Topic({ params }: Props) {
     getMyVotes(db, voterId, 200),
   ]);
   const banner = featured && featured.category === category ? featured : null;
+  const full = polls.length > 0 || !!banner;
   return (
-    <div className={'page page-wide' + (polls.length || banner ? '' : ' empty-page')}>
+    <div className={'page page-wide' + (full ? ' polls-grid' : ' empty-page')}>
+      {/* Computers only (election.css, "Desktop"): every topic in a left column, this one marked, like on Polls. */}
+      {full && (
+        <aside className="polls-side topic-side">
+          <p className="label polls-side__label" aria-hidden>{t.topics}</p>
+          <nav className="topic-chips topic-row" aria-label={t.topics}>
+            {CATEGORIES.map((c) => (
+              <Link key={c} href={`/topic/${c}`} className={'chip topic-chip' + (c === category ? ' chip-on' : '')} aria-current={c === category ? 'page' : undefined}>
+                <span className="topic-chip__disc" style={{ '--tone': topicTone(c) } as React.CSSProperties} aria-hidden>{(() => { const I = topicIcon(c); return <I size={14} strokeWidth={1.75} />; })()}</span>
+                {t.categories[c] ?? c}
+              </Link>
+            ))}
+          </nav>
+        </aside>
+      )}
+      <div className="polls-main">
       <header className={polls.length > 0 ? 'page-head' : undefined}>
         {/* The topic's picture, big: the page says what it is before you read (an empty topic shows it in its empty picture instead). */}
         {polls.length > 0 && <span className="topic-hero" style={{ '--tone': topicTone(category) } as React.CSSProperties} aria-hidden>{(() => { const I = topicIcon(category); return <I size={28} strokeWidth={1.75} />; })()}</span>}
@@ -50,8 +67,9 @@ export default async function Topic({ params }: Props) {
         </section>
       )}
       <section className="al-block">
-        <DuelTiles polls={polls} votedIds={mine.map((v) => v.pollId)} topic={category} />
+        <DuelTiles polls={polls} votedIds={mine.map((v) => v.pollId)} topic={category} limit={12} />
       </section>
+      </div>
     </div>
   );
 }

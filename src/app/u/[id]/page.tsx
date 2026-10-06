@@ -54,9 +54,10 @@ export default async function MakerPage({ params }: { params: Promise<{ id: stri
   const { u, rows } = data;
   // Your own page: a way to your tools (You).
   const me = await currentUser(await getDb());
+  // Computers (election.css, "Desktop"): the same shape as You, the maker on the left and their polls beside them.
   return (
-    <div className="page">
-      <header className="page-head page-head-tight">
+    <div className="page you-page">
+      <header className="page-head page-head-tight you-me">
         <div className="profile-card">
           <span className="profile-face" aria-hidden>{u.avatar}</span>
           <span className="profile-who">
@@ -67,12 +68,12 @@ export default async function MakerPage({ params }: { params: Promise<{ id: stri
         {me?.id === u.id && <Link href="/you" className="text-link small">{t.thisIsYou} →</Link>}
       </header>
       {rows.length ? (
-        <section className="al-block">
-          <ul className="al-listcard">
-            {rows.map((p) => {
+        <section className="al-block you-polls">
+          <ul className="al-listcard al-stagger">
+            {rows.map((p, n) => {
               const closed = !!p.endsAt && p.endsAt.getTime() <= Date.now();
               return (
-                <li key={p.id}>
+                <li key={p.id} style={{ '--row': n } as React.CSSProperties}>
                   <Link href={`/p/${p.id}`} className="al-row">
                     <span className="al-row__disc" style={{ '--tone': 'var(--p-input)' } as React.CSSProperties}><Vote size={20} strokeWidth={1.75} aria-hidden /></span>
                     <span className="al-row__main">
@@ -87,7 +88,7 @@ export default async function MakerPage({ params }: { params: Promise<{ id: stri
           </ul>
         </section>
       ) : (
-        <EmptyState kind="list" title={t.makerEmpty} action={{ href: '/polls', label: t.duels }} />
+        <div className="you-polls"><EmptyState kind="list" title={t.makerEmpty} action={{ href: '/polls', label: t.duels }} /></div>
       )}
     </div>
   );

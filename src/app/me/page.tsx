@@ -40,8 +40,10 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
   const t = await getT();
 
   return (
-    <div className={'page' + (mine.length === 0 && !restored && !deleted && !swap ? ' empty-page' : '')}>
-      <header className="page-head page-head-tight">
+    // Computers (election.css, "Desktop"): your votes (P1) on the left; your record, your month and keeping your votes
+    // in a column on the right. Phones: the same parts, top to bottom.
+    <div className={'page' + (mine.length === 0 && !restored && !deleted && !swap ? ' empty-page' : ' me-page')}>
+      <header className="page-head page-head-tight me-head">
         <h1 className="sr-only">{t.myVotes}</h1>
         {(restored || deleted) && <p className="small duel-friend" role="status">{restored ? t.restored : t.deleted}</p>}
         {/* A "keep my votes" link opened on a phone that has its own votes: ask before replacing them. */}
@@ -62,22 +64,22 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
 
       {/* P2: your month, described (3+ votes this month). */}
       {month && month.polls >= 3 && (
-        <section className="block block-tight">
+        <section className="block block-tight me-month">
           <MonthCard m={month} />
         </section>
       )}
-      <section className="block">
+      <section className="block me-list">
         {mine.length === 0 ? (
           // Nothing to vote on yet: the next step is making the first poll.
           <EmptyState kind="finger" title={t.noVotes} line={t.spotNoVotes} action={open.length > 0 ? { href: '/', label: t.startToday } : { href: '/create', label: t.startDuel }} />
         ) : (
-          <ul className="al-listcard block-tight">
-            {mine.map((v) => {
+          <ul className="al-listcard block-tight al-stagger">
+            {mine.map((v, n) => {
               // Your pick in front (or won): the yellow disc of "you" with a tick; otherwise a quiet disc.
               // A "Called it" you got right counts as ahead too.
               const ahead = ((v.standing.kind === 'leading' || v.standing.kind === 'won') && v.standing.name === v.pick) || (v.standing.kind === 'called' && v.standing.right);
               return (
-                <li key={v.pollId}>
+                <li key={v.pollId} style={{ '--row': n } as React.CSSProperties}>
                   <Link href={`/p/${v.pollId}`} className="al-row">
                     <span className="al-row__disc" style={{ '--tone': ahead ? 'var(--lime)' : 'var(--sand)' } as React.CSSProperties}>
                       {ahead ? <Check size={20} strokeWidth={2} aria-hidden /> : <Vote size={20} strokeWidth={1.75} aria-hidden />}
@@ -101,7 +103,7 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
       </section>
       {/* The rest only matters once you have votes: keeping them, starting fresh (TEMPORARY, for testing), the rules. */}
       {mine.length > 0 && (
-        <>
+        <div className="me-rest">
           {/* The polls you made live under You. */}
           <p className="small block-tight"><Link href="/you" className="text-link">{t.pollsYouMade} →</Link></p>
           <KeepVotes voterKey={voterKey} />
@@ -110,7 +112,7 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
             <Link href="/terms" className="text-link">{t.termsLink}</Link>
             <Link href="/privacy" className="text-link">{t.privacyLink}</Link>
           </p>
-        </>
+        </div>
       )}
     </div>
   );
