@@ -1061,7 +1061,7 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
    computer: the top bar's insides line up with the wide pages (1128px less 48px each side). Home = today's poll on the
    left, things to browse on the right. Polls = search and topics in a left column that stays put, the list beside it.
    Start a poll = the form on the left, the poll drawn live on the right. docs/DESIGN.md, "Desktop layout". */
-.create-live, .polls-side__label { display: none; }
+.create-live, .polls-side__label, .poll-rail { display: none; }
 .preview-card .is-ph, .preview-card .duel-option.is-ph .duel-name { color: var(--ink-3); }
 @media (min-width: 1024px) {
   .topnav-inner { padding: 0 48px; }
@@ -1078,6 +1078,10 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
   .polls-side .topic-chips.topic-row { flex-direction: column; overflow: visible; margin: 0; padding: 8px; gap: 2px; border-radius: var(--radius-card); background: var(--card); outline: 1px solid var(--line); outline-offset: -1px; }
   .polls-side .topic-chip { height: 44px; padding: 0 12px 0 8px; border-color: transparent; border-radius: 12px; font-size: 14px; }
   .polls-main > :first-child { margin-top: 0; }
+
+  .poll-grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 48px; align-items: start; }
+  .poll-rail { display: block; position: sticky; top: 88px; max-height: calc(100vh - 104px); overflow-y: auto; }
+  .poll-rail > .al-block:first-child { margin-top: 0; }
 
   .create-page { max-width: 1128px; }
   .create-page > .page-head, .create-page > .al-block, .create-page > p { max-width: 600px; }

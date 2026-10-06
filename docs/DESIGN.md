@@ -1095,3 +1095,10 @@ The speaker button in the top bar (voting beep on/off) read as a microphone and 
 people change. It is now one switch row, **Voting sound** ("A short beep when you vote"), on You: first in the Account
 list when signed in, and in a one-row Settings list when signed out (everyone votes, so everyone can mute). Same switch
 row as Create's settings; remembered on the phone. The top bar keeps only the places, Start a poll, language and you.
+
+## Poll page on computers (owner, Oct 2026: "make the poll page better on desktop too")
+
+Phones unchanged. On a computer (≥1024px) the poll page has Home's shape: P1 the poll on the left (624px, so choice rows
+are no longer a metre wide), P2 "More polls" on the right: up to five other open polls (newest first, the ones you have
+not voted on first) with "All polls →". The column stays in place while the poll scrolls (results, Guess the crowd).
+It is not drawn on phones, where Next leads from one poll to the next.

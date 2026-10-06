@@ -1,4 +1,4 @@
-import { Check, ChevronRight, Clock, SlidersHorizontal, Users, Vote } from 'lucide-react';
+import { ArrowRight, Check, ChevronRight, Clock, SlidersHorizontal, Users, Vote } from 'lucide-react';
 import Link from 'next/link';
 import { currentUser } from '@/lib/auth';
 import { ownPoll } from '@/lib/maker';
@@ -10,7 +10,8 @@ import PollIntro from '@/components/PollIntro';
 import DuelGame from '@/components/DuelGame';
 import { getDb } from '@/db';
 import { SITE_URL } from '@/lib/site';
-import { getDeck, getPoll, INDEX_MIN_VOTES } from '@/lib/polls';
+import { getDeck, getMyVotes, getPoll, INDEX_MIN_VOTES, listPolls } from '@/lib/polls';
+import DuelTiles from '@/components/DuelTiles';
 import { readVoterId } from '@/lib/voter';
 import { getT, langAlternates } from '@/lib/lang-server';
 
@@ -54,7 +55,9 @@ export default async function DuelPage({ params, searchParams }: Props) {
   const voterId = await readVoterId();
   const poll = await getPoll(db, id, voterId, f);
   if (!poll) notFound();
-  const [rest, user] = await Promise.all([getDeck(db, voterId), currentUser(db)]);
+  const [rest, user, recent, myVotes] = await Promise.all([getDeck(db, voterId), currentUser(db), listPolls(db, 20), getMyVotes(db, voterId, 200)]);
+  // Computers only: a few other open polls beside this one (hidden on phones, where Next leads to them one by one).
+  const others = recent.filter((p) => !p.closed && p.id !== poll.id).slice(0, 5);
   // The poll's maker gets a way to their tools (votes so far, end it, results picture).
   const mine = !!user && !!(await ownPoll(db, poll.id, user.id));
   // Opened from inside the site (Duels list, a tile): nobody "wants your pick", so no label then.
@@ -92,8 +95,9 @@ export default async function DuelPage({ params, searchParams }: Props) {
     ...(publicCounts ? { interactionStatistic: { '@type': 'InteractionCounter', interactionType: 'https://schema.org/VoteAction', userInteractionCount: poll.participants } } : {}),
   };
   return (
-    <div className="page page-wide">
+    <div className={'page page-wide' + (others.length ? ' poll-grid' : '')}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, '\\u003c') }} />
+      <div className="poll-main">
       <PollIntro pollId={poll.id}>
       {label && (
         <p className="eyebrow">
@@ -118,6 +122,20 @@ export default async function DuelPage({ params, searchParams }: Props) {
       <section className="home-game duel-first" aria-label={t.pollRegion}>
         <DuelGame deck={deck} start={0} via={f ?? null} />
       </section>
+      </div>
+      {/* Computers (election.css, "Desktop"): the poll on the left, a few more to vote on in a column on the right, the
+          same shape as Home. Phones never show this column. */}
+      {others.length > 0 && (
+        <aside className="poll-rail" aria-label={t.moreDuels}>
+          <section className="al-block">
+            <h2 className="al-block__title">
+              {t.moreDuels}
+              <Link href="/polls" className="al-block__aside">{t.allDuels} <ArrowRight size={14} strokeWidth={1.75} aria-hidden /></Link>
+            </h2>
+            <DuelTiles polls={others} votedIds={myVotes.map((v) => v.pollId)} noCreate />
+          </section>
+        </aside>
+      )}
     </div>
   );
 }
