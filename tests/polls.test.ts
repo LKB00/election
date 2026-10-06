@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
   AUTO_HIDE_REPORTS, castVote, createPoll, deleteVoterData, getDeck, getFeaturedId, getMyVotes, getPoll, getReviewQueue, getVoterStats, guessLeader, listPolls,
-  GROUP_MIN, groupSplit, reportPoll, setPollFlags, setReason, setToday, toggleReaction, undoVote,
+  GROUP_MIN, groupSplit, reportPoll, setPollFlags, setReason, setToday, toggleReaction, undoVote, voteTotals,
 } from '@/lib/polls';
 import { hasBlockedWord, namesPolitics } from '@/lib/moderation';
 import { activeSilence } from '@/lib/silence';
@@ -123,6 +123,11 @@ describe('listing', () => {
     const item = (await listPolls(db, 100)).find((x) => x.id === id)!;
     expect(item.totalVotes).toBe(2);
     expect(item.options).toEqual(['Virat', 'Rohit', 'Dhoni']);
+    // The live counts lists ask for give the same number, and nothing for hidden polls or unknown ids.
+    expect(await voteTotals(db, [id, 'no-such-poll'])).toEqual({ [id]: 2 });
+    await setPollFlags(db, id, { hidden: true });
+    expect(await voteTotals(db, [id])).toEqual({});
+    await setPollFlags(db, id, { hidden: false });
   });
 
   it('searches the question and the choices, ignoring case, with % and _ as plain letters', async () => {
