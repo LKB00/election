@@ -10,6 +10,7 @@ import { getLang } from '@/lib/lang-server';
 import { LangProvider } from '@/lib/lang';
 import Splash from '@/components/Splash';
 import FirstVisit from '@/components/FirstVisit';
+import PageView from '@/components/PageView';
 // Visitor numbers for the owner (Vercel Web Analytics: no cookies, no personal data; switched on in Vercel → Analytics).
 import { Analytics } from '@vercel/analytics/next';
 import { dict } from '@/lib/i18n';
@@ -54,8 +55,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <BottomNav />
         </div>
         <Analytics />
-        {/* Counts each phone once for "N people have visited" on Home. */}
+        {/* The owner's counts: each phone once (new visitors), and every page opened ("N views" on Home). */}
         <FirstVisit />
+        <PageView />
         </LangProvider>
       </body>
     </html>

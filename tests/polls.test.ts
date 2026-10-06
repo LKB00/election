@@ -1377,6 +1377,20 @@ describe('visitor count (Home)', () => {
   });
 });
 
+describe('views count (Home)', () => {
+  it('adds up Home, poll and other page views on every day, and nothing else', async () => {
+    const { countEvent, viewTotal } = await import('@/lib/events');
+    const before = await viewTotal(db);
+    await countEvent(db, 'home_view');
+    await countEvent(db, 'poll_view');
+    await countEvent(db, 'page_view');
+    await countEvent(db, 'vote');
+    await countEvent(db, 'visitor');
+    await db.insert(schema.dailyEvents).values({ day: '2026-01-02', event: 'page_view', n: 4 }).onConflictDoNothing();
+    expect((await viewTotal(db)) - before).toBe(7);
+  });
+});
+
 describe('engagement score (admin)', () => {
   it('scores sharing, reactions and reasons, needs 3+ votes, and groups by topic', async () => {
     const { engagementScore, getEngagement } = await import('@/lib/stats');

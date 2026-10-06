@@ -951,9 +951,10 @@ One scale on phones (in `election.css`, "Mobile spacing"): 16px page sides; 24px
 
 **Who sees what (the rule):** a friend arriving from a WhatsApp link goes straight to the vote: no splash, no cards (the vote is the point; anything in front of it costs votes). The splash and the three cards are for a **first visit to Home** (no voter cookie yet); the installed app shows the splash on **every launch** from the home screen. Nobody sees the cards twice on one phone. Both are off for people who ask their phone for less motion (the splash) and skippable at once (the cards).
 
-**Splash (`Splash.tsx`, about 1.2 seconds):** the Election ballot box on the paper ground; a ballot slip with a yellow tick drops into the slot, the box's label lights up in "you" yellow, three yellow sparkles pop, then the name (yellow dot in an ink ring + "Election") and "What does everyone think?" rise in, and it fades away by itself. Pure HTML and CSS, no script, so the page loads underneath and is ready when it lifts; it can never block a tap. Light and dark from the same tokens.
+**Splash (`Splash.tsx`, about 2.4 seconds; owner, Oct 2026: "the loader should take some time, not be quick"):** the Election ballot box on the paper ground; a ballot slip with a yellow tick drops into the slot, the box's label lights up in "you" yellow, three yellow sparkles pop, then the name (yellow dot in an ink ring + "Election") and "What does everyone think?" rise in, and it fades away by itself. Pure HTML and CSS, no script, so the page loads underneath and is ready when it lifts; it can never block a tap. Light and dark from the same tokens.
 
 **Onboarding (`Onboarding.tsx`):** a full-screen layer of three cards, swiped sideways or moved with one ink "Next" button (one main action), with dots that show where you are and "Skip ×" always in the top corner.
+On a first visit the cards open at once *under* the splash, and the splash waits until they are on screen before it fades, so it fades straight into the first card and Home never flashes in between (owner, Oct 2026: "it shows the homepage, then the splash screen; this is a bug"). Changing card is a soft fade, not a sideways scroll (owner: "it should be smooth and intuitive"): the old card fades out, then the new card's picture, title and line rise in one after another, drifting a little from the side you are going to. Swipe, Next, Back and the arrow keys all do the same.
 1. **Ask anything** (the chat-bubble ballot box): "Pizza or biryani? CSK or MI? Make a poll in 30 seconds and send it on WhatsApp." The language is picked here: English · हिंदी · Hinglish.
 2. **One tap. Totally secret.** (the locked box): "Nobody sees your pick, not even us. No sign-up to vote."
 3. **Get inked, see where you stand** (the inked finger): "Results open after you vote. Guess the crowd, then see how everyone voted." The button becomes **Start voting** (closes, Today's question is right there), with "Or start a poll" under it.
@@ -1197,9 +1198,13 @@ Step counter: "Guess the crowd" answered / skipped (not counted when yours was t
 - Still no points, badges, streaks, coins or leaderboards: engagement comes from curiosity, people, disagreement and
   surprise.
 
-**Visitor count on Home** (owner, Oct 2026: "show visitor count on the website"): the people line under the Home
-greeting says "N people have visited" once 10 phones have been here (`VISITORS_SHOW_MIN`), and "N people have visited ·
-M have voted" once 25 people have voted. Each phone is counted once: `FirstVisit` (in the layout, so a first visit from a
-shared poll counts too) remembers `election-visited` and sends the `visitor` step; a phone that cannot remember is not
-counted. The total is every day's `visitor` steps added up; it is never shown smaller than the voter count. P3, plain
-text with the live dot, no card.
+**Views count on Home** (owner, Oct 2026: "show visitor count", "three avatars, then a plus, then the number, at the
+bottom", "make it subtle", then "we will show views, not visitors; I want the number big"): one quiet row at the bottom of
+Home, before the rules reminder (on an empty site, under the empty state), no card: three small overlapping faces (the
+first three profile faces on yellow, indigo and pink soft grounds; decoration only, never real visitors) and a small soft
+"+", then the number big (32px, bold) and small muted words: "views", and "M have voted" under it once 25 people have
+voted. Not ink (ink is the one main action) and not tappable. Shown from the first view (`VIEWS_SHOW_MIN`).
+Views = every page opened, all days added up (`viewTotal`): Home and polls count themselves (`home_view`, `poll_view`,
+so views from before this change are included) and `PageView` in the layout counts every other page (`page_view`).
+Never shown smaller than the voter count. New visitors (each phone once, `FirstVisit` + `election-visited`) are still
+counted, for the owner's admin page only. P3.

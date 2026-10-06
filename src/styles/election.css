@@ -948,27 +948,41 @@ html { scroll-padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); scr
 .splash { position: fixed; inset: 0; z-index: 100; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: var(--paper); color: var(--ink); }
 /* On only while html has .splash-on (Splash.tsx); .splash-done fades it into the page once the page is ready. */
 html.splash-on .splash { display: flex; }
-html.splash-done .splash { animation: splash-out 0.35s ease forwards; }
-.splash-slip { animation: splash-drop 0.55s cubic-bezier(0.5, 0, 0.75, 0) 0.15s both; }
-.splash-label { animation: splash-light 0.25s ease 0.62s forwards; }
-.splash-sparks { opacity: 0; transform-origin: 60px 52px; animation: splash-spark 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.3) 0.7s forwards; }
+html.splash-done .splash { animation: splash-out 0.45s ease forwards; }
+.splash-slip { animation: splash-drop 0.9s cubic-bezier(0.5, 0, 0.75, 0) 0.3s both; }
+.splash-label { animation: splash-light 0.35s ease 1.05s forwards; }
+.splash-sparks { opacity: 0; transform-origin: 60px 52px; animation: splash-spark 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.3) 1.15s forwards; }
 @keyframes splash-spark { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: none; } }
-.splash-name { margin: 6px 0 0; display: flex; align-items: center; gap: 10px; font: 700 30px / 36px var(--display); letter-spacing: -0.02em; opacity: 0; animation: splash-rise 0.4s ease 0.55s forwards; }
+.splash-name { margin: 6px 0 0; display: flex; align-items: center; gap: 10px; font: 700 30px / 36px var(--display); letter-spacing: -0.02em; opacity: 0; animation: splash-rise 0.6s ease 1.25s forwards; }
 .splash-name .logo-mark { width: 24px; height: 24px; background: radial-gradient(circle, var(--lime) 0 5px, var(--ink) 5.5px); box-shadow: none; }
-.splash-line { margin: 0; color: var(--ink-2); font-size: 16px; opacity: 0; animation: splash-rise 0.4s ease 0.7s forwards; }
+.splash-line { margin: 0; color: var(--ink-2); font-size: 16px; opacity: 0; animation: splash-rise 0.6s ease 1.5s forwards; }
 @keyframes splash-drop { from { transform: translateY(-34px); } 70% { transform: translateY(26px); opacity: 1; } to { transform: translateY(34px); opacity: 0; } }
 @keyframes splash-light { to { fill: var(--lime); } }
 @keyframes splash-rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @keyframes splash-out { to { opacity: 0; visibility: hidden; pointer-events: none; } }
 @media (prefers-reduced-motion: reduce) { .splash { display: none !important; } }
 
-/* Onboarding: a full-screen layer of three swipeable cards over Home (scroll-snap), one ink button, Skip top right. */
+/* Onboarding: a full-screen layer of three swipeable cards over Home, one ink button, Skip top right. The cards sit on
+   top of each other and cross-fade; the new card's parts rise in one after another, drifting a little from the side
+   you are going to (--dx: 1 forward, -1 back). */
 .onb { position: fixed; inset: 0; z-index: 90; display: flex; flex-direction: column; background: var(--paper); color: var(--ink); padding: env(safe-area-inset-top, 0px) 0 calc(16px + env(safe-area-inset-bottom, 0px)); animation: fade-in 0.3s ease; }
 .onb-skip { align-self: flex-end; display: inline-flex; align-items: center; gap: 4px; margin: 12px 12px 0; min-height: 44px; padding: 0 14px; border: 0; border-radius: 9999px; background: none; color: var(--ink-2); font: 600 15px / 1 var(--sans); cursor: pointer; }
-.onb-track { flex: 1; display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior: contain; }
-.onb-track::-webkit-scrollbar { display: none; }
-.onb-card { flex: 0 0 100%; scroll-snap-align: center; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 12px; padding: max(24px, 8vh) 24px 0; text-align: center; box-sizing: border-box; }
+.onb-track { flex: 1; display: grid; overflow: hidden; touch-action: pan-y; user-select: none; }
+.onb-card { grid-area: 1 / 1; opacity: 0; visibility: hidden; transition: opacity 0.18s ease, visibility 0s linear 0.18s; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 12px; padding: max(24px, 8vh) 24px 0; text-align: center; box-sizing: border-box; }
 .onb-card .spot { margin-bottom: 8px; }
+.onb-card.is-on { opacity: 1; visibility: visible; transition: opacity 0.2s ease 0.18s, visibility 0s linear 0.18s; }
+.onb-card.is-on > * { animation: onb-in 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+/* The old card fades out first (0.18s), then the new one's parts rise in one after another. */
+.onb-card.is-on > :nth-child(1) { animation-delay: 0.18s; }
+.onb-card.is-on > :nth-child(2) { animation-delay: 0.26s; }
+.onb-card.is-on > :nth-child(3) { animation-delay: 0.34s; }
+.onb-card.is-on > :nth-child(4) { animation-delay: 0.42s; }
+@keyframes onb-in { from { opacity: 0; transform: translate(calc(var(--dx, 1) * 24px), 8px); } }
+/* Opened under the splash: no fade of its own (it is already there when the splash lifts), and the first card waits to
+   rise in until the splash starts to fade. */
+html.splash-on .onb { animation: none; }
+html.splash-on:not(.splash-done) .onb-card > * { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .onb-card, .onb-card.is-on { transition: none; } .onb-card.is-on > * { animation: none; } }
 .onb-title { margin: 0; max-width: 18ch; font: 700 28px / 34px var(--display); letter-spacing: -0.02em; text-wrap: balance; }
 .onb-line { margin: 0; max-width: 32ch; color: var(--ink-2); font-size: 17px; line-height: 26px; text-wrap: pretty; }
 .onb-langs { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 12px; }
@@ -1189,7 +1203,18 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
 .other-write .btn { flex: none; height: 44px; }
 .other-top { display: block; margin-top: 2px; overflow-wrap: anywhere; }
 /* Home: "12,345 people have voted here", under the greeting (shown from VOTERS_SHOW_MIN people). */
-.al-home .al-home__people { align-items: center; gap: 0; margin-top: 6px; }
+/* Home, bottom: "N views", kept quiet but with a big number (owner, Oct 2026: "make it subtle", then "show views, I want
+   the number big"): no card, small faces in soft colours and a "+", the number large, then small muted words. */
+.people-count { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 24px auto 4px; color: var(--ink-2); }
+.people-faces { display: flex; flex: none; opacity: 0.85; }
+.people-face { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--paper); font-size: 12px; line-height: 1; }
+.people-face + .people-face { margin-left: -7px; }
+.people-face:nth-child(1) { background: var(--lime-badge); }
+.people-face:nth-child(2) { background: var(--indigo-soft); }
+.people-face:nth-child(3) { background: var(--p-feedback); }
+.people-more { background: var(--paper); color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--line); }
+.people-text { display: flex; flex-direction: column; font-size: 13px; line-height: 17px; }
+.people-n { color: var(--ink); font: 700 32px / 1 var(--display); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 /* Admin: the step counter table (owner only). */
 .admin-steps__table { width: 100%; max-width: 560px; border-collapse: collapse; margin-top: 8px; }
 .admin-steps__table th, .admin-steps__table td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: right; font-variant-numeric: tabular-nums; }
