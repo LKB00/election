@@ -100,10 +100,10 @@
   --rod-edge: rgba(255, 255, 255, 0.52);
   --rod-shine: rgba(255, 255, 255, 0.95);
   --ink-mark: #5b2fa0;
-  /* The Chunav mark keeps its colours in both looks (a logo does not invert): yellow ground, paper hand, ink outline. */
+  /* The Chunav mark keeps its colours in both looks (a logo does not invert): yellow ground, dark hand, light grey ink. */
   --mark-ground: #fcd12a;
-  --mark-hand: #fbf9f6;
-  --mark-line: #1d1b18;
+  --mark-hand: #1d1b18;
+  --mark-ink: #d6d2cb;
   --ink-mark-hi: #7a4cc4;
   --ink-mark-lo: #45207d;
   --backdrop: rgba(36, 40, 44, 0.45);

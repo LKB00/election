@@ -11,6 +11,7 @@ export const PALETTE = {
   green: '#276b43', // --positive
   muted: '#5e5a53', // --ink-2
   inkMark: '#5b2fa0', // --ink-mark
+  markInk: '#d6d2cb', // --mark-ink (the ink line in the Chunav mark)
   tints: ['#e0e3ff', '#fce4ec', '#ddf1e3', '#fdf4df'], // --p-input, --p-feedback, --p-control, --p-trust
 } as const;
 
@@ -24,5 +25,6 @@ export const PALETTE_TOKENS: Record<Exclude<keyof typeof PALETTE, 'tints' | 'pap
   green: '--positive',
   muted: '--ink-2',
   inkMark: '--ink-mark',
+  markInk: '--mark-ink',
 };
 export const TINT_TOKENS = ['--p-input', '--p-feedback', '--p-control', '--p-trust'];
