@@ -7,6 +7,7 @@ import { isAdminKey } from '@/lib/admin';
 import { getFeaturedId, getPlannedToday, getPoll, getReviewQueue, indiaDay, listPolls } from '@/lib/polls';
 import { getT } from '@/lib/lang-server';
 import { getStats } from '@/lib/stats';
+import { EVENTS, stepTable, type StepEvent } from '@/lib/events';
 import EmptyState from '@/components/EmptyState';
 
 export const dynamic = 'force-dynamic';
@@ -21,7 +22,9 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
   if (!isAdminKey(key)) notFound();
   const t = await getT();
   const db = await getDb();
-  const [items, featuredId, recent, stats, planned] = await Promise.all([getReviewQueue(db), getFeaturedId(db), listPolls(db, 20), getStats(db), getPlannedToday(db)]);
+  const [items, featuredId, recent, stats, planned, steps] = await Promise.all([getReviewQueue(db), getFeaturedId(db), listPolls(db, 20), getStats(db), getPlannedToday(db), stepTable(db)]);
+  // The step counter's 7-day totals.
+  const week = Object.fromEntries(EVENTS.map((e) => [e, steps.reduce((sum, d) => sum + d.n[e], 0)])) as Record<StepEvent, number>;
   const pct = (a: number, b: number) => (b ? Math.round((a / b) * 100) : 0);
   const featured = featuredId ? await getPoll(db, featuredId, null) : null;
   return (
@@ -49,6 +52,22 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
           <li>{t.statsFriends(stats.weekViaFriends, stats.weekVotes)}</li>
           <li>{t.statsPolitics(pct(stats.politicsVotes, stats.weekVotes))}</li>
         </ul>
+      </section>
+      {/* The step counter (src/lib/events.ts): where people drop off between opening, voting, sharing and making. */}
+      <section className="block admin-stats admin-steps">
+        <h2>{t.stepsTitle}</h2>
+        <p className="small muted">{t.stepsLead}</p>
+        <ul className="small">
+          {t.stepRates(pct(week.vote, week.poll_view), pct(week.shared_vote, week.shared_open), pct(week.share_open, week.vote), pct(week.poll_created, week.create_open), pct(week.voter_created, week.poll_created)).map((line) => <li key={line}><strong>{line}</strong></li>)}
+        </ul>
+        <table className="admin-steps__table small">
+          <thead><tr><th scope="col" /><th scope="col">{t.stepsToday}</th><th scope="col">{t.stepsWeek}</th></tr></thead>
+          <tbody>
+            {EVENTS.map((e) => (
+              <tr key={e}><th scope="row">{t.stepNames[e] ?? e}</th><td>{steps[0].n[e]}</td><td>{week[e]}</td></tr>
+            ))}
+          </tbody>
+        </table>
       </section>
     </div>
   );

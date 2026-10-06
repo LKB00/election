@@ -6,6 +6,8 @@ import { currentUser } from '@/lib/auth';
 import { createPoll } from '@/lib/polls';
 import { clientIp, rateLimit } from '@/lib/rate-limit';
 import { createPollSchema } from '@/lib/validation';
+import { countEvent } from '@/lib/events';
+import { readVoterId } from '@/lib/voter';
 
 export async function POST(req: Request) {
   // Making a poll needs a profile (voting never does): every poll is made by a person.
@@ -29,5 +31,12 @@ export async function POST(req: Request) {
     if (prev?.ownerId !== user.id) input.previousId = undefined;
   }
   const id = await createPoll(db, input, manageKey, undefined, user.id);
+  // The owner's step counter: a poll made, and whether its maker had voted before (a voter who became a maker).
+  await countEvent(db, 'poll_created');
+  const voter = await readVoterId();
+  if (voter) {
+    const [had] = await db.select({ id: schema.votes.id }).from(schema.votes).where(eq(schema.votes.voterKey, voter)).limit(1);
+    if (had) await countEvent(db, 'voter_created');
+  }
   return NextResponse.json({ id, manageKey }, { status: 201 });
 }

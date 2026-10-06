@@ -10,6 +10,7 @@ import { clientIp, rateLimit } from '@/lib/rate-limit';
 import { verifyHuman } from '@/lib/turnstile';
 import { voteSchema } from '@/lib/validation';
 import { ERR } from '@/lib/limits';
+import { countEvent } from '@/lib/events';
 import { getOrCreateVoterId, readVoterId } from '@/lib/voter';
 
 const MESSAGES = {
@@ -53,6 +54,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
   // Where the vote came from, for the maker's view (a count per poll, never kept with the vote).
   if (result === 'ok') await countSource(db, id, parsed.data.src ?? 'other').catch(() => undefined);
+  // The owner's step counter: a vote, and whether it came from a share link (a friend's code or a tagged link).
+  if (result === 'ok') {
+    await countEvent(db, 'vote');
+    if (parsed.data.via || (parsed.data.src && parsed.data.src !== 'other')) await countEvent(db, 'shared_vote');
+  }
   const view = await getPoll(db, id, voterId, parsed.data.via);
   // The maker asked for one alert when the first votes are in. "At least", not "exactly": two votes at once can go
   // from 9 to 11. The sender clears its list after sending, so it still goes out once.

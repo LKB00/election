@@ -25,6 +25,8 @@ Where: Vercel → your project **election** → Settings → Environment Variabl
 
 - [ ] **Switch on visitor numbers (free, 1 minute):** Vercel → your project **election** → **Analytics** (top menu) → **Enable**. From then on that page shows how many people visit each day, which pages, from which countries. No cookies; the Privacy page already says so.
 
+- [ ] **Read your step counter once a week** (bottom of your admin page, "Steps people take"). The five lines at the top say where people drop off: if few people who open a friend's link vote, the poll page needs work; if few voters open Share, sharing needs work; if few who open Start a poll make one, Create is too hard. Tell Claude the numbers and it will suggest the fix.
+
 ## 2. Daily habits (5–10 minutes a day)
 
 - [ ] **Pick Today's question** on `/admin?key=…` (it is the first poll on Home and what `/today` opens). Morning is best: most Indians check their phone within 15 minutes of waking. Leave "Final count at 9 pm" ticked: voting on it closes at 9 pm and people come back in the evening for the result. In the evening, post "here's how it ended" in your Channel.

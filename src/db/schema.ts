@@ -258,3 +258,15 @@ export const pushMilestones = pgTable(
   },
   (t) => [primaryKey({ columns: [t.pollId, t.endpoint] })],
 );
+
+// The owner's step counter (src/lib/events.ts): how many times each step happened per India day. Counts only: never
+// who, never which poll.
+export const dailyEvents = pgTable(
+  'daily_events',
+  {
+    day: text('day').notNull(),
+    event: text('event').notNull(),
+    n: integer('n').notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.day, t.event] })],
+);

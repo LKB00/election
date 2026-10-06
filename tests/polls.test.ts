@@ -1350,3 +1350,17 @@ describe('people who voted (Home)', () => {
     expect((await voterCount(db)) - before).toBe(2);
   });
 });
+
+describe('step counter (admin)', () => {
+  it('counts steps per day, shows 7 days with zeros, and never fails', async () => {
+    const { countEvent, stepTable, STEP_DAYS } = await import('@/lib/events');
+    const before = (await stepTable(db))[0].n.vote;
+    await countEvent(db, 'vote');
+    await countEvent(db, 'vote');
+    await countEvent(db, 'shared_open');
+    const t = await stepTable(db);
+    expect(t.length).toBe(STEP_DAYS);
+    expect(t[0].n.vote - before).toBe(2);
+    expect(t[1].n.voter_created).toBeGreaterThanOrEqual(0);
+  });
+});

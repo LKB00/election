@@ -3,6 +3,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { ArrowRight, CalendarPlus, Check, Flag, Lock, PenLine, Plus, Repeat, Share2, Target, Trophy, Users } from 'lucide-react';
 import { MAX_OTHER } from '@/lib/limits';
+import { track } from '@/lib/track';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type { PollOption, PollView } from '@/lib/polls';
@@ -754,7 +755,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
           </ul>
         </div>
         <div className="row wrap center">
-          <a className="btn btn-primary btn-lg" href={`https://wa.me/?text=${encodeURIComponent(text.replace(link(), `${link()}${link().includes('?') ? '&' : '?'}src=wa`))}`} target="_blank" rel="noopener noreferrer">
+          <a className="btn btn-primary btn-lg" href={`https://wa.me/?text=${encodeURIComponent(text.replace(link(), `${link()}${link().includes('?') ? '&' : '?'}src=wa`))}`} target="_blank" rel="noopener noreferrer" onClick={() => track('whatsapp')}>
             <Share2 size={15} strokeWidth={1.75} aria-hidden /> {t.shareDay}
           </a>
           {more.some((m) => isOpen(m) && !deck.some((d) => d.id === m.id)) ? (
@@ -1229,6 +1230,22 @@ null
       {/* P3, optional: after the pinned bar, so the bar never covers it. */}
       {(revealed || sealed || poll.groupWaiting) && mine && (
         <div className="duel-after">
+          {/* P2, first after the result (owner, Oct 2026, from the product audit): the voter → maker step. Someone who
+              just answered a friend's question is asked, once and gently, for a question of their own. */}
+          {revealed && (
+            <ul className="al-listcard own-question">
+              <li>
+                <Link href="/create" className="al-row" onClick={() => track('create_after_vote')}>
+                  <span className="al-row__disc" style={{ '--tone': 'var(--lime-badge)' } as React.CSSProperties} aria-hidden><Plus size={20} strokeWidth={1.75} /></span>
+                  <span className="al-row__main">
+                    <span className="al-row__title">{t.ownQuestion}</span>
+                    <span className="al-row__meta">{t.startOwnLine}</span>
+                  </span>
+                  <ArrowRight size={18} strokeWidth={1.75} className="al-row__chevron" aria-hidden />
+                </Link>
+              </li>
+            </ul>
+          )}
           {/* P2: your group (you + friends from your link) vs everyone, for your pick. Lime = you. */}
           {revealed && poll.group && (
             <div className="duel-group group-vs">

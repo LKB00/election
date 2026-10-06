@@ -4,6 +4,7 @@ import { ArrowRight } from 'lucide-react';
 import DuelGame from '@/components/DuelGame';
 import EmptyState from '@/components/EmptyState';
 import Onboarding from '@/components/Onboarding';
+import Step from '@/components/Step';
 import RulesNotice from '@/components/RulesNotice';
 import DuelTiles from '@/components/DuelTiles';
 import PackRows from '@/components/PackRows';
@@ -65,6 +66,7 @@ export default async function Home() {
   return (
     <div className="page page-wide">
       <Onboarding />
+      <Step e="home_view" />
       {/* Phones: one column, top to bottom. Computers (election.css, "Desktop"): today's poll on the left as the main
           thing, everything else to browse in a column on the right, so the screen is not one stretched card. */}
       <div className={'home-grid' + (empty ? '' : ' has-rail')}>

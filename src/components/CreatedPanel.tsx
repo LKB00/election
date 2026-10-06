@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ArrowRight, Check, Link2, Share2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useT } from '@/lib/lang';
+import { track } from '@/lib/track';
 import { votePop } from '@/lib/sound';
 import Burst from './Burst';
 import Spot from './Spot';
@@ -23,6 +24,7 @@ export default function CreatedPanel({ id, title, path = `/p/${id}`, heading, te
   // Tagged so the maker's page can count where votes came from (copied link vs. the share menu).
   const link = (src = 'link') => `${window.location.origin}${path}?src=${src}`;
   async function copy() {
+    track('copy_link');
     try {
       await navigator.clipboard.writeText(link());
       setCopied(true);
@@ -32,6 +34,7 @@ export default function CreatedPanel({ id, title, path = `/p/${id}`, heading, te
     }
   }
   async function share() {
+    track('share_open');
     if (navigator.share) {
       try {
         await navigator.share({ title, text: text ?? t.shareTextAsk(title), url: link('other') });

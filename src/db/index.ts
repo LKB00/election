@@ -141,6 +141,12 @@ ALTER TABLE polls ADD COLUMN IF NOT EXISTS suggestions_on boolean NOT NULL DEFAU
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS allow_other boolean NOT NULL DEFAULT false;
 ALTER TABLE options ADD COLUMN IF NOT EXISTS is_other boolean NOT NULL DEFAULT false;
 ALTER TABLE votes ADD COLUMN IF NOT EXISTS other_text text;
+CREATE TABLE IF NOT EXISTS daily_events (
+  day text NOT NULL,
+  event text NOT NULL,
+  n integer NOT NULL DEFAULT 0,
+  PRIMARY KEY (day, event)
+);
 -- Deleted by its maker: hidden at once, erased (with its votes) after 180 days.
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
 -- Where votes came from, counted per poll only (never per voter): wa, ig, qr, link, other.
