@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Bell, ChevronRight, Clock, Copy, Image as ImageIcon, MessageCircle, MonitorPlay, PenLine, Plus, Repeat, Square, Trash2 } from 'lucide-react';
+import { Bell, ChevronRight, Clock, Copy, Image as ImageIcon, MessageCircle, MonitorPlay, PenLine, Plus, Repeat, CircleStop, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useOverlay } from '@/lib/useOverlay';
@@ -49,7 +49,7 @@ export function ShareLink({ id, title }: { id: string; title: string }) {
 }
 
 /** "Results are in": the story picture, shared as a file where the phone can, else opened to save. */
-export function ResultsCard({ id, votes }: { id: string; votes: number }) {
+export function ResultsCard({ id, votes, main = false }: { id: string; votes: number; /** The one main action (an ended poll); otherwise Share the poll is. */ main?: boolean }) {
   const t = useT();
   const lang = useLang();
   // The vote count in the address: a fresh picture whenever the result changes (not an old saved copy).
@@ -73,7 +73,7 @@ export function ResultsCard({ id, votes }: { id: string; votes: number }) {
       <img src={src} alt="" className="maker-results-img" loading="lazy" width={108} height={192} />
       <div className="maker-results-side">
         <p className="small muted">{t.resultsCardLine}</p>
-        <button type="button" className="btn btn-primary" onClick={share} disabled={busy}>
+        <button type="button" className={main ? 'btn btn-primary' : 'btn btn-ghost'} onClick={share} disabled={busy}>
           <ImageIcon size={16} strokeWidth={2} aria-hidden /> {t.shareResults}
         </button>
       </div>
@@ -101,7 +101,7 @@ export function Suggestions({ id, items }: { id: string; items: MakerView['pendi
               <span className="al-row__title">{s.label}</span>
               <span className="al-row__meta">{t.suggestedBy(s.n)}</span>
             </span>
-            <button type="button" className="btn btn-primary btn-sm" onClick={() => decide(s.id, true)}><Plus size={14} strokeWidth={2.25} aria-hidden /> {t.addChoice}</button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => decide(s.id, true)}><Plus size={14} strokeWidth={2.25} aria-hidden /> {t.addChoice}</button>
             <button type="button" className="icon-btn" aria-label={`${t.dropChoice}: ${s.label}`} onClick={() => decide(s.id, false)}><Trash2 size={16} strokeWidth={2} aria-hidden /></button>
           </li>
         ))}
@@ -148,7 +148,7 @@ export function Lengths({ id }: { id: string }) {
           </span>
         </div>
       ) : (
-        <button type="button" className="btn btn-ghost" onClick={() => setAsking(true)}><Square size={14} strokeWidth={2} aria-hidden /> {t.endNow}</button>
+        <button type="button" className="btn btn-ghost" onClick={() => setAsking(true)}><CircleStop size={14} strokeWidth={2} aria-hidden /> {t.endNow}</button>
       )}
       {error && <p className="duel-error" role="alert">{error}</p>}
     </div>

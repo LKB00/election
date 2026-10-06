@@ -1390,6 +1390,65 @@ describe('held for review (after posting)', () => {
   });
 });
 
+describe('audit fixes (Oct 2026)', () => {
+  it('Hindi choices that differ only by vowel signs are different; emoji-only differences count too', async () => {
+    const { sameKey } = await import('@/lib/validation');
+    expect(sameKey('पानी')).not.toBe(sameKey('पान'));
+    expect(sameKey('Rahul')).toBe(sameKey('rahul.'));
+    expect(sameKey('🍕 1')).not.toBe(sameKey('🍔 1'));
+    expect(createPollSchema.safeParse({ title: 'Kya chahiye?', options: ['पानी', 'पान'] }).success).toBe(true);
+  });
+  it('changing a vote drops the old reason', async () => {
+    const id = await make({ allowChange: true });
+    await db.update(schema.polls).set({ reasons: JSON.stringify(['Leadership', 'Vision']) }).where(eq(schema.polls.id, id));
+    const p = (await getPoll(db, id, null))!;
+    await castVote(db, id, p.options[0].id, 'r1');
+    await setReason(db, id, 'r1', 'Leadership');
+    await castVote(db, id, p.options[1].id, 'r1');
+    const after = (await getPoll(db, id, 'r1'))!;
+    expect(after.options[1].reasons).toEqual([]);
+  });
+  it('"Called it" never lets a call change, and a group poll always ends', async () => {
+    const called = await make({ calledIt: true, allowChange: true });
+    const [c] = await db.select().from(schema.polls).where(eq(schema.polls.id, called));
+    expect(c.allowChange).toBe(false);
+    const group = await make({ groupSize: 3 });
+    const [g] = await db.select().from(schema.polls).where(eq(schema.polls.id, group));
+    expect(g.endsAt).not.toBeNull();
+  });
+  it('no undo once the poll has ended', async () => {
+    const id = await make();
+    const p = (await getPoll(db, id, null))!;
+    await castVote(db, id, p.options[0].id, 'u1');
+    await db.update(schema.polls).set({ endsAt: new Date(Date.now() - 1000) }).where(eq(schema.polls.id, id));
+    expect(await undoVote(db, id, 'u1')).toBe(false);
+  });
+  it('a politician written under "Other" makes it a politics poll', async () => {
+    const id = await make({ allowOther: true, title: 'Who should lead the country?' });
+    const p = (await getPoll(db, id, null))!;
+    const other = p.options.find((o) => o.isOther)!;
+    expect(await castVote(db, id, other.id, 'o1', null, [], [], 'Modi')).toBe('ok');
+    const [row] = await db.select().from(schema.polls).where(eq(schema.polls.id, id));
+    expect(row.category).toBe('politics');
+    expect(row.reviewed).toBe(false);
+  });
+  it('a closed "Called it" poll without its answer is never "won" in My votes', async () => {
+    const id = await make({ calledIt: true });
+    const p = (await getPoll(db, id, null))!;
+    await castVote(db, id, p.options[0].id, 'c1');
+    await castVote(db, id, p.options[0].id, 'c2');
+    await db.update(schema.polls).set({ endsAt: new Date(Date.now() - 1000) }).where(eq(schema.polls.id, id));
+    const mine = (await getMyVotes(db, 'c1', 50)).find((v) => v.pollId === id)!;
+    expect(mine.standing.kind).not.toBe('won');
+  });
+  it('a day that does not exist cannot be planned', async () => {
+    const { planToday } = await import('@/lib/polls');
+    const id = await make();
+    expect(await planToday(db, id, '2099-02-31')).toBe(false);
+    expect(await planToday(db, id, '2099-03-01')).toBe(true);
+  });
+});
+
 describe('views count (Home)', () => {
   it('adds up Home, poll and other page views on every day, and nothing else', async () => {
     const { countEvent, viewTotal } = await import('@/lib/events');

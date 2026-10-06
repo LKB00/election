@@ -96,9 +96,12 @@ export default async function ManagePage({ params, searchParams }: { params: Pro
         {!v.closed && <ShareLink id={v.id} title={v.title} />}
       </section>
 
-      <section className="al-block" aria-label={t.resultsCard}>
-        <h2 className="al-block__title">{t.resultsCard}</h2>
-        {v.resultsPublic ? <ResultsCard id={v.id} votes={v.votes + v.options.length} /> : (
+      {/* "The result is in" only once there is a result to share: not with 0 votes, not while results are hidden. */}
+      <section className="al-block" aria-label={v.resultsPublic && v.votes > 0 ? t.resultsCard : t.resultsCardSoon}>
+        <h2 className="al-block__title">{v.resultsPublic && v.votes > 0 ? t.resultsCard : t.resultsCardSoon}</h2>
+        {v.resultsPublic && v.votes > 0 ? <ResultsCard id={v.id} votes={v.votes + v.options.length} main={v.closed} /> : v.resultsPublic ? (
+          <p className="small muted">{t.resultsCardNoVotes}</p>
+        ) : (
           <p className="small muted">{t.resultsCardLater} {!v.closed && <>{t.endToPicture} <Link href={`/p/${v.id}`} className="text-link">{t.voteToSee}</Link></>}</p>
         )}
       </section>

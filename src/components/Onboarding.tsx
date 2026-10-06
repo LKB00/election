@@ -67,6 +67,8 @@ function Cards({ under, n, setN, close, t, lang, onLang }: { under: boolean; n: 
   useEffect(() => {
     const d = document.documentElement;
     d.dataset.onb = ONB_READY;
+    // Keyboard and screen readers start inside the cards (on Next), not on the page behind them.
+    document.querySelector<HTMLElement>('.onb-go')?.focus({ preventScroll: true });
     return () => {
       delete d.dataset.onb;
     };

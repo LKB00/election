@@ -35,7 +35,7 @@ export default function SuggestChoice({ pollId }: { pollId: string }) {
           <span className="search">
             <input value={label} maxLength={MAX_CHOICE} placeholder={t.suggestPh} aria-label={t.suggestPh} onChange={(e) => setLabel(e.target.value)} autoFocus enterKeyHint="send" />
           </span>
-          <button className="btn btn-primary btn-sm" disabled={busy || !label.trim()}>{t.suggestSend}</button>
+          <button className="btn btn-ghost btn-sm" disabled={busy || !label.trim()}>{t.suggestSend}</button>
         </form>
       ) : (
         <button type="button" className="link-like small" onClick={() => { setOpen(true); setMsg(''); }}>

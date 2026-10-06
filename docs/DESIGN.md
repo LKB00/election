@@ -1244,3 +1244,25 @@ pick" label once you have voted. Before voting nothing changed: question, choice
 - **Your votes: "Saved on this phone only…"** (the "Keep your votes" block right below explains it) **and "Polls you
   made →"** (that is under You).
 Earlier in this round: the 100-dot people grid, "Up next: …" in the bar, the "Someone wants your pick" label after voting.
+
+## Full audit (owner, Oct 2026: "check each and every screen, use case and edge case")
+
+Screens: the maker's own poll shows no "Someone wants your pick" label and no Report; Manage says "Result picture" (not
+"The result is in") until there is a result to share, and its End now has a stop icon; a choice being typed outlines its
+whole card; no empty gap above Report (the empty Share/Next holder takes no room); one main ink button on Manage (the
+result picture is the main action only once the poll has ended) and in Suggest a choice.
+States: a "Called it" poll that has closed but has no answer yet shows "Waiting for the answer · Most called: X", never
+a winner, and My votes says "leading", not "won"; an error page (Try again, Home) instead of the bare framework error;
+Polls hides "All polls" when every poll is already in Trending; sign out, delete profile, delete my votes and the admin
+actions say when they fail (no internet / our side) instead of freezing or doing nothing; Undo without internet keeps
+the Undo link; the "Other" box is empty and closed on each new poll and has Cancel; keys 1–9 tick on Rank polls, open the
+name box on "Other", and do nothing while the first-visit cards are open; after Next the new question takes focus; the
+first-visit cards take focus; a group size outside 2–200 is an error, not silently dropped; "Other" is left out of list
+lines ("A vs B"); the TV shows rating words and hides Full screen where the phone cannot do it; long unbroken text
+wraps; a paused poll does not say "Tap to vote".
+Rules (server): Hindi choices that differ only by vowel signs are different (पानी / पान); a politician written under
+"Other" makes the poll a politics poll; changing your vote drops your old "why"; "Called it" never lets a call change and
+pack predictions close at kick-off; "Ask again" only links your own earlier poll (packs too); no Undo after the end, while
+paused, or on a complete group; group polls always end (3 days by default); editing refuses duplicate or "Other" ids;
+no new choices on an ended poll and "Other" stays last; a skip never overwrites a guess; trends use India days; a
+planned day must exist; the health check never shows database errors; the evening job's secret is compared safely.

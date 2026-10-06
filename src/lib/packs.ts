@@ -19,7 +19,12 @@ export async function createPack(db: Db, p: { kind: PackKind; title: string; sta
   await db.insert(packs).values({ id, kind: p.kind, title: p.title, startsAt: new Date(p.startsAt) });
   const pollIds: string[] = [];
   // One after another, so their order (by creation time) is the pack's order.
-  for (const item of items) pollIds.push(await createPoll(db, item, manageKey, id, ownerId));
+  // Predictions ("Called it") close at kick-off on the server too, whatever the request says.
+  const start = new Date(p.startsAt).getTime();
+  for (const item of items) {
+    const capped = item.calledIt && (!item.endsAt || new Date(item.endsAt).getTime() > start) ? { ...item, endsAt: new Date(start).toISOString() } : item;
+    pollIds.push(await createPoll(db, capped, manageKey, id, ownerId));
+  }
   return { id, pollIds };
 }
 
