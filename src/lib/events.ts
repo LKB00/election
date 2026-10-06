@@ -11,7 +11,8 @@ import { INDIA_TZ } from './time';
 //   copy_link        a link copied                    create_open   Start a poll opened
 //   poll_created     a poll made                      voter_created a poll made by someone who has voted before
 //   create_after_vote  "Have a question of your own?" tapped after voting
-export const EVENTS = ['home_view', 'poll_view', 'shared_open', 'vote', 'shared_vote', 'share_open', 'whatsapp', 'copy_link', 'create_open', 'create_after_vote', 'poll_created', 'voter_created'] as const;
+//   guess / guess_skip "Guess the crowd": answered, or skipped (is the extra step welcome or in the way?)
+export const EVENTS = ['home_view', 'poll_view', 'shared_open', 'vote', 'shared_vote', 'share_open', 'whatsapp', 'copy_link', 'create_open', 'create_after_vote', 'poll_created', 'voter_created', 'guess', 'guess_skip'] as const;
 export type StepEvent = (typeof EVENTS)[number];
 /** The steps a page may report itself (the rest are counted by the server, where they cannot be faked). */
 export const CLIENT_EVENTS: readonly StepEvent[] = ['home_view', 'poll_view', 'shared_open', 'share_open', 'whatsapp', 'copy_link', 'create_open', 'create_after_vote'];

@@ -61,3 +61,42 @@ export async function getStats(db: Db): Promise<Stats> {
     newCameBack: Number(n?.back ?? 0),
   };
 }
+
+/** The engagement score's window and noise floor: polls made in the last ENGAGE_DAYS days with at least
+ *  ENGAGE_MIN_VOTES votes (one vote and one reaction would score 100 and mean nothing). */
+export const ENGAGE_DAYS = 30;
+export const ENGAGE_MIN_VOTES = 3;
+
+export type EngagedPoll = { id: string; title: string; category: string; votes: number; score: number };
+export type Engagement = { polls: EngagedPoll[]; topics: { category: string; polls: number; score: number }[] };
+
+/** How much a poll gets people doing more than voting, 0-100 (owner, Oct 2026: "an engagement score"). Half of it is
+ *  how many of its votes came through friends' links (sharing that worked), a quarter reactions per vote, a quarter the
+ *  share of voters who said why. From rows the site already keeps; counts only, never people. */
+export const engagementScore = (votes: number, viaFriends: number, reactions: number, reasons: number) =>
+  votes ? Math.round(100 * (0.5 * (viaFriends / votes) + 0.25 * Math.min(1, reactions / votes) + 0.25 * (reasons / votes))) : 0;
+
+export async function getEngagement(db: Db, top = 5): Promise<Engagement> {
+  const rows = (await db.execute(sql`
+    select p.id, p.title, p.category,
+      count(v.id)::int as votes,
+      count(v.id) filter (where v.via is not null)::int as via,
+      count(v.id) filter (where v.reason is not null)::int as reasons,
+      (select count(*)::int from reactions r where r.poll_id = p.id) as reactions
+    from polls p join votes v on v.poll_id = p.id
+    where p.hidden = false and p.created_at > now() - make_interval(days => ${ENGAGE_DAYS})
+    group by p.id
+    having count(v.id) >= ${ENGAGE_MIN_VOTES}`)) as unknown as { rows?: Record<string, unknown>[] } | Record<string, unknown>[];
+  const list = (Array.isArray(rows) ? rows : rows.rows ?? []).map((r) => {
+    const votes = Number(r.votes);
+    return { id: String(r.id), title: String(r.title), category: String(r.category), votes, score: engagementScore(votes, Number(r.via), Number(r.reactions), Number(r.reasons)) };
+  });
+  const byTopic = new Map<string, EngagedPoll[]>();
+  for (const p of list) byTopic.set(p.category, [...(byTopic.get(p.category) ?? []), p]);
+  return {
+    polls: [...list].sort((a, b) => b.score - a.score || b.votes - a.votes).slice(0, top),
+    topics: [...byTopic.entries()]
+      .map(([category, ps]) => ({ category, polls: ps.length, score: Math.round(ps.reduce((s, p) => s + p.score, 0) / ps.length) }))
+      .sort((a, b) => b.score - a.score),
+  };
+}

@@ -1172,3 +1172,27 @@ opened, WhatsApp chosen, link copied, Start a poll opened, "Have a question of y
 someone who had voted before. Votes and polls are counted by the server; the rest by the page (`/api/e`, a fixed list,
 rate-limited). The admin page shows today and 7 days, and five rates: opened → voted, friend's link → voted, voted →
 Share, Start a poll → made, polls made by voters. The Privacy page says so in 3 languages.
+
+## Create: settings folded into one row (owner, Oct 2026, from the product feedback)
+
+A first poll is: the question, its choices, **Start poll**. All settings (poll type, results after voting, show my
+name, Other, topic, more settings) sit behind one **Settings** row that says what is set now ("Pick one · General").
+One tap opens the full list as before. It opens by itself when an end-time error needs fixing, and is open for "Ask
+again" polls. The live preview on computers still shows the effect of every setting (e.g. "Other" for politics).
+
+Step counter: "Guess the crowd" answered / skipped (not counted when yours was the only vote), with one more rate line on
+/admin: "Asked to guess the crowd → answered". Test plan for the first real users: `docs/USER_TEST.md`.
+
+## Engagement round (owner, Oct 2026: "the product is social engagement; polls are the mechanism")
+
+- **"Ask your friends"** is the main button everywhere it said "Start a poll" (top bar, Home, empty pages, after voting,
+  search with no results), in 3 languages. People don't want to "create a poll"; they want to know what friends think.
+  The form's own submit button stays "Start poll".
+- **Social formats** in Settings → Poll type: Ask (pick one), **Hot take** (new), Predict (was "Called it"), Pick
+  several, Rank, Rate it, Decide a date. Same poll kinds underneath. Hot take = a pick-one poll that starts with
+  🔥 Agree / 🤔 Depends / 🙅 Disagree (filled only while the choices are empty) and a statement placeholder.
+- **Engagement score** on /admin (`getEngagement` in `src/lib/stats.ts`): for polls made in the last 30 days with 3+
+  votes, 0–100 = half votes through friends' links, a quarter reactions per vote, a quarter voters who said why. Top 5
+  polls and every topic's average. From rows already kept; counts only.
+- Still no points, badges, streaks, coins or leaderboards: engagement comes from curiosity, people, disagreement and
+  surprise.

@@ -1364,3 +1364,25 @@ describe('step counter (admin)', () => {
     expect(t[1].n.voter_created).toBeGreaterThanOrEqual(0);
   });
 });
+
+describe('engagement score (admin)', () => {
+  it('scores sharing, reactions and reasons, needs 3+ votes, and groups by topic', async () => {
+    const { engagementScore, getEngagement } = await import('@/lib/stats');
+    expect(engagementScore(0, 0, 0, 0)).toBe(0);
+    expect(engagementScore(10, 10, 10, 10)).toBe(100);
+    expect(engagementScore(10, 5, 0, 0)).toBe(25);
+    expect(engagementScore(4, 0, 40, 0)).toBe(25); // reactions count at most one per vote
+    const id = await make({ title: 'Engagement check', category: 'food' });
+    const p = (await getPoll(db, id, null))!;
+    await castVote(db, id, p.options[0].id, 'en1');
+    await castVote(db, id, p.options[1].id, 'en2');
+    expect((await getEngagement(db, 100)).polls.some((x) => x.id === id)).toBe(false);
+    await castVote(db, id, p.options[0].id, 'en3');
+    await toggleReaction(db, id, 'en1', (await getPoll(db, id, 'en1'))!.reactions[0].emoji);
+    const e = await getEngagement(db, 100);
+    const row = e.polls.find((x) => x.id === id)!;
+    expect(row.votes).toBe(3);
+    expect(row.score).toBe(engagementScore(3, 0, 1, 0));
+    expect(e.topics.some((x) => x.category === 'food')).toBe(true);
+  });
+});

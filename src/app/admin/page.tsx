@@ -6,7 +6,8 @@ import { getDb } from '@/db';
 import { isAdminKey } from '@/lib/admin';
 import { getFeaturedId, getPlannedToday, getPoll, getReviewQueue, indiaDay, listPolls } from '@/lib/polls';
 import { getT } from '@/lib/lang-server';
-import { getStats } from '@/lib/stats';
+import { getEngagement, getStats } from '@/lib/stats';
+import Link from 'next/link';
 import { EVENTS, stepTable, type StepEvent } from '@/lib/events';
 import EmptyState from '@/components/EmptyState';
 
@@ -23,6 +24,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
   const t = await getT();
   const db = await getDb();
   const [items, featuredId, recent, stats, planned, steps] = await Promise.all([getReviewQueue(db), getFeaturedId(db), listPolls(db, 20), getStats(db), getPlannedToday(db), stepTable(db)]);
+  const engage = await getEngagement(db);
   // The step counter's 7-day totals.
   const week = Object.fromEntries(EVENTS.map((e) => [e, steps.reduce((sum, d) => sum + d.n[e], 0)])) as Record<StepEvent, number>;
   const pct = (a: number, b: number) => (b ? Math.round((a / b) * 100) : 0);
@@ -53,12 +55,29 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
           <li>{t.statsPolitics(pct(stats.politicsVotes, stats.weekVotes))}</li>
         </ul>
       </section>
+      {/* Engagement score (src/lib/stats.ts): which polls and topics get people sharing, reacting and saying why. */}
+      <section className="block admin-stats admin-engage">
+        <h2>{t.engageTitle}</h2>
+        <p className="small muted">{t.engageLead}</p>
+        {engage.polls.length === 0 ? <p className="small">{t.engageNone}</p> : (
+          <>
+            <ol className="small">
+              {engage.polls.map((p) => <li key={p.id}><Link href={`/p/${p.id}`} className="text-link">{p.title}</Link> · <strong>{t.engageRow(p.score, p.votes)}</strong></li>)}
+            </ol>
+            <p className="label">{t.engageTopics}</p>
+            <ul className="small">
+              {engage.topics.map((x) => <li key={x.category}>{t.categories[x.category] ?? x.category} · <strong>{t.engageTopicRow(x.score, x.polls)}</strong></li>)}
+            </ul>
+          </>
+        )}
+      </section>
       {/* The step counter (src/lib/events.ts): where people drop off between opening, voting, sharing and making. */}
       <section className="block admin-stats admin-steps">
         <h2>{t.stepsTitle}</h2>
         <p className="small muted">{t.stepsLead}</p>
         <ul className="small">
           {t.stepRates(pct(week.vote, week.poll_view), pct(week.shared_vote, week.shared_open), pct(week.share_open, week.vote), pct(week.poll_created, week.create_open), pct(week.voter_created, week.poll_created)).map((line) => <li key={line}><strong>{line}</strong></li>)}
+          <li><strong>{t.stepGuess(pct(week.guess, week.guess + week.guess_skip))}</strong></li>
         </ul>
         <table className="admin-steps__table small">
           <thead><tr><th scope="col" /><th scope="col">{t.stepsToday}</th><th scope="col">{t.stepsWeek}</th></tr></thead>
