@@ -7,6 +7,7 @@ import '@fontsource-variable/figtree/index.css';
 import '@fontsource/noto-sans-devanagari/400.css';
 import '@fontsource/noto-sans-devanagari/700.css';
 import { getLang } from '@/lib/lang-server';
+import { ogBase, siteImage } from '@/lib/og';
 import { LangProvider } from '@/lib/lang';
 import Splash from '@/components/Splash';
 import FirstVisit from '@/components/FirstVisit';
@@ -18,11 +19,15 @@ import { PALETTE } from '@/lib/palette';
 import '@/styles/index.css';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = dict[await getLang()];
+  const lang = await getLang();
+  const t = dict[lang];
   return {
     metadataBase: new URL(SITE_URL),
     title: { default: `${t.siteName} · ${t.splashLine}`, template: `%s · ${t.siteName}` },
     description: t.metaDesc,
+    // Every link pasted in a chat shows a picture and a line of text, never a bare link (src/lib/og.ts).
+    openGraph: { ...ogBase(lang), title: `${t.siteName} · ${t.splashLine}`, description: t.metaDesc, images: [siteImage(lang)] },
+    twitter: { card: 'summary_large_image', images: [siteImage(lang).url] },
     // Lets Google Discover and search show the big share picture.
     robots: { 'max-image-preview': 'large' },
   };

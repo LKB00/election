@@ -18,6 +18,8 @@ import { getT, langAlternates } from '@/lib/lang-server';
 
 
 import { dict, isLang } from '@/lib/i18n';
+import { OG_VOTERS_MIN } from '@/lib/limits';
+import { ogBase } from '@/lib/og';
 
 export const dynamic = 'force-dynamic';
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ new?: string; f?: string; s?: string; o?: string; l?: string }> };
@@ -41,7 +43,8 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     robots: poll.reviewed && !f && poll.participants >= INDEX_MIN_VOTES ? undefined : { index: false, follow: true },
     alternates: await langAlternates(`/p/${poll.id}`),
     description: t.metaPollDesc(names),
-    openGraph: { title, description: t.metaPollOg(names), images: [{ url: image, width: 1200, height: 630 }] },
+    // A crowd makes people tap: "N people have voted" once there is one (never the split).
+    openGraph: { ...ogBase(lang), title, description: t.metaPollOg(names, poll.participants >= OG_VOTERS_MIN ? poll.participants : 0), images: [{ url: image, width: 1200, height: 630, alt: poll.title }] },
     twitter: { card: 'summary_large_image', images: [image] },
   };
 }

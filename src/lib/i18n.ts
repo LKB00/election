@@ -456,7 +456,8 @@ const en = {
   siteName: 'Chunav',
   metaDesc: 'Ask anything. Vote in one tap, then see what everyone thinks. Just for fun, not official.',
   metaPollDesc: (names: string) => `${names}. What do you think? Tap to vote.`,
-  metaPollOg: (names: string) => `${names}. Secret vote: nobody sees your pick. Vote in one tap and see where everyone stands.`,
+  metaPollOg: (names: string, voters: number) => `${names}. ${voters ? `${voters.toLocaleString('en-IN')} ${voters === 1 ? 'person has' : 'people have'} voted. ` : ''}Secret vote: nobody sees your pick. Vote in one tap and see where everyone stands.`,
+  ogImageAlt: 'Chunav: vote in one tap, then see what everyone thinks',
   metaPackOg: (title: string) => `${title}: make your calls`,
   packNotFound: 'Pack not found',
   navMain: 'Main menu',
@@ -746,10 +747,18 @@ const en = {
   cardVotesN: (n: number) => `${n} ${n === 1 ? 'vote' : 'votes'}`,
   cardSeeAll: 'Scan for the full result',
   cardGroup: (mine: number, label: string, all: number) => `${mine}% of my group picked ${label} · ${all}% of everyone`,
-  ogAsk: 'Who would you pick? Tap to vote',
+  ogAsk: 'What would you pick?',
+  ogRate: 'How would you rate it?',
   ogPicked: (name: string) => `I voted for ${name}. Who would you pick?`,
   ogGuess: 'I voted. Guess who I picked?',
   ogVoted: 'I VOTED',
+  ogVoteNow: 'Vote now',
+  ogVs: 'VS',
+  ogMore: (n: number) => `+${n} more`,
+  ogSecretLine: 'Secret vote · one tap · see results after you vote',
+  ogSiteLine: 'Ask anything. Vote in one tap. See where everyone stands.',
+  ogStart: 'Start voting',
+  ogPoints: ['Secret vote', 'One tap', 'Free'],
   categories: {
     general: 'General', politics: 'Politics', cricket: 'Cricket', movies: 'Movies', music: 'Music',
     food: 'Food', tech: 'Tech', sports: 'Sports', friends: 'Friends',
@@ -758,7 +767,7 @@ const en = {
 };
 
 export type Dict = Omit<typeof en, CardKeys>;
-type CardKeys = 'cardNameVoted' | 'cardSecret' | 'cardVotersN' | 'cardYourTurn' | 'cardResultsIn' | 'cardVoters' | 'cardLeader' | 'cardBestDate' | 'cardAverage' | 'cardVotesN' | 'cardSeeAll' | 'cardFun' | 'cardVoted' | 'cardIn' | 'cardMyVote' | 'cardPicked' | 'cardGuess' | 'cardScan' | 'cardFriends' | 'cardGroup' | 'ogAsk' | 'ogPicked' | 'ogGuess' | 'ogVoted';
+type CardKeys = 'cardNameVoted' | 'cardSecret' | 'cardVotersN' | 'cardYourTurn' | 'cardResultsIn' | 'cardVoters' | 'cardLeader' | 'cardBestDate' | 'cardAverage' | 'cardVotesN' | 'cardSeeAll' | 'cardFun' | 'cardVoted' | 'cardIn' | 'cardMyVote' | 'cardPicked' | 'cardGuess' | 'cardScan' | 'cardFriends' | 'cardGroup' | 'ogAsk' | 'ogRate' | 'ogPicked' | 'ogGuess' | 'ogVoted' | 'ogVoteNow' | 'ogVs' | 'ogMore' | 'ogSecretLine' | 'ogSiteLine' | 'ogStart' | 'ogPoints';
 
 const hi: Dict = {
   home: 'होम',
@@ -1182,7 +1191,8 @@ const hi: Dict = {
   siteName: 'चुनाव',
   metaDesc: 'कुछ भी पूछें। एक टैप में वोट करें, फिर देखें सब क्या सोचते हैं। बस मज़े के लिए, आधिकारिक नहीं।',
   metaPollDesc: (names: string) => `${names}. आप क्या सोचते हैं? वोट करने के लिए टैप करें।`,
-  metaPollOg: (names: string) => `${names}. गुप्त वोट: आपकी पसंद कोई नहीं देखता। एक टैप में वोट करें और देखें सब कहाँ खड़े हैं।`,
+  metaPollOg: (names: string, voters: number) => `${names}. ${voters ? `${voters.toLocaleString('en-IN')} लोग वोट कर चुके हैं। ` : ''}गुप्त वोट: आपकी पसंद कोई नहीं देखता। एक टैप में वोट करें और देखें सब कहाँ खड़े हैं।`,
+  ogImageAlt: 'चुनाव: एक टैप में वोट करें, फिर देखें सब क्या सोचते हैं',
   metaPackOg: (title: string) => `${title}: अपने अनुमान लगाएं`,
   packNotFound: 'पैक नहीं मिला',
   navMain: 'मुख्य मेनू',
@@ -1875,7 +1885,8 @@ const hg: typeof en = {
   siteName: 'Chunav',
   metaDesc: 'Kuch bhi poocho. Ek tap mein vote karo, phir dekho sab kya sochte hain. Bas mazey ke liye, official nahi.',
   metaPollDesc: (names: string) => `${names}. Aap kya sochte ho? Vote karne ke liye tap karo.`,
-  metaPollOg: (names: string) => `${names}. Secret vote: aapki pick koi nahi dekhta. Ek tap mein vote karo aur dekho sab kahan khade hain.`,
+  metaPollOg: (names: string, voters: number) => `${names}. ${voters ? `${voters.toLocaleString('en-IN')} log vote kar chuke. ` : ''}Secret vote: aapki pick koi nahi dekhta. Ek tap mein vote karo aur dekho sab kahan khade hain.`,
+  ogImageAlt: 'Chunav: ek tap mein vote karo, phir dekho sab kya sochte hain',
   metaPackOg: (title: string) => `${title}: apne guesses lagao`,
   packNotFound: 'Pack nahi mila',
   navMain: 'Main menu',
@@ -2155,10 +2166,18 @@ const hg: typeof en = {
   cardVotesN: (n: number) => `${n} vote`,
   cardSeeAll: 'Poora result dekhne ke liye scan karo',
   cardGroup: (mine: number, label: string, all: number) => `Mere group ke ${mine}% ne ${label} chuna · sabke ${all}%`,
-  ogAsk: 'Aap kise chunoge? Tap karke vote karo',
+  ogAsk: 'Aap kya chunoge?',
+  ogRate: 'Aap kitna rate karoge?',
   ogPicked: (name: string) => `Maine ${name} ko vote diya. Aap kise chunoge?`,
   ogGuess: 'Maine vote kiya. Batao kise chuna?',
   ogVoted: 'MAINE VOTE KIYA',
+  ogVoteNow: 'Vote karo',
+  ogVs: 'VS',
+  ogMore: (n: number) => `+${n} aur`,
+  ogSecretLine: 'Secret vote · ek tap · vote ke baad result dekho',
+  ogSiteLine: 'Kuch bhi poocho. Ek tap mein vote karo. Dekho sab kahan khade hain.',
+  ogStart: 'Vote karna shuru karo',
+  ogPoints: ['Secret vote', 'Ek tap', 'Free'],
   categories: {
     general: 'General', politics: 'Rajneeti', cricket: 'Cricket', movies: 'Filmein', music: 'Music',
     food: 'Khana', tech: 'Tech', sports: 'Khel', friends: 'Dost',
