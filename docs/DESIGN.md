@@ -687,7 +687,7 @@ Not just its colours: Arogya Line's way of building screens. Its principles (fro
 
 | Block | Classes | Used on | Job |
 |---|---|---|---|
-| Header: date, greeting, the size of the day | `al-home`, `__date`, `__title`, `__sub` | Home ("Sunday, 4 Oct · Namaste · 5 questions today · 2 left") | Speaks to you before the work, then says how much there is (Arogya's "Namaste, Sunita · 4 people need you today"). Small enough that today's question is still on the first screen. |
+| ~~Header: date, greeting~~ | (removed) | Home | Removed (owner, Oct 2026: "remove the Namaste"): today's question is the first thing on Home. |
 | Titled block | `al-block`, `__title`, `__aside` | Home, Polls, Topic, Your polls | Sentence-case title with a quiet count ("3 polls") or link ("All polls →") on the right. |
 | List card + rows | `al-listcard`, `al-row`, `__disc`, `__main`, `__title`, `__meta`, `__when`, `__chevron` | Poll lists (was a tile grid), My votes, Your polls | One row per poll: a tinted disc with the topic icon, the question, the choices as a quiet line, the count or "New" / "Voted ✓" on the right, a chevron. Easier to scan than tiles; long questions wrap instead of being cut. |
 | "Up next" card | `al-hero`, `__name`, `__fact`, `__action` | Poll of the day (Polls page; was the dark banner) | One soft card, a chip, the big line, one full-width action. |
@@ -1268,6 +1268,8 @@ Clean-up round (owner, Oct 2026: "clean the codebase, remove dead and unnecessar
 - **Topic pages: the general line "Vote in one tap, see where you stand…"** (the same on every topic; the icon and title
   say what the page is). It stays as the page's description for search engines.
 - **Share sheet: the small "Share your ink" label** above "Tell friends you voted" (it repeated the button you tapped).
+- **Home: the "Namaste" greeting** and **Create: the "Takes 30 seconds" chip** (owner, Oct 2026: "remove the Namaste
+  and takes 30 seconds"). Home now opens on today's question; Create opens on its title.
 - **Manage, before any votes: the "Result picture" block** that only said "not yet". It appears once there is a
   picture, or, while results are hidden, to say how to open them.
 - **Pick several / Rank notes no longer mention bars** (the bars were removed): "Each % = voters who ticked it…",

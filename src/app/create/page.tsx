@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ChevronRight, Timer } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { CATEGORIES } from '@/lib/categories';
 import CreateForm, { type AskAgain } from '@/components/CreateForm';
 import { ownPoll } from '@/lib/maker';
@@ -50,7 +50,6 @@ export default async function CreatePage({ searchParams }: { searchParams: Promi
     <div className="page create-page">
       <Step e="create_open" />
       <header className="page-head">
-        <p className="eyebrow"><Timer size={13} strokeWidth={2} aria-hidden />{t.takes30}</p>
         <h1 className="display">{t.startDuel}</h1>
         <p className="lead">{t.createLead}</p>
       </header>
