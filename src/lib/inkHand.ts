@@ -6,7 +6,7 @@ import { PALETTE } from './palette';
 // One drawing for the app, the vote moment and the share images.
 // The ink is one path (class "hand-ink", length 1), so the vote moment can draw it on (see .cast-hand in election.css).
 // The drawing has no ids today; the prefix p is kept so ids can be added safely later.
-export const HAND_RATIO = 260 / 200;
+const HAND_RATIO = 260 / 200;
 
 export function handSvg(p = 'h', w = 200): string {
   const h = Math.round(w * HAND_RATIO);

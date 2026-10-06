@@ -14,7 +14,7 @@ const indicFirst = (label: string, n: number) => {
 
 // Only letters and digits count, so "🍕 Pizza" is "P" and a flag never leaves half a character behind.
 // A choice that is only an emoji ("🔥") shows that whole emoji.
-export const initialsOf = (label: string) =>
+const initialsOf = (label: string) =>
   (INDIC.test(label) && indicFirst(label, 1)) ||
   label
     .split(/\s+/)

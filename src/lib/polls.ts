@@ -14,7 +14,7 @@ import { INDIA_OFFSET, INDIA_TZ } from './time';
 
 const { polls, options, votes, reactions, reports, photos, votePicks } = schema;
 
-export const REACTIONS = ['🔥', '😂', '😮', '👏', '🤔'] as const;
+const REACTIONS = ['🔥', '😂', '😮', '👏', '🤔'] as const;
 const pollId = customAlphabet('23456789abcdefghijkmnpqrstuvwxyz', 8);
 const shareCodeId = customAlphabet('23456789abcdefghijkmnpqrstuvwxyz', 10);
 
@@ -1098,7 +1098,7 @@ export async function undoVote(db: Db, id: string, voterId: string): Promise<boo
 
 // ---- Reports and the owner's review (docs/DESIGN.md, "Safety") ----
 
-export const REPORT_REASONS = ['hate', 'false', 'private', 'me', 'spam', 'other'] as const;
+const REPORT_REASONS = ['hate', 'false', 'private', 'me', 'spam', 'other'] as const;
 /** Distinct reports that take an unreviewed duel down at once, until the owner looks (the law asks for removal within hours). */
 export const AUTO_HIDE_REPORTS = 3;
 /** Reports about a photo ("private or sexual photo", "this is me"): the law gives 2 hours for intimate images, so a poll

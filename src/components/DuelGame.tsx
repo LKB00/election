@@ -319,7 +319,6 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
   const seenAtOnce = poll?.hideUntilVoted && !poll?.sealedUntil && (poll?.calledIt || poll?.kind === 'dates' || (!!poll?.groupSize && !poll?.groupWaiting));
   // A sealed poll or a group poll still waiting: the bar keeps Share and Next even without numbers.
   const barOn = revealed || (!casting && (sealed || !!poll?.groupWaiting) && (voted || !!poll?.closed));
-  const votedCount = deck.filter((p) => p.myVote !== null).length;
   // Counting day: when results open in front of you, they are counted in 3 rounds (real vote order), like TV on counting day.
   const [countRound, setCountRound] = useState<number | null>(null);
   const wasRevealed = useRef<{ id: string; on: boolean } | null>(null);
@@ -764,7 +763,6 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
     // spoiler-free line to share (which side, never which choice). More polls only if you ask.
     const rows = deck.filter((p) => setIds.has(p.id)).map((p) => ({ p, side: daySide(p) }));
     const grid = rows.map((r) => sideEmoji(r.side)).join('');
-    const text = `${t.dayShareText(grid)} ${origin}/`;
     const keepGoing = () => {
       const fresh = more.filter((m) => !deck.some((d) => d.id === m.id) && isOpen(m));
       if (!fresh.length) return;
@@ -1330,12 +1328,10 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
         {barOn && !counting && (
           <>
             {/* Only the two next steps (owner, Oct 2026): what the bar used to say is in the card under the result. */}
-            <p>
-              {/* Sealed: the note under the cards already says why there are no numbers; the bar keeps Undo, Share and Next. */}
-              {sealed && !revealed && undoUntil > 0 && !poll.closed && voted && (
-                <button type="button" className="link-like duel-undo small muted" onClick={undo}>{t.undoVote}</button>
-              )}
-            </p>
+            {/* Sealed: the note under the cards already says why there are no numbers; the bar keeps Undo, Share and Next. */}
+            {sealed && !revealed && undoUntil > 0 && !poll.closed && voted && (
+              <p><button type="button" className="link-like duel-undo small muted" onClick={undo}>{t.undoVote}</button></p>
+            )}
             <span className="row duel-actions">
               {/* A group poll still waiting: "Remind the group" (above) is the one share action. */}
               {!poll.groupWaiting && <button type="button" className="btn btn-ghost" onClick={() => (mine && poll.myShareCode ? setSharing(true) : share())}>

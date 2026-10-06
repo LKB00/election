@@ -177,7 +177,6 @@ export default function ShareSheet({ poll, pick, shareCode, onClose }: { poll: P
     <div className="sheet-backdrop" onClick={onClose}>
       <section ref={sheetRef} className="sheet" role="dialog" aria-modal="true" aria-label={t.showInk} onClick={(e) => e.stopPropagation()}>
         <button type="button" className="icon-btn sheet-close" onClick={onClose} aria-label={t.close}><X size={16} strokeWidth={1.75} aria-hidden /></button>
-        <p className="label">{t.showInk}</p>
         <h2>{t.tellFriends}</h2>
 
         {/* What friends get: the picture (with your name on it if you like) and the message, both editable here. */}

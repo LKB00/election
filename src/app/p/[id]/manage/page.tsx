@@ -96,15 +96,16 @@ export default async function ManagePage({ params, searchParams }: { params: Pro
         {!v.closed && <ShareLink id={v.id} title={v.title} />}
       </section>
 
-      {/* "The result is in" only once there is a result to share: not with 0 votes, not while results are hidden. */}
-      <section className="al-block" aria-label={v.resultsPublic && v.votes > 0 ? t.resultsCard : t.resultsCardSoon}>
-        <h2 className="al-block__title">{v.resultsPublic && v.votes > 0 ? t.resultsCard : t.resultsCardSoon}</h2>
-        {v.resultsPublic && v.votes > 0 ? <ResultsCard id={v.id} votes={v.votes + v.options.length} main={v.closed} /> : v.resultsPublic ? (
-          <p className="small muted">{t.resultsCardNoVotes}</p>
-        ) : (
-          <p className="small muted">{t.resultsCardLater} {!v.closed && <>{t.endToPicture} <Link href={`/p/${v.id}`} className="text-link">{t.voteToSee}</Link></>}</p>
-        )}
-      </section>
+      {/* "The result is in" only once there is a result to share. Before the first vote there is nothing to say (the
+          block used to say only "not yet"); while results are hidden it says how to open them. */}
+      {(v.votes > 0 || !v.resultsPublic) && (
+        <section className="al-block" aria-label={v.resultsPublic ? t.resultsCard : t.resultsCardSoon}>
+          <h2 className="al-block__title">{v.resultsPublic ? t.resultsCard : t.resultsCardSoon}</h2>
+          {v.resultsPublic ? <ResultsCard id={v.id} votes={v.votes + v.options.length} main={v.closed} /> : (
+            <p className="small muted">{t.resultsCardLater} {!v.closed && <>{t.endToPicture} <Link href={`/p/${v.id}`} className="text-link">{t.voteToSee}</Link></>}</p>
+          )}
+        </section>
+      )}
 
       {v.pending.length > 0 && (
         <section className="al-block" aria-label={t.suggested}>
