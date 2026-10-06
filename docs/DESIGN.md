@@ -1199,11 +1199,10 @@ Step counter: "Guess the crowd" answered / skipped (not counted when yours was t
   surprise.
 
 **Visitor count on Home** (owner, Oct 2026: "show visitor count on the website", then "three avatars, then a plus, then
-the number, somewhere at the bottom"): a small white card at the bottom of Home, before the rules reminder (on an empty
+the number, somewhere at the bottom", then "make it subtle"): one quiet line at the bottom of Home, no card, before the rules reminder (on an empty
 site, under the empty state): three overlapping faces (the first three profile faces, on yellow, indigo and pink soft
 grounds; decoration only, never real visitors), a soft "+" circle once there are more than three, then the number in bold
-and "people have visited"; "M have voted" under it once 25 people have voted. Not ink (ink is the one main action) and not
-tappable. Shown from the first visitor (`VISITORS_SHOW_MIN`); "1 person has visited" in the singular. The faces pop in one
-after another (off for less motion). Each phone is counted once: `FirstVisit` (in the layout, so a first visit from a
+and "people have visited"; "· M have voted" after it once 25 people have voted. Small (24px faces, 13px muted text). Not ink (ink is the one main action) and not
+tappable. Shown from the first visitor (`VISITORS_SHOW_MIN`); "1 person has visited" in the singular. Each phone is counted once: `FirstVisit` (in the layout, so a first visit from a
 shared poll counts too) remembers `election-visited` and sends the `visitor` step; a phone that cannot remember is not
 counted. The total is every day's `visitor` steps added up, never shown smaller than the voter count. P3.

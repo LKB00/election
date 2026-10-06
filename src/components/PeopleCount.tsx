@@ -13,7 +13,7 @@ export default function PeopleCount({ seen, voted, fmt, t }: { seen: number; vot
     <section className="people-count">
       <span className="people-faces" aria-hidden>
         {faces.map((f) => <span key={f} className="people-face">{f}</span>)}
-        {seen > FACES.length && <span className="people-face people-more"><Plus size={16} strokeWidth={2.5} /></span>}
+        {seen > FACES.length && <span className="people-face people-more"><Plus size={12} strokeWidth={2.5} /></span>}
       </span>
       <p className="people-text">
         <span><strong className="people-n">{fmt(seen)}</strong> {t.peopleVisited(seen === 1)}</span>
