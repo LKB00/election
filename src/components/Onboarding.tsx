@@ -27,6 +27,8 @@ export default function Onboarding() {
   const lang = useLang();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  // Opened under the splash: it must never fade in by itself (see the comment in the effect).
+  const [under, setUnder] = useState(false);
   const [n, setN] = useState(0);
   useEffect(() => {
     try {
@@ -34,6 +36,10 @@ export default function Onboarding() {
     } catch {
       return;
     }
+    // Under the splash, the cards are already fully there when it lifts, so they get no fade-in of their own. (The old
+    // rule switched the fade off only while the splash was on; when the splash ended the fade switched back on and
+    // restarted from invisible, so Home showed through for a moment: the owner's "it shows the home page in between".)
+    setUnder(document.documentElement.classList.contains('splash-on'));
     setOpen(true);
   }, []);
   const close = () => {
@@ -43,10 +49,10 @@ export default function Onboarding() {
     setOpen(false);
   };
   if (!open) return null;
-  return <Cards n={n} setN={setN} close={close} t={t} lang={lang} onLang={(l) => { setLangCookie(l); router.refresh(); }} />;
+  return <Cards under={under} n={n} setN={setN} close={close} t={t} lang={lang} onLang={(l) => { setLangCookie(l); router.refresh(); }} />;
 }
 
-function Cards({ n, setN, close, t, lang, onLang }: { n: number; setN: (n: number) => void; close: () => void; t: ReturnType<typeof useT>; lang: Lang; onLang: (l: Lang) => void }) {
+function Cards({ under, n, setN, close, t, lang, onLang }: { under: boolean; n: number; setN: (n: number) => void; close: () => void; t: ReturnType<typeof useT>; lang: Lang; onLang: (l: Lang) => void }) {
   useOverlay(close, { back: true });
   const slides = t.obSlides;
   const last = n === slides.length - 1;
@@ -86,7 +92,7 @@ function Cards({ n, setN, close, t, lang, onLang }: { n: number; setN: (n: numbe
     return () => window.removeEventListener('keydown', onKey);
   });
   return (
-    <div className="onb" role="dialog" aria-modal="true" aria-label={t.obLabel}>
+    <div className={'onb' + (under ? ' is-under' : '')} role="dialog" aria-modal="true" aria-label={t.obLabel}>
       <button type="button" className="onb-skip" onClick={close}>{t.obSkip} <X size={16} strokeWidth={2} aria-hidden /></button>
       <div className="onb-track" style={{ '--dx': dir } as React.CSSProperties} onPointerDown={onDown} onPointerUp={onUp} onPointerCancel={() => (start.current = null)}>
         {slides.map(([title, line], k) => (

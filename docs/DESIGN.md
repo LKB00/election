@@ -418,7 +418,7 @@ Small touches, each tied to a real election moment; nothing from games (no point
 | Numbers count up to the new value (percent and votes) | Duel results | P2 | You see the change happen, like a counting-day board. |
 | Exit poll: one card per choice with its face, letters or emoji (5+ choices: one row each) | Duel, after voting | P1 at that moment | You recognise a face before you read a name; big thumb targets. |
 | "· 3 new votes just now" (green, goes away after 5 s) | Duel, polling line | P3 | The poll feels alive; a reason to stay. |
-| "Up next: <question>" above Share / Next | Duel result bar | P3 | You know what Next brings, so pressing it is an easy yes. |
+| ~~"Up next: <question>" above Share / Next~~ | Duel result bar | removed | Oct 2026: the bar holds only Share and Next (see "Poll page after voting"). |
 | Idle nudge: after 5 s with no touch or scroll, the blue Vote keys rise gently 3 times | Duel, before voting | P3 | Shows first-time visitors what to press; stops at the first touch. |
 | Small bar under each duel: the leader's share; lime when your pick leads | My votes | P2 | "Where does my pick stand?" at a glance; lime = you. |
 
@@ -748,7 +748,7 @@ A question about something that has not happened yet (a match, a film's Friday, 
 Rule: pictures alongside words, never instead of them (people remember pictures better, but icons alone are misread). Every picture has a job:
 | Where | Was | Now | Why (research) |
 |---|---|---|---|
-| Poll result (pick-one, 2+ votes) | "You're with the 85%" as text | **People grid**: 100 dots, the ones who picked your choice in yellow (yellow = you), your own dot ringed in ink, and a big number: "**85** of every 100 picked Rain, like you." | Icon arrays ("85 of 100") are read more accurately than percentages, most of all by people who find numbers hard (Galesic, Garcia-Retamero); words say it too (colour never alone) |
+| Poll result (pick-one, 2+ votes) — **removed Oct 2026**, it repeated the percentage | "You're with the 85%" as text | ~~People grid~~: 100 dots, the ones who picked your choice in yellow (yellow = you), your own dot ringed in ink, and a big number: "**85** of every 100 picked Rain, like you." | Icon arrays ("85 of 100") are read more accurately than percentages, most of all by people who find numbers hard (Galesic, Garcia-Retamero); words say it too (colour never alone) |
 | Empty My votes, search with no results, page not found | one line of text | a small drawn picture (ballot box with a slip, slips with a magnifier, a box with a "?") + one line + one action | Simple drawn pictures help first-time and low-literacy users more than text (Microsoft Research India); empty states are the first impression |
 | Topic chips (Polls page) | words only | the topic's icon in its colour disc + the word | icon + label: recognised first, read to confirm |
 | Topic page | title only | big topic picture above the title | says what the page is before you read |
@@ -1214,3 +1214,18 @@ section"): politics polls and polls with photos stay out of public lists until t
 link works at once). The panel after posting now says so in one soft line with a clock: "Works by link now. It shows in
 the Polls list after a quick check." (`heldForReview` from `getPoll`, same rule as `listPolls`). P2, under the share
 buttons' note; not shown for everyday polls.
+
+## Poll page after voting (owner, Oct 2026: "too much information, no hierarchy, overwhelming")
+
+The voted page said the same thing three times (the bars, a 100-dot grid, the floating bar) and stacked eleven blocks.
+Now, top to bottom:
+1. **P1 · the result:** the question, the bars with "Your pick".
+2. **P1 · one card under the result** (`duel-verdict`): the inked finger, then where you stand, once: your guess
+   (right/wrong), your friend's pick (agree/disagree), "You're with the 82%…", friends from your link, and a small
+   "Vote cast. Your finger is inked." line with Undo. This is everything the floating bar used to say.
+3. **P1 · the pinned bar:** only **Share** and **Next** (no sentence, no "Up next").
+4. **P2:** "Have a question of your own?", my group vs everyone, why you picked it, reactions, the result alert.
+5. **P3 · "More about this poll"** (one folded row, `duel-more`): the trend / last 24 hours, last time, everyone's
+   reasons, "Missing a choice? Suggest one", Report.
+Removed: the 100-dot people grid (it repeated the percentage), "Up next: …" in the bar, and the "Someone wants your
+pick" label once you have voted. Before voting nothing changed: question, choices, the secret-vote line, Report.
