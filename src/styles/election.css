@@ -1142,6 +1142,8 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
    six"). Each motion has a job; short (under a third of a second) except the two moments; at most one big moment per
    screen; nothing moves for people who ask their phone to reduce motion. docs/DESIGN.md, "Motion round". ---- */
 .al-block__live { align-self: center; margin-right: -4px; }
+/* A line of links ("Rules · Privacy and reports") is a row: gb's .block (a column) stacked them far apart on phones. */
+.block.row { flex-direction: row; align-items: center; gap: 4px 20px; }
 /* 1. "Your poll is live": with reduced motion only the end shows (slip inside, box sealed). */
 .duel-created .spot { align-self: center; margin: -4px 0 -8px; }
 .spot-drop { opacity: 0; }
