@@ -4,6 +4,7 @@ import { getPoll, guessLeader } from '@/lib/polls';
 import { clientIp, rateLimit } from '@/lib/rate-limit';
 import { guessSchema } from '@/lib/validation';
 import { readVoterId } from '@/lib/voter';
+import { countEvent } from '@/lib/events';
 
 // "Who's winning right now?" One answer per vote (or "skip"), checked on the server.
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -20,5 +21,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (result === 'bad_option') return NextResponse.json({ error: 'That choice is not in this poll.' }, { status: 400 });
   if (result !== 'ok') return NextResponse.json({ error: 'You already answered this one.' }, { status: 409 });
   const via = new URL(req.url).searchParams.get('f');
-  return NextResponse.json({ poll: await getPoll(db, id, voterId, via) });
+  const poll = await getPoll(db, id, voterId, via);
+  // The owner's step counter: was "Guess the crowd" answered or skipped? Not counted when yours was the only vote
+  // (the page skips the question for you then; nobody chose anything).
+  if (poll && poll.participants >= 2) await countEvent(db, parsed.data.choice === 'skip' ? 'guess_skip' : 'guess');
+  return NextResponse.json({ poll });
 }

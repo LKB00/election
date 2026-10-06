@@ -27,6 +27,8 @@ Where: Vercel → your project **election** → Settings → Environment Variabl
 
 - [ ] **Read your step counter once a week** (bottom of your admin page, "Steps people take"). The five lines at the top say where people drop off: if few people who open a friend's link vote, the poll page needs work; if few voters open Share, sharing needs work; if few who open Start a poll make one, Create is too hard. Tell Claude the numbers and it will suggest the fix.
 
+- [ ] **Test with 10 real people** using `docs/USER_TEST.md` (15 minutes each, no helping). Then send Claude the top 3 places people got stuck.
+
 ## 2. Daily habits (5–10 minutes a day)
 
 - [ ] **Pick Today's question** on `/admin?key=…` (it is the first poll on Home and what `/today` opens). Morning is best: most Indians check their phone within 15 minutes of waking. Leave "Final count at 9 pm" ticked: voting on it closes at 9 pm and people come back in the evening for the result. In the evening, post "here's how it ended" in your Channel.

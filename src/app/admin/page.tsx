@@ -59,6 +59,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
         <p className="small muted">{t.stepsLead}</p>
         <ul className="small">
           {t.stepRates(pct(week.vote, week.poll_view), pct(week.shared_vote, week.shared_open), pct(week.share_open, week.vote), pct(week.poll_created, week.create_open), pct(week.voter_created, week.poll_created)).map((line) => <li key={line}><strong>{line}</strong></li>)}
+          <li><strong>{t.stepGuess(pct(week.guess, week.guess + week.guess_skip))}</strong></li>
         </ul>
         <table className="admin-steps__table small">
           <thead><tr><th scope="col" /><th scope="col">{t.stepsToday}</th><th scope="col">{t.stepsWeek}</th></tr></thead>

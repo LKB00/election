@@ -140,6 +140,8 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   const [open, setOpen] = useState<'ends' | 'topic' | 'details' | 'group' | null>(null);
   // The less-used settings (Election mode, votes can change, end time, details) wait behind "More options".
   const [showMore, setShowMore] = useState(false);
+  // All settings sit behind one "Settings" row until opened (an "Ask again" poll opens with them shown).
+  const [settingsOpen, setSettingsOpen] = useState(!!again);
   // The poll-type row opens a list of the five types, each with one line on what it does.
   const [typeOpen, setTypeOpen] = useState(false);
   // "See how it looks": the poll as a voter first meets it, before posting.
@@ -213,6 +215,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
     else if (errs.end) {
       // The end time sits under "More options": open it so the message is seen.
       setOpen('ends');
+      setSettingsOpen(true);
       setTimeout(() => document.getElementById('end')?.focus(), 0);
     }
     return !errs.title && !errs.choices && !errs.end;
@@ -291,6 +294,8 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
     { k: 'dates', Icon: CalendarDays, name: t.formatDates, desc: t.typeDesc.dates, pick: () => pickKind('dates') },
   ];
   const current = TYPES.find((x) => x.k === (calledIt ? 'called' : kind)) ?? TYPES[0];
+  // What the folded Settings row says: the poll type and the topic (the two people most often look for).
+  const settingsSummary = `${current.name} · ${t.categories[category] ?? category}`;
 
   // The poll as voters will meet it: drawn in the "See how it looks" sheet, and live beside the form on a computer.
   const endsText = endsAt ? endsLabel : isGroup ? new Date(Date.now() + GROUP_DEFAULT_DAYS * 86_400_000).toLocaleString(dateLocale(lang), { day: 'numeric', month: monthStyle(lang), hour: 'numeric', minute: '2-digit' }) : null;
@@ -450,8 +455,14 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
         {fieldError.choices && <p className="field-error" role="alert">{fieldError.choices}</p>}
       </section>
 
-      {/* 3. Settings: one list of rows. Each says its current value; a row opens its own box underneath. */}
+      {/* 3. Settings, folded into one row until opened (owner, Oct 2026, from the product feedback: a first poll is a
+          question, its choices and Start poll). The row says what is set now; open, it is the full list of rows. */}
       <section className="create-block">
+        {!settingsOpen ? (
+          <ul className="al-listcard create-settings">
+            <li><Row icon={SlidersHorizontal} name={t.settingsLabel} value={settingsSummary} open={false} onClick={() => setSettingsOpen(true)} /></li>
+          </ul>
+        ) : (<>
         <p className="create-label">{t.settingsLabel}</p>
         <ul className="al-listcard create-settings">
           <li>
@@ -530,6 +541,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
             <li><Row icon={SlidersHorizontal} name={t.moreOptions} open={false} onClick={() => setShowMore(true)} /></li>
           )}
         </ul>
+        </>)}
       </section>
 
       {photos.some(Boolean) && <p className="small muted">{t.photosHeld}</p>}
