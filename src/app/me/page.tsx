@@ -59,9 +59,8 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
             </span>
           </form>
         )}
-        {stats.votes > 0 && (
-          <p className="lead">{t.record(stats.votes, stats.friends)}</p>
-        )}
+        {/* The list below already shows how many polls you voted in; only what it cannot show: friends from your link. */}
+        {stats.friends > 0 && <p className="lead">{t.friendsFromLink(stats.friends)}</p>}
       </header>
 
       {/* P2: your month, described (3+ votes this month). */}

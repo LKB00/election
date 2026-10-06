@@ -137,7 +137,7 @@ no surprise, always one obvious next step, and mistakes can be undone.
 | Case | What happens | Why |
 |---|---|---|
 | Friend sent it, not voted | Label "Someone wants your pick", that duel first. | The friend is the reason you came. |
-| You already voted | Label "You already voted here", your result shows. | No confusing second vote attempt. |
+| You already voted | Your pick and result show (no label: they already say it). | No confusing second vote attempt. |
 | The duel has ended | Label "This duel has ended", the final result, "X won." or "It ended in a tie." Button "Share result". | Before, an ended link silently opened a *different* duel. |
 | Bad link | "Duel not found" + "Go to today's duel". | Never a dead end. |
 
@@ -679,7 +679,7 @@ Not just its colours: Arogya Line's way of building screens. Its principles (fro
 | Arogya principle | What it means in Election |
 |---|---|
 | One next step | One main action per screen, at the thumb (already our rule: one ink button). |
-| Colour never alone | Every status says a word and shows an icon (chips: "Poll of the day", "You already voted here"). |
+| Colour never alone | Every status says a word and shows an icon (chips: "Poll of the day", "A friend voted. Your turn"). |
 | Every element earns its place | If it repeats what is already on screen, it goes (the My votes bar went: it repeated the % next to it). |
 | End on a high | Already ours (peak–end): the end of today's set, the "your poll is live" moment. |
 
@@ -1139,7 +1139,7 @@ Phones unchanged. On a computer (≥1024px):
 ## Your votes on computers (owner, Oct 2026: "make the Your votes page better on desktop too")
 
 Phones unchanged. On a computer (≥1024px): P1 your votes (where each of your picks stands) as the main column on the
-left; a 360px column on the right with your record ("You voted in 6 polls."), your month card, "Polls you made", Keep
+left; a 360px column on the right with "N friends voted from your link" (when any), your month card, "Polls you made", Keep
 your votes, Start fresh and the Rules / Privacy links. Same order for screen readers as on a phone (grid areas, not
 moved markup). The list of votes comes in row by row like the other poll lists.
 
@@ -1258,6 +1258,22 @@ pick" label once you have voted. Before voting nothing changed: question, choice
 - **Your votes: "Saved on this phone only…"** (the "Keep your votes" block right below explains it) **and "Polls you
   made →"** (that is under You).
 Earlier in this round: the 100-dot people grid, "Up next: …" in the bar, the "Someone wants your pick" label after voting.
+
+Clean-up round (owner, Oct 2026: "clean the codebase, remove dead and unnecessary elements & UI"):
+- **Poll page: the "This poll has ended" and "You already voted here" chips.** "Polling closed" and the final result
+  already say it ended; your pick and the inked finger already say you voted. The chip stays only where it is the only
+  reason you are here: "A friend voted. Your turn" and "Someone wants your pick".
+- **Your votes: "You voted in N polls."** The list right under it shows that; only "N friends voted from your link"
+  stays (when there are any), the one thing the list cannot show.
+- **Topic pages: the general line "Vote in one tap, see where you stand…"** (the same on every topic; the icon and title
+  say what the page is). It stays as the page's description for search engines.
+- **Share sheet: the small "Share your ink" label** above "Tell friends you voted" (it repeated the button you tapped).
+- **Manage, before any votes: the "Result picture" block** that only said "not yet". It appears once there is a
+  picture, or, while results are hidden, to say how to open them.
+- **Pick several / Rank notes no longer mention bars** (the bars were removed): "Each % = voters who ticked it…",
+  "Higher places count more: 100% means everyone put it first."
+- Code: unused words (all three languages), 38 unused style rules, the unused Inter font, an empty line holder in the
+  Share/Next row, and leftovers; the share pictures now ship their font with every picture route.
 
 ## Full audit (owner, Oct 2026: "check each and every screen, use case and edge case")
 

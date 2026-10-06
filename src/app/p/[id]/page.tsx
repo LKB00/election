@@ -1,4 +1,4 @@
-import { ArrowRight, Check, ChevronRight, Clock, SlidersHorizontal, Users, Vote } from 'lucide-react';
+import { ArrowRight, ChevronRight, SlidersHorizontal, Users, Vote } from 'lucide-react';
 import Link from 'next/link';
 import { currentUser } from '@/lib/auth';
 import { ownPoll } from '@/lib/maker';
@@ -73,19 +73,16 @@ export default async function DuelPage({ params, searchParams }: Props) {
     /* no referer: came from outside (WhatsApp, a typed link) */
   }
   const deck = [poll, ...rest.filter((p) => p.id !== poll.id)];
-  // The label says why you are here: you made it, a friend dared you, you already voted, or it is over.
-  // Just created: no label, the panel below already says it.
-  const label = justCreated
+  // The label says why you are here, only when nothing else on the screen does: a friend dared you, or someone asked.
+  // No label when just created (the panel says it), ended ("Polling closed" and the final result say it) or already
+  // voted (your pick and the inked finger say it).
+  const label = justCreated || poll.closed || poll.myVote
     ? null
-    : poll.closed
-      ? t.labelEnded
-      : poll.myVote
-        ? t.labelVoted
-        : poll.friend.known
-          ? t.labelDared
-          : fromInside || poll.maker || mine
-            ? null
-            : t.labelAsk;
+    : poll.friend.known
+      ? t.labelDared
+      : fromInside || poll.maker || mine
+        ? null
+        : t.labelAsk;
   // (Friend: the label says why you are here; the line in the game holds the hook, "their pick is sealed".)
   // For search engines (structured data): the question and its choices. Vote numbers only when anyone may see them
   // (never when results wait until after voting: they would leak to everyone reading the page source).
@@ -105,9 +102,9 @@ export default async function DuelPage({ params, searchParams }: Props) {
       <div className="poll-main">
       <PollIntro pollId={poll.id}>
       {label && (
-        <p className={'eyebrow' + (!poll.myVote && !poll.closed ? ' poll-ask' : '')}>
+        <p className="eyebrow poll-ask">
           {/* Arogya's chip: an icon with the word. */}
-          {poll.closed ? <Clock size={13} strokeWidth={2} aria-hidden /> : poll.myVote ? <Check size={13} strokeWidth={2.25} aria-hidden /> : poll.friend.known ? <Users size={13} strokeWidth={2} aria-hidden /> : <Vote size={13} strokeWidth={2} aria-hidden />}
+          {poll.friend.known ? <Users size={13} strokeWidth={2} aria-hidden /> : <Vote size={13} strokeWidth={2} aria-hidden />}
           {label}
         </p>
       )}

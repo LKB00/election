@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import Spot from '@/components/Spot';
 import { topicIcon, topicTone } from '@/lib/topicIcons';
 import { Search } from 'lucide-react';
 import EmptyState from '@/components/EmptyState';
