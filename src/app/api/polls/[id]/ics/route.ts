@@ -17,7 +17,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const body = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Election//Result day//EN',
+    'PRODID:-//Chunav//Result day//EN',
     'CALSCALE:GREGORIAN',
     'BEGIN:VEVENT',
     `UID:${poll.id}@election`,

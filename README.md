@@ -1,4 +1,6 @@
-# Election
+# Chunav
+
+(Formerly "Election".)
 
 Make a fun poll between two or more choices (Virat · Rohit · Dhoni, pizza · biryani), share the link, and watch the votes.
 **Just for fun. Not official or legal elections.**

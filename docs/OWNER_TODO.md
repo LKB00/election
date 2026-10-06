@@ -50,7 +50,8 @@ Where: Vercel → your project **election** → Settings → Environment Variabl
 ## 5. Decisions waiting for you
 
 - [x] **"Reset this phone" removed** for the public launch (Oct 2026).
-- [ ] **Name and domain:** the research suggested a broader name than "Election" one day. You chose to keep it for now; revisit when you are ready.
+- [x] **Name:** the site is now called **Chunav** (Oct 2026).
+- [ ] **Domain (optional):** the address is still `election-three-ruby.vercel.app`. To match the name, you can buy a domain (for example a `chunav…` `.in` or `.app` name) and add it in Vercel → Settings → Domains, then set `NEXT_PUBLIC_SITE_URL`. Ask Claude to help when you are ready; old links keep working.
 - [ ] **Watch one number weekly:** "returning voters" at the bottom of `/admin` (people who voted on 2 or more days this week). Aim for 20–25% or more of the week's voters.
 
 ## 6. Features waiting (from the research, in order)
