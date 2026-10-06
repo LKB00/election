@@ -1,7 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { AlignLeft, CalendarDays, Check, ChevronDown, CircleDot, Clock, Eye, EyeOff, ImagePlus, Landmark, Lightbulb, ListChecks, ListOrdered, MessageSquarePlus, PenLine, Flame, Repeat, Shuffle, SlidersHorizontal, Smile, Sparkles, Tag, UserRound, Users, WandSparkles, X } from 'lucide-react';
+import { AlignLeft, CalendarDays, Check, ChevronDown, CircleDot, Clock, Eye, EyeOff, ImagePlus, Landmark, Lightbulb, ListChecks, ListOrdered, MessageSquarePlus, PenLine, Flame, Repeat, Shuffle, SlidersHorizontal, Smile, Sparkles, Tag, Timer, UserRound, Users, WandSparkles, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { CATEGORIES } from '@/lib/categories';
 import { useLang, useT } from '@/lib/lang';
@@ -14,7 +14,7 @@ import type { Picture } from './PicturePicker';
 import PreviewCard, { previewRules, type PreviewPoll } from './PreviewCard';
 import { dateLocale, monthStyle } from '@/lib/time';
 import { sameKey } from '@/lib/same';
-import { GROUP_DEFAULT_DAYS, MAX_CHOICE, MAX_CHOICES, MAX_DETAILS, MAX_GROUP, MAX_TITLE, MIN_CHOICES, MIN_TITLE } from '@/lib/limits';
+import { REVEAL_IN, GROUP_DEFAULT_DAYS, MAX_CHOICE, MAX_CHOICES, MAX_DETAILS, MAX_GROUP, MAX_TITLE, MIN_CHOICES, MIN_TITLE } from '@/lib/limits';
 // Loaded only when opened (less code for cheap phones to download before the form works).
 /** "Hot take": the faces for Agree / Depends / Disagree (the words come from i18n, in the maker's language). */
 const HOT_EMOJIS = ['🔥', '🤔', '🙅'];
@@ -94,6 +94,8 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   const emojiAt = (i: number) => emojis[i] ?? '';
   const [endsAt, setEndsAt] = useState('');
   const [hideUntilVoted, setHide] = useState(true); // on by default: guess first, then see (the guess game)
+  // "Show results": right after voting (default), or at a set time for everyone at once (a reason to come back).
+  const [revealIn, setRevealIn] = useState<(typeof REVEAL_IN)[number]>('now');
   const [allowChange, setChange] = useState(false);
   // A group poll: results open for everyone once this many have voted (typed as text; empty = not a group poll).
   const [groupSize, setGroupSize] = useState('');
@@ -140,7 +142,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   // Errors show under the field they belong to, and focus moves there.
   const [fieldError, setFieldError] = useState<{ title?: string; choices?: string; end?: string; group?: string }>({});
   // P3 settings are one line of chips; each opens its small box underneath, one at a time.
-  const [open, setOpen] = useState<'ends' | 'topic' | 'details' | 'group' | null>(null);
+  const [open, setOpen] = useState<'ends' | 'topic' | 'details' | 'group' | 'reveal' | null>(null);
   // The less-used settings (Election mode, votes can change, end time, details) wait behind "More options".
   const [showMore, setShowMore] = useState(false);
   // "Hot take" chosen in the formats (a pick-one poll with Agree / Depends / Disagree ready).
@@ -266,6 +268,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
         showMaker,
         previousId: again?.id,
         hideUntilVoted,
+        revealIn: isGroup || calledIt ? 'now' : revealIn,
         allowChange,
         electionMode,
         groupSize: isGroup ? groupN : undefined,
@@ -292,7 +295,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   }
 
   const TONES = ['input', 'feedback', 'control', 'agents', 'output', 'trust'];
-  const toggleOpen = (k: 'ends' | 'topic' | 'details' | 'group') => setOpen((o) => (o === k ? null : k));
+  const toggleOpen = (k: 'ends' | 'topic' | 'details' | 'group' | 'reveal') => setOpen((o) => (o === k ? null : k));
   const endsLabel = endsAt ? new Date(endsAt).toLocaleString(dateLocale(lang), { day: 'numeric', month: monthStyle(lang), hour: 'numeric', minute: '2-digit' }) : t.setEnds;
 
   // Create, top to bottom (docs/DESIGN.md, "Create, tidied"): the question in a real box, the choices, then every
@@ -503,6 +506,24 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
             )}
           </li>
           <li><Row icon={EyeOff} name={t.setHidden} note={t.hideResultsNote} on={hideUntilVoted} onClick={() => setHide((v) => !v)} /></li>
+          {/* Show results at a set time (not for group polls or "Called it": those open by themselves). */}
+          {!isGroup && !calledIt && (
+            <li>
+              <Row icon={Timer} name={t.setReveal} value={t.revealNames[revealIn]} open={open === 'reveal'} onClick={() => toggleOpen('reveal')} />
+              {open === 'reveal' && (
+                <div className="create-panel">
+                  <div className="row wrap" role="radiogroup" aria-label={t.setReveal}>
+                    {REVEAL_IN.map((k) => (
+                      <button key={k} type="button" role="radio" aria-checked={revealIn === k} className={'chip' + (revealIn === k ? ' chip-on' : '')} onClick={(e) => steady(e.currentTarget, () => setRevealIn(k))}>
+                        {t.revealNames[k]}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="small muted">{t.revealNote}</p>
+                </div>
+              )}
+            </li>
+          )}
           <li><Row icon={UserRound} name={t.setShowMe} note={t.setShowMeNote} on={showMaker} onClick={() => setShowMaker((v) => !v)} /></li>
           {kind === 'choice' && !calledIt && <li><Row icon={PenLine} name={t.setOther} note={t.setOtherNote} on={otherOn} onClick={() => setOtherSet(!otherOn)} /></li>}
           <li>

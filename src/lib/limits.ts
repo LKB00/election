@@ -46,3 +46,7 @@ export const ERR = {
   manyChoices: `You can have up to ${MAX_CHOICES} choices. Remove one to continue.`,
   otherBad: `Write who you choose (${MAX_OTHER} letters max, no abusive words).`,
 } as const;
+
+/** "Show results" at a set time: the choices on Create (minutes from now; 'ninepm' is tonight's 9 pm final count). */
+export const REVEAL_IN = ['now', 'm30', 'h1', 'ninepm'] as const;
+export const REVEAL_MINUTES: Record<string, number> = { m30: 30, h1: 60 };

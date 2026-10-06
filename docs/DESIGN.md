@@ -1284,3 +1284,16 @@ saving.
   so it goes to any app (Instagram, X, WhatsApp, Telegram, Snapchat…). Under "Or send to": WhatsApp, X, Facebook,
   Telegram, Save image (for a story from a computer) and Copy link, as round buttons with names. Links carry `src=`
   (wa / x / fb / tg / other) so the maker's page can count where votes came from.
+
+## Show results at a set time (owner, Oct 2026: "the result will be published in 30 minutes or an hour, for engagement")
+
+Not the default: seeing the result is the reward for voting, and most people will not come back by themselves. It is a
+**maker's choice** on Create (Settings → "Show results": Right after voting · In 30 minutes · In 1 hour · Tonight at
+9 pm), and **Today's question** with the 9 pm final count opens its result at 9 pm. Not offered for group polls (they
+open when the group is in) or "Called it" (the answer opens it).
+Until the time, the numbers are hidden for everyone (voters, the maker, the big screen, share pictures), the same sealed
+path as an election silence window (`revealAt` on the poll; `sealedUntil` covers both). Voting stays open. The poll shows
+"⏱ Results open at 7:30 pm (in 24 min). Voting is on till then." (it ticks every 30 s and the poll reloads itself the
+moment results open), the "Tell me the result" alert is offered, and My votes says "Results at 7:30 pm". Alerts for a
+reveal go out with the evening job (9:05 pm), so they fit the 9 pm choice best.
+Measure it on the step counter before making it the default anywhere else.

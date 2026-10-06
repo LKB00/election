@@ -1,7 +1,7 @@
 'use client';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { ArrowRight, CalendarPlus, Check, Flag, Lock, PenLine, Plus, Repeat, Share2, Target, Trophy, Users } from 'lucide-react';
+import { ArrowRight, CalendarPlus, Check, Flag, Lock, PenLine, Plus, Repeat, Share2, Target, Timer, Trophy, Users } from 'lucide-react';
 import { MAX_OTHER } from '@/lib/limits';
 import { track } from '@/lib/track';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -155,6 +155,13 @@ function Tween({ value, render }: { value: number; render: (v: number) => string
 // "Sealed till 5 Feb, 6:00 pm": India time, so the server page and the phone print the same.
 const sealedWhen = (iso: string, lang: Lang) =>
   new Date(iso).toLocaleString(dateLocale(lang), { day: 'numeric', month: monthStyle(lang), hour: 'numeric', minute: '2-digit', timeZone: INDIA_TZ });
+// A reveal later today shows only the time ("7:31 pm"); another day adds the date.
+const revealWhen = (iso: string, lang: Lang) => {
+  const day = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: INDIA_TZ });
+  return day(new Date(iso)) === day(new Date())
+    ? new Date(iso).toLocaleTimeString(dateLocale(lang), { hour: 'numeric', minute: '2-digit', timeZone: INDIA_TZ })
+    : sealedWhen(iso, lang);
+};
 
 // "Report this duel" (P3, last on the screen): one tap opens the reasons, one more sends it.
 function ReportDuel({ pollId, t, lang }: { pollId: string; t: Dict; lang: Lang }) {
@@ -387,6 +394,25 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
     fetchedAt.current[p.id] = Date.now();
     setDeck((d) => d.map((x) => (x.id === p.id ? p : x)));
   };
+  // A planned reveal: the countdown ticks every 30 s, and the moment the results open the poll reloads by itself.
+  const [clock, setClock] = useState(() => Date.now());
+  const revealAt = deck[i]?.revealAt ?? null;
+  const revealId = deck[i]?.id ?? null;
+  useEffect(() => {
+    if (!revealAt || !revealId) return;
+    const tick = setInterval(() => setClock(Date.now()), 30_000);
+    const ms = Math.max(0, Date.parse(revealAt) - Date.now()) + 1500;
+    const open = setTimeout(async () => {
+      const res = await fetch(`/api/polls/${revealId}`, { cache: 'no-store' }).catch(() => null);
+      const fresh = res?.ok ? ((await res.json().catch(() => null)) as PollView | null) : null;
+      if (fresh) replace(fresh);
+    }, Math.min(ms, 2_147_000_000));
+    return () => {
+      clearInterval(tick);
+      clearTimeout(open);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [revealAt, revealId]);
   // Every vote, guess, undo, reaction bumps this. A refresh that started before one of them is thrown away when it
   // lands, so old numbers never overwrite your vote (that used to bring the Vote buttons back and freeze the screen).
   const gen = useRef(0);
@@ -1061,7 +1087,8 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
       {multi && revealed && <p className="small muted">{ranking ? t.rankNote : dates ? t.datesNote : t.multiNote}</p>}
 
       {/* Not on a paused poll: its keys are off, and the paused note below says why. */}
-      {!voted && !poll.closed && !poll.pausedUntil && (
+      {/* Not on a timed poll either: its note says when results open ("results open after you vote" would contradict it). */}
+      {!voted && !poll.closed && !poll.pausedUntil && !poll.revealAt && (
         <p className="small muted duel-hint" data-hint>{t.ballotHint}</p>
       )}
 
@@ -1082,9 +1109,12 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
         <p className="small duel-sealed" role="note"><Lock size={13} strokeWidth={1.75} aria-hidden /> {t.paused}</p>
       )}
 
-      {sealed && (
+      {sealed && (poll.revealAt ? (
+        // A planned reveal: when, and how long is left (it ticks), not the election-law note.
+        <p className="small duel-sealed duel-reveal" role="note"><Timer size={13} strokeWidth={1.75} aria-hidden /> {t.revealSoon(revealWhen(poll.revealAt, lang), t.revealLeft(Math.ceil((Date.parse(poll.revealAt) - clock) / 60_000)))}</p>
+      ) : (
         <p className="small duel-sealed" role="note"><Lock size={13} strokeWidth={1.75} aria-hidden /> {t.sealed(sealedWhen(poll.sealedUntil!, lang))}</p>
-      )}
+      ))}
 
       {verdictOn && (
         // P1 after voting, right under the result (owner, Oct 2026: "too much information, no hierarchy"): one card says
@@ -1201,7 +1231,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
             </div>
           )}
           {/* P2 when the result comes later: one alert when it is in (an end time, or a "Called it" waiting for its answer). */}
-          {!poll.closed && (poll.endsAt || (poll.calledIt && !poll.outcome) || poll.groupWaiting) && <ResultAlert pollId={poll.id} />}
+          {((!poll.closed && (poll.endsAt || (poll.calledIt && !poll.outcome) || poll.groupWaiting)) || poll.revealAt) && <ResultAlert pollId={poll.id} />}
           {poll.endsAt && !poll.closed && (
             <p className="small">
               <a className="text-link" href={`/api/polls/${poll.id}/ics`} download>

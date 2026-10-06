@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { CATEGORIES } from './categories';
 import { hasBlockedWord } from './moderation';
+import { REVEAL_IN } from './limits';
 import { ERR, MAX_CHOICE, MAX_CHOICES, MAX_DETAILS, MAX_GROUP, MAX_PHOTO_CHARS, MAX_TITLE, MIN_CHOICES, MIN_TITLE } from './limits';
 
 /** One emoji (flags, skin tones and joined emoji like 👨‍👩‍👧 count as one). */
@@ -63,6 +64,8 @@ export const createPollSchema = z.object({
   suggestionsOn: z.boolean().default(false),
   // "Other (write your own)" at the end of a pick-one ballot.
   allowOther: z.boolean().default(false),
+  // Show results at a set time (worked out on the server, from its own clock).
+  revealIn: z.enum(REVEAL_IN).default('now'),
   // The maker's name and face shown on the poll (their choice; off by default).
   showMaker: z.boolean().default(false),
   // "Ask again": the earlier poll (made by the same person) this one repeats.

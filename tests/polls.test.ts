@@ -1449,6 +1449,41 @@ describe('audit fixes (Oct 2026)', () => {
   });
 });
 
+describe('show results at a set time', () => {
+  it('hides the numbers from everyone until the reveal, then opens them', async () => {
+    const id = await make({ revealIn: 'h1' });
+    const p = (await getPoll(db, id, null))!;
+    expect(p.revealAt).not.toBeNull();
+    await castVote(db, id, p.options[0].id, 'rv1');
+    await castVote(db, id, p.options[1].id, 'rv2');
+    const voter = (await getPoll(db, id, 'rv1'))!;
+    expect(voter.resultsVisible).toBe(false);
+    expect(voter.totalVotes).toBe(0);
+    expect(voter.options.every((o) => o.votes === 0)).toBe(true);
+    expect(voter.participants).toBe(2);
+    const mine = (await getMyVotes(db, 'rv1', 50)).find((v) => v.pollId === id)!;
+    expect(mine.standing.kind).toBe('reveal');
+    // The time comes: the result is open for everyone at once.
+    await db.update(schema.polls).set({ revealAt: new Date(Date.now() - 1000) }).where(eq(schema.polls.id, id));
+    const after = (await getPoll(db, id, 'rv1'))!;
+    expect(after.revealAt).toBeNull();
+    expect(after.resultsVisible).toBe(true);
+    expect(after.totalVotes).toBe(2);
+  });
+  it('is not used for group polls or "Called it", and right away means no reveal time', async () => {
+    const group = await make({ revealIn: 'h1', groupSize: 3 });
+    const called = await make({ revealIn: 'm30', calledIt: true });
+    const now = await make({ revealIn: 'now' });
+    for (const id of [group, called, now]) expect((await getPoll(db, id, null))!.revealAt).toBeNull();
+  });
+  it("Today's question with the 9 pm final count opens its result at 9 pm", async () => {
+    const id = await make();
+    await setToday(db, id, true);
+    const [row] = await db.select().from(schema.polls).where(eq(schema.polls.id, id));
+    expect(row.revealAt?.getTime()).toBe(row.endsAt?.getTime());
+  });
+});
+
 describe('views count (Home)', () => {
   it('adds up Home, poll and other page views on every day, and nothing else', async () => {
     const { countEvent, viewTotal } = await import('@/lib/events');

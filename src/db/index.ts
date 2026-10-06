@@ -92,6 +92,7 @@ CREATE TABLE IF NOT EXISTS photos (
 CREATE INDEX IF NOT EXISTS photos_poll_idx ON photos (poll_id);
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS frozen_until timestamptz;
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS today_on text;
+ALTER TABLE polls ADD COLUMN IF NOT EXISTS reveal_at timestamptz;
 -- "Called it" polls: a real future event; the creator (or the owner) marks what happened.
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS called_it boolean NOT NULL DEFAULT false;
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS outcome text;
