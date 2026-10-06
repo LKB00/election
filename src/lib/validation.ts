@@ -8,7 +8,6 @@ import { ERR, MAX_CHOICE, MAX_CHOICES, MAX_DETAILS, MAX_GROUP, MAX_PHOTO_CHARS, 
 /** One emoji (flags, skin tones and joined emoji like 👨‍👩‍👧 count as one). */
 export const isEmoji = (s: string) =>
   /^(?:[0-9#*]\uFE0F?\u20E3|\u{1F3F4}[\u{E0061}-\u{E007A}]+\u{E007F}|\p{Regional_Indicator}{2}|\p{Extended_Pictographic}(?:\p{Emoji_Modifier}|\uFE0F|\u20E3)*(?:\u200D\p{Extended_Pictographic}(?:\p{Emoji_Modifier}|\uFE0F)*)*)$/u.test(s);
-export { CATEGORIES, type Category } from './categories';
 
 /**
  * Typed text as it is saved: line breaks, tabs and control characters become spaces, invisible characters
@@ -25,8 +24,7 @@ export const cleanText = (s: string) =>
 export { sameKey } from './same';
 import { sameKey } from './same';
 /** Photos: JPEG only (every phone browser can make one, and the share-image renderer can draw it), at most ~110 KB. */
-export { MAX_PHOTO_CHARS };
-export function isPhoto(dataUrl: string): boolean {
+function isPhoto(dataUrl: string): boolean {
   const m = /^data:image\/jpeg;base64,([A-Za-z0-9+/]+={0,2})$/.exec(dataUrl);
   if (!m) return false;
   const head = atob(m[1].slice(0, 8));
@@ -100,7 +98,7 @@ export const suggestSchema = z
   .object({ label: text().pipe(z.string().min(1, 'One choice is empty. Fill it in or remove it.').max(MAX_CHOICE, ERR.choiceLong)).refine(visible, 'One choice is empty. Fill it in or remove it.') })
   .refine((p) => !hasBlockedWord(p.label), 'Please remove the abusive words.');
 const code = () => z.string().regex(/^[\w-]{1,64}$/);
-export const VOTE_SOURCES = ['wa', 'ig', 'x', 'fb', 'tg', 'qr', 'link', 'other'] as const;
+const VOTE_SOURCES = ['wa', 'ig', 'x', 'fb', 'tg', 'qr', 'link', 'other'] as const;
 export const voteSchema = z.object({
   optionId: code(),
   picks: z.array(code()).max(MAX_CHOICES).optional(),

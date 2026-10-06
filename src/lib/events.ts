@@ -21,7 +21,7 @@ export const CLIENT_EVENTS: readonly StepEvent[] = ['visitor', 'page_view', 'hom
 /** How many days the admin table shows. */
 export const STEP_DAYS = 7;
 
-export const indiaDate = (now = new Date()) => now.toLocaleDateString('en-CA', { timeZone: INDIA_TZ });
+const indiaDate = (now = new Date()) => now.toLocaleDateString('en-CA', { timeZone: INDIA_TZ });
 
 /** Adds one to today's count of a step. Never throws: counting must not break voting or making a poll. */
 export async function countEvent(db: Db, event: StepEvent): Promise<void> {
@@ -57,7 +57,7 @@ export async function visitorTotal(db: Db): Promise<number> {
 
 /** Every page opened (Home, polls and every other page), all days added up: the big number at the bottom of Home
  * (owner, Oct 2026: "we will show views, not visitors"). Never throws: Home must still open. */
-export const VIEW_EVENTS: readonly StepEvent[] = ['home_view', 'poll_view', 'page_view'];
+const VIEW_EVENTS: readonly StepEvent[] = ['home_view', 'poll_view', 'page_view'];
 export async function viewTotal(db: Db): Promise<number> {
   try {
     const [row] = await db.select({ n: sql<number>`coalesce(sum(${schema.dailyEvents.n}), 0)` }).from(schema.dailyEvents).where(inArray(schema.dailyEvents.event, [...VIEW_EVENTS]));

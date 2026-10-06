@@ -4,10 +4,7 @@
 
 .block-tight { margin-top: 24px; }
 .duel-group { display: flex; flex-direction: column; gap: 8px; }
-.duel-tag { --pc: var(--card); text-transform: capitalize; }
 
-/* Duel cards inside patricka's .tot-option */
-.duel-options.n-2 { grid-template-columns: 1fr 1fr; }
 .duel-option .tot-letter { background: var(--pc); }
 .duel-option.is-mine { background: var(--you-soft); }           /* your vote: yellow = you (the same for every choice) */
 .duel-option.is-mine .meter span { background: var(--ink); }
@@ -20,7 +17,7 @@
 .tot:not(.tot-over) .duel-option:not(:disabled) { max-height: none; -webkit-mask-image: none; mask-image: none; }
 
 .duel-body { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 0 8px 8px; }
-.duel-options:not(.n-2) .duel-body { flex-direction: row; align-items: center; }
+.duel-options .duel-body { flex-direction: row; align-items: center; }
 .duel-face {
   width: 64px; height: 64px; flex: none; border-radius: 50%; overflow: hidden;
   display: grid; place-items: center; background: var(--pc);
@@ -28,7 +25,7 @@
 }
 .duel-option.is-mine .duel-face { background: var(--card); }
 .duel-face img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 20%; }
-.duel-options:not(.n-2) .duel-face { width: 48px; height: 48px; font-size: 16px; }
+.duel-options .duel-face { width: 48px; height: 48px; font-size: 16px; }
 .duel-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .duel-name { font-family: var(--display); font-weight: 800; font-size: 20px; line-height: 28px; color: var(--ink); }
 
@@ -39,13 +36,8 @@
 /* After you vote: patricka pieces stacked on a card */
 .duel-after { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; padding: 0 4px; }   /* P3: no card, so it never competes with the result */
 .duel-error { padding: 12px 16px; border-radius: var(--radius-inner); background: var(--negative-soft); color: var(--negative); font-size: 14px; line-height: 20px; }
-.duel-page-game { margin-top: 12px; }
-.games .game { position: relative; }
 
-/* Create form: .search fields full width, the "add" chip sits on its own line */
-.me-stack .search { max-width: 480px; }
-.me-stack .row .search { flex: 1; }
-.duel-add { align-self: flex-start; }
+.games .game { position: relative; }
 
 /* Hierarchy (docs/DESIGN.md): the duel question is the page title, the game starts right under the label */
 .duel-first { margin-top: 16px; }
@@ -67,7 +59,7 @@
 /* Candidate photo: full card width, portrait 4:5, the tint of its side behind it while it loads */
 .duel-photo { display: block; width: 100%; aspect-ratio: 4 / 5; border-radius: var(--radius-inner); overflow: hidden; background: var(--pc); }
 .duel-photo img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 15%; animation: pop 0.35s ease; }
-.duel-options:not(.n-2) .duel-photo { width: 64px; height: 64px; aspect-ratio: auto; border-radius: 50%; flex: none; }
+.duel-options .duel-photo { width: 64px; height: 64px; aspect-ratio: auto; border-radius: 50%; flex: none; }
 .duel-option.is-other .duel-photo img { filter: saturate(0.6); }
 .duel-credit { margin: 0; padding: 0 4px; font-size: 12px; line-height: 16px; color: var(--ink-3); }
 
@@ -76,7 +68,7 @@
 .duel-guess h2 { margin: 0; }
 .duel-guess-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; margin-top: 8px; }
 .duel-guess-options .btn { justify-content: flex-start; }
-.duel-guess-letter { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--sand-dark); font-size: 12px; font-weight: 800; }
+
 .duel-guessed.is-new strong { animation: pop 0.4s ease; display: inline-flex; align-items: center; gap: 4px; }
 .duel-friend { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--ink-2); }
 .duel-friend-line svg { vertical-align: -2px; }
@@ -104,8 +96,7 @@
 .sheet-preview { width: 96px; aspect-ratio: 9 / 16; border-radius: var(--radius-inner); object-fit: cover; background: var(--sand); box-shadow: var(--shadow-pop); }
 .sheet-side { display: flex; flex-direction: column; gap: 8px; }
 .sheet-main { width: 100%; }
-.sheet-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.sheet-row .btn { width: 100%; padding: 0 12px; }
+
 @media (min-width: 720px) { .sheet-backdrop { align-items: center; } .sheet { border-radius: 20px; } }
 /* The EVM row sits at the bottom of every card, so both buttons line up */
 .duel-option { justify-content: flex-start; }
@@ -230,17 +221,6 @@ button.link-like { border: 0; background: none; padding: 8px 0; cursor: pointer;
 /* Tap the VVPAT slip to move on. */
 /* "Why people picked X": label above, reasons below. */
 .duel-whys p { margin: 0; display: flex; flex-direction: column; gap: 4px; }
-/* Create: the emoji box next to each choice, quick-start chips, and the ballot preview. */
-.search.emoji-in { flex: 0 0 48px; width: 48px; max-width: 48px; padding: 0; justify-content: center; }
-.emoji-in input { text-align: center; padding: 0; width: 100%; }
-/* The 🙂 is only a hint: faded and grey, so it never looks like an answer. */
-.emoji-in input::placeholder { opacity: 0.35; filter: grayscale(1); }
-.create-preview { display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: var(--radius-card); background: var(--sand); }
-.create-preview .duel-q { font-size: 20px; line-height: 28px; margin: 0; }
-.create-preview .tot-option { cursor: default; }
-.create-preview .tot-option:hover { transform: none; }
-/* My votes: where each duel stands now. */
-.index-standing { font-size: 13px; line-height: 18px; color: var(--ink-2); }
 
 /* ---- The cast-vote moment (docs/DESIGN.md, "The cast-vote moment") ----
    One scene in the middle of the screen. Beat times come from CastVote.tsx as --t-vv, --t-drop, --t-ink (seconds; not --ink, which is the ink colour). */
@@ -322,7 +302,7 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
   .text-link, button.link-like { min-height: 44px; }
   /* No grey flash or text-selection bubble when you press a card or a button; no double-tap zoom wait. */
   a, button, label, .chip { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
-  .tot-option, .evm-btn, .btn, .chip, .bottomnav, .game, .daily-banner { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  .tot-option, .evm-btn, .btn, .chip, .bottomnav, .game { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 }
 
 /* Small phones (320–400px): ballot rows keep the name readable; the red light comes back in the vote moment. */
@@ -391,12 +371,8 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .is-nudge .duel-option:nth-child(3) .evm-btn { animation-delay: 0.4s; }
 @keyframes nudge { 0%, 100% { transform: none; } 40% { transform: translateY(-2px) scale(1.06); } }
 @media (prefers-reduced-motion: reduce) { .is-nudge .evm-btn, .duel-fresh { animation: none; } }
-/* My votes: the leader's share as a thin bar under each duel; lime when your pick is in front. */
-.index-meter { display: block; height: 6px; margin-top: 4px; border-radius: 3px; background: var(--sand-dark); overflow: hidden; }
-.index-meter > span { display: block; height: 100%; border-radius: 3px; background: var(--line); transform-origin: left; animation: meter-grow 0.6s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
-.index-meter.is-mine > span { background: var(--lime); }
+
 @keyframes meter-grow { from { transform: scaleX(0); } }
-@media (prefers-reduced-motion: reduce) { .index-meter > span { animation: none; } }
 
 /* ---- Edge cases (docs/DESIGN.md, "Edge cases") ---- */
 /* One very long word (a name, "aaaa…") must never make the page wider than the phone: grid columns may shrink,
@@ -404,9 +380,9 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .games { grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 640px) { .games { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (min-width: 1040px) { .games { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
-.game, .tot-option, .duel-option, .duel-body, .duel-text, .index-row > * { min-width: 0; }
-.game strong, .game span, .duel-name, .duel-q, .index-title, .guess-name, .cast-evm-name, .vv-name, .duel-bar p { overflow-wrap: anywhere; }
-.duel-options.n-2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.game, .tot-option, .duel-option, .duel-body, .duel-text { min-width: 0; }
+.game strong, .game span, .duel-name, .duel-q, .index-title, .guess-name, .cast-evm-name, .vv-name { overflow-wrap: anywhere; }
+
 .duel-options.is-ballot { grid-template-columns: minmax(0, 1fr); }
 /* Typing boxes big enough for a thumb (they were 28px tall on Android). */
 @media (pointer: coarse) { .search input { min-height: 44px; } }
@@ -424,18 +400,16 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .create-suggest svg { flex: none; margin-top: 3px; }
 .create-suggest:active { transform: scale(0.99); }
 .create-count { margin: 0; text-align: right; }
-/* An emoji picked for you is a little lighter until you choose your own. */
-.emoji-in input.is-auto { opacity: 0.75; }
+
 @media (prefers-reduced-motion: reduce) { .create-suggest { animation: none; } }
-/* The emoji box shows the emoji at a size you can see (it was text-sized). */
-.emoji-in input { font-size: 22px; text-align: center; }
+
 .review-photos img { width: 56px; height: 70px; object-fit: cover; border-radius: 8px; background: var(--sand-dark); }
 
 /* ---- Pictures for choices (docs/DESIGN.md, "Create: pictures") ---- */
 /* The circle in front of each choice: an emoji, a photo, or "add a picture". Tap to open the picture sheet. */
 .face-pick { flex: 0 0 48px; width: 48px; height: 48px; display: grid; place-items: center; overflow: hidden; padding: 0; border: var(--hair) dashed var(--line); border-radius: 50%; background: var(--card); color: var(--ink-3, var(--ink-2)); font: inherit; font-size: 24px; line-height: 1; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; }
 .face-pick.has-emoji, .face-pick.has-photo { border-style: solid; background: var(--sand); }
-.face-pick.is-auto span { opacity: 0.75; }
+
 .face-pick img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
 .face-pick:active { transform: scale(0.94); }
 @media (hover: hover) and (pointer: fine) { .face-pick:hover { box-shadow: 0 0 0 2px var(--ink); } }
@@ -467,14 +441,7 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 
 /* ---- Create: build the ballot (docs/DESIGN.md, "Create: build the ballot") ---- */
 .builder { display: flex; flex-direction: column; gap: 16px; }
-.builder-ballot { display: flex; flex-direction: column; gap: 12px; }
-.builder-ballot > .label { margin: 0; }
-/* The question is the ballot's title, typed where it will be shown. */
-.builder-q { width: 100%; margin: 0; padding: 0 0 6px; border: 0; border-bottom: 2px dashed var(--line); border-radius: 0; background: transparent; color: var(--ink); font-size: 28px; line-height: 34px; resize: none; overflow: hidden; field-sizing: content; min-height: 40px; outline: none; transition: border-color 0.15s ease; }
-.builder-q::placeholder { color: var(--ink-3, var(--ink-2)); opacity: 0.55; }
-.builder-q:focus { border-bottom-color: var(--ink); }
-.builder-q:not(:placeholder-shown):not(:focus) { border-bottom-color: transparent; }
-.builder-hint { margin: 0; }
+
 /* Choice rows are real ballot rows; the name is typed straight into the row. */
 .builder-row, .builder-row:hover { transform: none; cursor: default; }
 .builder-row .face-pick { flex-basis: 40px; width: 40px; height: 40px; font-size: 20px; }
@@ -488,14 +455,11 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .builder-row.is-new .evm-row { visibility: hidden; }
 .builder-row.is-new .tot-letter { opacity: 0.5; }
 .builder-row:not(.is-new) { animation: pop 0.25s ease; }
-/* Settings: one line of chips. */
-.builder-settings { display: flex; flex-wrap: wrap; gap: 8px; }
-.builder-settings .chip svg { vertical-align: -2px; }
+
 /* The main button: full width on phones; it turns from "what is missing" into "Create duel". */
 .builder-go .btn { width: 100%; }
 @media (min-width: 720px) { .builder-go .btn { width: auto; } }
 @media (max-width: 400px) {
-  .builder-q { font-size: 24px; line-height: 30px; }
 
   .builder-row .face-pick { flex-basis: 32px; width: 32px; height: 32px; font-size: 16px; }
 }
@@ -513,7 +477,6 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .cast-backdrop.is-light .cast-ink { animation-delay: 0s; }
 /* Off: the ballot rows keep the blue Vote key but not the EVM's red light. */
 .duel.is-light .evm-led { display: none; }
-.builder-note { margin: -8px 0 0; }
 
 /* ---- Rate it (1–5 faces) (docs/DESIGN.md, "Phase 2: Rate it") ---- */
 .rate-scale { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
@@ -581,9 +544,7 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .day-vs li > .small { grid-column: 2; }
 .day-q { color: var(--ink); font-weight: 600; text-decoration: none; }
 @media (hover: hover) and (pointer: fine) { .day-q:hover { text-decoration: underline; } }
-/* "Your polls · 37 votes so far" on Home (P2), from this phone's own list. */
-.my-polls ul { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.my-polls li { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; padding: 10px 12px; border-radius: var(--radius-inner); background: var(--card); border: var(--hair) solid var(--line); }
+
 /* The owner's numbers on /admin (P3). */
 .admin-stats ul { margin: 8px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
 /* Planning a day for Today's question on /admin: a small date box next to "Make today's question". */
@@ -867,7 +828,7 @@ button.maker-row { width: 100%; border: 0; background: none; font: inherit; colo
 /* Accessibility pass (WCAG 2.2 AA; docs/DESIGN.md, "Accessibility"). */
 /* A clear focus ring for keyboards and switch users, everywhere (2px is the floor; 3px reads in sunlight). */
 :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
-.create-q:focus-visible, .builder-q:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.create-q:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 /* A choice being typed: the whole card gets the ring, not a hard box inside it (owner's walkthrough, Oct 2026). */
 .builder-name:focus-visible { outline: none; }
 .builder-row:has(.builder-name:focus) { outline: 2px solid var(--ink); outline-offset: -2px; }
@@ -1176,8 +1137,8 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
 }
 /* 6. With a mouse: cards you can press lift a little toward you (never on touch screens, where hover would stick). */
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  .main .tot-option:not(:disabled), .main .guess-card:not(:disabled), .main .al-hero, .main .daily-banner { transition: transform 0.16s ease, box-shadow 0.16s ease, background-color 0.15s ease; }
-  .main .tot-option:not(:disabled):hover, .main .guess-card:not(:disabled):hover, .main .al-hero:hover, .main .daily-banner:hover { transform: translateY(-2px); box-shadow: var(--shadow-raised); }
+  .main .tot-option:not(:disabled), .main .guess-card:not(:disabled), .main .al-hero { transition: transform 0.16s ease, box-shadow 0.16s ease, background-color 0.15s ease; }
+  .main .tot-option:not(:disabled):hover, .main .guess-card:not(:disabled):hover, .main .al-hero:hover { transform: translateY(-2px); box-shadow: var(--shadow-raised); }
   /* The live preview beside Create is a picture of a poll, not something to press. */
   .main .preview-card .tot-option:hover { transform: none; box-shadow: none; }
 }

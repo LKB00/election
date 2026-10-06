@@ -16,7 +16,7 @@ const FOLDS = 'M26 37 H40 M17 39.5 C 22 39.5 26 42 28 46';
 const INK = 'M21.5 17 V21.5';
 
 /** The mark as SVG markup. `rounded`: the soft square of the in-page logo; the app icon is full bleed (the phone rounds it). */
-export function markSvg(size: number, rounded = true): string {
+function markSvg(size: number, rounded = true): string {
   const r = rounded ? 14 : 0;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 64 64"><rect width="64" height="64" rx="${r}" fill="${PALETTE.lime}"/><path d="${HAND}" fill="${PALETTE.ink}"/><path d="${FOLDS}" fill="none" stroke="${PALETTE.lime}" stroke-width="2.4" stroke-linecap="round"/><path d="${INK}" stroke="${PALETTE.lime}" stroke-width="3.2" stroke-linecap="round"/></svg>`;
 }
