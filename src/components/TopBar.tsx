@@ -1,9 +1,8 @@
 'use client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ChartNoAxesColumn, ChevronLeft, House, Languages, Plus, UserRound, Volume2, VolumeX, Vote, X } from 'lucide-react';
+import { ChartNoAxesColumn, ChevronLeft, House, Languages, Plus, UserRound, Vote, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { setSound, soundOn } from '@/lib/sound';
 import { setLangCookie, useLang, useT } from '@/lib/lang';
 import { LANG_NAMES, LANG_SHORT, LANGS, type Lang } from '@/lib/i18n';
 
@@ -12,9 +11,6 @@ export default function TopBar() {
   const router = useRouter();
   const t = useT();
   const lang = useLang();
-  // EVM beep on/off. Read after loading, so the server page and the phone agree.
-  const [sound, setS] = useState(true);
-  useEffect(() => setS(soundOn()), []);
   // Back: your poll's page goes back to You; a poll, pack, topic or maker page goes back where you came from inside the
   // site (Polls, My votes, a topic…), or Home when the link was opened from outside (WhatsApp).
   const managing = /^\/p\/[^/]+\/manage/.test(path);
@@ -95,19 +91,6 @@ export default function TopBar() {
               ))}
             </select>
           </label>
-          <button
-            type="button"
-            className="icon-btn"
-            aria-pressed={!sound}
-            aria-label={sound ? t.beepOff : t.beepOn}
-            title={sound ? t.beepOff : t.beepOn}
-            onClick={() => {
-              setSound(!sound);
-              setS(!sound);
-            }}
-          >
-            {sound ? <Volume2 size={16} strokeWidth={1.75} aria-hidden /> : <VolumeX size={16} strokeWidth={1.75} aria-hidden />}
-          </button>
           <Link href="/you" className={'icon-btn topnav-you hide-phone' + (onYou ? ' is-on' : '')} aria-label={t.you} title={t.you} aria-current={onYou ? 'page' : undefined}>
             <UserRound size={18} strokeWidth={onYou ? 2.25 : 1.75} aria-hidden />
           </Link>

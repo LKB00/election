@@ -7,6 +7,7 @@ import { pollsByOwner } from '@/lib/profiles';
 import { getT } from '@/lib/lang-server';
 import EmptyState from '@/components/EmptyState';
 import MyPolls from '@/components/MyPolls';
+import SoundRow from '@/components/SoundRow';
 import { ProfileActions, ProfileCard, YouSignIn } from '@/components/Profile';
 
 export const dynamic = 'force-dynamic';
@@ -33,6 +34,11 @@ export default async function YouPage({ searchParams }: { searchParams: Promise<
           <YouSignIn />
         </section>
         <MyPolls title={t.madeOnPhone} line={t.madeOnPhoneLine} />
+        {/* Signed out: the one setting there is (signed in, it sits in the Account list). */}
+        <section className="al-block" aria-label={t.settingsLabel}>
+          <h2 className="al-block__title">{t.settingsLabel}</h2>
+          <ul className="al-listcard"><SoundRow /></ul>
+        </section>
       </div>
     );
   }
