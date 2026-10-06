@@ -25,39 +25,43 @@ export default async function YouPage({ searchParams }: { searchParams: Promise<
 
   if (!user) {
     return (
-      <div className="page empty-page">
-        <header>
+      <div className="page empty-page you-page is-out">
+        <header className="you-head">
           <h1 className="sr-only">{t.you}</h1>
           {deleted && <p className="small duel-friend" role="status">{t.profileDeleted}</p>}
         </header>
-        <section>
+        <section className="you-signin">
           <YouSignIn />
         </section>
+        {/* Computers (election.css, "Desktop"): this column sits beside the profile screen. */}
+        <div className="you-side">
         <MyPolls title={t.madeOnPhone} line={t.madeOnPhoneLine} />
         {/* Signed out: the one setting there is (signed in, it sits in the Account list). */}
         <section className="al-block" aria-label={t.settingsLabel}>
           <h2 className="al-block__title">{t.settingsLabel}</h2>
           <ul className="al-listcard"><SoundRow /></ul>
         </section>
+        </div>
       </div>
     );
   }
 
   const polls = await pollsByOwner(db, user.id);
   return (
-    <div className="page">
-      <header className="page-head page-head-tight">
+    // Computers (election.css, "Desktop"): you and your account in a left column, your polls (P1) beside it.
+    <div className="page you-page">
+      <header className="page-head page-head-tight you-me">
         <h1 className="sr-only">{t.you}</h1>
         <ProfileCard user={user} />
         {/* After "Delete poll" on a poll's page: one line saying it worked. */}
         {done === 'deleted' && <p className="small duel-friend" role="status">{t.deleteDone}</p>}
       </header>
       {polls.length ? (
-        <section className="al-block" aria-label={t.yourPolls}>
+        <section className="al-block you-polls" aria-label={t.yourPolls}>
           <h2 className="al-block__title">{t.yourPolls} <span className="al-block__aside">{t.pollsN(polls.length)}</span></h2>
-          <ul className="al-listcard">
-            {polls.map((p) => (
-              <li key={p.id}>
+          <ul className="al-listcard al-stagger">
+            {polls.map((p, n) => (
+              <li key={p.id} style={{ '--row': n } as React.CSSProperties}>
                 <Link href={`/p/${p.id}/manage`} className="al-row">
                   <span className="al-row__disc" style={{ '--tone': 'var(--lime-badge)' } as React.CSSProperties}><PenLine size={20} strokeWidth={1.75} aria-hidden /></span>
                   <span className="al-row__main">
@@ -72,12 +76,12 @@ export default async function YouPage({ searchParams }: { searchParams: Promise<
           </ul>
         </section>
       ) : (
-        <section className="block">
+        <section className="block you-polls">
           <EmptyState kind="pen" title={t.myPollsEmpty} line={t.myPollsEmptyLine} action={{ href: '/create', label: t.startDuel }} />
         </section>
       )}
       {/* P3, last: the account, as one quiet list (Your votes is its own tab, so it is not repeated here). */}
-      <ProfileActions />
+      <div className="you-account"><ProfileActions /></div>
     </div>
   );
 }
