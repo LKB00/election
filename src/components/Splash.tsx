@@ -1,3 +1,4 @@
+import LogoMark from './LogoMark';
 import { ONB_READY, ONBOARD_VERSION, SEEN, SPLASH_DONE, SPLASH_FADE_MS, SPLASH_MAX_MS, SPLASH_MIN_MS } from '@/lib/onboard';
 
 // The splash (docs/DESIGN.md, "Splash and onboarding"): about two seconds of brand while the app opens. A ballot slip
@@ -42,7 +43,7 @@ export default function Splash({ name, line }: { name: string; line: string }) {
             <path d="M104 30 Q104 33 107 33 Q104 33 104 36 Q104 33 101 33 Q104 33 104 30Z" />
           </g>
         </svg>
-        <p className="splash-name"><span className="logo-mark" aria-hidden /> {name}</p>
+        <p className="splash-name"><LogoMark size={34} /> {name}</p>
         <p className="splash-line">{line}</p>
       </div>
     </>
