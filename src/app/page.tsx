@@ -96,7 +96,7 @@ export default async function Home() {
             )}
             {hot.length > 0 && (
               <section className="al-block">
-                <h2 className="al-block__title">{t.trendingNow}<span className="al-block__aside">{t.pollsN(hot.length)}</span></h2>
+                <h2 className="al-block__title"><span className="live-dot al-block__live" aria-hidden />{t.trendingNow}<span className="al-block__aside">{t.pollsN(hot.length)}</span></h2>
                 <DuelTiles polls={hot} votedIds={voted} noCreate />
               </section>
             )}

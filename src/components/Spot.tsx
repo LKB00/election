@@ -9,11 +9,12 @@ import { handSvg } from '@/lib/inkHand';
 //   pen    = My polls: a yellow pencil writing a question on a slip above the box (your first poll starts here)
 //   finger = My votes: the inked finger (the same drawing as the vote moment) beside the box and an empty slip
 //   lock   = profiles: the box locked with a yellow padlock, a fingerprint slip above it (your votes stay locked away)
+//   live   = your poll just went up: a slip drops into the box, then a yellow seal with a tick stamps its front
 //   search = nothing found: slips and a magnifier;  lost = poll not found: a "?" slip;  done = nothing to review: a tick
 // Inline SVG, no downloads; decorative, so hidden from screen readers. Subtle motion (election.css, "Spot motion"):
 // sparkles twinkle, slips float, side slips sway, the finger nods, the magnifier circles, the "?" wobbles, the tick draws
 // itself once. Nothing moves for people who ask their phone to reduce motion.
-export type SpotKind = 'invite' | 'list' | 'topic' | 'finger' | 'pen' | 'lock' | 'search' | 'lost' | 'done';
+export type SpotKind = 'invite' | 'list' | 'topic' | 'finger' | 'pen' | 'lock' | 'search' | 'lost' | 'done' | 'live';
 
 const INK = 'var(--ink)';
 const W = 2.5;
@@ -47,7 +48,7 @@ function Box({ dx = 0, tone = 'var(--p-input)', front = 'label' }: { dx?: number
         <circle cx="100" cy="104" r="17" fill="var(--spot-paper)" stroke={INK} strokeWidth={W} />
       ) : front === 'lock' ? (
         <>
-          <path d="M92 101v-6a8 8 0 0 1 16 0v6" fill="none" stroke={INK} strokeWidth="3" strokeLinecap="round" />
+          <path className="spot-shackle" d="M92 101v-6a8 8 0 0 1 16 0v6" fill="none" stroke={INK} strokeWidth="3" strokeLinecap="round" />
           <rect x="86" y="100" width="28" height="22" rx="6" fill="var(--lime)" stroke={INK} strokeWidth={W} />
           <circle cx="100" cy="109" r="3" fill={INK} />
           <path d="M100 110v6" stroke={INK} strokeWidth="2.5" strokeLinecap="round" />
@@ -205,6 +206,21 @@ export default function Spot({ kind, tone, size = 176 }: { kind: SpotKind; tone?
           <g className="spot-wobble"><Slip cx={110} cy={36} rot={22} mark="q" /></g>
           <Sparkle x={48} y={36} r={6} />
           <Sparkle x={160} y={28} r={5} />
+        </>
+      )}
+      {kind === 'live' && (
+        <>
+          {/* "Your poll is live": the slip drops through the slot (it ends hidden inside the box), then the seal stamps
+              on. With reduced motion only the end shows: the sealed box. */}
+          <g className="spot-drop"><Slip cx={100} cy={40} /></g>
+          <Box front="badge" />
+          <g className="spot-seal">
+            <circle cx="100" cy="105" r="17" fill="var(--lime)" stroke={INK} strokeWidth={W} />
+            <path d="M92 105l5.5 5.5 10.5-11" fill="none" stroke={INK} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+          </g>
+          <Sparkle x={40} y={44} r={7} />
+          <Sparkle x={162} y={36} r={6} />
+          <Sparkle x={172} y={108} r={4} />
         </>
       )}
       {kind === 'done' && (
