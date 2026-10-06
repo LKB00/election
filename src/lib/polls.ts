@@ -604,6 +604,19 @@ export const INDEX_MIN_VOTES = 10;
 
 export type PollSummary = { id: string; title: string; category: string; kind: PollKind; totalVotes: number; lastHour: number; options: string[]; closed: boolean; /** The creator's emoji per choice ('' when none), in choice order. */ emojis: string[]; /** A "Called it" question about a real event. */ calledIt: boolean };
 
+/** Vote counts for a few public polls (the same count as listPolls), for lists that tick up while open. Hidden and
+ * group polls are never counted here. */
+export async function voteTotals(db: Db, ids: string[]): Promise<Record<string, number>> {
+  if (!ids.length) return {};
+  const rows = await db
+    .select({ id: polls.id, total: sql<number>`count(${votes.id})::int` })
+    .from(polls)
+    .leftJoin(votes, eq(votes.pollId, polls.id))
+    .where(and(inArray(polls.id, ids), eq(polls.hidden, false), isNull(polls.groupSize)))
+    .groupBy(polls.id);
+  return Object.fromEntries(rows.map((r) => [r.id, r.total]));
+}
+
 /** Public duels, newest first. Hidden duels never; unreviewed politics duels not until the owner checks them. */
 export async function listPolls(db: Db, limit = 20, filter: { category?: string; reviewedOnly?: boolean; q?: string; before?: Date } = {}): Promise<PollSummary[]> {
   // Search: words in the question or in any choice ("chai" finds "Tea or coffee?" if a choice is Chai).

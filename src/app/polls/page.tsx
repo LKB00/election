@@ -95,7 +95,7 @@ export default async function Duels({ searchParams }: { searchParams: Promise<{ 
       {/* P2: the duels with the most votes in the last hour, like TV's "hot seats". Not repeated in the list below. */}
       {hot.length > 0 && (
         <section className="al-block">
-          <h2 className="al-block__title">{t.trendingNow}<span className="al-block__aside">{t.pollsN(hot.length)}</span></h2>
+          <h2 className="al-block__title"><span className="live-dot al-block__live" aria-hidden />{t.trendingNow}<span className="al-block__aside">{t.pollsN(hot.length)}</span></h2>
           <DuelTiles polls={hot} votedIds={mine.map((v) => v.pollId)} noCreate />
         </section>
       )}

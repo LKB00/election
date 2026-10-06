@@ -1095,3 +1095,24 @@ The speaker button in the top bar (voting beep on/off) read as a microphone and 
 people change. It is now one switch row, **Voting sound** ("A short beep when you vote"), on You: first in the Account
 list when signed in, and in a one-row Settings list when signed out (everyone votes, so everyone can mute). Same switch
 row as Create's settings; remembered on the phone. The top bar keeps only the places, Start a poll, language and you.
+
+## Poll page on computers (owner, Oct 2026: "make the poll page better on desktop too")
+
+Phones unchanged. On a computer (≥1024px) the poll page has Home's shape: P1 the poll on the left (624px, so choice rows
+are no longer a metre wide), P2 "More polls" on the right: up to five other open polls (newest first, the ones you have
+not voted on first) with "All polls →". The column stays in place while the poll scrolls (results, Guess the crowd).
+It is not drawn on phones, where Next leads from one poll to the next.
+
+## Motion round (owner, Oct 2026: "there should be motion graphics, communication design and delightful animations… build all six")
+
+Rules: every motion has a job; under a third of a second except the two moments (voting, "your poll is live"); one big
+moment per screen; nothing moves with "Reduce motion"; no game effects (points, coins, trophies, confetti showers).
+
+| # | Motion | Where | Priority | Job |
+|---|---|---|---|---|
+| 1 | "Your poll is live": a slip drops through the slot, the box gives, a yellow seal with a tick stamps its front (with the existing small burst) | Poll page after posting (`CreatedPanel`, Spot `live`) | P1 at that moment | Making a poll is the biggest step a person takes here; it gets its own moment. Reduced motion: the sealed box only. |
+| 2 | The result builds (bars grow, your pick first, existing), then the leading choice's number gives one pop | Poll results | P2 | The eye ends on who is ahead. |
+| 3 | Pages fade in (opacity only, so sticky bars and pinned buttons never shift); poll lists come in row by row, 35 ms apart, the 8th row on together | Every page; every list of polls | P3 | Moving between places feels smooth instead of a jump cut. |
+| 4 | Signs of life: open polls' counts are asked for again every 45 s (at most 10 times, only while the tab is on screen, `/api/polls/counts`, limits in `limits.ts`); a count that went up ticks with a yellow flash. "Trending now" has the pulsing live dot | Home, Polls, topic pages, the poll page's side list | P3 | The site feels alive: other people are voting right now. |
+| 5 | The pictures breathe (sparkles, floating slips, existing); the padlock's shackle now clicks now and then | Empty pages, sign-in | P3 | Friendly, never still. |
+| 6 | With a mouse only: ballot cards, Guess-the-crowd cards and banners lift 2px with a shadow | Computers | P3 | Shows what can be pressed. Never on touch screens. |

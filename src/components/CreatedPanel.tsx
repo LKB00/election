@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useT } from '@/lib/lang';
 import { votePop } from '@/lib/sound';
 import Burst from './Burst';
+import Spot from './Spot';
 
 // Right after creating a duel, the job is to send it (P1). Voting yourself is P2 (the duel is below).
 export default function CreatedPanel({ id, title, path = `/p/${id}`, heading, text, button, manageHref }: { id: string; title: string; /** A pack's page instead of a poll's. */ path?: string; heading?: string; text?: string; button?: string; /** The maker's page for this poll (votes as they come in). */ manageHref?: string }) {
@@ -45,6 +46,8 @@ export default function CreatedPanel({ id, title, path = `/p/${id}`, heading, te
   return (
     <section className="duel-created" aria-label={heading ?? t.createdTitle}>
       {party && <Burst count={24} />}
+      {/* The proudest moment gets its own picture: the slip goes in, the box is sealed: it is live. */}
+      <Spot kind="live" size={132} />
       <h2>{heading ?? t.createdTitle}</h2>
       <p className="small muted">{t.createdNote}</p>
       <span className="row wrap">

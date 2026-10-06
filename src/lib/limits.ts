@@ -19,6 +19,12 @@ export const GROUP_DEFAULT_DAYS = 3;
 /** A poll its maker deleted is kept (hidden) this long, as the Rules page promises, then erased with its votes. */
 export const DELETED_KEEP_DAYS = 180;
 
+/** Lists of polls refresh their vote counts this often while the page is open, at most this many times, for at most
+ * this many polls (docs/DESIGN.md, "Motion round"): the site feels alive without a steady load on the free plan. */
+export const LIVE_COUNTS_MS = 45_000;
+export const LIVE_COUNTS_TIMES = 10;
+export const LIVE_COUNTS_MAX = 24;
+
 /** Server messages that quote a limit (also the keys of their translations in i18n.ts). */
 export const ERR = {
   titleShort: `Your question needs at least ${MIN_TITLE} letters.`,
