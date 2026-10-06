@@ -9,7 +9,7 @@ function audio(): AudioContext | null {
   if (ctx.state !== 'running') void ctx.resume().catch(() => {});
   return ctx;
 }
-// People often vote in public: the beep can be switched off (top bar), and the choice is remembered on this phone.
+// People often vote in public: the beep can be switched off (You page, SoundRow), and the choice is remembered on this phone.
 export function soundOn() {
   try {
     return localStorage.getItem('sound') !== 'off';

@@ -1069,3 +1069,29 @@ Phones and tablets are unchanged: every rule is in `election.css` under `min-wid
   `PreviewCard` the "See how it looks" sheet uses; empty parts show as faint placeholders). It stays in place while
   the form scrolls. "See how it looks" is hidden here, since the preview already shows it; Post is still the one
   ink button.
+
+## Create settings stay open while you pick (owner, Oct 2026: "whenever I click on any option… it automatically got collapsed… not smooth")
+
+- Picking a poll type or a topic no longer closes its list. The tick and colour move to your pick; the row's own header
+  (its value now updated) closes it, like any accordion.
+- The option you tapped stays under your finger: a new poll type changes the choices section above it, so the page
+  scrolls by the same amount (`steady` in `CreateForm.tsx`).
+- A list opens with a short slide and fade, and picks change colour softly (only when the phone allows motion).
+
+## Top bar on computers (owner, Oct 2026: "I don't like the top navigation bar layout, there can be intuitive layout")
+
+Phones are unchanged (logo, language, sound on top; the bottom bar below). On bigger screens the top bar now says the same
+thing as the phone's bottom bar, in the same order and with the same pictures:
+
+- **Left:** the logo, then three tabs, Home · Polls · Your votes, each with its bottom-bar icon. The tab you are on is a
+  soft pill in bold (the same "which tab" rules as `BottomNav.tsx`). Under 900px wide the icons drop so the words fit.
+- **Right:** P1 "Start a poll" as the ink button (it was a fourth tab, which hid that it is the main action; hidden on
+  Create itself, where Post is the ink button), then language and sound, then **you** as a round profile button at the
+  far right, where people look for their account. It turns yellow while you are on your pages (yellow = you).
+
+## Sound switch moved to You (owner, Oct 2026: "why there is mic icon in navigation bar… remove it")
+
+The speaker button in the top bar (voting beep on/off) read as a microphone and took a top-bar place for something few
+people change. It is now one switch row, **Voting sound** ("A short beep when you vote"), on You: first in the Account
+list when signed in, and in a one-row Settings list when signed out (everyone votes, so everyone can mute). Same switch
+row as Create's settings; remembered on the phone. The top bar keeps only the places, Start a poll, language and you.

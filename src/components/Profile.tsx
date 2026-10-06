@@ -1,4 +1,5 @@
 'use client';
+import SoundRow from './SoundRow';
 import { LogOut, Trash2, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -143,6 +144,7 @@ export function ProfileActions() {
     <section className="al-block" aria-label={t.accountTitle}>
       <h2 className="al-block__title">{t.accountTitle}</h2>
       <ul className="al-listcard">
+        <SoundRow />
         <li>
           <button type="button" className="al-row profile-row" disabled={busy} onClick={() => call('/api/auth/logout', 'POST', '/you')}>
             <span className="al-row__disc" style={{ '--tone': 'var(--sand)' } as React.CSSProperties}><LogOut size={20} strokeWidth={1.75} aria-hidden /></span>

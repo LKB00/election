@@ -807,7 +807,13 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
   .bottomnav-plus:focus-visible > span { outline: 3px solid var(--lime); outline-offset: 2px; }
 }
 .topnav-close { border: 0; background: none; font: inherit; color: inherit; cursor: pointer; }
-.topnav-create { display: inline-flex; align-items: center; gap: 4px; }
+/* Top bar on computers (docs/DESIGN.md, "Top bar"): Home · Polls · Your votes as tabs with the bottom bar's pictures;
+   on the right the one main button (Start a poll), the language and sound buttons, then you (yellow when you are there). */
+.topnav-links a { gap: 6px; }
+.topnav-start { height: 40px; padding: 0 16px 0 12px; gap: 6px; margin-right: 8px; font-size: 14px; white-space: nowrap; }
+.topnav-you { text-decoration: none; color: var(--ink-2); }
+.topnav-you.is-on { background: var(--lime); color: var(--on-lime); }
+@media (max-width: 900px) { .topnav-links svg { display: none; } }
 @media (prefers-reduced-motion: no-preference) {
   .spot-write { animation: spot-write 2.4s ease-in-out infinite; }
 }
@@ -1080,4 +1086,13 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
   .create-live .preview-eyebrow { padding-right: 0; }
   /* The live preview already shows it, so "See how it looks" would say it twice. */
   .builder-preview { display: none; }
+}
+
+/* Create's settings rows (owner, Oct 2026: "whenever I click on any option… it automatically got collapsed… not
+   smooth"): a row's options stay open while you pick, the picked one changes colour softly, and a row opens with a
+   short slide instead of popping in. Motion only when the phone allows it. */
+.create-type, .create-panel .chip { transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease; }
+@media (prefers-reduced-motion: no-preference) {
+  .create-panel { animation: create-panel-in 0.18s ease-out; }
+  @keyframes create-panel-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 }
