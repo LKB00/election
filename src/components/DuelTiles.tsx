@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { Check, ChevronRight, Plus } from 'lucide-react';
+import { Check, ChevronRight } from 'lucide-react';
 import { topicIcon } from '@/lib/topicIcons';
 import EmptyState from './EmptyState';
 import TopicSpot from './TopicSpot';
@@ -126,19 +126,7 @@ export default function DuelTiles({ polls, votedIds = [], noCreate = false, limi
           </li>
         );
       })}
-      {/* Creating comes after voting, so this row is last (docs/DESIGN.md). */}
-      {!noCreate && (
-        <li>
-          <Link href="/create" className="al-row">
-            <span className="al-row__disc" style={{ '--tone': 'var(--lime-badge)' } as React.CSSProperties}><Plus size={20} strokeWidth={1.75} aria-hidden /></span>
-            <span className="al-row__main">
-              <span className="al-row__title">{t.startOwn}</span>
-              <span className="al-row__meta">{t.startOwnLine}</span>
-            </span>
-            <ChevronRight size={18} strokeWidth={1.75} className="al-row__chevron" aria-hidden />
-          </Link>
-        </li>
-      )}
+      {/* No "Ask your friends" row at the end (owner, Oct 2026: remove what adds nothing): the + button is always on screen. */}
     </ul>
     {hiddenN > 0 && (
       <button type="button" className="btn btn-ghost btn-lg al-more" onClick={() => setAll(true)}>{t.showMorePolls(hiddenN)}</button>

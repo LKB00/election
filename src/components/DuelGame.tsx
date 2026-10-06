@@ -971,8 +971,6 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
                 {revealed && (
                   <span className="duel-result">
                     <span className="duel-pct"><Tween value={pcts[n]} render={(v) => `${v}%`} /></span>
-                    {/* The line at 50% is the majority mark, as on counting-day tallies. */}
-                    <span className="meter duel-meter" aria-hidden><span style={{ width: `${pcts[n]}%` }} /></span>
                     <span className="small muted">{ranking ? (o.avgPlace != null ? t.rankAvg(o.avgPlace.toFixed(1)) : '') : dates ? t.datesResult(o.votes, o.maybe) : <Tween value={votesOf(o)} render={(v) => t.votes(v)} />}</span>
                     {/* Your crowd guess, drawn on the real result: you see at once how close you were. */}
                     {poll.myGuess?.optionId === o.id && <span className="guess-tag"><Target size={12} strokeWidth={2} aria-hidden /> {t.yourGuess}</span>}
@@ -1269,7 +1267,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
             <div className="duel-more__body">
         {/* The trend under the result, only when there is one (a swing, or the share over time). The "line on each bar =
             majority" note and mark belong to Election mode's counting-day look; elsewhere they were noise. */}
-        {revealed && poll.totalVotes > 0 && !counting && (poll.swing || (poll.trend.length > 2 && sparkOpt) || (poll.electionMode && !rating && !ranking)) && (
+        {revealed && poll.totalVotes > 0 && !counting && (poll.swing || (poll.trend.length > 2 && sparkOpt)) && (
           <div className="duel-swing">
             {poll.trend.length > 2 && sparkOpt && <Sparkline points={poll.trend.map((p) => (sparkOpt.id === poll.options[0].id ? p.a : 100 - p.a))} label={sparkOpt.label} aria={t.shareOverTime} />}
             <p className="small muted">
@@ -1282,7 +1280,6 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
                 ) : poll.trend.length > 2 && sparkOpt ? (
                   <span key="t">{t.shareOverTime(sparkOpt.label)}</span>
                 ) : null,
-                poll.electionMode && !rating && !ranking ? <span key="m">{t.majorityLine}</span> : null,
               ]
                 .filter(Boolean)
                 .flatMap((x, n) => (n ? [' · ', x] : [x]))}
@@ -1317,7 +1314,8 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
       )}
 
       {/* Before voting (or without a pick) Report stays at the bottom; after, it is under "More about this poll". */}
-      {!((revealed || sealed || poll.groupWaiting) && mine) && <ReportDuel pollId={poll.id} t={t} lang={lang} />}
+      {/* On Home (the daily set) Report is on the poll's own page instead; after voting it is under "More". */}
+      {!daily && !((revealed || sealed || poll.groupWaiting) && mine) && <ReportDuel pollId={poll.id} t={t} lang={lang} />}
     </div>
   );
 }

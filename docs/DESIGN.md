@@ -1229,3 +1229,14 @@ Now, top to bottom:
    reasons, "Missing a choice? Suggest one", Report.
 Removed: the 100-dot people grid (it repeated the percentage), "Up next: …" in the bar, and the "Someone wants your
 pick" label once you have voted. Before voting nothing changed: question, choices, the secret-vote line, Report.
+
+## Removed because they added nothing (owner, Oct 2026: "find things in the UI that don't provide value and remove them")
+
+- **The bar under each choice in results** ("why is there a progress indicator in options… it makes the UI messy"): the
+  percentage and the vote count say it; the bar read like loading. Also its Election-mode "line at 50%" note.
+- **Home: the date line** above "Namaste" (the phone shows the date).
+- **Home: "Report this poll" under the daily poll** (Report stays on the poll's own page, and after voting under "More").
+- **"Ask your friends" as the last row of every poll list** (Home, Polls, topics): the + button is always on screen.
+- **Your votes: "Saved on this phone only…"** (the "Keep your votes" block right below explains it) **and "Polls you
+  made →"** (that is under You).
+Earlier in this round: the 100-dot people grid, "Up next: …" in the bar, the "Someone wants your pick" label after voting.

@@ -126,9 +126,6 @@
 .tick { display: inline-block; animation: tick 0.4s ease; font-variant-numeric: tabular-nums; }
 @keyframes tick { from { transform: translateY(40%); opacity: 0; } }
 /* Majority mark at 50% on every result bar. */
-.duel-meter { position: relative; }
-.is-election .duel-meter::after { content: ''; position: absolute; left: calc(50% - 1px); top: -6px; bottom: -6px; width: 2px; border-radius: 1px; background: var(--ink); opacity: 0.75; }
-.duel-meter > span { transition: width 0.55s cubic-bezier(0.2, 0.9, 0.3, 1); }
 .duel-pct { transition: color 0.2s; }
 .duel-counting { margin: 0; display: flex; align-items: center; gap: 4px; }
 /* Swing and the race line */
@@ -139,7 +136,6 @@
 .duel-spark-line { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 @media (prefers-reduced-motion: reduce) {
   .live-dot, .tick, .duel-photo img, .duel-guess { animation: none; }
-  .duel-meter > span { transition: none; }
 }
 
 /* ---- Batch 4: feels like an app ---- */
@@ -225,8 +221,7 @@ button.link-like { border: 0; background: none; padding: 8px 0; cursor: pointer;
 .is-ballot .tot-caption { position: static; grid-area: side; font-size: 12px; line-height: 16px; text-align: right; }
 .is-ballot .duel-result { grid-area: result; flex-direction: row; align-items: center; gap: 12px; padding: 0; }
 .is-ballot .duel-pct { font-size: 18px; line-height: 24px; min-width: 48px; }
-.is-ballot .duel-meter { flex: 1; }
-.is-ballot .duel-result .small { white-space: nowrap; }
+.is-ballot .duel-result .small { white-space: nowrap; margin-left: auto; }
 /* The Vote button looks pressable: raised, like the real EVM's blue key (it read as switched off when flat). */
 .evm-btn { box-shadow: var(--shadow-key); }
 .duel-option:not(:disabled):active .evm-btn { box-shadow: var(--shadow-key-pressed); }
@@ -602,7 +597,6 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
    All of it stops with "Reduce motion". */
 @media (prefers-reduced-motion: no-preference) {
   /* The result builds: your pick's bar first, then the others (--i is the order), numbers rise in with them. */
-  .duel-option .duel-meter > span { transform-origin: left center; animation: bar-grow 0.6s calc(var(--i, 0) * 90ms) cubic-bezier(0.22, 1, 0.36, 1) backwards; }
   .duel-option .duel-pct { display: inline-block; animation: pct-rise 0.4s calc(var(--i, 0) * 90ms) cubic-bezier(0.22, 1, 0.36, 1) backwards; }
   .duel-option .tot-caption { animation: pct-rise 0.35s 0.25s ease backwards; }
   @keyframes bar-grow { from { transform: scaleX(0); } }
