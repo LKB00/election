@@ -9,6 +9,7 @@ import '@fontsource/noto-sans-devanagari/700.css';
 import { getLang } from '@/lib/lang-server';
 import { LangProvider } from '@/lib/lang';
 import Splash from '@/components/Splash';
+import FirstVisit from '@/components/FirstVisit';
 // Visitor numbers for the owner (Vercel Web Analytics: no cookies, no personal data; switched on in Vercel → Analytics).
 import { Analytics } from '@vercel/analytics/next';
 import { dict } from '@/lib/i18n';
@@ -53,6 +54,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <BottomNav />
         </div>
         <Analytics />
+        {/* Counts each phone once for "N people have visited" on Home. */}
+        <FirstVisit />
         </LangProvider>
       </body>
     </html>

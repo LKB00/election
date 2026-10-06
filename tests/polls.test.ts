@@ -1365,6 +1365,18 @@ describe('step counter (admin)', () => {
   });
 });
 
+describe('visitor count (Home)', () => {
+  it('adds up every day of first visits and only counts the visitor step', async () => {
+    const { countEvent, visitorTotal } = await import('@/lib/events');
+    const before = await visitorTotal(db);
+    await countEvent(db, 'visitor');
+    await countEvent(db, 'visitor');
+    await countEvent(db, 'home_view');
+    await db.insert(schema.dailyEvents).values({ day: '2026-01-01', event: 'visitor', n: 5 }).onConflictDoNothing();
+    expect((await visitorTotal(db)) - before).toBe(7);
+  });
+});
+
 describe('engagement score (admin)', () => {
   it('scores sharing, reactions and reasons, needs 3+ votes, and groups by topic', async () => {
     const { engagementScore, getEngagement } = await import('@/lib/stats');
