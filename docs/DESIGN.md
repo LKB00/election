@@ -1312,11 +1312,11 @@ moment results open), the "Tell me the result" alert is offered, and My votes sa
 reveal go out with the evening job (9:05 pm), so they fit the 9 pm choice best.
 Measure it on the step counter before making it the default anywhere else.
 
-## Made by (owner, Oct 2026: "add at the bottom that this is created by me: my name or a link to lokeshbhatia.com")
+## Designed and developed by (owner, Oct 2026: "add at the bottom that this is created by me: my name or a link to lokeshbhatia.com")
 
 | Element | Level | Job / why |
 |---|---|---|
-| "Made by **Lokesh Bhatia** ↗" | P3 | Who made Chunav, the name linking to the portfolio (`MAKER_URL` in `src/lib/site.ts`, opens in a new tab so the poll stays). The very last, quietest line of Home and You (`MadeBy.tsx`), below the rules reminder: it never competes with voting. Words around the name are per language (Hindi: "लोकेश भाटिया ने बनाया"). |
+| "Designed and developed by Lokesh Bhatia" | P3 | Who made Chunav (owner, Oct 2026: "subtle, at the bottom; no underline, arrow, colour or bold"). One small (12 px) line in the quiet grey (`--ink-3`), plain weight, no underline or icon; the whole line links to the portfolio (`MAKER_URL` in `src/lib/site.ts`, new tab). The very last line of Home and You (`MadeBy.tsx`), below the rules reminder: it never competes with voting. Keyboard users still get the focus ring. |
 
 ## The Chunav mark (owner, Oct 2026: "a better icon that says what the app is and carries the brand")
 
