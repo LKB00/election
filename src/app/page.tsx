@@ -7,6 +7,7 @@ import Onboarding from '@/components/Onboarding';
 import PeopleCount from '@/components/PeopleCount';
 import Step from '@/components/Step';
 import RulesNotice from '@/components/RulesNotice';
+import MadeBy from '@/components/MadeBy';
 import DuelTiles from '@/components/DuelTiles';
 import PackRows from '@/components/PackRows';
 import { upcomingPacks } from '@/lib/packs';
@@ -136,6 +137,8 @@ export default async function Home() {
       {people}
       {/* P3: the 3-monthly rules reminder sits last, after everything there is to do. */}
       {!empty && <RulesNotice />}
+      {/* P3, the very last line: who made Chunav. */}
+      <MadeBy t={t} />
     </div>
   );
 }

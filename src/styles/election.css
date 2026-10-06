@@ -1194,6 +1194,9 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
 /* Home, bottom: "N views", kept quiet but with a big number (owner, Oct 2026: "make it subtle", then "show views, I want
    the number big"): no card, small faces in soft colours and a "+", the number only a touch bolder than the words
    (16px, owner: "57 looks too big", "it should be subtle"), then small muted words. */
+/* "Made by" (owner, Oct 2026): the last, quietest line of Home and You; the name is the link. */
+.made-by { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0 4px; margin: 20px auto 8px; color: var(--ink-2); text-align: center; }
+.made-by a { display: inline-flex; align-items: center; gap: 2px; }
 .people-count { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 24px auto 4px; color: var(--ink-2); }
 .people-faces { display: flex; flex: none; opacity: 0.85; }
 .people-face { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--paper); font-size: 12px; line-height: 1; }
