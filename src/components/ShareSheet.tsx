@@ -1,16 +1,20 @@
 'use client';
-import { Check, Download, EyeOff, Link2, MessageCircle, X } from 'lucide-react';
+import { Check, Download, EyeOff, Link2, Share2, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useOverlay } from '@/lib/useOverlay';
 import type { PollOption, PollView } from '@/lib/polls';
 import { useLang, useT } from '@/lib/lang';
 import { track } from '@/lib/track';
+import { MAX_CARD_NAME } from '@/lib/limits';
+import { FacebookIcon, TelegramIcon, WhatsAppIcon, XIcon } from './AppIcons';
 
-// "Show your ink": the moment after voting when people share. Built for the least drop-off:
-// WhatsApp first (one tap, message already written), the secret ballot on by default
-// (curiosity: "Guess who I picked?"), a story image with a small QR for Status/Instagram,
-// where links cannot be tapped. See docs/DESIGN.md (Sharing).
+// "Show your ink": the moment after voting when people share. One Share button opens the phone's own share menu with
+// the picture and the message together (Instagram, X, WhatsApp, Telegram… whatever the person uses), then quick buttons
+// for the common apps. The secret ballot is on by default (curiosity: "Guess who I picked?"). The message comes in three
+// styles and can be edited; an optional name makes the picture personal ("Lokesh voted"). See docs/DESIGN.md (Sharing).
+type Tone = 'dare' | 'ask' | 'short';
+const NAME_KEY = 'chunav-card-name';
 export default function ShareSheet({ poll, pick, shareCode, onClose }: { poll: PollView; pick: PollOption; shareCode: string; onClose: () => void }) {
   const t = useT();
   const lang = useLang();
@@ -20,6 +24,27 @@ export default function ShareSheet({ poll, pick, shareCode, onClose }: { poll: P
   const [busy, setBusy] = useState(false);
   // The card image is made on the server; it floats in once it has loaded (grey placeholder until then).
   const [loaded, setLoaded] = useState<string | null>(null);
+  const [tone, setTone] = useState<Tone>('dare');
+  // What the person typed over the suggested message (null = use the suggestion).
+  const [edited, setEdited] = useState<string | null>(null);
+  // The name on the picture: typed once, remembered on this phone only (never sent with the vote).
+  const [nameDraft, setNameDraft] = useState('');
+  const [name, setName] = useState('');
+  useEffect(() => {
+    try {
+      const n = localStorage.getItem(NAME_KEY) ?? '';
+      setNameDraft(n);
+      setName(n);
+    } catch {}
+  }, []);
+  const commitName = () => {
+    const n = nameDraft.trim().slice(0, MAX_CARD_NAME);
+    setName(n);
+    try {
+      if (n) localStorage.setItem(NAME_KEY, n);
+      else localStorage.removeItem(NAME_KEY);
+    } catch {}
+  };
 
   // Full name: a last name alone can be ambiguous ("Gandhi").
   const last = pick.label;
@@ -27,11 +52,15 @@ export default function ShareSheet({ poll, pick, shareCode, onClose }: { poll: P
   // address cannot reveal it.
   const mode = secret || !poll.myShareProof ? '&s=1' : `&o=${poll.myShareProof}`;
   const link = () => `${window.location.origin}/p/${poll.id}?f=${shareCode}${mode}${hi}`;
-  const card = `/api/card/${poll.id}?f=${shareCode}${mode}${hi}`;
+  const card = `/api/card/${poll.id}?f=${shareCode}${mode}${hi}${name ? `&n=${encodeURIComponent(name)}` : ''}`;
   // Wordle lesson: a short, spoiler-free line anyone can read in a chat (and your exit poll result, if you made one).
   const mark = poll.myGuess ? ` · ${t.exitMark(poll.myGuess.correct)}` : '';
-  const message = secret ? t.msgSecret(poll.title, mark) : t.msgOpen(poll.title, last, mark);
-  const text = () => `${message} ${link()}`;
+  const suggested =
+    tone === 'dare' ? (secret ? t.msgDare(poll.title, mark) : t.msgDareOpen(poll.title, last, mark))
+    : tone === 'ask' ? (secret ? t.msgAsk(poll.title) : t.msgAskOpen(poll.title, last))
+    : secret ? t.msgShort(poll.title) : t.msgShortOpen(poll.title, last);
+  const message = edited ?? suggested;
+  const text = (src?: string) => `${message} ${link()}${src ? `&src=${src}` : ''}`;
 
   // Phones: the page behind stays still, and the Back button closes the sheet (not the page).
   useOverlay(onClose, { back: true });
@@ -89,35 +118,59 @@ export default function ShareSheet({ poll, pick, shareCode, onClose }: { poll: P
     };
   }, [card]);
 
-  // Phones: share the image and the message together (Status, Instagram). Otherwise: download the image.
-  async function shareImage() {
+  async function imageBlob() {
+    if (image?.url === card) return image.blob;
+    const res = await fetch(card);
+    if (!res.ok) throw new Error(String(res.status));
+    return res.blob();
+  }
+  // The main button: the phone's own share menu with the picture and the message together, so it goes to any app
+  // (Instagram, X, WhatsApp, Telegram…). Without that menu (most computers) the quick buttons below do the job.
+  const [noMenu, setNoMenu] = useState(false);
+  async function shareAll() {
     setBusy(true);
     setImageFailed(false);
     try {
-      let blob = image?.url === card ? image.blob : null;
-      if (!blob) {
-        const res = await fetch(card);
-        if (!res.ok) throw new Error(String(res.status));
-        blob = await res.blob();
-      }
-      const file = new File([blob], 'i-voted.png', { type: 'image/png' });
-      if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], text: text() });
-      } else {
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'i-voted.png';
-        a.click();
-        // Later, not at once: Safari can cancel a download whose address is revoked straight away.
-        const href = a.href;
-        setTimeout(() => URL.revokeObjectURL(href), 10_000);
-      }
+      const file = new File([await imageBlob()], 'i-voted.png', { type: 'image/png' });
+      if (navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file], text: text('other') });
+      else if (navigator.share) await navigator.share({ text: text('other') });
+      else setNoMenu(true);
     } catch (e) {
       // Closing the phone's share menu is not an error; anything else is.
-      if ((e as Error)?.name !== 'AbortError') setImageFailed(true);
+      if ((e as Error)?.name !== 'AbortError') {
+        if (navigator.share) {
+          try {
+            await navigator.share({ text: text('other') });
+          } catch {}
+        } else setNoMenu(true);
+      }
     }
     setBusy(false);
   }
+  // Save the picture (for an Instagram story or Status from a computer, or to post later).
+  async function saveImage() {
+    setBusy(true);
+    setImageFailed(false);
+    try {
+      const blob = await imageBlob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'i-voted.png';
+      a.click();
+      // Later, not at once: Safari can cancel a download whose address is revoked straight away.
+      const href = a.href;
+      setTimeout(() => URL.revokeObjectURL(href), 10_000);
+    } catch {
+      setImageFailed(true);
+    }
+    setBusy(false);
+  }
+  const apps = [
+    { k: 'wa', name: 'WhatsApp', Icon: WhatsAppIcon, href: () => `https://wa.me/?text=${encodeURIComponent(text('wa'))}`, onClick: () => track('whatsapp') },
+    { k: 'x', name: 'X', Icon: XIcon, href: () => `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}&url=${encodeURIComponent(`${link()}&src=x`)}` },
+    { k: 'fb', name: 'Facebook', Icon: FacebookIcon, href: () => `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`${link()}&src=fb`)}` },
+    { k: 'tg', name: 'Telegram', Icon: TelegramIcon, href: () => `https://t.me/share/url?url=${encodeURIComponent(`${link()}&src=tg`)}&text=${encodeURIComponent(message)}` },
+  ];
 
   // Rendered at the top of the page, so the bottom bar never covers its buttons.
   return createPortal(
@@ -127,30 +180,54 @@ export default function ShareSheet({ poll, pick, shareCode, onClose }: { poll: P
         <p className="label">{t.showInk}</p>
         <h2>{t.tellFriends}</h2>
 
-        {/* What friends get: the image, and the exact message (so there are no surprises before sending). */}
+        {/* What friends get: the picture (with your name on it if you like) and the message, both editable here. */}
         <div className="sheet-body">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img key={card} className={'sheet-preview' + (loaded === card ? ' is-loaded' : '')} src={card} alt={t.cardAlt} onLoad={() => setLoaded(card)} />
           <div className="sheet-side">
-            <p className="label">{t.yourMessage}</p>
-            <p className="sheet-message">{message} <span className="muted">{t.link}</span></p>
+            <label className="label" htmlFor="card-name">{t.cardNameLabel}</label>
+            <input id="card-name" className="input sheet-name" value={nameDraft} maxLength={MAX_CARD_NAME} placeholder={t.cardNamePh} autoComplete="given-name" enterKeyHint="done"
+              onChange={(e) => setNameDraft(e.target.value)} onBlur={commitName} onKeyDown={(e) => e.key === 'Enter' && (e.currentTarget.blur())} />
           </div>
         </div>
-        <button type="button" className="me-row" onClick={() => setSecret((v) => !v)} aria-pressed={secret}>
+
+        <div className="sheet-msg">
+          <div className="sheet-tones" role="radiogroup" aria-label={t.yourMessage}>
+            {(['dare', 'ask', 'short'] as Tone[]).map((k) => (
+              <button key={k} type="button" role="radio" aria-checked={tone === k} className={'chip' + (tone === k ? ' chip-on' : '')} onClick={() => { setTone(k); setEdited(null); }}>
+                {k === 'dare' ? t.toneDare : k === 'ask' ? t.toneAsk : t.toneShort}
+              </button>
+            ))}
+          </div>
+          <label className="sr-only" htmlFor="share-msg">{t.msgEdit}</label>
+          <textarea id="share-msg" className="sheet-message sheet-edit" rows={4} value={message} onChange={(e) => setEdited(e.target.value)} />
+        </div>
+
+        <button type="button" className="me-row" onClick={() => { setSecret((v) => !v); setEdited(null); }} aria-pressed={secret}>
           <EyeOff size={20} strokeWidth={1.75} aria-hidden />
           <span><strong>{t.keepSecret}</strong><span className="small muted">{secret ? t.secretOn : t.secretOff(last)}</span></span>
           <span className={'switch' + (secret ? ' is-on' : '')} aria-hidden />
         </button>
 
-        <a className="btn btn-primary btn-lg sheet-main" href={`https://wa.me/?text=${encodeURIComponent(`${message} ${link()}&src=wa`)}`} target="_blank" rel="noopener noreferrer" onClick={() => track('whatsapp')}>
-          <MessageCircle size={16} strokeWidth={1.75} aria-hidden /> {t.sendWhatsApp}
-        </a>
-        <div className="sheet-row">
-          <button type="button" className="btn btn-ghost btn-lg" onClick={shareImage} disabled={busy}>
-            <Download size={15} strokeWidth={1.75} aria-hidden /> {busy ? t.makingImage : t.storyImage}
+        {/* One main action: the phone's own share menu (any app), with the picture and the message. */}
+        <button type="button" className="btn btn-primary btn-lg sheet-main" onClick={shareAll} disabled={busy}>
+          <Share2 size={16} strokeWidth={1.75} aria-hidden /> {busy ? t.makingImage : t.shareNow}
+        </button>
+        <p className={'label sheet-or' + (noMenu ? ' is-hint' : '')}>{t.shareOr}</p>
+        <div className="sheet-apps">
+          {apps.map(({ k, name, Icon, href, onClick }) => (
+            <a key={k} className="sheet-app" href={href()} target="_blank" rel="noopener noreferrer" onClick={onClick}>
+              <span className="sheet-app__disc"><Icon /></span>
+              <span className="sheet-app__name">{name}</span>
+            </a>
+          ))}
+          <button type="button" className="sheet-app" onClick={saveImage} disabled={busy}>
+            <span className="sheet-app__disc"><Download size={20} strokeWidth={1.75} aria-hidden /></span>
+            <span className="sheet-app__name">{t.saveImage}</span>
           </button>
-          <button type="button" className="btn btn-ghost btn-lg" onClick={copy}>
-            {copied ? <Check size={15} strokeWidth={2} aria-hidden /> : <Link2 size={15} strokeWidth={1.75} aria-hidden />} {copied ? t.copied : t.copyLink}
+          <button type="button" className="sheet-app" onClick={copy}>
+            <span className="sheet-app__disc">{copied ? <Check size={20} strokeWidth={2} aria-hidden /> : <Link2 size={20} strokeWidth={1.75} aria-hidden />}</span>
+            <span className="sheet-app__name">{copied ? t.copied : t.copyLink}</span>
           </button>
         </div>
         {imageFailed && <p className="small duel-error" role="alert">{t.imageFailed}</p>}

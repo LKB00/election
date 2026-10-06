@@ -97,7 +97,7 @@ export const suggestSchema = z
   .object({ label: text().pipe(z.string().min(1, 'One choice is empty. Fill it in or remove it.').max(MAX_CHOICE, ERR.choiceLong)).refine(visible, 'One choice is empty. Fill it in or remove it.') })
   .refine((p) => !hasBlockedWord(p.label), 'Please remove the abusive words.');
 const code = () => z.string().regex(/^[\w-]{1,64}$/);
-export const VOTE_SOURCES = ['wa', 'ig', 'qr', 'link', 'other'] as const;
+export const VOTE_SOURCES = ['wa', 'ig', 'x', 'fb', 'tg', 'qr', 'link', 'other'] as const;
 export const voteSchema = z.object({
   optionId: code(),
   picks: z.array(code()).max(MAX_CHOICES).optional(),

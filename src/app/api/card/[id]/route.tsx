@@ -7,6 +7,9 @@ import { clip, drawable } from '@/lib/labels';
 import { isShareProof } from '@/lib/secret';
 import { getPoll, groupSplit } from '@/lib/polls';
 import { cardDict, isLang } from '@/lib/i18n';
+import { MAX_CARD_NAME } from '@/lib/limits';
+import { hasBlockedWord } from '@/lib/moderation';
+import { cleanText } from '@/lib/validation';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,6 +26,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   // Images are English or Hinglish: the image renderer cannot join Hindi letters (the message and link title are Hindi).
   const lang = url.searchParams.get('l');
   const t = cardDict(lang);
+  // The sender's own name on the picture ("Lokesh voted"), if they typed one: cleaned, short, drawable, polite.
+  const rawName = cleanText(url.searchParams.get('n') ?? '').slice(0, MAX_CARD_NAME);
+  const name = rawName && drawable(rawName) && !hasBlockedWord(rawName) ? rawName : '';
   const db = await getDb();
   const poll = await getPoll(db, id, null);
   if (!poll) return new Response('Not found', { status: 404 });
@@ -51,7 +57,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   return new ImageResponse(
     (
-      <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '96px 72px 72px', background: CARD.paper, color: CARD.ink, fontFamily: 'Figtree' }}>
+      <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '88px 72px 72px', background: CARD.paper, color: CARD.ink, fontFamily: 'Figtree' }}>
         <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center', fontSize: 40, fontWeight: 700 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <div style={{ display: 'flex', width: 40, height: 40, borderRadius: 20, background: CARD.ink, border: `10px solid ${CARD.lime}` }} />
@@ -60,30 +66,50 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
           <div style={{ display: 'flex', padding: '10px 24px', borderRadius: 999, background: CARD.lime, fontSize: 30 }}>{t.cardFun}</div>
         </div>
 
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={handDataUri(240)} width={240} height={312} style={{ marginTop: 56 }} alt="" />
-        <div style={{ display: 'flex', marginTop: 40, fontSize: 132, fontWeight: 700, letterSpacing: -3 }}>{t.cardVoted}</div>
-        {drawable(poll.title) && <div style={{ display: 'flex', marginTop: 8, fontSize: 52, color: CARD.muted, textAlign: 'center' }}>{t.cardIn(clip(poll.title, 40))}</div>}
-
-        <div style={{ display: 'flex', gap: rating ? 12 : 32, marginTop: 56, padding: 32, borderRadius: 40, background: CARD.sand }}>
-          {shown.map((o, n) => {
-            const mine = showPick && o.id === pickId;
-            return (
-              <div key={o.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: rating ? 156 : 380, padding: 24, borderRadius: 28, background: mine ? CARD.tints[n % CARD.tints.length] : CARD.white, border: mine ? `6px solid ${CARD.ink}` : '6px solid transparent', opacity: showPick && !mine ? 0.6 : 1 }}>
-                {o.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={abs(o.imageUrl)} width={300} height={375} style={{ borderRadius: 20, objectFit: 'cover' }} alt="" />
-                ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: rating ? 120 : 300, height: rating ? 120 : 300, borderRadius: 150, background: CARD.tints[n % CARD.tints.length], fontSize: rating ? 72 : o.emoji ? 150 : 110, fontWeight: 700 }}>{faces[n]}</div>
-                )}
-                {!rating && drawable(o.label) && <div style={{ display: 'flex', marginTop: 20, fontSize: 44, fontWeight: 700 }}>{clip(o.label, 18)}</div>}
-                {mine && <div style={{ display: 'flex', marginTop: 8, fontSize: 32, fontWeight: 700, color: CARD.green, letterSpacing: 2 }}>{t.cardMyVote}</div>}
-              </div>
-            );
-          })}
+        {/* Who voted (your name if you added it) next to the inked finger, and how many have voted so far. */}
+        <div style={{ display: 'flex', width: '100%', alignItems: 'center', gap: 32, marginTop: 64 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={handDataUri(150)} width={150} height={195} alt="" />
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+            <div style={{ display: 'flex', fontSize: name ? 92 : 112, fontWeight: 700, letterSpacing: -3, lineHeight: 1.05 }}>{name ? t.cardNameVoted(name) : t.cardVoted}</div>
+            {poll.participants > 0 && <div style={{ display: 'flex', marginTop: 12, fontSize: 40, color: CARD.muted }}>{t.cardVotersN(poll.participants)}</div>}
+          </div>
         </div>
-        <div style={{ display: 'flex', marginTop: 40, fontSize: 60, fontWeight: 700 }}>
-          {showPick && pick ? t.cardPicked(rating ? pick.emoji ?? pick.label : drawable(pick.label) ? pick.label : String(poll.options.indexOf(pick) + 1)) : t.cardGuess}
+
+        {/* The space is shared out evenly above and below the question and ballot (no big empty gap). */}
+        <div style={{ display: 'flex', flex: 1, minHeight: 40 }} />
+        {/* The question is the hero: big, on a white card. */}
+        {drawable(poll.title) && (
+          <div style={{ display: 'flex', width: '100%', padding: '44px 48px', borderRadius: 40, background: CARD.white, fontSize: poll.title.length > 60 ? 62 : 78, fontWeight: 700, lineHeight: 1.15, letterSpacing: -1 }}>
+            {clip(poll.title, 90)}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', marginTop: 32, padding: 32, borderRadius: 40, background: CARD.sand }}>
+          <div style={{ display: 'flex', gap: rating ? 12 : 28 }}>
+            {shown.map((o, n) => {
+              const mine = showPick && o.id === pickId;
+              return (
+                <div key={o.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: rating ? 156 : 400, padding: 24, borderRadius: 28, background: mine ? CARD.tints[n % CARD.tints.length] : CARD.white, border: mine ? `6px solid ${CARD.ink}` : '6px solid transparent', opacity: showPick && !mine ? 0.55 : 1 }}>
+                  {o.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={abs(o.imageUrl)} width={330} height={380} style={{ borderRadius: 20, objectFit: 'cover' }} alt="" />
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: rating ? 120 : 290, height: rating ? 120 : 290, borderRadius: 150, background: CARD.tints[n % CARD.tints.length], fontSize: rating ? 72 : o.emoji ? 130 : 100, fontWeight: 700 }}>{faces[n]}</div>
+                  )}
+                  {!rating && drawable(o.label) && <div style={{ display: 'flex', marginTop: 20, fontSize: 44, fontWeight: 700 }}>{clip(o.label, 18)}</div>}
+                  {mine && <div style={{ display: 'flex', marginTop: 8, fontSize: 32, fontWeight: 700, color: CARD.green, letterSpacing: 2 }}>{t.cardMyVote}</div>}
+                </div>
+              );
+            })}
+          </div>
+          {/* Secret: a seal across the ballot, then the dare. Open: your pick in words. */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 28 }}>
+            {!showPick && <div style={{ display: 'flex', padding: '10px 24px', borderRadius: 999, background: CARD.ink, color: CARD.paper, fontSize: 30, fontWeight: 700, letterSpacing: 2 }}>{t.cardSecret.toUpperCase()}</div>}
+            <div style={{ display: 'flex', fontSize: 52, fontWeight: 700 }}>
+              {showPick && pick ? t.cardPicked(rating ? pick.emoji ?? pick.label : drawable(pick.label) ? pick.label : String(poll.options.indexOf(pick) + 1)) : t.cardGuess}
+            </div>
+          </div>
         </div>
         {(group || friends.all > 0) && (
           <div style={{ display: 'flex', marginTop: 24, padding: '14px 28px', borderRadius: 999, background: CARD.lime, fontSize: 36, fontWeight: 700 }}>
@@ -91,14 +117,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
           </div>
         )}
 
-        <div style={{ display: 'flex', flex: 1, minHeight: 48 }} />
-        <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', flex: 1, minHeight: 40 }} />
+        <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', padding: 32, borderRadius: 40, background: CARD.lime }}>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', fontSize: 44, fontWeight: 700 }}>{t.cardScan}</div>
-            <div style={{ display: 'flex', fontSize: 30, color: CARD.muted }}>{url.host}</div>
+            <div style={{ display: 'flex', fontSize: 60, fontWeight: 700, letterSpacing: -1 }}>{t.cardYourTurn}</div>
+            <div style={{ display: 'flex', fontSize: 36, marginTop: 4 }}>{t.cardScan} · {url.host}</div>
           </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={qr} width={200} height={200} style={{ borderRadius: 16 }} alt="" />
+          <img src={qr} width={210} height={210} style={{ borderRadius: 16 }} alt="" />
         </div>
       </div>
     ),

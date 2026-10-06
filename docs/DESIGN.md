@@ -1269,3 +1269,18 @@ planned day must exist; the health check never shows database errors; the evenin
 Then (owner: "fix both"): the top bar's Back remembers moving inside the site (a link opened from WhatsApp, then Polls →
 a poll, goes Back to Polls, not Home); Add / Delete a suggested choice and Fix a typo's Save ignore a second tap while
 saving.
+
+## Share your ink, rebuilt (owner, Oct 2026: "better, intuitive; the I voted card needs to be better; a better message;
+## not forced to WhatsApp: Insta, Twitter, anywhere; more personal")
+
+- **The picture** (`/api/card/[id]`, 1080×1920): "**Lokesh voted**" (or "I voted") next to the inked finger, with how many
+  people have voted; the **question as the hero** on a white card; the two choices, with a dark "SECRET BALLOT" seal and
+  "Guess who I picked?" (or your pick marked and "I picked X. You?"); "**Your turn** · Scan to vote" with the QR on a
+  yellow band. The name is optional, typed once in the panel and kept on the phone (`chunav-card-name`, at most
+  `MAX_CARD_NAME` letters); it is only sent to draw the picture (cleaned, word filter), never stored with the vote.
+- **The message**: three styles, Dare / Ask / Short, each for a secret pick and an open one, in all three languages;
+  the text box can be edited. Turning "Keep my vote secret" on or off, or picking a style, brings back the suggestion.
+- **Sharing**: one ink **Share** button opens the phone's own share menu with the picture and the message together,
+  so it goes to any app (Instagram, X, WhatsApp, Telegram, Snapchat…). Under "Or send to": WhatsApp, X, Facebook,
+  Telegram, Save image (for a story from a computer) and Copy link, as round buttons with names. Links carry `src=`
+  (wa / x / fb / tg / other) so the maker's page can count where votes came from.

@@ -12,6 +12,8 @@ export const MAX_CHOICES = 10;
 /** Suggested choices waiting for the maker, per poll. */
 export const MAX_WAITING_SUGGESTIONS = 30;
 export const MIN_NAME = 2;
+/** The optional name drawn on the "I voted" picture ("Lokesh voted"); kept on the phone, never stored with a vote. */
+export const MAX_CARD_NAME = 20;
 export const MAX_NAME = 30;
 export const MAX_GROUP = 200;
 /** A group poll with no end time ends after this many days (one missing friend must not keep it open for ever). */
