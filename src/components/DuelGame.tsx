@@ -824,6 +824,8 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
 
   // The card under the result (P1 after voting): shown once the numbers are in and counting day has finished.
   const verdictOn = revealed && !!mine && !counting;
+  // What the main button leads to, said on it (owner, Oct 2026: "what does Next mean?"): another poll, or the end.
+  const hasNext = deck.some((p, k) => k !== i && p.id !== poll.id && isOpen(p));
   return (
     <div
       className={'tot duel' + (revealed ? ' is-revealed' : '') + (poll.electionMode ? '' : ' is-light')}
@@ -1141,7 +1143,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
 
       {msg && <p className="duel-error" role="alert">{msg}</p>}
 
-      {/* The one next step, pinned at thumb height on phones. */}
+      {/* The two next steps, in the page right under the result card (not a floating bar: owner, Oct 2026). */}
       <div className={'tot-result' + (barOn ? ' is-shown' : '')} aria-live="polite">
         {revealed && counting && (
           <p className="duel-counting"><span className="live-dot" aria-hidden /> <span><strong>{t.counting}</strong> · {t.round(countRound! + 1)}: {ticker}</span></p>
@@ -1161,7 +1163,7 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
                 <Share2 size={14} strokeWidth={1.75} aria-hidden /> {copied ? t.linkCopied : poll.closed ? t.shareResult : t.shareInk}
               </button>}
               <button type="button" className="btn btn-primary" onClick={next} ref={nextRef}>
-                {t.next} <ArrowRight size={14} strokeWidth={1.75} aria-hidden />
+                {hasNext ? t.nextPoll : t.nextFinish} {hasNext && <ArrowRight size={14} strokeWidth={1.75} aria-hidden />}
               </button>
             </span>
           </>

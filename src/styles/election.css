@@ -1224,3 +1224,9 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
 .duel-more__body { display: flex; flex-direction: column; gap: 16px; padding: 8px 4px 4px; }
 /* "Someone wants your pick" is the reason to vote; once you have voted it is gone. */
 .poll-main:has(.duel.is-revealed, .duel-inked, .duel-verdict) .poll-ask { display: none; }
+
+/* Share / Next poll: part of the page, right under the result card, not a floating box (owner, Oct 2026: "this looks off,
+   not part of the UI"). gb's phone.css pins .tot-result as a white card with a shadow; this undoes it for the poll. */
+.duel .tot-result.is-shown { position: static; margin: 0; padding: 0; border-radius: 0; background: none; box-shadow: none; }
+.duel .tot-result.is-shown .duel-actions { width: 100%; justify-content: stretch; gap: 10px; }
+.duel .tot-result.is-shown .duel-actions .btn { flex: 1 1 0; justify-content: center; min-height: 48px; }
