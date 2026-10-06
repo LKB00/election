@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { ArrowRight, Check, Link2, Share2 } from 'lucide-react';
+import { ArrowRight, Check, Clock, Link2, Share2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useT } from '@/lib/lang';
 import { track } from '@/lib/track';
@@ -9,7 +9,7 @@ import Burst from './Burst';
 import Spot from './Spot';
 
 // Right after creating a duel, the job is to send it (P1). Voting yourself is P2 (the duel is below).
-export default function CreatedPanel({ id, title, path = `/p/${id}`, heading, text, button, manageHref }: { id: string; title: string; /** A pack's page instead of a poll's. */ path?: string; heading?: string; text?: string; button?: string; /** The maker's page for this poll (votes as they come in). */ manageHref?: string }) {
+export default function CreatedPanel({ id, title, path = `/p/${id}`, heading, text, button, manageHref, held = false }: { id: string; title: string; /** A pack's page instead of a poll's. */ path?: string; heading?: string; text?: string; button?: string; /** The maker's page for this poll (votes as they come in). */ manageHref?: string; /** Politics and photo polls wait for the owner's check before they show in public lists. */ held?: boolean }) {
   const t = useT();
   const [copied, setCopied] = useState(false);
   // Remove "?new=1" from the address bar, so a copied address or a refresh shows the normal page to friends.
@@ -53,6 +53,8 @@ export default function CreatedPanel({ id, title, path = `/p/${id}`, heading, te
       <Spot kind="live" size={132} />
       <h2>{heading ?? t.createdTitle}</h2>
       <p className="small muted">{t.createdNote}</p>
+      {/* Said up front, so a poll missing from the Polls list never looks like a bug (owner, Oct 2026). */}
+      {held && <p className="created-held"><Clock size={16} strokeWidth={2} aria-hidden /> <span>{t.createdHeld}</span></p>}
       <span className="row wrap">
         <button type="button" className="btn btn-primary btn-lg" onClick={share}><Share2 size={15} strokeWidth={1.75} aria-hidden /> {button ?? t.shareDuel}</button>
         <button type="button" className="btn btn-ghost btn-lg" onClick={copy}>

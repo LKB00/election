@@ -56,6 +56,8 @@ export type PollView = {
   featured: boolean;
   /** Checked by the owner (only reviewed duels are offered to search engines). */
   reviewed: boolean;
+  /** Waiting for the owner's check before it shows in public lists (politics and photo polls); its link works. */
+  heldForReview: boolean;
   /** Voting paused after a sudden flood of votes, until this time (results stay visible). */
   pausedUntil: string | null;
   /** Election silence window: results of this politics duel stay sealed for everyone until this time. */
@@ -397,6 +399,8 @@ export async function getPoll(
     resultsVisible,
     featured: poll.featured,
     reviewed: poll.reviewed,
+    // Same rule as listPolls: held until the owner looks (politics, photos); group polls are never listed anyway.
+    heldForReview: !poll.reviewed && !poll.groupSize && (poll.category === 'politics' || poll.hasPhotos),
     sealedUntil: sealed,
     pausedUntil: poll.frozenUntil && poll.frozenUntil.getTime() > Date.now() ? poll.frozenUntil.toISOString() : null,
     reasons: parseReasons(poll.reasons),

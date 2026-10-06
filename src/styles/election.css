@@ -943,6 +943,9 @@ html { scroll-padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); scr
 /* Counts use ink (as the vote-per-hour bars and your result); green stays for "good news" signals only. */
 .maker-sources .meter span { background: var(--ink-2); }
 .created-manage { display: inline-flex; align-items: center; gap: 4px; margin-top: 12px; }
+/* After posting a politics or photo poll: it works by link now and joins the Polls list after the owner's check. */
+.created-held { display: flex; align-items: flex-start; gap: 8px; max-width: 36ch; margin: 4px auto 8px; padding: 10px 12px; border-radius: var(--radius-field); background: var(--attention-soft); color: var(--ink); font-size: 14px; line-height: 20px; text-align: left; }
+.created-held svg { flex: none; margin-top: 2px; }
 
 /* Splash (docs/DESIGN.md, "Splash and onboarding"): ~1.2s, then it lifts by itself; never blocks a tap after that. */
 .splash { position: fixed; inset: 0; z-index: 100; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: var(--paper); color: var(--ink); }

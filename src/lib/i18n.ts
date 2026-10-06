@@ -197,6 +197,7 @@ const en = {
   // created panel
   createdTitle: 'Your poll is live. Send it to friends.',
   createdNote: 'Send it to the group. You can vote too, below.',
+  createdHeld: 'Works by link now. It shows in the Polls list after a quick check.',
   shareDuel: 'Share the poll',
   // create form
   yourQuestion: 'Your question',
@@ -906,6 +907,7 @@ const hi: Dict = {
   goToday: 'आज के सवाल पर जाएं',
   createdTitle: 'आपका पोल लाइव है। दोस्तों को भेजें।',
   createdNote: 'इसे ग्रुप में भेजें। आप भी नीचे वोट कर सकते हैं।',
+  createdHeld: 'अभी लिंक से चलता है। एक छोटी जांच के बाद पोल की सूची में दिखेगा।',
   shareDuel: 'पोल शेयर करें',
   yourQuestion: 'आपका सवाल',
   questionPh: 'विराट, रोहित या धोनी?',
@@ -1575,6 +1577,7 @@ const hg: typeof en = {
   goToday: 'Aaj ke sawaal par jao',
   createdTitle: 'Aapka poll live hai. Doston ko bhejo.',
   createdNote: 'Ise group mein bhejo. Aap bhi neeche vote kar sakte ho.',
+  createdHeld: 'Abhi link se chalta hai. Ek chhoti jaanch ke baad Polls list mein dikhega.',
   shareDuel: 'Poll share karo',
   yourQuestion: 'Aapka sawaal',
   questionPh: 'Virat, Rohit ya Dhoni?',

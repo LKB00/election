@@ -1208,3 +1208,9 @@ Views = every page opened, all days added up (`viewTotal`): Home and polls count
 so views from before this change are included) and `PageView` in the layout counts every other page (`page_view`).
 Never shown smaller than the voter count. New visitors (each phone once, `FirstVisit` + `election-visited`) are still
 counted, for the owner's admin page only. P3.
+
+**"Waiting for a check" note after posting** (owner, Oct 2026: "I created a poll but it is not showing in the Polls
+section"): politics polls and polls with photos stay out of public lists until the owner approves them on /admin (their
+link works at once). The panel after posting now says so in one soft line with a clock: "Works by link now. It shows in
+the Polls list after a quick check." (`heldForReview` from `getPoll`, same rule as `listPolls`). P2, under the share
+buttons' note; not shown for everyday polls.
