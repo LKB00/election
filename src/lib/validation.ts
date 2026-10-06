@@ -21,8 +21,8 @@ export const cleanText = (s: string) =>
     .replace(/[\u00AD\u180E\u200B\u200E\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
-/** "Rahul", "rahul." and "RAHUL " are the same choice (letters and numbers only; an emoji-only choice as it is). */
-export const sameKey = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '') || s;
+export { sameKey } from './same';
+import { sameKey } from './same';
 /** Photos: JPEG only (every phone browser can make one, and the share-image renderer can draw it), at most ~110 KB. */
 export { MAX_PHOTO_CHARS };
 export function isPhoto(dataUrl: string): boolean {

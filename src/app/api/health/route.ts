@@ -10,6 +10,8 @@ export async function GET() {
     await (await getDb()).execute(sql`select 1`);
     return NextResponse.json({ ok: true });
   } catch (err) {
-    return NextResponse.json({ ok: false, error: err instanceof Error ? err.message : 'error' }, { status: 503 });
+    // The details go to the server log only; the public answer never shows database errors.
+    console.error('health', err);
+    return NextResponse.json({ ok: false, error: 'database' }, { status: 503 });
   }
 }

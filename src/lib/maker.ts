@@ -103,8 +103,10 @@ export async function editPoll(db: Db, id: string, uid: string, e: { title: stri
     await tx.select({ id: polls.id }).from(polls).where(eq(polls.id, id)).for('update');
     const [{ n }] = await tx.select({ n: sql<number>`count(*)::int` }).from(votes).where(eq(votes.pollId, id));
     if (n > 0) return 'voted';
-    const mine = await tx.select({ id: options.id, label: options.label }).from(options).where(eq(options.pollId, id));
-    if (e.options.some((o) => !mine.some((m) => m.id === o.id))) return 'bad_option';
+    const mine = await tx.select({ id: options.id, label: options.label, isOther: options.isOther }).from(options).where(eq(options.pollId, id));
+    // Each choice once, never the "Other" row (its word is the site's, not the maker's).
+    if (new Set(e.options.map((o) => o.id)).size !== e.options.length) return 'bad_option';
+    if (e.options.some((o) => !mine.some((m) => m.id === o.id && !m.isOther))) return 'bad_option';
     // The choices after the fix (sent ones changed, the rest as they are) must still all differ.
     const after = mine.map((m) => e.options.find((o) => o.id === m.id)?.label ?? m.label);
     if (new Set(after.map(sameKey)).size !== after.length) return 'same';
@@ -196,11 +198,17 @@ export async function decideSuggestion(db: Db, id: string, uid: string, sid: str
     await tx.select({ id: polls.id }).from(polls).where(eq(polls.id, id)).for('update');
     const [s] = await tx.select().from(suggestions).where(and(eq(suggestions.id, sid), eq(suggestions.pollId, id))).limit(1);
     if (!s) return 'not_found';
+    // An ended poll gets no new choices (its result is final).
+    if (add && p.endsAt && p.endsAt.getTime() <= Date.now()) return 'not_found';
     if (add) {
-      const opts = await tx.select({ label: options.label, position: options.position }).from(options).where(eq(options.pollId, id));
+      const opts = await tx.select({ id: options.id, label: options.label, position: options.position, isOther: options.isOther }).from(options).where(eq(options.pollId, id));
       if (opts.length >= MAX_CHOICES) return 'full';
       if (!opts.some((o) => sameKey(o.label) === sameKey(s.label))) {
-        await tx.insert(options).values({ id: nanoid(10), pollId: id, label: s.label, position: Math.max(-1, ...opts.map((o) => o.position)) + 1, emoji: s.emoji });
+        // "Other" stays last: the new choice takes its place and Other moves one down.
+        const other = opts.find((o) => o.isOther);
+        const place = other ? other.position : Math.max(-1, ...opts.map((o) => o.position)) + 1;
+        if (other) await tx.update(options).set({ position: other.position + 1 }).where(eq(options.id, other.id));
+        await tx.insert(options).values({ id: nanoid(10), pollId: id, label: s.label, position: place, emoji: s.emoji });
         const now = politicsNow(p, s.label);
         if ('category' in now) await tx.update(polls).set(now).where(eq(polls.id, id));
       }

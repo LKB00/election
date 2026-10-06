@@ -13,6 +13,7 @@ export default function AdminRow({ item, adminKey }: { item: ReviewItem; adminKe
   const [done, setDone] = useState(false);
   // The 2-hour clock for photo reports (IT Rules): show how long ago the first report came.
   const [now] = useState(() => Date.now());
+  const [failed, setFailed] = useState('');
   const mins = item.firstReportAt ? Math.max(0, Math.round((now - new Date(item.firstReportAt).getTime()) / 60_000)) : null;
   const photoReport = item.reasons.some((r) => r === 'private' || r === 'me');
   async function act(action: 'hide' | 'show' | 'approve' | 'resume') {
@@ -30,7 +31,8 @@ export default function AdminRow({ item, adminKey }: { item: ReviewItem; adminKe
         : { hidden: false, reviewed: true, paused: false },
       );
       setDone(true);
-    }
+      setFailed('');
+    } else setFailed(res ? t.errGeneric : t.noNetTry); // the photo-report clock is running: a failure must show
     setBusy(false);
   }
   return (
@@ -62,6 +64,7 @@ export default function AdminRow({ item, adminKey }: { item: ReviewItem; adminKe
         )}
         {!state.reviewed && <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => act('approve')}>{t.adminApprove}</button>}
       </span>
+      {failed && <p className="small duel-error" role="alert">{failed}</p>}
     </div>
   );
 }

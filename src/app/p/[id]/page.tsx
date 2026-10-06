@@ -80,7 +80,7 @@ export default async function DuelPage({ params, searchParams }: Props) {
         ? t.labelVoted
         : poll.friend.known
           ? t.labelDared
-          : fromInside || poll.maker
+          : fromInside || poll.maker || mine
             ? null
             : t.labelAsk;
   // (Friend: the label says why you are here; the line in the game holds the hook, "their pick is sealed".)
@@ -122,7 +122,7 @@ export default async function DuelPage({ params, searchParams }: Props) {
       )}
       </PollIntro>
       <section className="home-game duel-first" aria-label={t.pollRegion}>
-        <DuelGame deck={deck} start={0} via={f ?? null} />
+        <DuelGame deck={deck} start={0} via={f ?? null} ownId={mine ? poll.id : undefined} />
       </section>
       </div>
       {/* Computers (election.css, "Desktop"): the poll on the left, a few more to vote on in a column on the right, the

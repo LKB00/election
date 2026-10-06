@@ -13,6 +13,7 @@ import { rememberMyPoll } from './MyPolls';
 import type { Picture } from './PicturePicker';
 import PreviewCard, { previewRules, type PreviewPoll } from './PreviewCard';
 import { dateLocale, monthStyle } from '@/lib/time';
+import { sameKey } from '@/lib/same';
 import { GROUP_DEFAULT_DAYS, MAX_CHOICE, MAX_CHOICES, MAX_DETAILS, MAX_GROUP, MAX_TITLE, MIN_CHOICES, MIN_TITLE } from '@/lib/limits';
 // Loaded only when opened (less code for cheap phones to download before the form works).
 /** "Hot take": the faces for Agree / Depends / Disagree (the words come from i18n, in the maker's language). */
@@ -137,7 +138,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   }, [title, choices, kind, calledIt]);
   const [error, setError] = useState('');
   // Errors show under the field they belong to, and focus moves there.
-  const [fieldError, setFieldError] = useState<{ title?: string; choices?: string; end?: string }>({});
+  const [fieldError, setFieldError] = useState<{ title?: string; choices?: string; end?: string; group?: string }>({});
   // P3 settings are one line of chips; each opens its small box underneath, one at a time.
   const [open, setOpen] = useState<'ends' | 'topic' | 'details' | 'group' | null>(null);
   // The less-used settings (Election mode, votes can change, end time, details) wait behind "More options".
@@ -204,25 +205,32 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
 
   function check() {
     const filled = choices.map((c) => c.trim().replace(/\s+/g, ' ')).filter(Boolean);
-    const errs: { title?: string; choices?: string; end?: string } = {};
-    if (title.trim().length < 3) errs.title = t.errTitle;
+    const errs: { title?: string; choices?: string; end?: string; group?: string } = {};
+    if (title.trim().length < MIN_TITLE) errs.title = t.errTitle;
     if (isRating) {
       /* a rating poll has its five faces already */
     } else if (isDates) {
-      if (filledDates.length < 2) errs.choices = t.errChoices;
-    } else if (filled.length < 2) errs.choices = t.errChoices;
-    else if (new Set(filled.map((c) => c.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '') || c)).size !== filled.length) errs.choices = t.errSame;
+      if (filledDates.length < MIN_CHOICES) errs.choices = t.errChoices;
+    } else if (filled.length < MIN_CHOICES) errs.choices = t.errChoices;
+    // The server's own rule (Hindi vowel signs count), so the form and the server never disagree.
+    else if (new Set(filled.map(sameKey)).size !== filled.length) errs.choices = t.errSame;
+    // A group size outside 2–MAX_GROUP used to be dropped without a word.
+    if (groupSize && !isGroup) errs.group = t.errGroup(MAX_GROUP);
     if (endsAt && !(new Date(endsAt).getTime() > Date.now())) errs.end = t.errEnd;
     setFieldError(errs);
     if (errs.title) document.getElementById('title')?.focus();
     else if (errs.choices) document.querySelector<HTMLInputElement>('input[data-choice]')?.focus();
-    else if (errs.end) {
+    else if (errs.group) {
+      setOpen('group');
+      setSettingsOpen(true);
+      setTimeout(() => document.getElementById('group')?.focus(), 0);
+    } else if (errs.end) {
       // The end time sits under "More options": open it so the message is seen.
       setOpen('ends');
       setSettingsOpen(true);
       setTimeout(() => document.getElementById('end')?.focus(), 0);
     }
-    return !errs.title && !errs.choices && !errs.end;
+    return !errs.title && !errs.choices && !errs.end && !errs.group;
   }
 
   function post() {
@@ -530,9 +538,9 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
                   <div className="create-panel">
                     <span className="search">
                       <Users size={14} strokeWidth={1.75} aria-hidden />
-                      <input id="group" type="number" inputMode="numeric" min={2} max={MAX_GROUP} value={groupSize} placeholder="12" aria-label={t.grpHow} onChange={(e) => setGroupSize(e.target.value.replace(/\D/g, '').slice(0, 3))} />
+                      <input id="group" type="number" inputMode="numeric" min={2} max={MAX_GROUP} value={groupSize} placeholder="12" aria-label={t.grpHow} onChange={(e) => { setGroupSize(e.target.value.replace(/\D/g, '').slice(0, 3)); setFieldError((f) => ({ ...f, group: undefined })); }} />
                     </span>
-                    <p className="small muted">{t.grpHow} {t.grpNote(GROUP_DEFAULT_DAYS)}</p>
+                    {fieldError.group ? <p className="small duel-error" role="alert">{fieldError.group}</p> : <p className="small muted">{t.grpHow} {t.grpNote(GROUP_DEFAULT_DAYS)}</p>}
                   </div>
                 )}
               </li>

@@ -41,7 +41,13 @@ export default function TvScreen({ initial, qr, link }: { initial: PollView; qr:
     document.addEventListener('fullscreenchange', on);
     return () => document.removeEventListener('fullscreenchange', on);
   }, []);
-  const toggleFull = () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.()).catch?.(() => undefined);
+  // iPhone has no full screen for pages: the button is hidden there (it used to do nothing).
+  const [canFull, setCanFull] = useState(false);
+  useEffect(() => setCanFull(!!document.fullscreenEnabled), []);
+  const toggleFull = () => {
+    const p = document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.();
+    p?.catch(() => undefined);
+  };
 
   const shown = poll.resultsVisible && poll.totalVotes > 0;
   const pcts = sharesAddUp(poll.kind) ? wholePercents(poll.options.map((o) => o.percent)) : poll.options.map((o) => Math.round(o.percent));
@@ -63,7 +69,7 @@ export default function TvScreen({ initial, qr, link }: { initial: PollView; qr:
           {poll.closed ? <strong>{poll.electionMode ? t.declaredTitle : t.finalTitle}</strong> : <><span className="live-dot" aria-hidden /> {t.tvLive}</>}
           <span className="tv-count"> · {t.votes(poll.participants)}</span>
         </p>
-        {!full && (
+        {!full && canFull && (
           <button type="button" className="btn btn-ghost tv-full" onClick={toggleFull}>
             <Maximize2 size={16} strokeWidth={2} aria-hidden /> {t.tvFull}
           </button>
@@ -83,7 +89,7 @@ export default function TvScreen({ initial, qr, link }: { initial: PollView; qr:
             {poll.options.map((o, n) => (
               <li key={o.id} className={'tv-option' + (shown ? '' : ' is-plain') + (n === leader ? ' is-lead' : '')} style={{ '--tone': `var(--p-${TONES[n % TONES.length]})` } as React.CSSProperties}>
                 <span className="tv-face" aria-hidden>{o.emoji ?? letters[n]}</span>
-                <span className="tv-label">{o.isOther ? t.otherChoice : o.label}</span>
+                <span className="tv-label">{o.isOther ? t.otherChoice : poll.kind === 'rating' ? t.rateWords[n] ?? o.label : o.label}</span>
                 {shown && <span className="tv-pct">{pcts[n]}%</span>}
                 {shown && <span className="tv-meter" aria-hidden><span style={{ width: `${pcts[n]}%` }} /></span>}
               </li>

@@ -2,13 +2,15 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useT } from '@/lib/lang';
+import { INDIA_TZ } from '@/lib/time';
 
 // The IT Rules ask sites to remind people of their rules every 3 months. One quiet line (P3) on Home, once per quarter
 // (India time), gone after "OK". Shows nothing until the phone has said whether it was seen, so it never flashes.
 const KEY = 'election-rules-seen';
 function quarter() {
-  const d = new Date(Date.now() + 5.5 * 3600_000); // India time
-  return `${d.getUTCFullYear()}-Q${Math.floor(d.getUTCMonth() / 3) + 1}`;
+  // India time, from the one place it is kept (lib/time.ts).
+  const [y, m] = new Date().toLocaleDateString('en-CA', { timeZone: INDIA_TZ }).split('-').map(Number);
+  return `${y}-Q${Math.floor((m - 1) / 3) + 1}`;
 }
 
 export default function RulesNotice() {

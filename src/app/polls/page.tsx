@@ -99,11 +99,12 @@ export default async function Duels({ searchParams }: { searchParams: Promise<{ 
           <DuelTiles polls={hot} votedIds={mine.map((v) => v.pollId)} noCreate />
         </section>
       )}
-      <section className="al-block">
+      {/* Hidden when every poll is already in Trending (it would say "no polls yet" right under them). */}
+      {(rest.length > 0 || hot.length === 0) && <section className="al-block">
         {/* A heading only when something sits above; otherwise it would just repeat the page title. */}
         {((featured && featured.myVote === null) || hot.length > 0) && <h2 className="al-block__title">{t.allDuels}<span className="al-block__aside">{t.pollsN(rest.length)}</span></h2>}
         <DuelTiles polls={rest} votedIds={mine.map((v) => v.pollId)} limit={12} />
-      </section>
+      </section>}
       {featured && featured.myVote !== null && (
         <section className="block">
           <DuelBanner poll={featured} />

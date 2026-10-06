@@ -10,6 +10,7 @@ export default function KeepVotes({ voterKey }: { voterKey: string | null }) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
   const link = () => `${window.location.origin}/api/me/restore?k=${encodeURIComponent(voterKey ?? '')}`;
 
   async function copy() {
@@ -24,12 +25,14 @@ export default function KeepVotes({ voterKey }: { voterKey: string | null }) {
   async function remove() {
     if (busy || !window.confirm(t.deleteConfirm)) return;
     setBusy(true);
+    setError('');
     const res = await fetch('/api/me/delete', { method: 'POST' }).catch(() => null);
     setBusy(false);
     if (res?.ok) {
       router.replace('/me?deleted=1');
       router.refresh();
-    }
+    } else setError(res ? t.errGeneric : t.noNetTry); // deleting your votes is a right: a failure is never silent
+
   }
 
   if (!voterKey) return null;
@@ -45,6 +48,7 @@ export default function KeepVotes({ voterKey }: { voterKey: string | null }) {
           <Trash2 size={13} strokeWidth={1.75} aria-hidden /> {t.deleteMine}
         </button>
       </span>
+      {error && <p className="small duel-error" role="alert">{error}</p>}
     </section>
   );
 }

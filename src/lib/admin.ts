@@ -8,3 +8,9 @@ export function isAdminKey(key: string | null | undefined): boolean {
   const b = createHash('sha256').update(key).digest();
   return timingSafeEqual(a, b);
 }
+
+/** Same-time compare of two secrets (so the time taken never hints how much of a guess was right). */
+export function sameSecret(given: string | null | undefined, secret: string): boolean {
+  if (!given) return false;
+  return timingSafeEqual(createHash('sha256').update(given).digest(), createHash('sha256').update(secret).digest());
+}

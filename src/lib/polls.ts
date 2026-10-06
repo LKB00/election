@@ -6,7 +6,7 @@ import { cleanText, isCode } from './validation';
 import { schema, type Db } from '@/db';
 import type { CreatePollInput } from './validation';
 import { hasBlockedWord, namesPolitics } from './moderation';
-import { MAX_OTHER, OTHER_MIN_PEOPLE, OTHER_TOP } from './limits';
+import { GROUP_DEFAULT_DAYS, MAX_OTHER, OTHER_MIN_PEOPLE, OTHER_TOP } from './limits';
 import { sealedUntil } from './silence';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { isAdminKey } from './admin';
@@ -138,6 +138,11 @@ export function groupSplit(friendsAll: number, friendsAgree: number, everyoneMin
 }
 
 const hashKey = (key: string) => createHash('sha256').update(key).digest('hex');
+/** "Ask again" may only point at an earlier poll by the same person. */
+async function ownsPoll(db: Db, id: string, ownerId: string): Promise<boolean> {
+  const [p] = await db.select({ ownerId: polls.ownerId }).from(polls).where(eq(polls.id, id)).limit(1);
+  return !!p && p.ownerId === ownerId;
+}
 
 /** `manageKey`: the creator's private key (kept on their phone); only its hash is stored. */
 export async function createPoll(db: Db, raw: CreatePollInput, manageKey?: string, packId?: string, ownerId?: string): Promise<string> {
@@ -165,7 +170,7 @@ export async function createPoll(db: Db, raw: CreatePollInput, manageKey?: strin
     shuffle: input.shuffle && (input.kind === 'choice' || input.kind === 'multi' || input.kind === 'rank'),
     suggestionsOn: input.suggestionsOn && (input.kind === 'choice' || input.kind === 'multi') && !input.groupSize,
     showMaker: input.showMaker && !!ownerId,
-    previousId: input.previousId && ownerId ? input.previousId : null,
+    previousId: input.previousId && ownerId && (await ownsPoll(tx as unknown as Db, input.previousId, ownerId)) ? input.previousId : null,
     electionMode: input.electionMode,
     kind: input.kind,
     id,
@@ -174,8 +179,10 @@ export async function createPoll(db: Db, raw: CreatePollInput, manageKey?: strin
     // A duel that names a politician or party is politics, whatever was picked: silence windows and the review hold apply.
     category,
     hideUntilVoted: input.hideUntilVoted,
-    allowChange: input.allowChange,
-    endsAt: input.endsAt ? new Date(input.endsAt) : null,
+    // "Called it": your call cannot move after the event (someone could switch to the real winner before it is marked).
+    allowChange: input.allowChange && !calledIt,
+    // A group poll always has an end, so one friend who never votes cannot keep the group waiting for ever.
+    endsAt: input.endsAt ? new Date(input.endsAt) : input.groupSize ? new Date(Date.now() + GROUP_DEFAULT_DAYS * 86_400_000) : null,
   });
   if (hasPhotos) {
     await tx.insert(photos).values(
@@ -500,7 +507,8 @@ async function shareOverTime(db: Db, id: string, createdAt: Date, firstOptionId:
   const unit = Date.now() - createdAt.getTime() > 3 * 24 * 3600_000 ? 'day' : 'hour';
   const rows = await db
     .select({
-      bucket: sql<string>`date_trunc(${unit}, ${votes.createdAt})`,
+      // India days (a UTC day would split at 5:30 am India time).
+      bucket: sql<string>`date_trunc(${unit}, ${votes.createdAt} at time zone ${INDIA_TZ})`,
       a: sql<number>`count(*) filter (where ${votes.optionId} = ${firstOptionId})::int`,
       n: sql<number>`count(*)::int`,
     })
@@ -541,6 +549,11 @@ export async function castVote(db: Db, id: string, optionId: string, voterId: st
   const isOther = poll.kind === 'choice' && valid.some((o) => o.id === optionId && o.isOther);
   const otherText = isOther ? cleanText(other ?? '').slice(0, MAX_OTHER + 1) : null;
   if (isOther && (!otherText || otherText.length > MAX_OTHER || !/[\p{L}\p{N}]/u.test(otherText) || hasBlockedWord(otherText))) return 'bad_other';
+  // A politician written under "Other" makes it a politics poll, like a political choice would (review hold, election
+  // silence windows), so the most-written names never show outside those rules.
+  if (otherText && poll.category !== 'politics' && namesPolitics(otherText)) {
+    await db.update(polls).set({ category: 'politics', reviewed: false, calledIt: false }).where(eq(polls.id, id));
+  }
   if (poll.kind === 'rank') {
     const [{ n }] = await db.select({ n: sql<number>`count(*)::int` }).from(options).where(eq(options.pollId, id));
     if (picks.length !== n) return 'bad_option';
@@ -568,7 +581,7 @@ export async function castVote(db: Db, id: string, optionId: string, voterId: st
       const [row] = await tx
         .insert(votes)
         .values(newVote)
-        .onConflictDoUpdate({ target: [votes.pollId, votes.voterKey], set: { optionId, otherText } })
+        .onConflictDoUpdate({ target: [votes.pollId, votes.voterKey], set: { optionId, otherText, reason: null } })
         .returning({ id: votes.id, created: sql<boolean>`(xmax = 0)` });
       await savePicks(tx as unknown as Db, row.id);
       return row?.created ? 'ok' : 'changed';
@@ -628,7 +641,8 @@ export async function guessLeader(db: Db, id: string, voterId: string, choice: s
     return 'ok';
   }
   if (choice === 'skip') {
-    await db.update(votes).set({ prediction: 'skip' }).where(and(eq(votes.pollId, id), eq(votes.voterKey, voterId)));
+    // Only if no guess is in yet: a skip sent at the same moment as a guess must not overwrite it.
+    await db.update(votes).set({ prediction: 'skip' }).where(and(eq(votes.pollId, id), eq(votes.voterKey, voterId), isNull(votes.prediction)));
     return 'ok';
   }
   if (!counts.some((c) => c.optionId === choice)) return 'bad_option';
@@ -705,7 +719,8 @@ export async function listPolls(db: Db, limit = 20, filter: { category?: string;
   const opts = await db
     .select({ pollId: options.pollId, label: options.label, emoji: options.emoji, position: options.position })
     .from(options)
-    .where(inArray(options.pollId, rows.map((r) => r.id)))
+    // "Other" is left out of list lines ("A vs B"): it is not a named choice, and its stored word is English only.
+    .where(and(inArray(options.pollId, rows.map((r) => r.id)), eq(options.isOther, false)))
     .orderBy(options.position);
   return rows.map((r) => ({
     id: r.id,
@@ -743,7 +758,8 @@ export type PlannedToday = { id: string; title: string; day: string };
 
 /** The owner plans a poll as Today's question for a day ("2026-11-08"), or clears it (null). Today or later only. */
 export async function planToday(db: Db, id: string, day: string | null): Promise<boolean> {
-  if (day !== null && (!/^\d{4}-\d{2}-\d{2}$/.test(day) || day < indiaDay().label)) return false;
+  // A real calendar day only ("2026-02-31" is refused: it would be saved and never come).
+  if (day !== null && (!/^\d{4}-\d{2}-\d{2}$/.test(day) || new Date(`${day}T00:00:00Z`).toISOString().slice(0, 10) !== day || day < indiaDay().label)) return false;
   const updated = await db.update(polls).set({ todayOn: day }).where(and(eq(polls.id, id), eq(polls.hidden, false))).returning({ id: polls.id });
   return updated.length > 0;
 }
@@ -999,8 +1015,9 @@ export async function getMyVotes(db: Db, voterId: string | null, limit = 50): Pr
     else if (!r.groupSize && !r.calledIt && r.pollKind !== 'dates' && r.hideUntilVoted && !closed && r.prediction == null && mine.length >= 2 && total >= 2) standing = { kind: 'guess' };
     else if (!total) standing = { kind: 'none' };
     else if (r.pollKind === 'rating') standing = { kind: 'rating', average: ratingAverage([1, 2, 3, 4, 5].map((v) => mine.find((c) => c.label === String(v))?.n ?? 0)) ?? 0 };
-    else if (mine.length > 1 && mine[0].n === mine[1].n) standing = { kind: closed ? 'tied' : 'tie' };
-    else standing = { kind: closed ? 'won' : 'leading', name: mine[0].label, percent: Math.round((mine[0].n / (r.pollKind === 'rank' ? total * Math.max(1, mine.length - 1) : total)) * 100) };
+    // "Called it" closed but not yet answered: the most-called choice has not "won", the event decides.
+    else if (mine.length > 1 && mine[0].n === mine[1].n) standing = { kind: closed && !r.calledIt ? 'tied' : 'tie' };
+    else standing = { kind: closed && !r.calledIt ? 'won' : 'leading', name: mine[0].label, percent: Math.round((mine[0].n / (r.pollKind === 'rank' ? total * Math.max(1, mine.length - 1) : total)) * 100) };
     // A rating vote shows as its face ("🙂 4"), not as a bare number.
     const pick =
       r.pollKind === 'rating' ? `${r.pickEmoji ?? ''} ${r.pick}/5`.trim()
@@ -1040,7 +1057,10 @@ export async function undoVote(db: Db, id: string, voterId: string): Promise<boo
   // Polls that show hidden results straight after the vote, with no crowd guess first ("Called it", dates, a group
   // poll its last voter completes): the voter has seen the numbers, so no undo (they could vote again for the leader).
   const [p] = await db.select().from(polls).where(eq(polls.id, id)).limit(1);
-  if (p?.hideUntilVoted && !sealedUntil(p.category) && (p.calledIt || p.kind === 'dates' || p.groupSize)) {
+  // Not once the poll has ended (or while it is paused): the final count and its alerts must not change afterwards.
+  if (!p || (p.endsAt && p.endsAt.getTime() <= Date.now()) || (p.frozenUntil && p.frozenUntil.getTime() > Date.now())) return false;
+  // A group poll's results open for everyone when the group is complete, whatever "hide results" says.
+  if (!sealedUntil(p.category) && (p.groupSize || (p.hideUntilVoted && (p.calledIt || p.kind === 'dates')))) {
     if (!p.groupSize) return false;
     const [{ n }] = await db.select({ n: sql<number>`count(*)::int` }).from(votes).where(eq(votes.pollId, id));
     if (n >= p.groupSize) return false;

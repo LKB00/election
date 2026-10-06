@@ -6,6 +6,11 @@ import { useEffect, useState } from 'react';
 import { setLangCookie, useLang, useT } from '@/lib/lang';
 import { LANG_NAMES, LANG_SHORT, LANGS, type Lang } from '@/lib/i18n';
 
+// Set once you move from one page to another inside the site (the browser's "where you came from" only knows the page
+// you first arrived from, e.g. WhatsApp, so it used to send Back to Home after Polls → a poll).
+let movedInside = false;
+let firstPath: string | null = null;
+
 export default function TopBar() {
   const path = usePathname();
   const router = useRouter();
@@ -17,8 +22,10 @@ export default function TopBar() {
   const backable = managing || ['/p/', '/pack/', '/topic/', '/u/'].some((x) => path.startsWith(x));
   const [fromSite, setFromSite] = useState(false);
   useEffect(() => {
+    if (firstPath === null) firstPath = path;
+    else if (path !== firstPath) movedInside = true;
     try {
-      setFromSite(!!document.referrer && new URL(document.referrer).host === window.location.host && window.history.length > 1);
+      setFromSite(movedInside || (!!document.referrer && new URL(document.referrer).host === window.location.host && window.history.length > 1));
     } catch {
       setFromSite(false);
     }

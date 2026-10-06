@@ -480,7 +480,7 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .builder-row .face-pick { flex-basis: 40px; width: 40px; height: 40px; font-size: 20px; }
 .builder-name { width: 100%; min-width: 0; margin: 0; padding: 6px 0; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; outline: none; }
 .builder-name::placeholder { color: var(--ink-3, var(--ink-2)); opacity: 0.6; font-weight: 700; }
-.builder-name:focus { border-bottom-color: var(--ink); }
+.builder-name:focus { border-bottom-color: transparent; }
 .builder-row .evm-btn { opacity: 0.5; }
 .builder-remove { width: 32px; height: 32px; }
 /* The next empty row, waiting: dashed, quiet, no Vote key yet. */
@@ -867,7 +867,10 @@ button.maker-row { width: 100%; border: 0; background: none; font: inherit; colo
 /* Accessibility pass (WCAG 2.2 AA; docs/DESIGN.md, "Accessibility"). */
 /* A clear focus ring for keyboards and switch users, everywhere (2px is the floor; 3px reads in sunlight). */
 :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
-.create-q:focus-visible, .builder-q:focus-visible, .builder-name:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.create-q:focus-visible, .builder-q:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+/* A choice being typed: the whole card gets the ring, not a hard box inside it (owner's walkthrough, Oct 2026). */
+.builder-name:focus-visible { outline: none; }
+.builder-row:has(.builder-name:focus) { outline: 2px solid var(--ink); outline-offset: -2px; }
 /* The fixed bottom bar never hides the thing you moved to. */
 html { scroll-padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); scroll-padding-top: 72px; }
 /* Edges of fields and switches you must find to use: 3:1 against the ground. */
@@ -1230,3 +1233,7 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
 .duel .tot-result.is-shown { position: static; margin: 0; padding: 0; border-radius: 0; background: none; box-shadow: none; }
 .duel .tot-result.is-shown .duel-actions { width: 100%; justify-content: stretch; gap: 10px; }
 .duel .tot-result.is-shown .duel-actions .btn { flex: 1 1 0; justify-content: center; min-height: 48px; }
+/* Before voting the Share / Next holder is empty: it must take no room (it left a gap above "Report this poll"). */
+.duel .tot-result:empty { display: none; }
+/* Long unbroken text (a pasted link, a very long word) wraps instead of being cut off at the screen edge. */
+.duel-desc, .duel-q, .duel-name, .al-hero__name, .sheet-message, .al-row__title, .al-row__meta, .duel-verdict__text, .final-head, .tv-q, .tv-label { overflow-wrap: anywhere; }

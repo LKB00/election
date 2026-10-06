@@ -134,9 +134,17 @@ export function ProfileActions() {
   const router = useRouter();
   const [asking, setAsking] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  // A failed sign-out or delete says so and lets you try again (it used to leave both buttons stuck).
   async function call(url: string, method: string, after: string) {
     setBusy(true);
-    await fetch(url, { method }).catch(() => null);
+    setError('');
+    const res = await fetch(url, { method }).catch(() => null);
+    if (!res?.ok) {
+      setBusy(false);
+      setError(res ? t.errGeneric : t.noNetTry);
+      return;
+    }
     router.replace(after);
     router.refresh();
   }
@@ -168,6 +176,7 @@ export function ProfileActions() {
           )}
         </li>
       </ul>
+      {error && <p className="small duel-error" role="alert">{error}</p>}
     </section>
   );
 }
