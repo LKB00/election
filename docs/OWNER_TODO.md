@@ -23,9 +23,9 @@ Where: Vercel → your project **election** → Settings → Environment Variabl
 
 **Optional:** Vercel → Settings → Deployment Protection. Turn off the login wall if you want preview links (not just the main address) to open without a Vercel login.
 
-- [ ] **Switch on visitor numbers (free, 1 minute):** Vercel → your project **election** → **Analytics** (top menu) → **Enable**. From then on that page shows how many people visit each day, which pages, from which countries. No cookies; the Privacy page already says so.
+- [x] **Switch on visitor numbers (free, 1 minute, done Oct 2026):** Vercel → your project **election** → **Analytics** (top menu) → **Enable**. From then on that page shows how many people visit each day, which pages, from which countries. No cookies; the Privacy page already says so.
 
-- [ ] **Read your step counter once a week** (bottom of your admin page, "Steps people take"). The five lines at the top say where people drop off: if few people who open a friend's link vote, the poll page needs work; if few voters open Share, sharing needs work; if few who open Start a poll make one, Create is too hard. Tell Claude the numbers and it will suggest the fix.
+- [ ] **Read your step counter once a week** (bottom of your admin page, "Steps people take"). The five lines at the top say where people drop off: if few people who open a friend's link vote, the poll page needs work; if few voters open Share, sharing needs work; if few who open Ask your friends make one, Create is too hard. Tell Claude the numbers and it will suggest the fix.
 
 - [ ] **Test with 10 real people** using `docs/USER_TEST.md` (15 minutes each, no helping). Then send Claude the top 3 places people got stuck.
 
