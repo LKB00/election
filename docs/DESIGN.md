@@ -1198,11 +1198,13 @@ Step counter: "Guess the crowd" answered / skipped (not counted when yours was t
 - Still no points, badges, streaks, coins or leaderboards: engagement comes from curiosity, people, disagreement and
   surprise.
 
-**Visitor count on Home** (owner, Oct 2026: "show visitor count on the website", then "three avatars, then a plus, then
-the number, somewhere at the bottom", then "make it subtle"): one quiet line at the bottom of Home, no card, before the rules reminder (on an empty
-site, under the empty state): three overlapping faces (the first three profile faces, on yellow, indigo and pink soft
-grounds; decoration only, never real visitors), a soft "+" circle once there are more than three, then the number in bold
-and "people have visited"; "· M have voted" after it once 25 people have voted. Small (24px faces, 13px muted text). Not ink (ink is the one main action) and not
-tappable. Shown from the first visitor (`VISITORS_SHOW_MIN`); "1 person has visited" in the singular. Each phone is counted once: `FirstVisit` (in the layout, so a first visit from a
-shared poll counts too) remembers `election-visited` and sends the `visitor` step; a phone that cannot remember is not
-counted. The total is every day's `visitor` steps added up, never shown smaller than the voter count. P3.
+**Views count on Home** (owner, Oct 2026: "show visitor count", "three avatars, then a plus, then the number, at the
+bottom", "make it subtle", then "we will show views, not visitors; I want the number big"): one quiet row at the bottom of
+Home, before the rules reminder (on an empty site, under the empty state), no card: three small overlapping faces (the
+first three profile faces on yellow, indigo and pink soft grounds; decoration only, never real visitors) and a small soft
+"+", then the number big (32px, bold) and small muted words: "views", and "M have voted" under it once 25 people have
+voted. Not ink (ink is the one main action) and not tappable. Shown from the first view (`VIEWS_SHOW_MIN`).
+Views = every page opened, all days added up (`viewTotal`): Home and polls count themselves (`home_view`, `poll_view`,
+so views from before this change are included) and `PageView` in the layout counts every other page (`page_view`).
+Never shown smaller than the voter count. New visitors (each phone once, `FirstVisit` + `election-visited`) are still
+counted, for the owner's admin page only. P3.

@@ -12,8 +12,8 @@ import PackRows from '@/components/PackRows';
 import { upcomingPacks } from '@/lib/packs';
 import { getDb } from '@/db';
 import { getDeck, getFeaturedId, getTodaySet, listPolls, trendingPolls, voterCount } from '@/lib/polls';
-import { VISITORS_SHOW_MIN, VOTERS_SHOW_MIN } from '@/lib/limits';
-import { visitorTotal } from '@/lib/events';
+import { VIEWS_SHOW_MIN, VOTERS_SHOW_MIN } from '@/lib/limits';
+import { viewTotal } from '@/lib/events';
 import { dateLocale } from '@/lib/time';
 import { readVoterId } from '@/lib/voter';
 import { getLang, getT, langAlternates } from '@/lib/lang-server';
@@ -40,12 +40,12 @@ export default async function Home() {
   const voterId = await readVoterId();
   // Today's set (the same few polls for everyone today, with an end), then more polls only if you ask for them.
   const [deck, extra, recent, todayId, trending] = await Promise.all([getTodaySet(db, voterId), getDeck(db, voterId), listPolls(db, 40), getFeaturedId(db), trendingPolls(db, 4)]);
-  const [tonight, lang, voters, visitors] = await Promise.all([upcomingPacks(db), getLang(), voterCount(db), visitorTotal(db)]);
+  const [tonight, lang, voters, viewed] = await Promise.all([upcomingPacks(db), getLang(), voterCount(db), viewTotal(db)]);
   const more = extra.filter((p) => !deck.some((d) => d.id === p.id));
-  // Everyone who voted has visited too (the visitor count only started in Oct 2026), so never show fewer visitors.
+  // Every vote came with a page view too (views were counted later than votes), so never show fewer views than voters.
   const fmt = (n: number) => n.toLocaleString(dateLocale(lang));
-  const seen = Math.max(visitors, voters);
-  const people = seen >= VISITORS_SHOW_MIN && <PeopleCount seen={seen} voted={voters >= VOTERS_SHOW_MIN ? voters : null} fmt={fmt} t={t} />;
+  const views = Math.max(viewed, voters);
+  const people = views >= VIEWS_SHOW_MIN && <PeopleCount views={views} voted={voters >= VOTERS_SHOW_MIN ? voters : null} fmt={fmt} t={t} />;
   const voted = [...deck, ...more].filter((p) => p.myVote !== null).map((p) => p.id);
   // P2 shelves under today's question: what is hot right now, then two topics with the most open polls.
   // Each poll shows once on Home: today's set first, then trending, topic shelves and "More polls" without repeats.
@@ -132,8 +132,8 @@ export default async function Home() {
           </div>
         )}
       </div>
-      {/* P3 social proof at the bottom: phones that have visited and people who voted, each counted once (votes are never
-          linked to a person). */}
+      {/* P3 social proof at the bottom: how many times pages here were opened, and how many people voted (each counted
+          once; votes are never linked to a person). */}
       {people}
       {/* P3: the 3-monthly rules reminder sits last, after everything there is to do. */}
       {!empty && <RulesNotice />}
