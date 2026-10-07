@@ -25,7 +25,7 @@ Where: Vercel → your project **election** → Settings → Environment Variabl
 **Google and phone-number sign-in (Firebase), step by step (about 20 minutes):**
 1. Go to **console.firebase.google.com** → **Create a project** → name it (for example `chunav`) → you can turn Google Analytics off → Create.
 2. **Build → Authentication → Get started.** In **Sign-in method**, turn on **Google** (pick your email as support email, Save) and **Phone** (Save).
-3. Still in Authentication → **Settings → Authorized domains → Add domain**: `election-three-ruby.vercel.app` (and your own domain later).
+3. Still in Authentication → **Settings → Authorized domains → Add domain**: `chunav.lokeshbhatia.com` (and `election-three-ruby.vercel.app` until the move is done).
 4. **Phone codes cost money:** Firebase asks you to move to the **Blaze** plan (pay as you go; add a card) before it sends SMS. Each SMS to India costs a little (Firebase shows the price). To stop surprise bills: Google Cloud → Billing → **Budgets & alerts** → set a small monthly budget with an email alert. Optional but good: Authentication → Settings → **SMS region policy** → allow only India.
 5. **Project settings** (gear icon) → General → **Your apps** → the **</>** (Web) button → name it `chunav-web` → Register. It shows a `firebaseConfig` with `apiKey`, `authDomain` and `projectId`.
 6. In Vercel → Settings → Environment Variables, add `NEXT_PUBLIC_FIREBASE_API_KEY` = the apiKey, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` = the authDomain, `NEXT_PUBLIC_FIREBASE_PROJECT_ID` = the projectId. These three are public by design (they are in every visitor's browser), so they are safe, but still put them straight into Vercel, not in chat. Then **Redeploy** and tell Claude "done": Claude will check the buttons appear and work.
@@ -61,7 +61,15 @@ Note: Google sign-in does not open inside WhatsApp's or Instagram's own browser 
 
 - [x] **"Reset this phone" removed** for the public launch (Oct 2026).
 - [x] **Name:** the site is now called **Chunav** (Oct 2026).
-- [ ] **Domain (optional):** the address is still `election-three-ruby.vercel.app`. To match the name, you can buy a domain (for example a `chunav…` `.in` or `.app` name) and add it in Vercel → Settings → Domains, then set `NEXT_PUBLIC_SITE_URL`. Ask Claude to help when you are ready; old links keep working.
+- [ ] **Own address: `chunav.lokeshbhatia.com`** (owner, Oct 2026: "use a subdomain of lokeshbhatia.com"). About 15 minutes, no cost:
+  1. Vercel → project **election** → **Settings → Domains** → type `chunav.lokeshbhatia.com` → **Add**. Vercel then shows one DNS record to add (usually **CNAME**, name `chunav`, value like `cname.vercel-dns.com`; copy exactly what Vercel shows).
+  2. Where lokeshbhatia.com's DNS lives (the company you bought the domain from, or Cloudflare / your portfolio host): **add that CNAME record**. Do not change any other record, so your portfolio keeps working. Vercel's Domains page turns green when it works (a few minutes, sometimes up to an hour); it also sets up the padlock (HTTPS) by itself.
+  3. In the same Domains page, open `election-three-ruby.vercel.app` → **Edit** → **Redirect to** `chunav.lokeshbhatia.com` (permanent). Old links people already shared keep working and land on the new address.
+  4. Vercel → Settings → Environment Variables → `NEXT_PUBLIC_SITE_URL` = `https://chunav.lokeshbhatia.com` → **Redeploy**. Share links, QR codes, link pictures and Google now use the new address.
+  5. Firebase (when you set it up): Authentication → Settings → **Authorized domains** → add `chunav.lokeshbhatia.com`.
+  6. Google Search Console: add the new address as the property (not the old one).
+  7. Tell Claude "domain done": Claude checks the new address, the link pictures and the redirect.
+  Good to know: a fingerprint/face profile belongs to the address it was made on, so a profile made on the old address needs to be made again on the new one (polls you made can be moved: ask Claude). Votes made on the old address stay counted; "Your votes" on the new address starts fresh unless you open your "Keep your votes" link there.
 - [ ] **Watch one number weekly:** "returning voters" at the bottom of `/admin` (people who voted on 2 or more days this week). Aim for 20–25% or more of the week's voters.
 
 ## 6. Features waiting (from the research, in order)
