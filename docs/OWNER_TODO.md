@@ -17,7 +17,8 @@ Where: Vercel → your project **election** → Settings → Environment Variabl
 | [ ] `NEXT_PUBLIC_VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` | A key pair Claude can make for you (ask "make the alert keys"), or run `npx web-push generate-vapid-keys` | Turns on "Tell me the result" phone alerts | The button does not appear |
 | [ ] `VAPID_SUBJECT` | `mailto:` + an email you check, e.g. `mailto:you@gmail.com` | Push services contact this address if alerts misbehave | Alerts use a placeholder address |
 | [ ] `CRON_SECRET` | Any long random text (16+ letters) | Lets Vercel's evening job send the 9 pm result alerts (only Vercel knows it) | Only "Called it" alerts are sent; 9 pm result alerts are not |
-| [ ] `NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | From Firebase (steps below) | Turns on "Continue with Google" on the profile screen (free) | Only fingerprint/face sign-in shows |
+| [x] `NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID` (done Oct 2026; the key box holds only the `AIza…` key, never the whole code block) | From Firebase (steps below) | Turns on "Continue with Google" on the profile screen (free) | Only fingerprint/face sign-in shows |
+| [ ] `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | The **Web client ID** (steps below, "Google's account sheet") | Android shows Google's own account picker sliding up, instead of a new window | Google opens in a window |
 | [ ] `NEXT_PUBLIC_FIREBASE_PHONE` = `on` | Only if you later choose to pay for SMS (Firebase Blaze plan) | Shows "Continue with phone number" too | No phone button (owner, Oct 2026: "I don't want to pay") |
 | [ ] `NEXT_PUBLIC_SITE_URL` | Only if you buy your own domain, e.g. `https://yourname.in` | Share links and QR codes use your domain | They use the Vercel address (fine for now) |
 
@@ -31,6 +32,14 @@ Where: Vercel → your project **election** → Settings → Environment Variabl
 5. **Project settings** (gear icon) → General → **Your apps** → the **</>** (Web) button → name it `chunav-web` → Register. It shows a `firebaseConfig` with `apiKey`, `authDomain` and `projectId`.
 6. In Vercel → Settings → Environment Variables, add `NEXT_PUBLIC_FIREBASE_API_KEY` = the apiKey, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` = the authDomain, `NEXT_PUBLIC_FIREBASE_PROJECT_ID` = the projectId. These three are public by design (they are in every visitor's browser), so they are safe, but still put them straight into Vercel, not in chat. Then **Redeploy** and tell Claude "done": Claude will check the buttons appear and work.
 Note: Google sign-in does not open inside WhatsApp's or Instagram's own browser (Google blocks it); the screen then tells people to open the site in Chrome or Safari, or to use fingerprint or face.
+
+**Google's account sheet (free, about 5 minutes; owner, Oct 2026: "it should open the mobile native Google login screen"):**
+1. Firebase → **Security → Authentication → Sign-in method** → click **Google** → open **Web SDK configuration** → copy the **Web client ID** (it ends in `.apps.googleusercontent.com`).
+2. Vercel → Settings → Environment Variables → add `NEXT_PUBLIC_GOOGLE_CLIENT_ID` = that Web client ID (nothing else in the box).
+3. Go to **console.cloud.google.com** → at the top pick the project **chunav-16f90** → menu → **APIs & Services → Credentials** → under "OAuth 2.0 Client IDs" click **Web client (auto created by Google Service)** → **Authorized JavaScript origins → Add URI**: `https://election-three-ruby.vercel.app`, then **Add URI** again: `https://chunav.lokeshbhatia.com` → **Save**.
+4. Nice to have: same place → **OAuth consent screen** (or **Branding**) → App name **Chunav**, your email as support email → Save. Google's sheet then says "Continue to Chunav" instead of the project code.
+5. Vercel → Deployments → ⋯ → **Redeploy**, then tell Claude "done".
+On Android (Chrome) the phone's own Google account picker slides up. On iPhone, Google shows its chooser on the page (Apple allows the fully native one only inside installed apps).
 
 **Optional:** Vercel → Settings → Deployment Protection. Turn off the login wall if you want preview links (not just the main address) to open without a Vercel login.
 

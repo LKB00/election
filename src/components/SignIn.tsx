@@ -1,7 +1,7 @@
 'use client';
 import { Fingerprint, Lock, Smartphone, X } from 'lucide-react';
 import type { ConfirmationResult } from 'firebase/auth';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { browserSupportsWebAuthn, startAuthentication, startRegistration } from '@simplewebauthn/browser';
 import type { Profile } from '@/lib/auth';
@@ -12,7 +12,7 @@ import { useOverlay } from '@/lib/useOverlay';
 import { localPollKeys } from './MyPolls';
 import Spot from './Spot';
 import { MAX_NAME, MIN_NAME } from '@/lib/limits';
-import { confirmPhoneCode, firebaseCode, firebaseOn, googleTicket, phoneE164, phoneOn, sendPhoneCode } from '@/lib/firebaseClient';
+import { confirmPhoneCode, firebaseCode, firebaseOn, googleClientId, googleTicket, loadGoogleButton, nativeGoogleOn, phoneE164, phoneOn, sendPhoneCode, ticketFromGoogle, warmFirebase } from '@/lib/firebaseClient';
 
 // The profile screen (docs/DESIGN.md, "Profiles"). Asked for only when someone makes a poll; voting never needs it.
 // Light on purpose (owner: "information heavy… cognitive load"): the picture (a locked ballot box), a title and one
@@ -36,6 +36,41 @@ async function post(url: string, body?: unknown) {
   return { ok: !!res?.ok, data: await res?.json().catch(() => null) };
 }
 
+/** Google's own "Continue with Google" button. On Chrome for Android a tap slides up the phone's own Google account
+ * picker (FedCM); elsewhere Google shows its chooser. Its look is Google's (they require it); our screen around it
+ * stays ours. If Google's script cannot load, `onFail` puts our own button (Google's window) back. */
+function GoogleSheetButton({ lang, onToken, onFail }: { lang: string; onToken: (idToken: string) => void; onFail: () => void }) {
+  const box = useRef<HTMLDivElement>(null);
+  const handler = useRef(onToken);
+  handler.current = onToken;
+  useEffect(() => {
+    let gone = false;
+    loadGoogleButton()
+      .then((id) => {
+        if (gone || !box.current) return;
+        id.initialize({
+          client_id: googleClientId,
+          callback: (r: { credential?: string }) => r.credential && handler.current(r.credential),
+          context: 'signin',
+          ux_mode: 'popup',
+          use_fedcm_for_button: true,
+          use_fedcm_for_prompt: true,
+          itp_support: true,
+        });
+        const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        id.renderButton(box.current, {
+          type: 'standard', theme: dark ? 'filled_black' : 'outline', size: 'large', shape: 'pill', text: 'continue_with',
+          logo_alignment: 'center', width: Math.min(400, box.current.offsetWidth || 320), locale: lang === 'hi' ? 'hi' : 'en_IN',
+        });
+      })
+      .catch(() => !gone && onFail());
+    return () => {
+      gone = true;
+    };
+  }, [lang, onFail]);
+  return <div ref={box} className="signin-google" />;
+}
+
 export function SignInPanel({ onDone, startBack = false, onPage = false }: { onDone: (user: Profile) => void; startBack?: boolean; /** On the You page (not over Create). */ onPage?: boolean }) {
   const t = useT();
   const lang = useLang();
@@ -54,6 +89,13 @@ export function SignInPanel({ onDone, startBack = false, onPage = false }: { onD
   const [pending, setPending] = useState<string | null>(null);
   const [notice, setNotice] = useState('');
   const confirmation = useRef<ConfirmationResult | null>(null);
+  // Google's account sheet when the Web client id is set; our own button (Google's window) otherwise or if it fails.
+  const [sheet, setSheet] = useState(nativeGoogleOn);
+  const noSheet = useCallback(() => setSheet(false), []);
+  // Firebase loads as this screen opens, so a tap on Google never waits (phones block windows opened after a wait).
+  useEffect(() => {
+    if (firebaseOn) warmFirebase(lang);
+  }, [lang]);
 
   /** A new profile needs a name first, whichever way it signs in. */
   function nameOk() {
@@ -137,6 +179,11 @@ export function SignInPanel({ onDone, startBack = false, onPage = false }: { onD
   function google() {
     if (!nameOk()) return;
     void run(async () => sendTicket(await googleTicket(lang)));
+  }
+
+  // From Google's account sheet. A new profile with no name yet is asked for one (the server answers needName).
+  function googleSheet(idToken: string) {
+    void run(async () => sendTicket(await ticketFromGoogle(idToken, lang)));
   }
 
   function openPhone() {
@@ -223,7 +270,11 @@ export function SignInPanel({ onDone, startBack = false, onPage = false }: { onD
       {firebaseOn && step === 'main' && !pending && (
         <>
           <p className="signin-or" aria-hidden><span>{t.orWith}</span></p>
-          <button type="button" className="btn btn-ghost btn-lg signin-alt" disabled={busy} onClick={google}><GoogleMark /> {t.continueGoogle}</button>
+          {sheet ? (
+            <GoogleSheetButton lang={lang} onToken={googleSheet} onFail={noSheet} />
+          ) : (
+            <button type="button" className="btn btn-ghost btn-lg signin-alt" disabled={busy} onClick={google}><GoogleMark /> {t.continueGoogle}</button>
+          )}
           {phoneOn && <button type="button" className="btn btn-ghost btn-lg signin-alt" disabled={busy} onClick={openPhone}><Smartphone size={18} strokeWidth={2} aria-hidden /> {t.continuePhone}</button>}
         </>
       )}
