@@ -225,11 +225,6 @@ h2 { font-weight: 600; }
    patricka classes of the same names. Use these for new screens: header, titled block, grouped list card, row, chip.
    ====================================================================================== */
 
-/* Page header: date, a greeting, one line that sizes up the day ("Namaste, Sunita · 4 people need you today"). */
-.al-home { display: flex; flex-direction: column; padding-top: 8px; margin-bottom: 8px; }
-
-.al-home__title { margin: 8px 0 0; font: 600 28px / 36px var(--display); letter-spacing: -0.02em; }
-
 /* A titled block: sentence-case title, a quiet count or link on the right, then the content 12px below. */
 .al-block { display: flex; flex-direction: column; gap: 12px; margin-top: 32px; min-width: 0; }
 .al-block__title { display: flex; align-items: baseline; gap: 8px; margin: 0; font: 600 20px / 28px var(--display); letter-spacing: -0.01em; }

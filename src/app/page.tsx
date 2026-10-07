@@ -78,11 +78,6 @@ export default async function Home() {
           thing, everything else to browse in a column on the right, so the screen is not one stretched card. */}
       <div className={'home-grid' + (empty ? '' : ' has-rail')}>
         <div className="home-main">
-          {!empty && (
-            <header className="al-home">
-              <p className="al-home__title">{t.homeHello}</p>
-            </header>
-          )}
           {deck.length > 0 && (
             <section className="home-game duel-first" aria-label={t.pollRegion}>
               <DuelGame deck={deck} todayId={todayId} daily more={more} />
