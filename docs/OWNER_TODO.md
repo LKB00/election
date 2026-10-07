@@ -17,7 +17,7 @@ Where: Vercel → your project **election** → Settings → Environment Variabl
 | [ ] `NEXT_PUBLIC_VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` | A key pair Claude can make for you (ask "make the alert keys"), or run `npx web-push generate-vapid-keys` | Turns on "Tell me the result" phone alerts | The button does not appear |
 | [ ] `VAPID_SUBJECT` | `mailto:` + an email you check, e.g. `mailto:you@gmail.com` | Push services contact this address if alerts misbehave | Alerts use a placeholder address |
 | [ ] `CRON_SECRET` | Any long random text (16+ letters) | Lets Vercel's evening job send the 9 pm result alerts (only Vercel knows it) | Only "Called it" alerts are sent; 9 pm result alerts are not |
-| [ ] `NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | From Firebase (steps below) | Turns on "Continue with Google" on the profile screen (free) | Only fingerprint/face sign-in shows |
+| [x] `NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID` (done Oct 2026; the key box holds only the `AIza…` key, never the whole code block) | From Firebase (steps below) | Turns on "Continue with Google" on the profile screen (free) | Only fingerprint/face sign-in shows |
 | [ ] `NEXT_PUBLIC_FIREBASE_PHONE` = `on` | Only if you later choose to pay for SMS (Firebase Blaze plan) | Shows "Continue with phone number" too | No phone button (owner, Oct 2026: "I don't want to pay") |
 | [ ] `NEXT_PUBLIC_SITE_URL` | Only if you buy your own domain, e.g. `https://yourname.in` | Share links and QR codes use your domain | They use the Vercel address (fine for now) |
 
