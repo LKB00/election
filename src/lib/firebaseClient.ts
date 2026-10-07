@@ -13,8 +13,19 @@ export const firebaseOn = !!(config.apiKey && config.authDomain && config.projec
 /** Phone codes cost money per SMS (Firebase's paid Blaze plan), so the phone button has its own switch
  * (owner, Oct 2026: "I don't want to pay"): NEXT_PUBLIC_FIREBASE_PHONE=on. Google sign-in is free. */
 export const phoneOn = firebaseOn && process.env.NEXT_PUBLIC_FIREBASE_PHONE === 'on';
+/** Google's own account sheet (owner, Oct 2026: "it should open the mobile native Google login screen"): Google's
+ * sign-in button (Google Identity Services) with FedCM, so Chrome on Android shows the phone's own account picker that
+ * slides up, not a new window. Needs the Web client id (NEXT_PUBLIC_GOOGLE_CLIENT_ID); without it, the Google window. */
+export const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.trim() ?? '';
+export const nativeGoogleOn = firebaseOn && googleClientId.length > 0;
 
-async function load(lang: string) {
+type Loaded = { fa: typeof import('firebase/auth'); auth: import('firebase/auth').Auth };
+let loaded: Loaded | null = null;
+async function load(lang: string): Promise<Loaded> {
+  if (loaded) {
+    loaded.auth.languageCode = lang === 'en' ? 'en' : 'hi';
+    return loaded;
+  }
   const [{ initializeApp, getApps }, fa] = await Promise.all([import('firebase/app'), import('firebase/auth')]);
   const app = getApps()[0] ?? initializeApp(config);
   let auth;
@@ -24,8 +35,12 @@ async function load(lang: string) {
     auth = fa.getAuth(app); // already set up on an earlier tap
   }
   auth.languageCode = lang === 'en' ? 'en' : 'hi'; // the SMS and the Google window in the reader's language
-  return { fa, auth };
+  loaded = { fa, auth };
+  return loaded;
 }
+/** Loads Firebase as the sign-in screen opens, so a tap on Google opens its window at once (phones block a window that
+ * opens after a wait). */
+export const warmFirebase = (lang: string) => void load(lang).catch(() => undefined);
 
 /** Firebase's ticket for this person, then Firebase forgets them (only our cookie signs them in). */
 async function ticket(fa: typeof import('firebase/auth'), auth: import('firebase/auth').Auth, user: import('firebase/auth').User) {
@@ -34,11 +49,43 @@ async function ticket(fa: typeof import('firebase/auth'), auth: import('firebase
   return token;
 }
 
-/** Opens Google's window; resolves with the ticket. */
+/** Opens Google's window (when the account sheet is not set up); resolves with the ticket. */
 export async function googleTicket(lang: string): Promise<string> {
-  const { fa, auth } = await load(lang);
+  const { fa, auth } = loaded ?? (await load(lang));
   const cred = await fa.signInWithPopup(auth, new fa.GoogleAuthProvider());
   return ticket(fa, auth, cred.user);
+}
+
+/** The account sheet's Google token → Firebase's ticket (the same ticket the server already checks). */
+export async function ticketFromGoogle(idToken: string, lang: string): Promise<string> {
+  const { fa, auth } = await load(lang);
+  const cred = await fa.signInWithCredential(auth, fa.GoogleAuthProvider.credential(idToken));
+  return ticket(fa, auth, cred.user);
+}
+
+type GoogleId = {
+  initialize: (o: Record<string, unknown>) => void;
+  renderButton: (el: HTMLElement, o: Record<string, unknown>) => void;
+};
+let gsi: Promise<GoogleId> | null = null;
+/** Google's sign-in script, loaded once, only on the sign-in screen. */
+export function loadGoogleButton(): Promise<GoogleId> {
+  gsi ??= new Promise<GoogleId>((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client';
+    s.async = true;
+    s.onload = () => {
+      const id = (window as unknown as { google?: { accounts?: { id?: GoogleId } } }).google?.accounts?.id;
+      if (id) resolve(id);
+      else reject(new Error('gsi'));
+    };
+    s.onerror = () => reject(new Error('gsi'));
+    document.head.appendChild(s);
+  }).catch((e) => {
+    gsi = null;
+    throw e;
+  });
+  return gsi;
 }
 
 let verifier: RecaptchaVerifier | null = null;
