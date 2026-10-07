@@ -111,7 +111,8 @@ ALTER TABLE polls ADD COLUMN IF NOT EXISTS pack_id text;
 -- Group polls: results open for everyone once this many have voted (or when the poll ends).
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS group_size integer;
 -- Profiles (optional; needed only to make polls). A name and an avatar, signed in with a passkey (the phone's
--- fingerprint, face or screen lock). No password, phone number or email. Votes are never linked to a profile.
+-- fingerprint, face or screen lock), Google or a phone number. No password, phone number or email is stored. Votes are
+-- never linked to a profile.
 CREATE TABLE IF NOT EXISTS users (
   id text PRIMARY KEY,
   name text NOT NULL,
@@ -127,6 +128,14 @@ CREATE TABLE IF NOT EXISTS passkeys (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS passkeys_user_idx ON passkeys (user_id);
+-- Google or phone-number sign-ins: a scrambled Firebase user id only, never the email or number.
+CREATE TABLE IF NOT EXISTS sign_ins (
+  key text PRIMARY KEY,
+  user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  method text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS sign_ins_user_idx ON sign_ins (user_id);
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS owner_id text;
 CREATE INDEX IF NOT EXISTS polls_owner_idx ON polls (owner_id);
 CREATE INDEX IF NOT EXISTS polls_pack_idx ON polls (pack_id);

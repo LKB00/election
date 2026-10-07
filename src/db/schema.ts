@@ -207,8 +207,8 @@ export const pushWants = pgTable(
   (t) => [primaryKey({ columns: [t.pollId, t.endpoint] })],
 );
 
-// Profiles: optional, needed only to make polls. Signed in with a passkey (the phone's fingerprint, face or screen lock):
-// no password, phone number or email is ever stored. Votes are NEVER linked to a profile (they stay with the anonymous
+// Profiles: optional, needed only to make polls. Signed in with a passkey (the phone's fingerprint, face or screen lock),
+// Google or a phone number (checked by Google's Firebase): no password, phone number or email is ever stored here. Votes are NEVER linked to a profile (they stay with the anonymous
 // voter cookie), so a profile cannot tell anyone, us included, how its owner voted.
 export const users = pgTable('users', {
   id: text('id').primaryKey(),
@@ -227,6 +227,18 @@ export const passkeys = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('passkeys_user_idx').on(t.userId)],
+);
+// Google or phone-number sign-ins (src/lib/firebaseAuth.ts): only a scrambled form of Firebase's user id, never the
+// email or the number, so the database alone cannot tell who signed in.
+export const signIns = pgTable(
+  'sign_ins',
+  {
+    key: text('key').primaryKey(), // HMAC of the Firebase user id
+    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    method: text('method').notNull(), // 'google' | 'phone'
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('sign_ins_user_idx').on(t.userId)],
 );
 
 // Where votes came from, per poll only (never per voter): wa, ig, qr, link, other.
