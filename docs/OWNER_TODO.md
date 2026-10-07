@@ -69,7 +69,7 @@ Note: Google sign-in does not open inside WhatsApp's or Instagram's own browser 
   5. Firebase (when you set it up): Authentication → Settings → **Authorized domains** → add `chunav.lokeshbhatia.com`.
   6. Google Search Console: add the new address as the property (not the old one).
   7. Tell Claude "domain done": Claude checks the new address, the link pictures and the redirect.
-  Good to know: a fingerprint/face profile belongs to the address it was made on, so a profile made on the old address needs to be made again on the new one (polls you made can be moved: ask Claude). Votes made on the old address stay counted; "Your votes" on the new address starts fresh unless you open your "Keep your votes" link there.
+  Good to know: a fingerprint/face profile belongs to the address it was made on, so a profile made on the old address needs to be made again on the new one. Do the move before many people make profiles. Google and phone-number profiles do not have this problem: they work on any address. Votes made on the old address stay counted; "Your votes" on the new address starts fresh unless you open your "Keep your votes" link there.
 - [ ] **Watch one number weekly:** "returning voters" at the bottom of `/admin` (people who voted on 2 or more days this week). Aim for 20–25% or more of the week's voters.
 
 ## 6. Features waiting (from the research, in order)
