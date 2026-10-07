@@ -5,9 +5,10 @@ import { cleanText } from './validation';
 import { hasBlockedWord } from './moderation';
 import { MAX_NAME, MIN_NAME } from './limits';
 
-// Profiles (docs/DESIGN.md, "Profiles"). Only a name, an avatar and the passkeys' public keys are kept. Votes are never
+// Profiles (docs/DESIGN.md, "Profiles"). Only a name, an avatar, the passkeys' public keys and scrambled Google/phone
+// sign-in ids are kept. Votes are never
 // linked to a profile: nothing here reads or writes the votes table.
-const { users, passkeys, polls, votes } = schema;
+const { users, passkeys, signIns, polls, votes } = schema;
 
 export const cleanName = (raw: unknown): string | null => {
   const name = cleanText(String(raw ?? '')).slice(0, MAX_NAME);
@@ -17,6 +18,19 @@ export const cleanName = (raw: unknown): string | null => {
 export async function createUser(db: Db, u: { id: string; name: string; avatar: string }, key: { id: string; publicKey: string; counter: number; transports: string[] }) {
   await db.insert(users).values(u);
   await db.insert(passkeys).values({ id: key.id, userId: u.id, publicKey: key.publicKey, counter: key.counter, transports: key.transports.join(',') });
+}
+
+/** A Google or phone-number sign-in (its scrambled key) and the profile it belongs to. */
+export async function findSignIn(db: Db, key: string): Promise<string | null> {
+  const [s] = await db.select({ userId: signIns.userId }).from(signIns).where(eq(signIns.key, key)).limit(1);
+  return s?.userId ?? null;
+}
+export async function createUserWithSignIn(db: Db, u: { id: string; name: string; avatar: string }, s: { key: string; method: 'google' | 'phone' }) {
+  // Together or not at all: a second tap at the same moment must not leave a profile with no way in.
+  await db.transaction(async (tx) => {
+    await tx.insert(users).values(u);
+    await tx.insert(signIns).values({ key: s.key, userId: u.id, method: s.method });
+  });
 }
 
 export async function findPasskey(db: Db, id: string) {

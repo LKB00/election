@@ -22,6 +22,8 @@
     "@simplewebauthn/server": "^13.3.3",
     "@vercel/analytics": "^2.0.1",
     "drizzle-orm": "^0.45.3",
+    "firebase": "^12.19.0",
+    "jose": "^6.2.12",
     "lucide-react": "^1.49.0",
     "nanoid": "^6.0.1",
     "next": "^15.5.27",

@@ -17,9 +17,19 @@ Where: Vercel → your project **election** → Settings → Environment Variabl
 | [ ] `NEXT_PUBLIC_VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` | A key pair Claude can make for you (ask "make the alert keys"), or run `npx web-push generate-vapid-keys` | Turns on "Tell me the result" phone alerts | The button does not appear |
 | [ ] `VAPID_SUBJECT` | `mailto:` + an email you check, e.g. `mailto:you@gmail.com` | Push services contact this address if alerts misbehave | Alerts use a placeholder address |
 | [ ] `CRON_SECRET` | Any long random text (16+ letters) | Lets Vercel's evening job send the 9 pm result alerts (only Vercel knows it) | Only "Called it" alerts are sent; 9 pm result alerts are not |
+| [ ] `NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | From Firebase (steps below) | Turns on "Continue with Google" and "Continue with phone number" on the profile screen | Only fingerprint/face sign-in shows |
 | [ ] `NEXT_PUBLIC_SITE_URL` | Only if you buy your own domain, e.g. `https://yourname.in` | Share links and QR codes use your domain | They use the Vercel address (fine for now) |
 
 **Phone alerts (ntfy), step by step:** install the free **ntfy** app → tap + → subscribe to a long secret name you make up (like `election-alerts-7f3k9q`) → put `https://ntfy.sh/election-alerts-7f3k9q` in `REPORT_ALERT_URL`. Keep the name secret: anyone who knows it can read the alerts.
+
+**Google and phone-number sign-in (Firebase), step by step (about 20 minutes):**
+1. Go to **console.firebase.google.com** → **Create a project** → name it (for example `chunav`) → you can turn Google Analytics off → Create.
+2. **Build → Authentication → Get started.** In **Sign-in method**, turn on **Google** (pick your email as support email, Save) and **Phone** (Save).
+3. Still in Authentication → **Settings → Authorized domains → Add domain**: `election-three-ruby.vercel.app` (and your own domain later).
+4. **Phone codes cost money:** Firebase asks you to move to the **Blaze** plan (pay as you go; add a card) before it sends SMS. Each SMS to India costs a little (Firebase shows the price). To stop surprise bills: Google Cloud → Billing → **Budgets & alerts** → set a small monthly budget with an email alert. Optional but good: Authentication → Settings → **SMS region policy** → allow only India.
+5. **Project settings** (gear icon) → General → **Your apps** → the **</>** (Web) button → name it `chunav-web` → Register. It shows a `firebaseConfig` with `apiKey`, `authDomain` and `projectId`.
+6. In Vercel → Settings → Environment Variables, add `NEXT_PUBLIC_FIREBASE_API_KEY` = the apiKey, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` = the authDomain, `NEXT_PUBLIC_FIREBASE_PROJECT_ID` = the projectId. These three are public by design (they are in every visitor's browser), so they are safe, but still put them straight into Vercel, not in chat. Then **Redeploy** and tell Claude "done": Claude will check the buttons appear and work.
+Note: Google sign-in does not open inside WhatsApp's or Instagram's own browser (Google blocks it); the screen then tells people to open the site in Chrome or Safari, or to use their phone number.
 
 **Optional:** Vercel → Settings → Deployment Protection. Turn off the login wall if you want preview links (not just the main address) to open without a Vercel login.
 
