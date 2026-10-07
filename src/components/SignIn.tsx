@@ -12,7 +12,7 @@ import { useOverlay } from '@/lib/useOverlay';
 import { localPollKeys } from './MyPolls';
 import Spot from './Spot';
 import { MAX_NAME, MIN_NAME } from '@/lib/limits';
-import { confirmPhoneCode, firebaseCode, firebaseOn, googleTicket, phoneE164, sendPhoneCode } from '@/lib/firebaseClient';
+import { confirmPhoneCode, firebaseCode, firebaseOn, googleTicket, phoneE164, phoneOn, sendPhoneCode } from '@/lib/firebaseClient';
 
 // The profile screen (docs/DESIGN.md, "Profiles"). Asked for only when someone makes a poll; voting never needs it.
 // Light on purpose (owner: "information heavy… cognitive load"): the picture (a locked ballot box), a title and one
@@ -224,12 +224,12 @@ export function SignInPanel({ onDone, startBack = false, onPage = false }: { onD
         <>
           <p className="signin-or" aria-hidden><span>{t.orWith}</span></p>
           <button type="button" className="btn btn-ghost btn-lg signin-alt" disabled={busy} onClick={google}><GoogleMark /> {t.continueGoogle}</button>
-          <button type="button" className="btn btn-ghost btn-lg signin-alt" disabled={busy} onClick={openPhone}><Smartphone size={18} strokeWidth={2} aria-hidden /> {t.continuePhone}</button>
+          {phoneOn && <button type="button" className="btn btn-ghost btn-lg signin-alt" disabled={busy} onClick={openPhone}><Smartphone size={18} strokeWidth={2} aria-hidden /> {t.continuePhone}</button>}
         </>
       )}
       {error && <p className="duel-error" role="alert">{error}</p>}
       {/* Firebase's invisible "are you a person?" check for the SMS lives here. */}
-      {firebaseOn && <div id="signin-captcha" />}
+      {phoneOn && <div id="signin-captcha" />}
       {/* The promise, once, where the decision is made (new profile only: someone signing back in already knows it). */}
       {!back && step === 'main' && <p className="small muted signin-trust"><Lock size={14} strokeWidth={2} aria-hidden /> {t.signTrust}</p>}
       {step === 'main' ? (

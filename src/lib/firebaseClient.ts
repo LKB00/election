@@ -10,6 +10,9 @@ const config = {
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
 };
 export const firebaseOn = !!(config.apiKey && config.authDomain && config.projectId);
+/** Phone codes cost money per SMS (Firebase's paid Blaze plan), so the phone button has its own switch
+ * (owner, Oct 2026: "I don't want to pay"): NEXT_PUBLIC_FIREBASE_PHONE=on. Google sign-in is free. */
+export const phoneOn = firebaseOn && process.env.NEXT_PUBLIC_FIREBASE_PHONE === 'on';
 
 async function load(lang: string) {
   const [{ initializeApp, getApps }, fa] = await Promise.all([import('firebase/app'), import('firebase/auth')]);
