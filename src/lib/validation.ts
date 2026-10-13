@@ -122,4 +122,4 @@ export const packSchema = z.object({
 export const outcomeSchema = z.object({ optionId: code(), key: z.string().min(1).max(200) });
 export const guessSchema = z.object({ choice: code() });
 export const reportSchema = z.object({ reason: z.string().min(1).max(20) });
-export const adminSchema = z.object({ key: z.string().min(1).max(200), action: z.enum(['hide', 'show', 'approve', 'today', 'resume', 'plan']), closeTonight: z.boolean().optional(), day: z.string().max(10).nullable().optional() });
+export const adminSchema = z.object({ key: z.string().min(1).max(200), action: z.enum(['hide', 'show', 'approve', 'resume']) });

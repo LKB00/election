@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
-  AUTO_HIDE_REPORTS, castVote, createPoll, deleteVoterData, getDeck, getFeaturedId, getMyVotes, getPoll, getReviewQueue, getVoterStats, guessLeader, listPolls,
-  GROUP_MIN, groupSplit, reportPoll, setPollFlags, setReason, setToday, toggleReaction, undoVote, voteTotals, voterCount,
+  AUTO_HIDE_REPORTS, castVote, createPoll, deleteVoterData, getDeck, getMyVotes, getPoll, getReviewQueue, getVoterStats, guessLeader, listPolls,
+  GROUP_MIN, groupSplit, reportPoll, setPollFlags, setReason, toggleReaction, undoVote, voteTotals, voterCount,
 } from '@/lib/polls';
 import { hasBlockedWord, namesPolitics } from '@/lib/moderation';
 import { activeSilence } from '@/lib/silence';
@@ -234,9 +234,8 @@ describe('voter stats and deck', () => {
     expect(s).toMatchObject({ votes: 2, today: 2 });
   });
 
-  it('puts the featured duel first', async () => {
-    const pick = await make({ title: 'Featured first check' });
-    await setToday(db, pick);
+  it('starts with the newest poll (no poll is picked by the owner)', async () => {
+    const pick = await make({ title: 'Newest first check' });
     const deck = await getDeck(db, null);
     expect(deck[0].id).toBe(pick);
     expect(deck.length).toBeGreaterThan(1);
@@ -681,17 +680,7 @@ describe('rank', () => {
   });
 });
 
-describe("today's question and trending", () => {
-  it('the owner can make any visible poll today\'s question, and only one is', async () => {
-    const id = await make({ title: 'Today pick test' });
-    expect(await setToday(db, id)).toBe(true);
-    expect(await getFeaturedId(db)).toBe(id);
-    const other = await make({ title: 'Today pick two' });
-    await setToday(db, other);
-    const featured = await db.select({ id: schema.polls.id }).from(schema.polls).where(eq(schema.polls.featured, true));
-    expect(featured.map((r) => r.id)).toEqual([other]);
-    expect(await setToday(db, 'no-such-poll')).toBe(false);
-  });
+describe('trending', () => {
   it('trending ranks polls with recent votes, newest activity first', async () => {
     const { trendingPolls } = await import('@/lib/polls');
     const quiet = await make({ title: 'Quiet poll' });
@@ -774,7 +763,6 @@ describe("today's set and sides", () => {
     const b = await getTodaySet(db, 'set-b');
     expect(a.map((p) => p.id)).toEqual(b.map((p) => p.id));
     expect(a.length).toBe(SET_SIZE);
-    expect(a[0].id).toBe(await getFeaturedId(db));
     expect(a.some((p) => p.id === today)).toBe(false);
     expect(new Set(a.map((p) => p.id)).size).toBe(a.length);
     expect(indiaDay(Date.UTC(2026, 9, 4, 19, 0)).label).toBe('2026-10-05'); // 00:30 in India
@@ -796,27 +784,12 @@ describe("today's set and sides", () => {
   });
 });
 
-describe('final count for today\'s question', () => {
-  it('closes at 9 pm India time when the owner ticks it, keeps an earlier end, and stays in the set once closed', async () => {
-    const { nextFinalCount, getTodaySet } = await import('@/lib/polls');
+describe('9 pm final count', () => {
+  it('is 9 pm India time tonight, or tomorrow once it is past', async () => {
+    const { nextFinalCount } = await import('@/lib/polls');
     // 10:00 India time → 21:00 the same day; 22:00 → 21:00 the next day.
     expect(nextFinalCount(Date.parse('2026-10-04T10:00:00+05:30')).toISOString()).toBe(new Date('2026-10-04T21:00:00+05:30').toISOString());
     expect(nextFinalCount(Date.parse('2026-10-04T22:00:00+05:30')).toISOString()).toBe(new Date('2026-10-05T21:00:00+05:30').toISOString());
-    const id = await make({ title: 'Final count check' });
-    expect(await setToday(db, id, true)).toBe(true);
-    expect((await getPoll(db, id, null))!.endsAt).toBe(nextFinalCount().toISOString());
-    const soon = new Date(Date.now() + 10 * 60_000);
-    const early = await make({ title: 'Ends earlier', endsAt: new Date(Date.now() + 3600_000).toISOString() });
-    await db.update(schema.polls).set({ endsAt: soon }).where(eq(schema.polls.id, early));
-    await setToday(db, early, true);
-    expect((await getPoll(db, early, null))!.endsAt).toBe(soon.toISOString());
-    const plain = await make({ title: 'No final count' });
-    await setToday(db, plain, false);
-    expect((await getPoll(db, plain, null))!.endsAt).toBeNull();
-    // After the final count, today's question is still first in the set (closed), so evening visitors see the result.
-    await db.update(schema.polls).set({ endsAt: new Date(Date.now() - 1000) }).where(eq(schema.polls.id, plain));
-    const set = await getTodaySet(db, null);
-    expect(set[0]).toMatchObject({ id: plain, closed: true });
   });
 });
 
@@ -838,31 +811,6 @@ describe('owner numbers', () => {
     expect(after.weekVoters - before.weekVoters).toBe(2);
     expect(after.newCameBack - before.newCameBack).toBe(1);
     expect(after.todayVotes - before.todayVotes).toBe(2);
-  });
-});
-
-describe('planned days for today\'s question', () => {
-  it('takes over on its day by itself, with the 9 pm count, and a pick by hand still wins', async () => {
-    const { planToday, getPlannedToday, indiaDay, nextFinalCount } = await import('@/lib/polls');
-    const today = indiaDay().label;
-    const festival = await make({ title: 'Festival plan check' });
-    const later = await make({ title: 'Later plan check' });
-    expect(await planToday(db, festival, '2020-01-01')).toBe(false); // the past
-    expect(await planToday(db, festival, 'next week')).toBe(false);
-    expect(await planToday(db, later, '2099-11-08')).toBe(true);
-    expect((await getPlannedToday(db)).map((p) => p.id)).toContain(later);
-    expect(await getFeaturedId(db)).not.toBe(later);
-    expect(await planToday(db, festival, today)).toBe(true);
-    expect(await getFeaturedId(db)).toBe(festival);
-    const f = (await getPoll(db, festival, null))!;
-    expect(f.featured).toBe(true);
-    expect(f.endsAt).toBe(nextFinalCount().toISOString());
-    // The owner picks another one by hand today: it wins, and today's plan is cleared.
-    const byHand = await make({ title: 'Picked by hand' });
-    await setToday(db, byHand, false);
-    expect(await getFeaturedId(db)).toBe(byHand);
-    expect((await getPlannedToday(db)).some((p) => p.id === festival)).toBe(false);
-    expect(await planToday(db, later, null)).toBe(true);
   });
 });
 
@@ -1441,12 +1389,6 @@ describe('audit fixes (Oct 2026)', () => {
     const mine = (await getMyVotes(db, 'c1', 50)).find((v) => v.pollId === id)!;
     expect(mine.standing.kind).not.toBe('won');
   });
-  it('a day that does not exist cannot be planned', async () => {
-    const { planToday } = await import('@/lib/polls');
-    const id = await make();
-    expect(await planToday(db, id, '2099-02-31')).toBe(false);
-    expect(await planToday(db, id, '2099-03-01')).toBe(true);
-  });
 });
 
 describe('show results at a set time', () => {
@@ -1476,11 +1418,11 @@ describe('show results at a set time', () => {
     const now = await make({ revealIn: 'now' });
     for (const id of [group, called, now]) expect((await getPoll(db, id, null))!.revealAt).toBeNull();
   });
-  it("Today's question with the 9 pm final count opens its result at 9 pm", async () => {
-    const id = await make();
-    await setToday(db, id, true);
+  it('"Show results at 9 pm" opens them at the 9 pm final count', async () => {
+    const { nextFinalCount } = await import('@/lib/polls');
+    const id = await make({ revealIn: 'ninepm' });
     const [row] = await db.select().from(schema.polls).where(eq(schema.polls.id, id));
-    expect(row.revealAt?.getTime()).toBe(row.endsAt?.getTime());
+    expect(row.revealAt?.getTime()).toBe(nextFinalCount().getTime());
   });
 });
 

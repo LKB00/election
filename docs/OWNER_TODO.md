@@ -8,7 +8,7 @@ Where: Vercel → your project **election** → Settings → Environment Variabl
 
 | Setting | What to put | Why | Without it |
 |---|---|---|---|
-| [x] `ADMIN_SECRET` | Any long random text (16+ letters), keep it private | Opens your review page: `/admin?key=<this text>` | You cannot review polls, hide bad ones, resume paused polls or pick Today's question |
+| [x] `ADMIN_SECRET` | Any long random text (16+ letters), keep it private | Opens your review page: `/admin?key=<this text>` | You cannot review polls, hide bad ones or resume paused polls |
 | [x] `NEXT_PUBLIC_GRIEVANCE_NAME` | The complaints officer's name (can be you) | Indian IT Rules ask for a named person | Rules page says "use Report this poll" instead |
 | [x] `NEXT_PUBLIC_GRIEVANCE_EMAIL` | An email you check daily | Same rule; shown on Rules and Privacy pages | Same as above |
 | [x] `REPORT_ALERT_URL` | `https://ntfy.sh/<a long secret name>` | A phone alert for every report and every paused poll | You only find reports by opening /admin |
@@ -50,17 +50,15 @@ On Android (Chrome) the phone's own Google account picker slides up. On iPhone, 
 
 - [ ] **Test with 10 real people** using `docs/USER_TEST.md` (15 minutes each, no helping). Then send Claude the top 3 places people got stuck.
 
-## 2. Daily habits (5–10 minutes a day)
+## 2. Daily habit (5 minutes a day)
 
-- [ ] **Pick Today's question** on `/admin?key=…` (it is the first poll on Home and what `/today` opens). Morning is best: most Indians check their phone within 15 minutes of waking. Leave "Final count at 9 pm" ticked: voting on it closes at 9 pm and **its result opens for everyone at 9 pm** (nobody sees numbers before), so people come back in the evening. In the evening, post "here's how it ended" in your Channel.
-- [ ] **Post `/today` in your WhatsApp Channel** each morning (see below). One post a day, never at night.
+There is no Today's question (owner, Oct 2026: "only user generated content"): you never pick polls for everyone.
+
 - [ ] **Check /admin**: paused polls and **photo reports first** (the law gives 2 hours for private or sexual photos). Approve good new polls so they can appear in search.
 
 ## 3. Growth (one time, then now and then)
 
-- [ ] **Create a WhatsApp Channel** (WhatsApp → Updates → + → New channel), name it like the site, add the site link in the description, and post the `/today` link each morning. The research says this is the best way to bring people back without login or notifications.
 - [ ] **Start small:** share in one college, office or friends' group at a time, with a poll made for that group.
-- [ ] **Plan big days ahead** (festivals, IPL and India matches, big film Fridays): make the poll a few days early, then on `/admin` pick its date in the box next to it. That morning it becomes Today's question by itself, with the 9 pm final count. Keep them light: food, cricket, films, city pride. No religion or caste match-ups. You can also ask Claude to make a batch of them.
 
 ## 4. Law and safety
 
@@ -110,7 +108,7 @@ Say "continue features" and Claude picks up the next one.
 - **Vercel builds:** saving work no longer builds a preview copy on Vercel (that was using up the free daily limit). Only "make live" builds the site, once. Nothing to do; if you ever want preview links back, ask Claude.
 
 - **Every poll is made by people now.** The site's own polls (Modi or Rahul?, Virat/Rohit/Dhoni, IPL 2027, UP 2027, Chai or coffee) were hidden once. Their votes are kept. To bring one back, open it on `/admin` and press **Show again**.
-- **Today's question** is always one of people's polls that you pick on `/admin`. If you pick none, Home shows the day's set of people's polls.
+- **No Today's question** (Oct 2026): nobody picks a poll for everyone. Home shows the day's set of people's polls (the same for everyone all day, nobody picks them), Trending and topics. Old `/today` links open Home.
 - **Early days:** with few polls, ask friends and groups to make the first ones (or make a few yourself, as a person). A match-day pack is the quickest way to get several at once.
 
 - **Profiles (sign in with fingerprint or face):** nothing to set up. Only people who make polls need one; voting never does. One thing to know: a profile belongs to the website address it was made on. If you move to your own domain later, people make their profile again once (their polls can be moved over by Claude).

@@ -53,7 +53,6 @@ export type PollView = {
   myVote: string | null;
   /** False when the organiser hides numbers and this voter may not see them yet. */
   resultsVisible: boolean;
-  featured: boolean;
   /** Checked by the owner (only reviewed duels are offered to search engines). */
   reviewed: boolean;
   /** Waiting for the owner's check before it shows in public lists (politics and photo polls); its link works. */
@@ -413,7 +412,6 @@ export async function getPoll(
     participants: total,
     myVote,
     resultsVisible,
-    featured: poll.featured,
     reviewed: poll.reviewed,
     // Same rule as listPolls: held until the owner looks (politics, photos); group polls are never listed anyway.
     heldForReview: !poll.reviewed && !poll.groupSize && (poll.category === 'politics' || poll.hasPhotos),
@@ -710,8 +708,6 @@ export async function listPolls(db: Db, limit = 20, filter: { category?: string;
     .leftJoin(votes, eq(votes.pollId, polls.id))
     .where(
       and(
-        // Today's question has its own banner, so the list leaves it out; a search finds it like any other.
-        q ? undefined : eq(polls.featured, false),
         eq(polls.hidden, false),
         // Group polls are for the group's link only, never in public lists or search.
         isNull(polls.groupSize),
@@ -744,45 +740,6 @@ export async function listPolls(db: Db, limit = 20, filter: { category?: string;
     emojis: opts.filter((o) => o.pollId === r.id).map((o) => o.emoji ?? ''),
     calledIt: r.calledIt,
   }));
-}
-
-/** Id of today's question (picked by the owner from people's polls), if there is one. */
-export async function getFeaturedId(db: Db): Promise<string | null> {
-  // A poll the owner planned for today (a festival, a match day) takes over by itself on its morning, with the 9 pm
-  // final count, so the owner does not have to be online that day. No timer needed: the first visit of the day does it.
-  const [planned] = await db
-    .select({ id: polls.id, featured: polls.featured })
-    .from(polls)
-    .where(and(eq(polls.todayOn, indiaDay().label), eq(polls.hidden, false)))
-    .orderBy(desc(polls.createdAt))
-    .limit(1);
-  if (planned) {
-    if (!planned.featured) await setToday(db, planned.id, true);
-    return planned.id;
-  }
-  const [row] = await db.select({ id: polls.id }).from(polls).where(and(eq(polls.featured, true), eq(polls.hidden, false))).orderBy(desc(polls.createdAt)).limit(1);
-  return row?.id ?? null;
-}
-
-export type PlannedToday = { id: string; title: string; day: string };
-
-/** The owner plans a poll as Today's question for a day ("2026-11-08"), or clears it (null). Today or later only. */
-export async function planToday(db: Db, id: string, day: string | null): Promise<boolean> {
-  // A real calendar day only ("2026-02-31" is refused: it would be saved and never come).
-  if (day !== null && (!/^\d{4}-\d{2}-\d{2}$/.test(day) || new Date(`${day}T00:00:00Z`).toISOString().slice(0, 10) !== day || day < indiaDay().label)) return false;
-  const updated = await db.update(polls).set({ todayOn: day }).where(and(eq(polls.id, id), eq(polls.hidden, false))).returning({ id: polls.id });
-  return updated.length > 0;
-}
-
-/** What is planned from today on, soonest first. */
-export async function getPlannedToday(db: Db): Promise<PlannedToday[]> {
-  const rows = await db
-    .select({ id: polls.id, title: polls.title, day: polls.todayOn })
-    .from(polls)
-    .where(and(sql`${polls.todayOn} >= ${indiaDay().label}`, eq(polls.hidden, false)))
-    .orderBy(polls.todayOn)
-    .limit(60);
-  return rows.map((r) => ({ id: r.id, title: r.title, day: r.day! }));
 }
 
 /** Saves the voter's one-tap "why". Only allowed answers, only for a vote they already cast. */
@@ -834,8 +791,7 @@ export async function getVoterStats(db: Db, voterId: string | null): Promise<Vot
   return { ...EMPTY_STATS, ...mineRow, friends: friendRow?.n ?? 0 };
 }
 
-/** "Today's question": the owner picks one poll for the top of Home (the old one steps down). Hidden polls cannot be picked. */
-/** When today's final count happens: 9 pm India time (the evening peak), tonight or, after 9 pm, tomorrow. */
+/** When the 9 pm final count happens (a maker's "Show results at 9 pm" or "End at 9 pm"): 9 pm India time (the evening peak), tonight or, after 9 pm, tomorrow. */
 export const FINAL_HOUR_IST = 21;
 export function nextFinalCount(now = Date.now()): Date {
   const { label } = indiaDay(now);
@@ -844,29 +800,9 @@ export function nextFinalCount(now = Date.now()): Date {
 }
 
 /**
- * Makes a poll today's question. With closeTonight (the owner's tick, on by default) it gets a real final count at
- * 9 pm India time: a reason to come back in the evening, and a moment for group admins to post "here is how we voted".
- * A poll that already has an earlier end keeps it; the time is real, never a fake countdown.
- */
-export async function setToday(db: Db, id: string, closeTonight = false): Promise<boolean> {
-  return db.transaction(async (tx) => {
-    const [row] = await tx.select({ id: polls.id, endsAt: polls.endsAt, revealAt: polls.revealAt }).from(polls).where(and(eq(polls.id, id), eq(polls.hidden, false))).limit(1);
-    if (!row) return false;
-    const final = nextFinalCount();
-    const endsAt = closeTonight && (!row.endsAt || row.endsAt.getTime() > final.getTime()) ? final : row.endsAt;
-    await tx.update(polls).set({ featured: false }).where(eq(polls.featured, true));
-    // Picked by hand today: it wins over anything else planned for today.
-    await tx.update(polls).set({ todayOn: null }).where(and(eq(polls.todayOn, indiaDay().label), ne(polls.id, id)));
-    // With the 9 pm final count the result also opens then, for everyone at once (owner, Oct 2026: a reason to come back).
-    await tx.update(polls).set({ featured: true, reviewed: true, endsAt, revealAt: closeTonight ? endsAt : row.revealAt }).where(eq(polls.id, id));
-    return true;
-  });
-}
-
-/**
  * "Trending now": recent votes count most, and every poll slowly sinks as it ages (the open Hacker News idea):
  * score = votes in the last 24 hours / (hours since it started + 2)^1.5. Polls with reports sink faster.
- * Same public rules as listPolls (no hidden, held or closed polls; not today's question).
+ * Same public rules as listPolls (no hidden, held or closed polls).
  */
 export async function trendingPolls(db: Db, limit = 6): Promise<PollSummary[]> {
   const list = await listPolls(db, 200);
@@ -895,10 +831,9 @@ export async function trendingPolls(db: Db, limit = 6): Promise<PollSummary[]> {
   return top;
 }
 
-/** The duels to play through: the featured one first, then the newest. */
+/** The polls to play through: the newest open ones. */
 export async function getDeck(db: Db, voterId: string | null, limit = 12): Promise<PollView[]> {
-  const [featuredId, list] = await Promise.all([getFeaturedId(db), listPolls(db, limit)]);
-  const ids = [...(featuredId ? [featuredId] : []), ...list.filter((p) => !p.closed).map((p) => p.id)].slice(0, limit);
+  const ids = (await listPolls(db, limit)).filter((p) => !p.closed).map((p) => p.id);
   const views = await Promise.all(ids.map((id) => getPoll(db, id, voterId)));
   return views.filter((v): v is PollView => v !== null);
 }
@@ -921,27 +856,26 @@ function dayHash(day: string, id: string) {
 }
 
 /**
- * Today's set: today's question first, then a few more polls, the same for everyone all day (a shared moment, like
+ * Today's set: a few of people's polls, the same for everyone all day (a shared moment, like
  * Wordle's one puzzle a day) with a clear end. Only polls that existed before today's midnight, so the set never
  * changes during the day; shuffled by the day, not by votes, so new polls get their turn (popular ones do not take
  * every slot); one per topic first, for variety.
  */
 export async function getTodaySet(db: Db, voterId: string | null, size = SET_SIZE): Promise<PollView[]> {
   const day = indiaDay();
-  const [featuredId, list] = await Promise.all([getFeaturedId(db), listPolls(db, 200, { before: day.start })]);
-  const open = list.filter((p) => !p.closed && p.id !== featuredId).sort((a, b) => dayHash(day.label, a.id) - dayHash(day.label, b.id));
+  const list = await listPolls(db, 200, { before: day.start });
+  const open = list.filter((p) => !p.closed).sort((a, b) => dayHash(day.label, a.id) - dayHash(day.label, b.id));
   const picked: PollSummary[] = [];
   const topics = new Set<string>();
-  for (const p of open) if (picked.length < size - (featuredId ? 1 : 0) && !topics.has(p.category)) (picked.push(p), topics.add(p.category));
-  for (const p of open) if (picked.length < size - (featuredId ? 1 : 0) && !picked.includes(p)) picked.push(p);
-  const ids = [...(featuredId ? [featuredId] : []), ...picked.map((p) => p.id)];
+  for (const p of open) if (picked.length < size && !topics.has(p.category)) (picked.push(p), topics.add(p.category));
+  for (const p of open) if (picked.length < size && !picked.includes(p)) picked.push(p);
+  const ids = picked.map((p) => p.id);
   // A young site (most polls made today): top up with the newest, so there is always a set to play.
   if (ids.length < size) {
     for (const p of await listPolls(db, 50)) if (ids.length < size && !p.closed && !ids.includes(p.id)) ids.push(p.id);
   }
   const views = await Promise.all(ids.map((id) => getPoll(db, id, voterId)));
-  // Today's question stays in the set after its final count, so evening visitors see how it ended.
-  return views.filter((v): v is PollView => v !== null && (!v.closed || v.id === featuredId));
+  return views.filter((v): v is PollView => v !== null && !v.closed);
 }
 
 /** Where a duel you voted in stands now, as far as you are allowed to see (same rules as getPoll). */

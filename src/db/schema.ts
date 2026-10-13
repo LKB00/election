@@ -12,7 +12,7 @@ export const polls = pgTable(
     allowChange: boolean('allow_change').notNull().default(false),
     // Optional one-tap "why did you pick them?" answers, stored as a JSON list of short texts.
     reasons: text('reasons').notNull().default('[]'),
-    // Today's question: the one poll (made by a person, picked by the owner) shown first on Home.
+    // No longer used (owner, Oct 2026: no Today's question, only people's polls). Kept so old databases still match.
     featured: boolean('featured').notNull().default(false),
     // Taken down by the owner (or by enough reports). Hidden duels act as if they do not exist.
     hidden: boolean('hidden').notNull().default(false),
@@ -24,9 +24,9 @@ export const polls = pgTable(
     hasPhotos: boolean('has_photos').notNull().default(false),
     // Voting paused until this time after a sudden flood of votes (see src/lib/flood.ts). The owner can resume it.
     frozenUntil: timestamp('frozen_until', { withTimezone: true }),
-    // Planned as Today's question on this India day ("2026-11-08"); it takes over that morning by itself.
+    // No longer used (it planned Today's question for a day). Kept so old databases still match.
     todayOn: text('today_on'),
-    // "Show results at a set time" (the maker's choice, or 9 pm for Today's question): numbers stay hidden for everyone until then.
+    // "Show results at a set time" (the maker's choice): numbers stay hidden for everyone until then.
     revealAt: timestamp('reveal_at', { withTimezone: true }),
     // Election mode: the full booth ritual (EVM, VVPAT slip, voter ID, counting day). Politics polls always have it.
     electionMode: boolean('election_mode').notNull().default(false),

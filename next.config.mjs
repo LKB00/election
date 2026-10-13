@@ -2,9 +2,12 @@ const FIGTREE = ['./node_modules/@fontsource/figtree/files/figtree-latin-400-nor
 
 /** @type {import('next').NextConfig} */
 export default {
-  // Duels became polls: old links keep working.
+  // Old links keep working: duels became polls, and /today (the owner's daily pick, removed Oct 2026) opens Home.
   async redirects() {
-    return [{ source: '/duels', destination: '/polls', permanent: true }];
+    return [
+      { source: '/duels', destination: '/polls', permanent: true },
+      { source: '/today', destination: '/', permanent: false },
+    ];
   },
   serverExternalPackages: ['@electric-sql/pglite'],
   // The share pictures read the Figtree font files at runtime (src/lib/cards.ts); ship them with every picture route.

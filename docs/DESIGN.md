@@ -113,7 +113,7 @@ Promise: **30 seconds**. So:
 
 | Element | Level | Job / why |
 |---|---|---|
-| Duel of the day (dark banner) | P1, then P3 | The one duel we want everyone in. Dark = the strongest card on the page. After you voted in it, it moves below the list: the duels you have not done matter more. |
+| Duel of the day (dark banner) | P1, then P3 | The one duel we want everyone in. Dark = the strongest card on the page. After you voted in it, it moves below the list: the duels you have not done matter more. **Removed Oct 2026: no Today's question.** |
 | Duel tiles | P2 | Browse more. Pastel tiles from patricka; voted ones say "You voted" so you skip them. |
 
 ---
@@ -545,8 +545,8 @@ Ballots keep one vote per person; each place is stored in `vote_picks.rank`. Poi
 
 | Element | Screen | Priority | Job |
 |---|---|---|---|
-| "Today's question" label above the first poll | Home | P2 | Says why this poll is first. The owner picks it on /admin ("Make today's question"); one at a time; picking it also marks it reviewed. Modi vs Rahul is no longer forced: it stays in Election mode but is just another poll once replaced. |
-| "Today's question" section on /admin: current pick + the newest open polls, one button each | Admin | P1 on that section | Change the top of Home in one tap. |
+| "Today's question" label above the first poll | Home | P2 | Says why this poll is first. The owner picks it on /admin ("Make today's question"); one at a time; picking it also marks it reviewed. Modi vs Rahul is no longer forced: it stays in Election mode but is just another poll once replaced. **Removed Oct 2026: no Today's question.** |
+| "Today's question" section on /admin: current pick + the newest open polls, one button each | Admin | P1 on that section | Change the top of Home in one tap. **Removed Oct 2026: no Today's question.** |
 | **Trending now** (up to 4 tiles on Home, 3 on Polls) | Home, Polls | P2 | Score = votes in the last 24 h ÷ (hours since start + 2)^1.5, divided by (1 + reports). Fresh activity rises, old polls sink, reported ones sink faster. Only polls with votes in the last day. Replaces "Most watched". |
 | Topic shelves (the two topics with the most open polls, 2–4 tiles each, "All polls →" to the topic page) | Home | P3 | Browse by interest without searching. Polls already shown in Trending are not repeated. |
 
@@ -554,7 +554,7 @@ Ballots keep one vote per person; each place is stored in `vote_picks.rank`. Poi
 
 | Element | Where | Priority | Job |
 |---|---|---|---|
-| `/today`: a fixed link that always opens today's question (shown on /admin to copy) | Link | – | Post it once in a WhatsApp Channel, group description or Instagram bio; it follows your daily pick. |
+| `/today`: a fixed link that always opens today's question (shown on /admin to copy) | Link | – | Post it once in a WhatsApp Channel, group description or Instagram bio; it follows your daily pick. **Removed Oct 2026: no Today's question.** |
 | Story card line: "5 friends voted from my link · 3 agree with me" (lime pill, only when friends have voted) | Status / Story image | P2 | Something to brag about that never says who leads (Wordle lesson), so friends still have to vote to see the result. Lime = your progress. |
 
 ## Phase 3: Search (`/polls?q=…`)
@@ -597,7 +597,7 @@ Rules live in `src/lib/flood.ts`. A scrambled network code (never the address, n
 | Order: paused, then photo reports (2-hour rule), then other reports, then new | /admin | – | The most urgent first. |
 | "first report 35 min ago" + red "Photo report: act within 2 hours" | /admin row | P2 | The legal clock, visible. |
 | Resume voting (and Approve also resumes) | /admin row | P1 for paused rows | The owner looked: voting opens again. |
-| Acted rows dim with "Done ✓"; the Today's question picker sits below the queue | /admin | – | The next one to look at stands out; what needs you comes first. |
+| Acted rows dim with "Done ✓"; the Today's question picker sits below the queue | /admin | – | The next one to look at stands out; what needs you comes first. **Removed Oct 2026: no Today's question.** |
 | Vote buttons off while paused | Poll | – | No tap that can only fail. |
 
 ## Engagement: a daily ritual, not a game (research: `docs/ENGAGEMENT.md`)
@@ -606,8 +606,8 @@ The research says Election already has the right loop (guess → vote → reveal
 
 | Element | Where | Priority | Job |
 |---|---|---|---|
-| Today's set: today's question + 4 more, the same for everyone all day (only polls from before midnight, shuffled by the day, one per topic first) | Home game | P1 | A shared daily moment (Wordle) with a reason to come back tomorrow. Shuffled by the day, not by votes, so new polls get a turn. |
-| "Today's question · 4 left today" / "Today's set · 2 left today" in the label line | Home game | P3 | A plain-words head start and goal (endowed progress, goal gradient). **Never dots or a stepper** (CLAUDE.md), and it starts again each day: nothing counts across days, so it is not a streak. |
+| Today's set: 5 of people's polls, the same for everyone all day (only polls from before midnight, shuffled by the day, one per topic first) | Home game | P1 | A shared daily moment (Wordle) with a reason to come back tomorrow. Shuffled by the day, not by votes, so new polls get a turn. |
+| "Today's set · 2 left today" in the label line | Home game | P3 | A plain-words head start and goal (endowed progress, goal gradient). **Never dots or a stepper** (CLAUDE.md), and it starts again each day: nothing counts across days, so it is not a streak. |
 | End card "That's today's set. New set tomorrow." + "Your day vs everyone" (one row per poll: 🟩 with the 63% · 🟪 rare take: 1 in 8 · 🟨 neck and neck) | Home, after the set | P1 | A natural stopping point that ends on a high (peak-end), and the comparison people came for. One poll per row, **never a total** (that would be a score). Shown again when you come back the same day. |
 | Ink "Share your day" (WhatsApp text: emoji line + legend + link) | End card | P1 action | Wordle's spoiler-free grid: shows which side you were on, never what you picked, so friends must vote to find out. Plain text, light on data. |
 | Ghost "More polls" | End card | P2 | More only if you ask (no autoplay, no endless feed). Adds the rest of the deck in place. |
@@ -619,8 +619,8 @@ The research says Election already has the right loop (guess → vote → reveal
 
 | Element | Where | Priority | Job |
 |---|---|---|---|
-| "Final count at 9 pm" tick (on by default) when picking Today's question | /admin picker | P2 | A real close at 9 pm India time (the evening peak): a reason to come back and a moment for group admins to post the result. Real time only, never a fake countdown; an earlier end set by the creator wins. |
-| "Today's question · final count" + the final result, still first in today's set after 9 pm | Home | P1 in the evening | Evening visitors see how it ended. In "Your day vs everyone" a poll you missed says "closed before you voted". |
+| "Final count at 9 pm" tick (on by default) when picking Today's question | /admin picker | P2 | A real close at 9 pm India time (the evening peak): a reason to come back and a moment for group admins to post the result. Real time only, never a fake countdown; an earlier end set by the creator wins. **Removed Oct 2026: no Today's question.** |
+| "Today's question · final count" + the final result, still first in today's set after 9 pm | Home | P1 in the evening | Evening visitors see how it ended. In "Your day vs everyone" a poll you missed says "closed before you voted". **Removed Oct 2026: no Today's question.** |
 | Numbers (last 7 days): returning voters first, then today, new voters who came back, votes via friends' links, politics share | /admin, bottom | P3 | The one number to watch is weekly returning voters (aim 20–25%+). Totals only, never a list of people. |
 | Speed (checked Oct 2026, 4× slower CPU, slow 4G): Vote buttons visible ≈1.2 s, working ≈2.0 s | Home, poll page | – | Under the 3-second target; most people leave pages slower than that. Biggest single file: the heading font (128 KB). |
 
@@ -628,7 +628,7 @@ The research says Election already has the right loop (guess → vote → reveal
 
 | Element | Where | Priority | Job |
 |---|---|---|---|
-| Date box next to each poll + "Planned days" list (Remove) | /admin, Today's question | P2 | Event programming without being online: a Diwali poll for Diwali, a cricket poll for match day. On its India day it becomes Today's question by itself (the first visit of the day switches it, no timer), with the 9 pm final count. A pick by hand that day wins. |
+| Date box next to each poll + "Planned days" list (Remove) | /admin, Today's question | P2 | Event programming without being online: a Diwali poll for Diwali, a cricket poll for match day. On its India day it becomes Today's question by itself (the first visit of the day switches it, no timer), with the 9 pm final count. A pick by hand that day wins. **Removed Oct 2026: no Today's question.** |
 | "Tomorrow in one tap. Add Election to your home screen." Add · Not now | End of today's set, once | P3 | An easier way back (Flipkart Lite: 60% of visits from the home-screen icon). Only where it works: Android Chrome's real prompt, or the two steps in words on iPhone Safari; nothing inside WhatsApp's browser, on computers, or once installed. Asked once, either answer remembered (CCPA: no nagging). |
 
 ## Interaction design (owner: "interaction design will also be a selling point")
@@ -690,7 +690,7 @@ Not just its colours: Arogya Line's way of building screens. Its principles (fro
 | ~~Header: date, greeting~~ | (removed) | Home | Removed (owner, Oct 2026: "remove the Namaste"): today's question is the first thing on Home. |
 | Titled block | `al-block`, `__title`, `__aside` | Home, Polls, Topic, Your polls | Sentence-case title with a quiet count ("3 polls") or link ("All polls →") on the right. |
 | List card + rows | `al-listcard`, `al-row`, `__disc`, `__main`, `__title`, `__meta`, `__when`, `__chevron` | Poll lists (was a tile grid), My votes, Your polls | One row per poll: a tinted disc with the topic icon, the question, the choices as a quiet line, the count or "New" / "Voted ✓" on the right, a chevron. Easier to scan than tiles; long questions wrap instead of being cut. |
-| "Up next" card | `al-hero`, `__name`, `__fact`, `__action` | Poll of the day (Polls page; was the dark banner) | One soft card, a chip, the big line, one full-width action. |
+| "Up next" card | `al-hero`, `__name`, `__fact`, `__action` | Poll of the day (Polls page; was the dark banner) | One soft card, a chip, the big line, one full-width action. **Removed Oct 2026: no Today's question.** |
 | Status chip | `al-chip` (`is-you`, `is-good`, `is-alert`), and `.eyebrow` restyled | Poll page labels, Create, Poll of the day | Small and quiet, icon + word, never a button. Yellow when it is about you. |
 
 Note: the earlier rule "nothing above the duel on Home" gives way to Arogya's Today header; it is three short lines, and today's question still starts on the first screen of a phone.
@@ -734,7 +734,7 @@ What each component shows, and what changed:
 | Component | Shows now | Change |
 |---|---|---|
 | Poll header line | open/closed · votes · time left · last hour | With no votes: "Polling open · be the first" (was "0 votes cast · be the first") |
-| Today's question card (Home) | chip · question · one fact · one action | Choice names only when the question does not already say them ("Chai or coffee?" no longer repeats "Chai vs Coffee"); 0 votes says "Be the first to vote." |
+| Today's question card (Home) | chip · question · one fact · one action | Choice names only when the question does not already say them ("Chai or coffee?" no longer repeats "Chai vs Coffee"); 0 votes says "Be the first to vote." **Removed Oct 2026: no Today's question.** |
 | Poll rows | faces · question · choices (unless repeated) · status · count | Closed polls say "Ended" (was "Polling closed": too long for a row) |
 | Result bar | verdict · friend line · Share · Next | Wording only (kinder guess result) |
 | My votes | summary · your pick · where it stands · since last look | Summary without the guess score |
@@ -1359,3 +1359,19 @@ hand centred inside the middle 80% (the safe zone), so circle, squircle and roun
 (full bleed: the phone rounds it), the top bar, the splash and the big screen (`LogoMark.tsx`, soft square), and the share
 pictures. Its colours are its own tokens (`--mark-ground`, `--mark-hand`), which do not change in the dark
 look: a logo does not invert. Readable down to 16 px (the browser tab).
+
+
+## No Today's question (owner, Oct 2026: "There won't be daily questions, only user generated content")
+
+The owner no longer picks a poll for everyone. Removed:
+
+| What | Where | Why |
+|---|---|---|
+| "Today's question" label and the 9 pm final count it set | Home | Nobody picks a poll for the top; Home is only people's polls. |
+| "Today's question" picker, "Final count at 9 pm" tick, planned days | /admin | Nothing to pick or plan. /admin is review and numbers only. |
+| Poll of the day card (`al-hero`) | Polls page, topic pages | It showed the owner's pick. Trending and the list come first now. |
+| `/today` link | Link | Old links open Home. |
+
+Kept: **Today's set** on Home (5 of people's polls, the same for everyone all day, shuffled by the day, nobody picks them),
+Trending now, topic shelves, and the maker's own "Show results at 9 pm" / "Tonight 9 pm" choices (the maker picks them).
+The old `featured` and `today_on` database columns stay, unused, so existing databases still match.

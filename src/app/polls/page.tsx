@@ -3,10 +3,9 @@ import Link from 'next/link';
 import { topicIcon, topicTone } from '@/lib/topicIcons';
 import { Search } from 'lucide-react';
 import EmptyState from '@/components/EmptyState';
-import DuelBanner from '@/components/DuelBanner';
 import DuelTiles from '@/components/DuelTiles';
 import { getDb } from '@/db';
-import { getFeaturedId, getMyVotes, getPoll, listPolls, trendingPolls } from '@/lib/polls';
+import { getMyVotes, listPolls, trendingPolls } from '@/lib/polls';
 import { readVoterId } from '@/lib/voter';
 import { getT, langAlternates } from '@/lib/lang-server';
 import { CATEGORIES } from '@/lib/categories';
@@ -16,23 +15,21 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getT()).duels, alternates: await langAlternates('/polls') };
 }
 
-// P1: the duel of the day (dark banner). P2: browse the tiles. While searching, only the matches (P1) show.
+// P1: browse the tiles (trending first). While searching, only the matches (P1) show.
 export default async function Duels({ searchParams }: { searchParams: Promise<{ q?: string | string[] }> }) {
   const raw = (await searchParams).q;
   const q = (Array.isArray(raw) ? raw[0] : raw ?? '').trim().slice(0, 60);
   const db = await getDb();
   const t = await getT();
   const voterId = await readVoterId();
-  const featuredId = q ? null : await getFeaturedId(db);
-  const [featured, polls, mine, hot] = await Promise.all([
-    featuredId ? getPoll(db, featuredId, voterId) : Promise.resolve(null),
+  const [polls, mine, hot] = await Promise.all([
     listPolls(db, 60, { q }),
     getMyVotes(db, voterId, 200),
     q ? Promise.resolve([]) : trendingPolls(db, 3),
   ]);
   const rest = polls.filter((p) => !hot.some((h) => h.id === p.id));
   // No polls at all yet: only the empty state (search and topics would lead nowhere).
-  const empty = !q && !polls.length && !featured;
+  const empty = !q && !polls.length;
   if (empty) {
     return (
       <div className="page page-wide empty-page">
@@ -85,12 +82,6 @@ export default async function Duels({ searchParams }: { searchParams: Promise<{ 
         </section>
       )}
       {!q && (<>
-      {/* Not voted yet: the duel of the day is the main thing here. Voted: it steps back below the duels you have not done. */}
-      {featured && featured.myVote === null && (
-        <section className="block block-tight">
-          <DuelBanner poll={featured} />
-        </section>
-      )}
       {/* P2: the duels with the most votes in the last hour, like TV's "hot seats". Not repeated in the list below. */}
       {hot.length > 0 && (
         <section className="al-block">
@@ -101,14 +92,9 @@ export default async function Duels({ searchParams }: { searchParams: Promise<{ 
       {/* Hidden when every poll is already in Trending (it would say "no polls yet" right under them). */}
       {(rest.length > 0 || hot.length === 0) && <section className="al-block">
         {/* A heading only when something sits above; otherwise it would just repeat the page title. */}
-        {((featured && featured.myVote === null) || hot.length > 0) && <h2 className="al-block__title">{t.allDuels}<span className="al-block__aside">{t.pollsN(rest.length)}</span></h2>}
+        {hot.length > 0 && <h2 className="al-block__title">{t.allDuels}<span className="al-block__aside">{t.pollsN(rest.length)}</span></h2>}
         <DuelTiles polls={rest} votedIds={mine.map((v) => v.pollId)} limit={12} />
       </section>}
-      {featured && featured.myVote !== null && (
-        <section className="block">
-          <DuelBanner poll={featured} />
-        </section>
-      )}
       </>)}
       </div>
     </div>
