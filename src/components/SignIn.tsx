@@ -74,22 +74,22 @@ function GoogleSheetButton({ lang, onToken, onFail }: { lang: string; onToken: (
 export function SignInPanel({ onDone, startBack = false, onPage = false }: { onDone: (user: Profile) => void; startBack?: boolean; /** On the You page (not over Create). */ onPage?: boolean }) {
   const t = useT();
   const lang = useLang();
-  const [back, setBack] = useState(startBack);
+  // Two small steps at most (owner, Oct 2026: "overwhelming… simplify the journey"):
+  //   choose: Continue with Google (name from Google, no typing) or Use fingerprint or face. Nothing to fill in.
+  //   name:   only for a new fingerprint/face profile (or a Google account with no usable name): one field.
+  // No face to pick: one is given at random, and You → Edit changes it.
+  const [step, setStep] = useState<'choose' | 'name' | 'phone' | 'code'>(firebaseOn || startBack ? 'choose' : 'name');
   const [name, setName] = useState('');
-  const [avatar, setAvatar] = useState(AVATARS[0]);
+  const [avatar] = useState(() => AVATARS[Math.floor(Math.random() * AVATARS.length)]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [supported, setSupported] = useState(true);
   useEffect(() => setSupported(browserSupportsWebAuthn()), []);
-  // Google / phone: which step is open, the number, the code, and a ticket waiting for a name (a new person who tapped
-  // Google or phone on "Already have a profile?").
-  const [step, setStep] = useState<'main' | 'phone' | 'code'>('main');
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
+  // A Google / phone ticket waiting for a name (only when Google gave none we can use).
   const [pending, setPending] = useState<string | null>(null);
-  const [notice, setNotice] = useState('');
   const confirmation = useRef<ConfirmationResult | null>(null);
-  // Google's account sheet when the Web client id is set; our own button (Google's window) otherwise or if it fails.
   const [sheet, setSheet] = useState(nativeGoogleOn);
   const noSheet = useCallback(() => setSheet(false), []);
   // Firebase loads as this screen opens, so a tap on Google never waits (phones block windows opened after a wait).
@@ -97,13 +97,11 @@ export function SignInPanel({ onDone, startBack = false, onPage = false }: { onD
     if (firebaseOn) warmFirebase(lang);
   }, [lang]);
 
-  /** A new profile needs a name first, whichever way it signs in. */
-  function nameOk() {
-    if (back || name.trim().length >= MIN_NAME) return true;
-    setError(apiMsg(lang, 'Your name needs at least 2 letters.'));
-    document.getElementById('signin-name')?.focus();
-    return false;
-  }
+  const to = (s: typeof step, focus?: string) => {
+    setError('');
+    setStep(s);
+    if (focus) setTimeout(() => document.getElementById(focus)?.focus(), 0);
+  };
 
   /** Signed in: polls made on this phone before (each proven by its private key) join the profile. */
   async function finish() {
@@ -117,8 +115,7 @@ export function SignInPanel({ onDone, startBack = false, onPage = false }: { onD
   function fail(err: unknown) {
     const c = firebaseCode(err);
     const msg = err instanceof Error ? err.message : '';
-    setError(
-      // The phone's own "Cancel" (or a timeout) is not a failure: just say it stopped.
+    const known =
       err instanceof Error && (err.name === 'NotAllowedError' || err.name === 'AbortError') ? t.passkeyStopped
       : c === 'auth/popup-closed-by-user' || c === 'auth/cancelled-popup-request' || c === 'auth/user-cancelled' ? t.signCancelled
       : c === 'auth/popup-blocked' || c === 'auth/operation-not-supported-in-this-environment' || c === 'auth/web-storage-unsupported' ? t.googleInApp
@@ -127,34 +124,10 @@ export function SignInPanel({ onDone, startBack = false, onPage = false }: { onD
       : c === 'auth/code-expired' ? t.codeExpired
       : c === 'auth/too-many-requests' || c === 'auth/quota-exceeded' ? t.tooManyTries
       : c === 'auth/network-request-failed' ? t.noNetTry
-      : msg && !c ? apiMsg(lang, msg) : t.errGeneric,
-    );
+      : msg && !c ? apiMsg(lang, msg) : '';
+    // Anything else: the general message plus Google's short code, so one screenshot says what went wrong.
+    setError(known || (c ? `${t.errGeneric} (${c.replace('auth/', '')})` : t.errGeneric));
     setBusy(false);
-  }
-
-  /** Firebase's ticket goes to our server: a known sign-in opens its profile; a new one makes one with the name above. */
-  async function sendTicket(token: string) {
-    const v = await post('/api/auth/firebase', back ? { token } : { token, name, avatar });
-    if (!v.ok) throw new Error(v.data?.error ?? '');
-    if (v.data?.needName) {
-      // Nobody has signed in this way yet: ask for a name and a face, keep the ticket (it lasts an hour).
-      setPending(token);
-      setBack(false);
-      setStep('main');
-      setNotice(t.needName);
-      setBusy(false);
-      return;
-    }
-    await finish();
-  }
-
-  async function passkey() {
-    const o = await post(back ? '/api/auth/login/options' : '/api/auth/register/options', back ? {} : { name, avatar });
-    if (!o.ok) throw new Error(o.data?.error ?? '');
-    const proof = back ? await startAuthentication({ optionsJSON: o.data }) : await startRegistration({ optionsJSON: o.data });
-    const v = await post(back ? '/api/auth/login/verify' : '/api/auth/register/verify', proof);
-    if (!v.ok) throw new Error(v.data?.error ?? '');
-    await finish();
   }
 
   async function run(work: () => Promise<void>) {
@@ -168,30 +141,48 @@ export function SignInPanel({ onDone, startBack = false, onPage = false }: { onD
     }
   }
 
+  /** Firebase's ticket goes to our server: a known sign-in opens its profile; a new one makes one with this name. */
+  async function sendTicket(token: string, as: string) {
+    const v = await post('/api/auth/firebase', { token, name: as, avatar });
+    if (!v.ok) throw new Error(v.data?.error ?? '');
+    if (v.data?.needName) {
+      setPending(token);
+      setName(as);
+      setBusy(false);
+      to('name', 'signin-name');
+      return;
+    }
+    await finish();
+  }
+
+  /** Fingerprint or face: signs in an existing profile, or makes one with the name typed. */
+  async function passkey(isNew: boolean) {
+    const o = await post(isNew ? '/api/auth/register/options' : '/api/auth/login/options', isNew ? { name, avatar } : {});
+    if (!o.ok) throw new Error(o.data?.error ?? '');
+    const proof = isNew ? await startRegistration({ optionsJSON: o.data }) : await startAuthentication({ optionsJSON: o.data });
+    const v = await post(isNew ? '/api/auth/register/verify' : '/api/auth/login/verify', proof);
+    if (!v.ok) throw new Error(v.data?.error ?? '');
+    await finish();
+  }
+
   function go(e: React.FormEvent) {
     e.preventDefault();
     if (step === 'phone') return sendCode();
     if (step === 'code') return checkCode();
-    if (!nameOk()) return;
-    void run(() => (pending ? sendTicket(pending) : passkey()));
+    if (step !== 'name') return;
+    if (name.trim().length < MIN_NAME) {
+      setError(apiMsg(lang, 'Your name needs at least 2 letters.'));
+      document.getElementById('signin-name')?.focus();
+      return;
+    }
+    void run(() => (pending ? sendTicket(pending, name) : passkey(true)));
   }
 
-  function google() {
-    if (!nameOk()) return;
-    void run(async () => sendTicket(await googleTicket(lang)));
-  }
-
-  // From Google's account sheet. A new profile with no name yet is asked for one (the server answers needName).
-  function googleSheet(idToken: string) {
-    void run(async () => sendTicket(await ticketFromGoogle(idToken, lang)));
-  }
-
-  function openPhone() {
-    if (!nameOk()) return;
-    setError('');
-    setStep('phone');
-    setTimeout(() => document.getElementById('signin-phone')?.focus(), 0);
-  }
+  const google = () => void run(async () => { const g = await googleTicket(lang); await sendTicket(g.token, g.name); });
+  const googleSheet = (idToken: string) => void run(async () => { const g = await ticketFromGoogle(idToken, lang); await sendTicket(g.token, g.name); });
+  // "Use fingerprint or face": straight to the phone's prompt when signing back in; a new profile asks for a name first.
+  const useFace = () => (startBack ? void run(() => passkey(false)) : to('name', 'signin-name'));
+  const signBack = () => void run(() => passkey(false));
 
   function sendCode() {
     const e164 = phoneE164(phone);
@@ -202,9 +193,8 @@ export function SignInPanel({ onDone, startBack = false, onPage = false }: { onD
     void run(async () => {
       confirmation.current = await sendPhoneCode(e164, 'signin-captcha', lang);
       setCode('');
-      setStep('code');
       setBusy(false);
-      setTimeout(() => document.getElementById('signin-code')?.focus(), 0);
+      to('code', 'signin-code');
     });
   }
 
@@ -213,35 +203,44 @@ export function SignInPanel({ onDone, startBack = false, onPage = false }: { onD
       setError(t.codeWrong);
       return;
     }
-    void run(async () => sendTicket(await confirmPhoneCode(confirmation.current!, code.trim(), lang)));
+    void run(async () => sendTicket(await confirmPhoneCode(confirmation.current!, code.trim(), lang), ''));
   }
 
-  const otherWays = () => {
-    setStep('main');
-    setError('');
-  };
-
+  const title = step === 'name' ? t.nameTitle : startBack ? t.signTitleBack : onPage ? t.signTitleYou : t.signTitleNew;
   return (
     <form className="signin" onSubmit={go} noValidate>
-      <Spot kind="lock" size={back ? 104 : 120} />
-      <h2 className="signin-title">{back ? t.signTitleBack : onPage ? t.signTitleYou : t.signTitleNew}</h2>
-      <p className="signin-lead">{back ? (firebaseOn ? t.signLeadBackAll : t.signLeadBack) : t.signLeadNew}</p>
-      {notice && step === 'main' && <p className="small duel-friend" role="status">{notice}</p>}
-      {!back && step === 'main' && (
+      {step === 'choose' && <Spot kind="lock" size={104} />}
+      <h2 className="signin-title">{title}</h2>
+      {step === 'choose' && <p className="signin-lead">{t.signLeadChoose}</p>}
+
+      {step === 'choose' && (
         <>
-          <label className="create-label" htmlFor="signin-name">{t.yourName}</label>
-          <input id="signin-name" className="input" value={name} maxLength={MAX_NAME} autoComplete="nickname" placeholder={t.namePlaceholder} onChange={(e) => setName(e.target.value)} />
-          <fieldset className="signin-faces">
-            <legend className="create-label">{t.pickFace}</legend>
-            {AVATARS.map((a) => (
-              <label key={a} className={'signin-face' + (a === avatar ? ' is-on' : '')}>
-                <input type="radio" name="avatar" value={a} checked={a === avatar} onChange={() => setAvatar(a)} />
-                <span aria-hidden>{a}</span>
-              </label>
-            ))}
-          </fieldset>
+          {firebaseOn && (sheet ? (
+            <GoogleSheetButton lang={lang} onToken={googleSheet} onFail={noSheet} />
+          ) : (
+            <button type="button" className="btn btn-primary btn-lg signin-go" disabled={busy} onClick={google}><GoogleMark /> {busy ? t.signingIn : t.continueGoogle}</button>
+          ))}
+          {supported ? (
+            <button type="button" className={'btn btn-lg signin-alt ' + (firebaseOn ? 'btn-ghost' : 'btn-primary')} disabled={busy} onClick={useFace}>
+              <Fingerprint size={20} strokeWidth={2} aria-hidden /> {busy && !firebaseOn ? t.passkeyWaiting : t.usePasskey}
+            </button>
+          ) : !firebaseOn && <p className="duel-error" role="alert">{t.noPasskey}</p>}
+          {phoneOn && <button type="button" className="btn btn-ghost btn-lg signin-alt" disabled={busy} onClick={() => to('phone', 'signin-phone')}><Smartphone size={18} strokeWidth={2} aria-hidden /> {t.continuePhone}</button>}
         </>
       )}
+
+      {step === 'name' && (
+        <>
+          <label className="sr-only" htmlFor="signin-name">{t.yourName}</label>
+          <input id="signin-name" className="input" value={name} maxLength={MAX_NAME} autoComplete="nickname" placeholder={t.namePlaceholder} onChange={(e) => setName(e.target.value)} />
+          {supported || pending ? (
+            <button className="btn btn-primary btn-lg signin-go" disabled={busy}>
+              {!pending && <Fingerprint size={20} strokeWidth={2} aria-hidden />} {busy ? (pending ? t.signingIn : t.passkeyWaiting) : t.continueBtn}
+            </button>
+          ) : <p className="duel-error" role="alert">{t.noPasskey}</p>}
+        </>
+      )}
+
       {step === 'phone' && (
         <>
           <label className="create-label" htmlFor="signin-phone">{t.phoneLabel}</label>
@@ -254,42 +253,16 @@ export function SignInPanel({ onDone, startBack = false, onPage = false }: { onD
           <label className="create-label" htmlFor="signin-code">{t.codeLabel(phoneE164(phone) ?? phone)}</label>
           <input id="signin-code" className="input signin-code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} placeholder={t.codePlaceholder} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} />
           <button className="btn btn-primary btn-lg signin-go" disabled={busy}>{busy ? t.signingIn : t.confirmCode}</button>
-          <button type="button" className="text-link signin-switch" onClick={() => { setStep('phone'); setError(''); }}>{t.changeNumber}</button>
         </>
       )}
-      {step === 'main' && (pending ? (
-        <button className="btn btn-primary btn-lg signin-go" disabled={busy}>{busy ? t.signingIn : t.makeProfile}</button>
-      ) : supported ? (
-        <button className="btn btn-primary btn-lg signin-go" disabled={busy}>
-          <Fingerprint size={20} strokeWidth={2} aria-hidden /> {busy ? t.passkeyWaiting : back ? t.signInPasskey : t.continuePasskey}
-        </button>
-      ) : (
-        <p className="duel-error" role="alert">{t.noPasskey}</p>
-      ))}
-      {/* Google and phone number: quiet buttons after "or", so the ink button stays the one main action. */}
-      {firebaseOn && step === 'main' && !pending && (
-        <>
-          <p className="signin-or" aria-hidden><span>{t.orWith}</span></p>
-          {sheet ? (
-            <GoogleSheetButton lang={lang} onToken={googleSheet} onFail={noSheet} />
-          ) : (
-            <button type="button" className="btn btn-ghost btn-lg signin-alt" disabled={busy} onClick={google}><GoogleMark /> {t.continueGoogle}</button>
-          )}
-          {phoneOn && <button type="button" className="btn btn-ghost btn-lg signin-alt" disabled={busy} onClick={openPhone}><Smartphone size={18} strokeWidth={2} aria-hidden /> {t.continuePhone}</button>}
-        </>
-      )}
+
       {error && <p className="duel-error" role="alert">{error}</p>}
-      {/* Firebase's invisible "are you a person?" check for the SMS lives here. */}
       {phoneOn && <div id="signin-captcha" />}
-      {/* The promise, once, where the decision is made (new profile only: someone signing back in already knows it). */}
-      {!back && step === 'main' && <p className="small muted signin-trust"><Lock size={14} strokeWidth={2} aria-hidden /> {t.signTrust}</p>}
-      {step === 'main' ? (
-        <button type="button" className="text-link signin-switch" onClick={() => { setBack(!back); setError(''); setNotice(''); setPending(null); }}>
-          {back ? t.newHere : t.haveProfile}
-        </button>
-      ) : (
-        <button type="button" className="text-link signin-switch" onClick={otherWays}>{t.otherWays}</button>
-      )}
+      {/* The promise, once, where the decision is made. */}
+      {step === 'choose' && <p className="small muted signin-trust"><Lock size={14} strokeWidth={2} aria-hidden /> {t.signTrust}</p>}
+      {/* One quiet way back (or, for a new fingerprint profile, to sign in with one made before). */}
+      {step === 'name' && !pending && <button type="button" className="text-link signin-switch" onClick={signBack} disabled={busy}>{t.havePasskey}</button>}
+      {step !== 'choose' && (firebaseOn || startBack) && <button type="button" className="text-link small signin-switch" onClick={() => { setPending(null); to('choose'); }}>{t.back}</button>}
     </form>
   );
 }

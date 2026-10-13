@@ -42,22 +42,24 @@ async function load(lang: string): Promise<Loaded> {
  * opens after a wait). */
 export const warmFirebase = (lang: string) => void load(lang).catch(() => undefined);
 
+export type Ticket = { token: string; /** Google's first name, used as the profile name (editable later). */ name: string };
 /** Firebase's ticket for this person, then Firebase forgets them (only our cookie signs them in). */
-async function ticket(fa: typeof import('firebase/auth'), auth: import('firebase/auth').Auth, user: import('firebase/auth').User) {
+async function ticket(fa: typeof import('firebase/auth'), auth: import('firebase/auth').Auth, user: import('firebase/auth').User): Promise<Ticket> {
   const token = await user.getIdToken();
+  const name = (user.displayName ?? '').trim().split(/\s+/)[0] ?? '';
   await fa.signOut(auth).catch(() => undefined);
-  return token;
+  return { token, name };
 }
 
 /** Opens Google's window (when the account sheet is not set up); resolves with the ticket. */
-export async function googleTicket(lang: string): Promise<string> {
+export async function googleTicket(lang: string): Promise<Ticket> {
   const { fa, auth } = loaded ?? (await load(lang));
   const cred = await fa.signInWithPopup(auth, new fa.GoogleAuthProvider());
   return ticket(fa, auth, cred.user);
 }
 
 /** The account sheet's Google token → Firebase's ticket (the same ticket the server already checks). */
-export async function ticketFromGoogle(idToken: string, lang: string): Promise<string> {
+export async function ticketFromGoogle(idToken: string, lang: string): Promise<Ticket> {
   const { fa, auth } = await load(lang);
   const cred = await fa.signInWithCredential(auth, fa.GoogleAuthProvider.credential(idToken));
   return ticket(fa, auth, cred.user);
@@ -99,7 +101,7 @@ export async function sendPhoneCode(phone: string, buttonId: string, lang: strin
 export async function confirmPhoneCode(conf: ConfirmationResult, code: string, lang: string): Promise<string> {
   const { fa, auth } = await load(lang);
   const cred = await conf.confirm(code);
-  return ticket(fa, auth, cred.user);
+  return (await ticket(fa, auth, cred.user)).token;
 }
 
 /** "98765 43210" → "+919876543210" (India by default); an international number keeps its own "+code". */
