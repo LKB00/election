@@ -1,10 +1,9 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import AdminRow from '@/components/AdminRow';
-import TodayPicker from '@/components/TodayPicker';
 import { getDb } from '@/db';
 import { isAdminKey } from '@/lib/admin';
-import { getFeaturedId, getPlannedToday, getPoll, getReviewQueue, indiaDay, listPolls } from '@/lib/polls';
+import { getReviewQueue } from '@/lib/polls';
 import { getT } from '@/lib/lang-server';
 import { getEngagement, getStats } from '@/lib/stats';
 import Link from 'next/link';
@@ -23,12 +22,11 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
   if (!isAdminKey(key)) notFound();
   const t = await getT();
   const db = await getDb();
-  const [items, featuredId, recent, stats, planned, steps] = await Promise.all([getReviewQueue(db), getFeaturedId(db), listPolls(db, 20), getStats(db), getPlannedToday(db), stepTable(db)]);
+  const [items, stats, steps] = await Promise.all([getReviewQueue(db), getStats(db), stepTable(db)]);
   const engage = await getEngagement(db);
   // The step counter's 7-day totals.
   const week = Object.fromEntries(EVENTS.map((e) => [e, steps.reduce((sum, d) => sum + d.n[e], 0)])) as Record<StepEvent, number>;
   const pct = (a: number, b: number) => (b ? Math.round((a / b) * 100) : 0);
-  const featured = featuredId ? await getPoll(db, featuredId, null) : null;
   return (
     <div className="page">
       <header className="page-head page-head-tight">
@@ -41,8 +39,6 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
       <section className="block">
         {items.length === 0 ? <EmptyState kind="done" title={t.adminEmpty} /> : items.map((item) => <AdminRow key={item.id} item={item} adminKey={key!} />)}
       </section>
-      {/* After the queue: what needs you comes first. */}
-      <TodayPicker current={featured ? { id: featured.id, title: featured.title } : null} polls={recent.filter((p) => !p.closed).map((p) => ({ id: p.id, title: p.title }))} planned={planned} adminKey={key!} todayLabel={indiaDay().label} />
       {/* P3: how the site is doing. The first line is the one to watch (docs/ENGAGEMENT.md). */}
       <section className="block admin-stats">
         <h2>{t.statsTitle}</h2>

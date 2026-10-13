@@ -2,11 +2,10 @@ import { topicIcon, topicTone } from '@/lib/topicIcons';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import DuelBanner from '@/components/DuelBanner';
 import DuelTiles from '@/components/DuelTiles';
 import { getDb } from '@/db';
 import { CATEGORIES } from '@/lib/categories';
-import { getFeaturedId, getMyVotes, getPoll, listPolls } from '@/lib/polls';
+import { getMyVotes, listPolls } from '@/lib/polls';
 import { readVoterId } from '@/lib/voter';
 import { getT, langAlternates } from '@/lib/lang-server';
 
@@ -22,21 +21,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 // A topic page ("Cricket duels"): one place for people who search for a topic, and a way to browse by interest.
-// P1: the duel of the day when it is in this topic. P2: the tiles.
+// P1: the tiles.
 export default async function Topic({ params }: Props) {
   const { category } = await params;
   if (!isCategory(category)) notFound();
   const db = await getDb();
   const t = await getT();
   const voterId = await readVoterId();
-  const featuredId = await getFeaturedId(db);
-  const [featured, polls, mine] = await Promise.all([
-    featuredId ? getPoll(db, featuredId, voterId) : Promise.resolve(null),
+  const [polls, mine] = await Promise.all([
     listPolls(db, 60, { category }),
     getMyVotes(db, voterId, 200),
   ]);
-  const banner = featured && featured.category === category ? featured : null;
-  const full = polls.length > 0 || !!banner;
+  const full = polls.length > 0;
   return (
     <div className={'page page-wide' + (full ? ' polls-grid' : ' empty-page')}>
       {/* Computers only (election.css, "Desktop"): every topic in a left column, this one marked, like on Polls. */}
@@ -60,11 +56,6 @@ export default async function Topic({ params }: Props) {
         {/* Empty: the empty picture says the topic already ("No Cricket polls yet"), so the title stays for screen readers only. */}
         <h1 className={polls.length > 0 ? 'display' : 'sr-only'}>{t.topicTitle(t.categories[category] ?? category)}</h1>
       </header>
-      {banner && (
-        <section className="block block-tight">
-          <DuelBanner poll={banner} />
-        </section>
-      )}
       <section className="al-block">
         <DuelTiles polls={polls} votedIds={mine.map((v) => v.pollId)} topic={category} limit={12} />
       </section>

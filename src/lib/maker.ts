@@ -140,7 +140,7 @@ export async function markOutcome(db: Db, id: string, uid: string, optionId: str
 export async function deletePoll(db: Db, id: string, uid: string): Promise<'ok' | 'not_found'> {
   const done = await db
     .update(polls)
-    .set({ hidden: true, deletedAt: new Date(), featured: false, todayOn: null })
+    .set({ hidden: true, deletedAt: new Date() })
     .where(and(eq(polls.id, id), eq(polls.ownerId, uid), isNull(polls.deletedAt)))
     .returning({ id: polls.id });
   if (!done.length) return 'not_found';

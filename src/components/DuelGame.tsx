@@ -219,11 +219,10 @@ function Sparkline({ points, label, aria }: { points: number[]; label: string; a
 
 // start: given for a shared link (always open that duel, even if it ended or you voted).
 // Not given (Home): the first live duel you have not voted in, or "all caught up".
-export default function DuelGame({ deck: initialDeck, start, via, todayId, daily = false, more: initialMore = [], ownId }: {
+export default function DuelGame({ deck: initialDeck, start, via, daily = false, more: initialMore = [], ownId }: {
   deck: PollView[];
   start?: number;
   via?: string | null;
-  todayId?: string | null;
   /** Home: the deck is today's set (a few polls, the same for everyone), with "N left today" and an end card. */
   daily?: boolean;
   /** The signed-in maker's own poll: no "Report this poll" on it. */
@@ -886,18 +885,16 @@ export default function DuelGame({ deck: initialDeck, start, via, todayId, daily
     >
 
       <div className="tot-q">
-        {/* The owner's pick for the top of Home (P2): says why this poll is first. */}
         {/* Today's set (P3): plain words, never dots or a stepper, and it starts again tomorrow (not a streak). */}
-        {(todayId === poll.id || (daily && setIds.has(poll.id) && setLeft > 0)) && (
+        {daily && setIds.has(poll.id) && setLeft > 0 && (
           <p className="label duel-today">
-            {todayId === poll.id ? t.todaysQuestion : t.setLabel}
-            {todayId === poll.id && poll.closed && ` · ${t.finalCount}`}
-            {daily && setIds.has(poll.id) && setLeft > 0 && <span className="duel-set"> · {t.setLeft(setLeft)}</span>}
+            {t.setLabel}
+            <span className="duel-set"> · {t.setLeft(setLeft)}</span>
           </p>
         )}
         {/* "Called it" (P2): says this is about a real event, answered later. */}
-        {poll.groupSize && !(todayId === poll.id) && <p className="label duel-today">👥 {t.grpLabel}</p>}
-        {poll.calledIt && !poll.outcome && !(todayId === poll.id || (daily && setIds.has(poll.id) && setLeft > 0)) && <p className="label duel-today">🔮 {t.calledLabel}</p>}
+        {poll.groupSize && <p className="label duel-today">👥 {t.grpLabel}</p>}
+        {poll.calledIt && !poll.outcome && !(daily && setIds.has(poll.id) && setLeft > 0) && <p className="label duel-today">🔮 {t.calledLabel}</p>}
         <h1 key={poll.id} className="display duel-q" tabIndex={-1} lang={hindiText(poll.title)}>{poll.title}</h1>
         {/* The creator's "Details" line (and a pack's "Fan poll, not the official vote"). */}
         {poll.description && <p className="small muted duel-desc">{poll.description}</p>}
