@@ -1335,6 +1335,11 @@ moment results open), the "Tell me the result" alert is offered, and My votes sa
 reveal go out with the evening job (9:05 pm), so they fit the 9 pm choice best.
 Measure it on the step counter before making it the default anywhere else.
 
+## Any audience, not only friends (owner, Oct 2026: "not only for friends: my Instagram or X audience; the use case is widespread")
+
+- **Words:** nothing assumes the voters are friends or a group. "Start a poll" (was "Ask your friends") everywhere; "Your poll is live. Share it anywhere." with "WhatsApp, Instagram, X or a group: one link."; "Tell people you voted"; "What name should people see?" (`Your name or @handle`); someone arriving from a shared vote sees "Someone shared their vote. Your turn" and "You agree with the person who shared it"; "N people voted from your link"; "From your link (N)" vs everyone; result pictures "for your Story, Status or feed". Kept where they really mean friends: the **Group poll** feature (a fixed group whose results open together), the "Friends" topic and the "With friends" answer in packs.
+- **Picture for your Story** (after making a poll): the question picture (`/api/card/<id>?ask=1`, 1080×1920): "What do you think?", how many have voted, the question, its choices, "Secret ballot · Results after you vote", and "Your turn · scan to vote" with the QR code. No inked finger (the maker has not voted yet). Shared straight to Instagram/WhatsApp from the phone's menu, or saved on a computer; the link is tagged `src=ig`.
+
 ## Designed and developed by (owner, Oct 2026: "add at the bottom that this is created by me: my name or a link to lokeshbhatia.com")
 
 | Element | Level | Job / why |
