@@ -1,8 +1,8 @@
 'use client';
 import Link from 'next/link';
-import { ArrowRight, Check, Clock, Link2, Share2 } from 'lucide-react';
+import { ArrowRight, Check, Clock, ImageDown, Link2, Share2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useT } from '@/lib/lang';
+import { useLang, useT } from '@/lib/lang';
 import { track } from '@/lib/track';
 import { votePop } from '@/lib/sound';
 import Burst from './Burst';
@@ -11,7 +11,41 @@ import Spot from './Spot';
 // Right after creating a duel, the job is to send it (P1). Voting yourself is P2 (the duel is below).
 export default function CreatedPanel({ id, title, path = `/p/${id}`, heading, text, button, manageHref, held = false }: { id: string; title: string; /** A pack's page instead of a poll's. */ path?: string; heading?: string; text?: string; button?: string; /** The maker's page for this poll (votes as they come in). */ manageHref?: string; /** Politics and photo polls wait for the owner's check before they show in public lists. */ held?: boolean }) {
   const t = useT();
+  const lang = useLang();
   const [copied, setCopied] = useState(false);
+  // A poll (not a pack) also gets a picture of the question for an Instagram / WhatsApp Story or a post (owner, Oct 2026:
+  // "not only for friends: my Instagram or X audience"). Fetched now: iPhones open the share menu only straight from a tap.
+  const isPoll = path === `/p/${id}`;
+  const card = `/api/card/${id}?ask=1${lang === 'hg' ? '&l=hg' : ''}`;
+  const [story, setStory] = useState<Blob | null>(null);
+  useEffect(() => {
+    if (!isPoll) return;
+    let live = true;
+    fetch(card).then((r) => (r.ok ? r.blob() : null)).then((b) => live && b && setStory(b)).catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [card, isPoll]);
+  async function storyPicture() {
+    track('share_open');
+    try {
+      const blob: Blob = story ?? (await fetch(card).then((r) => r.blob()));
+      const file = new File([blob], 'chunav-poll.png', { type: 'image/png' });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], text: `${title} ${link('ig')}` });
+        return;
+      }
+      // No share menu for pictures (most computers): save it, to post from the phone or the app.
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'chunav-poll.png';
+      a.click();
+      const href = a.href;
+      setTimeout(() => URL.revokeObjectURL(href), 10_000);
+    } catch {
+      // Closed the share menu, or no internet: nothing to undo.
+    }
+  }
   // Remove "?new=1" from the address bar, so a copied address or a refresh shows the normal page to friends.
   // and celebrate once: it is the creator's proudest moment (they made it), with a pop and a happy buzz.
   const [party, setParty] = useState(false);
@@ -60,6 +94,7 @@ export default function CreatedPanel({ id, title, path = `/p/${id}`, heading, te
         <button type="button" className="btn btn-ghost btn-lg" onClick={copy}>
           {copied ? <Check size={15} strokeWidth={2} aria-hidden /> : <Link2 size={15} strokeWidth={1.75} aria-hidden />} {copied ? t.copied : t.copyLink}
         </button>
+        {isPoll && <button type="button" className="btn btn-ghost btn-lg" onClick={storyPicture}><ImageDown size={15} strokeWidth={1.75} aria-hidden /> {t.storyPicture}</button>}
       </span>
       {/* Where to come back to: the maker's page (votes as they come in), also under You. */}
       {manageHref && (

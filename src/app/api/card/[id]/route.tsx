@@ -33,6 +33,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const db = await getDb();
   const poll = await getPoll(db, id, null);
   if (!poll) return new Response('Not found', { status: 404 });
+  // ?ask=1: the poll maker's Story picture (no vote yet): the question, its choices and "vote", for any audience
+  // (Instagram, X, a WhatsApp group…). No inked finger, no "I voted".
+  const ask = url.searchParams.get('ask') === '1' && !f;
   const pickId = await pickFromCode(db, id, f);
   const showPick = !!pickId && !secret;
   const target = `${url.origin}/p/${id}${f ? `?f=${encodeURIComponent(f)}${secret ? '&s=1' : `&o=${proof}`}${isLang(lang) && lang !== 'en' ? `&l=${lang}` : ''}&src=qr` : '?src=qr'}`;
@@ -68,12 +71,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
           <div style={{ display: 'flex', padding: '10px 24px', borderRadius: 999, background: CARD.lime, fontSize: 30 }}>{t.cardFun}</div>
         </div>
 
-        {/* Who voted (your name if you added it) next to the inked finger, and how many have voted so far. */}
+        {/* Who voted (your name if you added it) next to the inked finger, and how many have voted so far.
+            The maker's picture asks instead: "What do you think?" */}
         <div style={{ display: 'flex', width: '100%', alignItems: 'center', gap: 32, marginTop: 64 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={handDataUri(150)} width={150} height={195} alt="" />
+          {!ask && <img src={handDataUri(150)} width={150} height={195} alt="" />}
           <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-            <div style={{ display: 'flex', fontSize: name ? 92 : 112, fontWeight: 700, letterSpacing: -3, lineHeight: 1.05 }}>{name ? t.cardNameVoted(name) : t.cardVoted}</div>
+            <div style={{ display: 'flex', fontSize: ask ? 104 : name ? 92 : 112, fontWeight: 700, letterSpacing: -3, lineHeight: 1.05 }}>{ask ? t.cardAskTitle : name ? t.cardNameVoted(name) : t.cardVoted}</div>
             {poll.participants > 0 && <div style={{ display: 'flex', marginTop: 12, fontSize: 40, color: CARD.muted }}>{t.cardVotersN(poll.participants)}</div>}
           </div>
         </div>
@@ -108,8 +112,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
           {/* Secret: a seal across the ballot, then the dare. Open: your pick in words. */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 28 }}>
             {!showPick && <div style={{ display: 'flex', padding: '10px 24px', borderRadius: 999, background: CARD.ink, color: CARD.paper, fontSize: 30, fontWeight: 700, letterSpacing: 2 }}>{t.cardSecret.toUpperCase()}</div>}
-            <div style={{ display: 'flex', fontSize: 52, fontWeight: 700 }}>
-              {showPick && pick ? t.cardPicked(rating ? pick.emoji ?? pick.label : drawable(pick.label) ? pick.label : String(poll.options.indexOf(pick) + 1)) : t.cardGuess}
+            <div style={{ display: 'flex', fontSize: ask ? 44 : 52, fontWeight: 700 }}>
+              {ask ? t.cardAskLine : showPick && pick ? t.cardPicked(rating ? pick.emoji ?? pick.label : drawable(pick.label) ? pick.label : String(poll.options.indexOf(pick) + 1)) : t.cardGuess}
             </div>
           </div>
         </div>

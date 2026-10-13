@@ -9,12 +9,8 @@ import type { Profile } from '@/lib/auth';
 import { AVATARS } from '@/lib/avatars';
 import { apiMsg } from '@/lib/i18n';
 import { useLang, useT } from '@/lib/lang';
-import dynamic from 'next/dynamic';
 import { SignInPanel } from './SignIn';
-import Spot from './Spot';
 import { MAX_NAME } from '@/lib/limits';
-
-const SignInSheet = dynamic(() => import('./SignIn'), { ssr: false });
 
 // The You page's moving parts (docs/DESIGN.md, "Profiles").
 
@@ -26,23 +22,10 @@ export function CreateSignIn() {
   return <SignInPanel onDone={() => router.refresh()} />;
 }
 
-export function YouSignIn({ full = false, startBack = false }: { full?: boolean; startBack?: boolean }) {
+export function YouSignIn({ startBack = false }: { full?: boolean; startBack?: boolean }) {
   const router = useRouter();
-  const t = useT();
-  const [open, setOpen] = useState<null | 'new' | 'back'>(null);
-  // The maker's page (signed out) shows the whole screen; the You tab starts calm: the picture, the one promise that
-  // matters most, one button. The name and faces open in the sheet only when tapped.
-  if (full) return <SignInPanel onPage startBack={startBack} onDone={() => router.refresh()} />;
-  return (
-    <div className="spot-empty">
-      <Spot kind="lock" />
-      <h2 className="spot-empty__title">{t.signTitleYou}</h2>
-      <p className="spot-empty__line">{t.youIntro}</p>
-      <button type="button" className="btn btn-primary btn-lg spot-empty__go" onClick={() => setOpen('new')}>{t.signTitleYou}</button>
-      <button type="button" className="text-link small spot-empty__more signin-switch" onClick={() => setOpen('back')}>{t.haveProfile}</button>
-      {open && <SignInSheet onPage startBack={open === 'back'} onClose={() => setOpen(null)} onDone={() => { setOpen(null); router.refresh(); }} />}
-    </div>
-  );
+  // The profile screen itself, right on the page (owner, Oct 2026: "simplify the journey"): no extra button to open it.
+  return <SignInPanel onPage startBack={startBack} onDone={() => router.refresh()} />;
 }
 
 /** Your face and name (yellow = you), with Edit in place. */

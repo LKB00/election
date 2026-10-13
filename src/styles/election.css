@@ -775,9 +775,7 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .signin-trust { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 0; text-align: center; }
 .signin-trust svg { flex: none; }
 .signin-sheet { padding-top: 16px; }
-/* Google and phone number (src/components/SignIn.tsx): "or" on a thin line, then two quiet full-width buttons. */
-.signin-or { display: flex; align-items: center; gap: 12px; margin: 4px 0 0; color: var(--ink-3); font-size: 13px; }
-.signin-or::before, .signin-or::after { content: ''; flex: 1; height: var(--hair); background: var(--line); }
+/* Google and phone number (src/components/SignIn.tsx): full-width buttons under the main one. */
 .signin-alt { width: 100%; gap: 8px; }
 /* Google's own button (it draws itself, at most 400px wide): centred, the same height as ours so nothing jumps. */
 .signin-google { display: flex; justify-content: center; width: 100%; min-height: 44px; }
