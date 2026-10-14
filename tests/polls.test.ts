@@ -246,6 +246,22 @@ describe('voter stats and deck', () => {
     expect(deck[0].id).toBe(pick);
     expect(deck.length).toBeGreaterThan(1);
   });
+
+  it('offers next only polls you have not voted in, your topics first', async () => {
+    const food = await make({ title: 'Next: food one', category: 'food' });
+    const food2 = await make({ title: 'Next: food two', category: 'food' });
+    const tech = await make({ title: 'Next: tech one', category: 'tech' });
+    const newest = await make({ title: 'Next: newest general' });
+    const p = (await getPoll(db, food, null))!;
+    await castVote(db, food, p.options[0].id, 'nx1');
+    const deck = await getDeck(db, 'nx1', 40);
+    expect(deck.some((d) => d.id === food)).toBe(false); // voted: never offered again
+    expect(deck[0].id).toBe(food2); // the topic you vote in comes first
+    // A followed topic beats it; the poll on screen is skipped.
+    const followed = await getDeck(db, 'nx1', 40, { followed: ['tech'], exclude: [newest] });
+    expect(followed[0].id).toBe(tech);
+    expect(followed.some((d) => d.id === newest)).toBe(false);
+  });
 });
 
 describe('undo', () => {

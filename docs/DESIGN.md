@@ -1254,6 +1254,16 @@ phone it squeezed "When results show" to one letter per line.
   picture, and the routes that can point at nothing check first, in their layout.
 - **Create steps checked in Hindi and Hinglish at 320 px**: everything fits; no changes needed.
 
+## Faster poll page, smarter "Next poll" (owner, Oct 2026: "Okay" to the next list)
+
+- **Poll page shows first, then fetches what comes next.** It used to load 8 more polls (for Next) and your whole voting
+  history (for ticks on the computer side list) before showing anything: 69 lookups. Now it loads the poll, and the phone
+  asks `/api/polls/next` just after the page appears: 16 lookups for the page. Ticks use a plain list of ids
+  (`votedPollIds`), also on Polls and topic pages.
+- **Home** no longer loads the "more polls" list up front; the phone fetches it when today's set is done.
+- **"Next poll" is a poll you have not voted in yet**, from topics you follow first, then the topics you vote in most,
+  then the newest (`getDeck`). Before, it was the newest polls, including ones you had already voted in.
+
 ## Engagement round (owner, Oct 2026: "the product is social engagement; polls are the mechanism")
 
 - **"Ask your friends"** is the main button everywhere it said "Start a poll" (top bar, Home, empty pages, after voting,

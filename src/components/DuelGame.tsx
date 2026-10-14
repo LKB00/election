@@ -220,7 +220,7 @@ function Sparkline({ points, label, aria }: { points: number[]; label: string; a
 
 // start: given for a shared link (always open that duel, even if it ended or you voted).
 // Not given (Home): the first live duel you have not voted in, or "all caught up".
-export default function DuelGame({ deck: initialDeck, start, via, daily = false, more: initialMore = [], ownId }: {
+export default function DuelGame({ deck: initialDeck, start, via, daily = false, ownId, fetchNext = false }: {
   deck: PollView[];
   start?: number;
   via?: string | null;
@@ -228,13 +228,31 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
   daily?: boolean;
   /** The signed-in maker's own poll: no "Report this poll" on it. */
   ownId?: string;
-  /** Home: the polls offered after today's set, only when you ask for more (never pushed). */
-  more?: PollView[];
+  /** A poll page: the polls for "Next poll" are fetched once the page shows (not loaded before it). */
+  fetchNext?: boolean;
 }) {
   const t = useT();
   const lang = useLang();
   const [deck, setDeck] = useState(initialDeck);
-  const [more, setMore] = useState(initialMore);
+  // Home: the polls offered after today's set, only when you ask for more (never pushed); fetched when the set is done.
+  const [more, setMore] = useState<PollView[]>([]);
+  // A poll page: fetch "Next poll" (open polls you have not voted in, your topics first) once the page is on screen.
+  useEffect(() => {
+    if (!fetchNext || !initialDeck[0]) return;
+    let gone = false;
+    fetch(`/api/polls/next?after=${encodeURIComponent(initialDeck[0].id)}`, { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { polls?: PollView[] } | null) => {
+        if (gone || !d?.polls?.length) return;
+        setDeck((cur) => [...cur, ...d.polls!.filter((p) => !cur.some((x) => x.id === p.id))]);
+      })
+      .catch(() => undefined);
+    return () => {
+      gone = true;
+    };
+    // Once, for the poll the page opened on.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // Today's set never changes while you play, even after "More polls" adds to the deck.
   const [setIds] = useState(() => new Set(daily ? initialDeck.map((p) => p.id) : []));
   const setLeft = daily ? deck.filter((p) => setIds.has(p.id) && isOpen(p)).length : 0;
@@ -248,6 +266,16 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
   const [msg, setMsg] = useState('');
   const [copied, setCopied] = useState(false);
   const [over, setOver] = useState(start === undefined && firstOpen === -1);
+  // Home: once today's set is done, fetch the polls offered after it (only shown if you ask for more).
+  const [moreAsked, setMoreAsked] = useState(false);
+  useEffect(() => {
+    if (!daily || !over || moreAsked) return;
+    setMoreAsked(true);
+    fetch(`/api/polls/next?skip=${deck.map((p) => p.id).join(',')}`, { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { polls?: PollView[] } | null) => d?.polls?.length && setMore(d.polls))
+      .catch(() => undefined);
+  }, [daily, over, moreAsked, deck]);
   const [undoUntil, setUndoUntil] = useState(0);
   const [reasonSaved, setReasonSaved] = useState(false);
   // The cast-vote moment (EVM, VVPAT slip, ink) plays over the page; results wait until it is done.

@@ -886,8 +886,36 @@ export async function trendingPolls(db: Db, limit = 6): Promise<PollSummary[]> {
  */
 export const getPoll = cache(loadPoll);
 
-export async function getDeck(db: Db, voterId: string | null, limit = 8): Promise<PollView[]> {
-  const ids = (await listPolls(db, limit)).filter((p) => !p.closed && !p.ideas).map((p) => p.id);
+/** The ids of the polls this voter voted in (for ticks on a list), one small lookup. */
+export async function votedPollIds(db: Db, voterId: string | null): Promise<string[]> {
+  if (!voterId) return [];
+  return (await db.select({ pollId: votes.pollId }).from(votes).where(eq(votes.voterKey, voterId))).map((v) => v.pollId);
+}
+
+/**
+ * The polls offered after this one ("Next poll"; Home's "more" after today's set). Only open polls you have not voted in
+ * yet (Next should be something to vote on). Topics you follow come first, then the topics you vote in most, then the
+ * rest, each newest first (owner, Oct 2026: "what can make it better": a next poll you care about keeps you going).
+ */
+export async function getDeck(db: Db, voterId: string | null, limit = 8, opts: { exclude?: string[]; followed?: string[] } = {}): Promise<PollView[]> {
+  const [list, mine] = await Promise.all([
+    listPolls(db, 40),
+    voterId
+      ? db.select({ pollId: votes.pollId, category: polls.category }).from(votes).innerJoin(polls, eq(polls.id, votes.pollId)).where(eq(votes.voterKey, voterId))
+      : Promise.resolve([] as { pollId: string; category: string }[]),
+  ]);
+  const voted = new Set(mine.map((v) => v.pollId));
+  const skip = new Set(opts.exclude ?? []);
+  const often = new Map<string, number>();
+  for (const v of mine) often.set(v.category, (often.get(v.category) ?? 0) + 1);
+  const followed = new Set(opts.followed ?? []);
+  const score = (c: string) => (followed.has(c) ? 1000 : 0) + (often.get(c) ?? 0);
+  const ids = list
+    .filter((p) => !p.closed && !p.ideas && !voted.has(p.id) && !skip.has(p.id))
+    // A stable sort: within the same score, the list keeps its newest-first order.
+    .sort((a, b) => score(b.category) - score(a.category))
+    .slice(0, limit)
+    .map((p) => p.id);
   const views = await Promise.all(ids.map((id) => getPoll(db, id, voterId)));
   return views.filter((v): v is PollView => v !== null && !v.ideas?.open);
 }

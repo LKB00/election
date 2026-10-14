@@ -14,7 +14,7 @@ import { battleOfPoll } from '@/lib/battles';
 import Step from '@/components/Step';
 import { getDb } from '@/db';
 import { SITE_URL } from '@/lib/site';
-import { getDeck, getMyVotes, getPoll, INDEX_MIN_VOTES, listPolls, rollWeekly } from '@/lib/polls';
+import { getPoll, votedPollIds, INDEX_MIN_VOTES, listPolls, rollWeekly } from '@/lib/polls';
 import DuelTiles from '@/components/DuelTiles';
 import { readVoterId } from '@/lib/voter';
 import { getT, langAlternates } from '@/lib/lang-server';
@@ -62,7 +62,9 @@ export default async function DuelPage({ params, searchParams }: Props) {
   const voterId = await readVoterId();
   const poll = await getPoll(db, id, voterId, f);
   if (!poll) notFound();
-  const [rest, user, recent, myVotes] = await Promise.all([getDeck(db, voterId), currentUser(db), listPolls(db, 20), getMyVotes(db, voterId, 200)]);
+  // "Next poll" is fetched by the phone after the page shows (DuelGame's fetchNext), not here: it was 8 more polls to
+  // load before anything appeared.
+  const [user, recent, myVotes] = await Promise.all([currentUser(db), listPolls(db, 20), votedPollIds(db, voterId)]);
   // Computers only: a few other open polls beside this one (hidden on phones, where Next leads to them one by one).
   const others = recent.filter((p) => !p.closed && p.id !== poll.id).slice(0, 5);
   // The poll's maker gets a way to their tools (votes so far, end it, results picture).
@@ -80,7 +82,6 @@ export default async function DuelPage({ params, searchParams }: Props) {
   } catch {
     /* no referer: came from outside (WhatsApp, a typed link) */
   }
-  const deck = [poll, ...rest.filter((p) => p.id !== poll.id)];
   // The label says why you are here, only when nothing else on the screen does: a friend dared you, or someone asked.
   // No label when just created (the panel says it), ended ("Polling closed" and the final result say it) or already
   // voted (your pick and the inked finger say it).
@@ -143,7 +144,7 @@ export default async function DuelPage({ params, searchParams }: Props) {
       </PollIntro>
       <section className="home-game duel-first" aria-label={t.pollRegion}>
         {/* "Ideas first": the board to add ideas until voting opens; then the ballot as usual. */}
-        {poll.ideas?.open ? <IdeasBoard poll={poll} mine={mine} /> : <DuelGame deck={deck} start={0} via={f ?? null} ownId={mine ? poll.id : undefined} />}
+        {poll.ideas?.open ? <IdeasBoard poll={poll} mine={mine} /> : <DuelGame deck={[poll]} start={0} via={f ?? null} ownId={mine ? poll.id : undefined} fetchNext />}
       </section>
       </div>
       {/* Computers (election.css, "Desktop"): the poll on the left, a few more to vote on in a column on the right, the
@@ -155,7 +156,7 @@ export default async function DuelPage({ params, searchParams }: Props) {
               {t.moreDuels}
               <Link href="/polls" className="al-block__aside">{t.allDuels} <ArrowRight size={14} strokeWidth={1.75} aria-hidden /></Link>
             </h2>
-            <DuelTiles polls={others} votedIds={myVotes.map((v) => v.pollId)} noCreate />
+            <DuelTiles polls={others} votedIds={myVotes} noCreate />
           </section>
         </aside>
       )}
