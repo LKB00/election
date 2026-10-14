@@ -1561,3 +1561,11 @@ describe('knockout battles', () => {
     expect(battleSchema.safeParse({ title: 'Best tea', entrants: e(4), roundHours: 5 }).success).toBe(false);
   });
 });
+
+describe('follow a topic', () => {
+  it('reads back only real topics, once each', async () => {
+    const { readFollowed } = await import('@/lib/follow');
+    expect(readFollowed('cricket,food,cricket,hacker,%3Cscript%3E')).toEqual(['cricket', 'food']);
+    expect(readFollowed(undefined)).toEqual([]);
+  });
+});

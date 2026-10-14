@@ -12,7 +12,9 @@ import DuelTiles from '@/components/DuelTiles';
 import PackRows from '@/components/PackRows';
 import { upcomingPacks } from '@/lib/packs';
 import { getDb } from '@/db';
+import { cookies } from 'next/headers';
 import { advanceDueBattles } from '@/lib/battles';
+import { FOLLOW_COOKIE, readFollowed } from '@/lib/follow';
 import { getDeck, getTodaySet, rollDueSeries, listPolls, trendingPolls, voterCount } from '@/lib/polls';
 import { VIEWS_SHOW_MIN, VOTERS_SHOW_MIN } from '@/lib/limits';
 import { viewTotal } from '@/lib/events';
@@ -58,10 +60,12 @@ export default async function Home() {
   const shown = new Set([...inDeck, ...hot.map((p) => p.id)]);
   const byTopic = new Map<string, typeof recent>();
   for (const p of recent) if (!p.closed && !shown.has(p.id) && p.category !== 'general') byTopic.set(p.category, [...(byTopic.get(p.category) ?? []), p]);
-  const shelves = [...byTopic.entries()]
-    .filter(([, ps]) => ps.length >= 2)
-    .sort((a, b) => b[1].length - a[1].length)
-    .slice(0, 2)
+  // Topics this phone follows come first (with even one open poll), then the busiest others (two or more).
+  const followed = readFollowed((await cookies()).get(FOLLOW_COOKIE)?.value);
+  const mineFirst = followed.filter((c) => byTopic.has(c)).map((c) => [c, byTopic.get(c)!] as const);
+  const others = [...byTopic.entries()].filter(([c, ps]) => !followed.includes(c) && ps.length >= 2).sort((a, b) => b[1].length - a[1].length);
+  const shelves = [...mineFirst, ...others]
+    .slice(0, Math.max(2, mineFirst.length))
     .map(([cat, ps]) => [cat, ps.slice(0, 4)] as const);
   const shelved = new Set([...shown, ...shelves.flatMap(([, ps]) => ps.map((p) => p.id))]);
   const polls = recent.filter((p) => !shelved.has(p.id) && !p.closed).slice(0, 5);
@@ -112,6 +116,7 @@ export default async function Home() {
               <section className="al-block" key={cat}>
                 <h2 className="al-block__title">
                   {t.categories[cat] ?? cat}
+                  {followed.includes(cat) && <span className="al-chip is-you shelf-followed">{t.followedTag}</span>}
                   <Link href={`/topic/${cat}`} className="al-block__aside">{t.allDuels} <ArrowRight size={14} strokeWidth={1.75} aria-hidden /></Link>
                 </h2>
                 <DuelTiles polls={ps} votedIds={voted} noCreate />

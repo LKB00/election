@@ -1314,3 +1314,5 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
 .battle-champion { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 8px 0 16px; padding: 24px 16px; border-radius: var(--radius-card); background: var(--you-soft); color: var(--ink); text-align: center; }
 .battle-champion .display { margin: 0; font-size: 28px; }
 .battle-share { display: flex; justify-content: center; margin-top: 16px; }
+.topic-follow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 12px 0 0; }
+.shelf-followed { margin-left: 8px; font-size: 11px; }
