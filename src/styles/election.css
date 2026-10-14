@@ -1375,3 +1375,10 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
 @media (hover: hover) and (pointer: fine) { .who-sees > summary:hover { background: var(--quiet-hover); } }
 .maker-quiet { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px 16px; border-radius: var(--radius-card); background: var(--you-soft); color: var(--on-you-soft); }
 .maker-quiet p { margin: 0; }
+/* The card after voting: one headline, up to three short facts, then the ink record (owner, Oct 2026: "cluttered"). */
+.duel-verdict__text { gap: 8px; }
+.duel-verdict__head { font-size: 17px; line-height: 1.35; }
+.duel-verdict__facts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; color: var(--ink-2); }
+.duel-verdict__facts li svg { vertical-align: -2px; }
+.duel-verdict__facts .link-like { margin-left: 2px; }
+.duel-verdict__ink { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding-top: 8px; border-top: 1px solid var(--line); }
