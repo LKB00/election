@@ -1306,6 +1306,19 @@ phone it squeezed "When results show" to one letter per line.
 | **Who can see my vote?** | Poll, under the ballot, before you vote | P3 | A quiet pill that opens three plain lines: nobody sees your pick unless you share it, makers see only totals, your vote is tied to this phone and can be deleted. For the voter who worries "secret vote" is just words. |
 | **It's quiet** + Share the Status picture | Maker's page, in "How it's going" | P1 there (the WhatsApp button steps back to an outline) | An open poll with under `QUIET_MAX_VOTES` votes and none in the last `QUIET_HOURS` (and at least that old): "5 votes so far, none in the last 6 hours. Post it in your WhatsApp Status: people tap the picture to vote." The button shares the story picture (saved on a computer). |
 
+## Full check after many new features (owner, Oct 2026: "yes")
+
+Every journey walked at 320 px in light and dark (and the busiest one in Hindi): Home, a poll before and after voting
+(pick one, rating, pick several, ideas first, not open yet), Create, Your votes, You, the maker's page, Polls, Join. No
+page errors and nothing wider than the screen. Fixed:
+
+- **The card after voting had become crowded again** (from a friend's link it could say five things). Now: **one
+  headline** (your guess, else agree or not with your friend, else where you stand with the crowd), then **up to three
+  short facts** in a quiet list (where you stand, "you two picked the same in 2 of 2", the maker's pick, friends from your
+  link), then a thin line and the ink record with Undo. Agreeing with a friend no longer repeats their pick (the result
+  already says "sender's pick").
+- **A poll that has not opened yet showed Vote keys that did nothing**; they are hidden until it opens.
+
 ## Engagement round (owner, Oct 2026: "the product is social engagement; polls are the mechanism")
 
 - **"Ask your friends"** is the main button everywhere it said "Start a poll" (top bar, Home, empty pages, after voting,

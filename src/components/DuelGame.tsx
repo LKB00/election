@@ -1076,7 +1076,8 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
                     {poll.myGuess?.optionId === o.id && <span className="guess-tag"><Target size={12} strokeWidth={2} aria-hidden /> {t.yourGuess}</span>}
                   </span>
                 )}
-                {!revealed && !poll.closed && (
+                {/* No Vote keys before a "post later" poll opens: keys that do nothing look broken. */}
+                {!revealed && !poll.closed && !poll.startsAt && (
                   <span className="evm-row" aria-hidden>
                     <span className={'evm-led' + (isMine || ticked ? ' is-on' : '')} />
                     <span className="evm-btn">{dates && !voted ? (ticked ? t.datesWorks : maybe ? t.datesMaybe : ticks.length + maybes.length ? t.datesNo : t.datesTap) : multi && !voted ? (ranking ? (ticked ? t.rankRemove : t.rankNext(ticks.length + 1)) : ticked ? t.multiTicked : t.multiTick) : isMine ? t.voted : t.vote}</span>
@@ -1188,43 +1189,63 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
         <div className={'duel-verdict' + (inkedFor === poll.id ? ' is-new' : '')} aria-live="polite">
           {!poll.closed && <InkFinger size={32} />}
           <div className="duel-verdict__text">
-            {poll.myGuess && (
-              <p className={'duel-guessed' + (justGuessed ? ' is-new' : '')}>
-                {poll.myGuess.correct ? <strong className="txt-good">{t.exitRight}</strong> : <strong className="txt-bad">{t.exitWrong}</strong>}
-                {!poll.myGuess.correct && leaderIdx >= 0 && <> {t.isAhead(poll.options[leaderIdx].label)}</>}
-              </p>
-            )}
-            {/* Came from a friend's link: agree or disagree with them is the headline of this moment. */}
-            {poll.friend.optionId && (
-              <p className={'duel-friend-line' + (poll.friend.optionId === poll.myVote ? ' is-agree' : '')}>
-                <Users size={14} strokeWidth={1.75} aria-hidden />{' '}
-                <strong>{poll.friend.optionId === poll.myVote ? t.friendAgree : t.friendDisagree}</strong>{' '}
-                {t.friendTheyPicked(poll.options.find((o) => o.id === poll.friend.optionId)?.label ?? '')}
-              </p>
-            )}
-            {/* Across the polls this friend sent you: how often you two picked the same, and one tap to tell them. */}
-            {poll.friendTogether && (
-              <p className="small duel-together">
-                {t.friendTogether(poll.friendTogether.same, poll.friendTogether.all)}{' '}
-                <a className="link-like small" href={`https://wa.me/?text=${encodeURIComponent(t.friendTogetherText(poll.friendTogether.same, poll.friendTogether.all, `${origin}/p/${poll.id}${poll.myShareCode ? `?f=${poll.myShareCode}` : ''}`))}`} target="_blank" rel="noopener noreferrer" onClick={() => track('whatsapp')}>
-                  {t.friendTogetherShare}
-                </a>
-              </p>
-            )}
-            {/* The maker's own pick, when they chose to show it. */}
-            {poll.makerPick && poll.maker && (
-              <p className="small duel-maker-pick">
-                <span aria-hidden>{poll.maker.avatar}</span>{' '}
-                {poll.makerPick === poll.myVote ? t.makerPickedSame(poll.maker.name) : t.makerPicked(poll.maker.name, poll.options.find((o) => o.id === poll.makerPick)?.label ?? '')}
-              </p>
-            )}
-            {happenedIdx < 0 && !poll.closed && <p><strong className={rareNow ? 'is-rare' : undefined}>{vTitle}</strong> {vLine}</p>}
-            {poll.friends.agree + poll.friends.disagree > 0 && <p className="small muted">{t.dares(poll.friends.agree + poll.friends.disagree, poll.friends.agree, poll.friends.disagree)}</p>}
+            {(() => {
+              // One headline, then up to three short facts, then the ink record (owner, Oct 2026: "cluttered, no
+              // hierarchy"). The headline is what just happened to you: your guess, else your friend, else the crowd.
+              const friendPick = poll.friend.optionId;
+              const agree = friendPick === poll.myVote;
+              const friendLabel = poll.options.find((o) => o.id === friendPick)?.label ?? '';
+              const crowd = happenedIdx < 0 && !poll.closed;
+              const guessHead = poll.myGuess && (
+                <p className={'duel-verdict__head duel-guessed' + (justGuessed ? ' is-new' : '')}>
+                  {poll.myGuess.correct ? <strong className="txt-good">{t.exitRight}</strong> : <strong className="txt-bad">{t.exitWrong}</strong>}
+                  {!poll.myGuess.correct && leaderIdx >= 0 && <> {t.isAhead(poll.options[leaderIdx].label)}</>}
+                </p>
+              );
+              const friendHead = friendPick && (
+                <p className={'duel-verdict__head duel-friend-line' + (agree ? ' is-agree' : '')}>
+                  <strong>{agree ? t.friendAgree : t.friendDisagree}</strong>
+                  {/* Agreeing needs no name: your pick says it. */}
+                  {!agree && <> {t.friendTheyPicked(friendLabel)}</>}
+                </p>
+              );
+              const crowdHead = crowd && <p className="duel-verdict__head"><strong className={rareNow ? 'is-rare' : undefined}>{vTitle}</strong> {vLine}</p>;
+              const head = guessHead || friendHead || crowdHead;
+              const facts: React.ReactNode[] = [];
+              if (guessHead && friendPick) facts.push(<><Users size={14} strokeWidth={1.75} aria-hidden /> {agree ? t.friendAgree : t.friendDisagree}{!agree && <> {t.friendTheyPicked(friendLabel)}</>}</>);
+              if (head !== crowdHead && crowd) facts.push(<>{vTitle} {vLine}</>);
+              if (poll.friendTogether) {
+                facts.push(
+                  <>
+                    <Users size={14} strokeWidth={1.75} aria-hidden /> {t.friendTogether(poll.friendTogether.same, poll.friendTogether.all)}{' '}
+                    <a className="link-like small" href={`https://wa.me/?text=${encodeURIComponent(t.friendTogetherText(poll.friendTogether.same, poll.friendTogether.all, `${origin}/p/${poll.id}${poll.myShareCode ? `?f=${poll.myShareCode}` : ''}`))}`} target="_blank" rel="noopener noreferrer" onClick={() => track('whatsapp')}>
+                      {t.friendTogetherShare}
+                    </a>
+                  </>,
+                );
+              }
+              if (poll.makerPick && poll.maker) {
+                facts.push(<><span aria-hidden>{poll.maker.avatar}</span> {poll.makerPick === poll.myVote ? t.makerPickedSame(poll.maker.name) : t.makerPicked(poll.maker.name, poll.options.find((o) => o.id === poll.makerPick)?.label ?? '')}</>);
+              }
+              if (poll.friends.agree + poll.friends.disagree > 0) facts.push(<>{t.dares(poll.friends.agree + poll.friends.disagree, poll.friends.agree, poll.friends.disagree)}</>);
+              return (
+                <>
+                  {head}
+                  {facts.length > 0 && (
+                    <ul className="duel-verdict__facts">
+                      {facts.slice(0, 3).map((f, k) => <li key={k} className="small">{f}</li>)}
+                    </ul>
+                  )}
+                </>
+              );
+            })()}
             {!poll.closed && (
-              <p className="small muted">
-                {t.inked}.
-                {poll.electionMode && poll.myVoterNumber ? <> {t.voterId} EL-{String(poll.myVoterNumber).padStart(6, '0')}</> : null}
-                {undoUntil > 0 && !seenAtOnce && <> · <button type="button" className="link-like duel-undo" onClick={undo}>{t.undoVote}</button></>}
+              <p className="small muted duel-verdict__ink">
+                <span>
+                  {t.inked}.
+                  {poll.electionMode && poll.myVoterNumber ? <> {t.voterId} EL-{String(poll.myVoterNumber).padStart(6, '0')}</> : null}
+                </span>
+                {undoUntil > 0 && !seenAtOnce && <button type="button" className="link-like small duel-undo" onClick={undo}>{t.undoVote}</button>}
               </p>
             )}
           </div>
