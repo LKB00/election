@@ -107,7 +107,7 @@ export type PollView = {
   /** Opened from a friend's link: whether that friend exists, and their pick once you can see results. */
   friend: { known: boolean; optionId: string | null };
   /** The maker's name and face, only when they chose to show them on this poll. */
-  maker: { id: string; name: string; avatar: string } | null;
+  maker: { id: string; name: string; avatar: string; verified: boolean } | null;
   /** Voters may suggest a missing choice (the maker approves it first). */
   suggestionsOn: boolean;
   /** "Ask again": the earlier poll this one repeats, with its result when anyone may see it. */
@@ -224,7 +224,7 @@ export async function createPoll(db: Db, raw: CreatePollInput, manageKey?: strin
 const orderKey = (voterId: string, optionId: string) => parseInt(createHash('sha256').update(`${voterId}:${optionId}`).digest('hex').slice(0, 8), 16);
 
 async function makerOf(db: Db, uid: string) {
-  const [u] = await db.select({ id: schema.users.id, name: schema.users.name, avatar: schema.users.avatar }).from(schema.users).where(eq(schema.users.id, uid)).limit(1);
+  const [u] = await db.select({ id: schema.users.id, name: schema.users.name, avatar: schema.users.avatar, verified: schema.users.verified }).from(schema.users).where(eq(schema.users.id, uid)).limit(1);
   return u ?? null;
 }
 

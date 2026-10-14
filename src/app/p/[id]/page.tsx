@@ -9,6 +9,7 @@ import CreatedPanel from '@/components/CreatedPanel';
 import PollIntro from '@/components/PollIntro';
 import DuelGame from '@/components/DuelGame';
 import IdeasBoard from '@/components/IdeasBoard';
+import Verified from '@/components/Verified';
 import { battleOfPoll } from '@/lib/battles';
 import Step from '@/components/Step';
 import { getDb } from '@/db';
@@ -124,7 +125,7 @@ export default async function DuelPage({ params, searchParams }: Props) {
       )}
       {poll.maker && (
         <Link href={`/u/${poll.maker.id}`} className="maker-by">
-          <span className="maker-by-face" aria-hidden>{poll.maker.avatar}</span> {t.askedBy(poll.maker.name)}
+          <span className="maker-by-face" aria-hidden>{poll.maker.avatar}</span> {t.askedBy(poll.maker.name)}{poll.maker.verified && <Verified label={t.verifiedLabel} />}
         </Link>
       )}
       {battle && (

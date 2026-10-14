@@ -136,6 +136,7 @@ CREATE TABLE IF NOT EXISTS users (
   avatar text NOT NULL DEFAULT '🙂',
   created_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE users ADD COLUMN IF NOT EXISTS verified boolean NOT NULL DEFAULT false;
 CREATE TABLE IF NOT EXISTS passkeys (
   id text PRIMARY KEY,
   user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,

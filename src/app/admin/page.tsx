@@ -4,6 +4,8 @@ import AdminRow from '@/components/AdminRow';
 import { getDb } from '@/db';
 import { isAdminKey } from '@/lib/admin';
 import { getReviewQueue } from '@/lib/polls';
+import { listVerified } from '@/lib/verify';
+import VerifyAdmin from '@/components/VerifyAdmin';
 import { getT } from '@/lib/lang-server';
 import { getEngagement, getStats } from '@/lib/stats';
 import Link from 'next/link';
@@ -22,7 +24,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
   if (!isAdminKey(key)) notFound();
   const t = await getT();
   const db = await getDb();
-  const [items, stats, steps] = await Promise.all([getReviewQueue(db), getStats(db), stepTable(db)]);
+  const [items, stats, steps, verified] = await Promise.all([getReviewQueue(db), getStats(db), stepTable(db), listVerified(db)]);
   const engage = await getEngagement(db);
   // The step counter's 7-day totals.
   const week = Object.fromEntries(EVENTS.map((e) => [e, steps.reduce((sum, d) => sum + d.n[e], 0)])) as Record<StepEvent, number>;
@@ -39,6 +41,8 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
       <section className="block">
         {items.length === 0 ? <EmptyState kind="done" title={t.adminEmpty} /> : items.map((item) => <AdminRow key={item.id} item={item} adminKey={key!} />)}
       </section>
+      {/* Verified badges: real creators, brands and colleges (the owner checks them first). */}
+      <VerifyAdmin adminKey={key!} list={verified} />
       {/* P3: how the site is doing. The first line is the one to watch (docs/ENGAGEMENT.md). */}
       <section className="block admin-stats">
         <h2>{t.statsTitle}</h2>

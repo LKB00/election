@@ -9,6 +9,7 @@ import { getT } from '@/lib/lang-server';
 import { isCode } from '@/lib/validation';
 import EmptyState from '@/components/EmptyState';
 import BioLink from '@/components/BioLink';
+import Verified from '@/components/Verified';
 import DuelGame from '@/components/DuelGame';
 import { getPoll, type PollView } from '@/lib/polls';
 import { readVoterId } from '@/lib/voter';
@@ -23,7 +24,7 @@ async function load(id: string) {
   if (!isCode(id)) return null;
   const db = await getDb();
   const { users, polls, votes } = schema;
-  const [u] = await db.select({ id: users.id, name: users.name, avatar: users.avatar }).from(users).where(eq(users.id, id)).limit(1);
+  const [u] = await db.select({ id: users.id, name: users.name, avatar: users.avatar, verified: users.verified }).from(users).where(eq(users.id, id)).limit(1);
   if (!u) return null;
   const rows = await db
     .select({ id: polls.id, title: polls.title, endsAt: polls.endsAt, n: sql<number>`count(${votes.id})::int` })
@@ -73,7 +74,7 @@ export default async function MakerPage({ params }: { params: Promise<{ id: stri
         <div className="profile-card">
           <span className="profile-face" aria-hidden>{u.avatar}</span>
           <span className="profile-who">
-            <h1 className="profile-name">{t.makerPolls(u.name)}</h1>
+            <h1 className="profile-name">{t.makerPolls(u.name)}{u.verified && <Verified label={t.verifiedLabel} />}</h1>
             <span className="small muted">{t.makerLead}</span>
           </span>
         </div>

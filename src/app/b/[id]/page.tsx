@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { eq } from 'drizzle-orm';
 import { Check, ChevronRight, Swords, Trophy } from 'lucide-react';
 import BattleShare from '@/components/BattleShare';
+import Verified from '@/components/Verified';
 import { getDb, schema } from '@/db';
 import { getBattle, type Match } from '@/lib/battles';
 import { getLang, getT } from '@/lib/lang-server';
@@ -33,7 +34,7 @@ export default async function BattlePage({ params, searchParams }: Props) {
   const [t, lang, voterId] = await Promise.all([getT(), getLang(), readVoterId()]);
   const b = await getBattle(db, id, voterId);
   if (!b) notFound();
-  const maker = b.showMaker && b.ownerId ? (await db.select({ id: schema.users.id, name: schema.users.name, avatar: schema.users.avatar }).from(schema.users).where(eq(schema.users.id, b.ownerId)).limit(1))[0] : null;
+  const maker = b.showMaker && b.ownerId ? (await db.select({ id: schema.users.id, name: schema.users.name, avatar: schema.users.avatar, verified: schema.users.verified }).from(schema.users).where(eq(schema.users.id, b.ownerId)).limit(1))[0] : null;
   const total = Math.log2(b.size);
   const when = b.endsAt ? new Date(b.endsAt).toLocaleString(dateLocale(lang), { weekday: 'short', day: 'numeric', month: monthStyle(lang), hour: 'numeric', minute: '2-digit', timeZone: INDIA_TZ }) : '';
   const side = (m: Match, k: 'a' | 'b') => (
@@ -47,7 +48,7 @@ export default async function BattlePage({ params, searchParams }: Props) {
       <header className="page-head page-head-tight">
         <p className="eyebrow"><Swords size={13} strokeWidth={2} aria-hidden /> {t.battleRow}</p>
         <h1 className="display">{b.title}</h1>
-        {maker && <Link href={`/u/${maker.id}`} className="maker-by"><span className="maker-by-face" aria-hidden>{maker.avatar}</span> {t.askedBy(maker.name)}</Link>}
+        {maker && <Link href={`/u/${maker.id}`} className="maker-by"><span className="maker-by-face" aria-hidden>{maker.avatar}</span> {t.askedBy(maker.name)}{maker.verified && <Verified label={t.verifiedLabel} />}</Link>}
         {isNew === '1' && <p className="small duel-friend" role="status">{t.battleCreated}</p>}
       </header>
 

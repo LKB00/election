@@ -1569,3 +1569,17 @@ describe('follow a topic', () => {
     expect(readFollowed(undefined)).toEqual([]);
   });
 });
+
+describe('verified badge', () => {
+  it('the owner verifies a profile by its link, and the badge shows on its polls', async () => {
+    const { setVerified, profileIdFrom } = await import('@/lib/verify');
+    expect(profileIdFrom('https://chunav.lokeshbhatia.com/u/abc123?x=1')).toBe('abc123');
+    expect(profileIdFrom('/u/abc123/')).toBe('abc123');
+    await db.insert(schema.users).values({ id: 'veri-1', name: 'Maker One' });
+    const id = await createPoll(db, createPollSchema.parse({ title: 'Verified maker poll', options: ['A', 'B'], showMaker: true }), undefined, undefined, 'veri-1');
+    expect((await getPoll(db, id, null))!.maker?.verified).toBe(false);
+    expect(await setVerified(db, 'https://x.example/u/veri-1', true)).toMatchObject({ id: 'veri-1' });
+    expect((await getPoll(db, id, null))!.maker?.verified).toBe(true);
+    expect(await setVerified(db, 'no-such-profile', true)).toBeNull();
+  });
+});

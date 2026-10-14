@@ -226,6 +226,8 @@ export const users = pgTable('users', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   avatar: text('avatar').notNull().default('🙂'),
+  // A real creator, brand or college, checked by the owner on /admin: a badge next to their name.
+  verified: boolean('verified').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 export const passkeys = pgTable(
