@@ -1264,6 +1264,23 @@ phone it squeezed "When results show" to one letter per line.
 - **"Next poll" is a poll you have not voted in yet**, from topics you follow first, then the topics you vote in most,
   then the newest (`getDeck`). Before, it was the newest polls, including ones you had already voted in.
 
+## Stronger word filter, better link previews (owner, Oct 2026: "Go")
+
+- **Word filter** (`src/lib/moderation.ts`): more Hindi and Hinglish abuse and caste or religious slurs, and the many
+  ways one word is spelled are matched as one: oo/u, ee/i, w/v, z/j, doubled letters, iya/ia ("chootia" = "chutiya");
+  letters typed apart ("c h u t i y a", "c.h.u.t.i.y.a"); stars for letters ("ch*tiya"); in Devanagari the dot and nasal
+  marks (गाँडू = गांडू = गाडू). Spelling folding applies to the Hindi words only, so English stays exact ("pakki" is not
+  "paki"). Words that are also names, places or everyday words stay out (lund, lauda, katwa, chakka, kamina). Tests list
+  what must be caught and what must pass ("Gandhinagar", "Bhangra or garba", "chakka or four").
+- **Link previews** (the picture WhatsApp shows, `/api/og/[id]`), checked for every kind of poll:
+  - A Hindi question cannot be drawn (the picture maker cannot join Hindi letters; the chat shows the question as text
+    under the picture): the picture says "A question for you", and Hindi choices with no emoji or photo show "3 choices"
+    instead of "1 vs 2".
+  - Ideas first, still collecting: "Add your idea. Then everyone votes." and an "Add an idea" button (was "What would
+    you pick?" with nothing to pick).
+  - "VS" only on pick-one polls. Dates say "Which dates work for you?" with a calendar face; Pick several says "Tick all
+    you like"; Put in order says "Put them in your order".
+
 ## Engagement round (owner, Oct 2026: "the product is social engagement; polls are the mechanism")
 
 - **"Ask your friends"** is the main button everywhere it said "Start a poll" (top bar, Home, empty pages, after voting,

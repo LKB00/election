@@ -27,6 +27,14 @@ describe('abuse filter', () => {
   it('is not fooled by hidden characters, _ , digits or stretched letters', () => {
     for (const t of ['chu​tiya test', 'chu­tiya', 'ch_utiya', 'chut1ya', 'chutiyaaa']) expect(hasBlockedWord(t), t).toBe(true);
   });
+  it('catches the many spellings of Hindi abuse (Latin letters and Devanagari)', () => {
+    for (const t of ['chootia', 'chutia', 'CHUTIYAA', 'c h u t i y a', 'c.h.u.t.i.y.a', 'ch*tiya', 'b*nchod', 'bhenchodd', 'madarchood', 'bhosadike', 'gaandu', 'bhadwe', 'haraamii', 'kuttiya', 'lavde', 'bsdk', 'गाँडू', 'गाडू', 'भोसडी', 'भडवा'])
+      expect(hasBlockedWord(t), t).toBe(true);
+  });
+  it('does not trip on everyday words that look close', () => {
+    for (const t of ['chakka or four', 'Kaminey movie', 'Gandhinagar', 'Chandigarh', 'Randeep Hooda', 'Bhangra or garba', 'Chamarajanagar', 'jhanda', 'Kuttanad', 'Lodhi garden', 'r a n d o m', 'Sh*hrukh or Salman', 'Mulla Nasruddin', 'Lavender', 'Gaandiv', 'गांधी', 'भांगड़ा'])
+      expect(hasBlockedWord(t), t).toBe(false);
+  });
   it('lets real names and normal words through', () => {
     for (const t of ['Niki Lauda vs Senna', 'Lund University', 'Katwa town trip', 'pakki dosti', 'Scunthorpe', 'IPL 2024']) expect(hasBlockedWord(t), t).toBe(false);
   });
