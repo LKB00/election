@@ -167,7 +167,7 @@ no surprise, always one obvious next step, and mistakes can be undone.
 
 | Element | Level | Job / why |
 |---|---|---|
-| **"Who's winning right now?"** step after you vote (hidden-results duels) | **P1 at that moment** | A second, instant game inside every duel: you guess the crowd, then the reveal tells you if you were right. Makes the reveal a moment, not just numbers. Checked on the server at the moment you answer (a tie counts for either leader). "Skip, just show me" is always there, so it never blocks. |
+| **Guess the crowd** step after you vote ("What do you think most people picked?"; was "Who's winning right now?") (hidden-results duels) | **P1 at that moment** | A second, instant game inside every duel: you guess the crowd, then the reveal tells you if you were right. Makes the reveal a moment, not just numbers. Checked on the server at the moment you answer (a tie counts for either leader). "Skip, just show me" is always there, so it never blocks. |
 | "Your exit poll was right!" / "Your exit poll was wrong. X is ahead." (was "+1") | P1 in the result bar | The win (or the near miss) is the first line you read after the reveal. Confetti only for a right guess. |
 | ~~🎯 pill~~ | removed | A score; see the election rule. Your exit poll record is one sentence on My votes. |
 | "A friend dared you" label + "A friend already picked. Vote to see if you agree." | P2 | You came because a friend asked: that is the strongest reason to vote. Their pick stays a surprise until you vote and guess. |
@@ -1396,4 +1396,10 @@ The old `featured` and `today_on` database columns stay, unused, so existing dat
 | /admin | Reported, paused, hidden **and every new poll** | Only paused, reported and hidden polls. "Approve" is now **Keep it** (reports were wrong; it stays up and reports alone can no longer take it down) |
 
 Kept for safety: reports (enough reports take a poll down at once; a photo report on a photo poll takes it down at the first one), the owner's Hide, the word filter, the flood pause, politics silence windows and Election mode.
+
+## Guess the crowd wording (owner, Oct 2026: "who is winning right now" can mean "look it up" or "give the answer"; it is their opinion)
+
+- Question: **"What do you think most people picked?"** (was "Who's winning right now?"). It says plainly that it is a guess about other voters, and it fits every poll type (names, faces, ratings).
+- Line: **"Just a guess, for fun. Tap one to see the real result."** (was "What did most people pick? Make your guess, then the results open.").
+- Not "Who will win?": on politics polls that reads like predicting the real election, which the product never does (no "exit poll" wording, RP Act s.126A).
 

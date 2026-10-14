@@ -76,7 +76,7 @@ export type PollView = {
   swing: { optionId: string; points: number } | null;
   reactions: { emoji: string; n: number }[];
   myReactions: string[];
-  /** You voted, but have not answered "who's winning right now?" yet. Results stay hidden until you do. */
+  /** You voted, but have not made the crowd guess yet. Results stay hidden until you do. */
   needsGuess: boolean;
   /** Your guess and whether it was right (null = skipped or not asked). */
   myGuess: { optionId: string; correct: boolean } | null;
@@ -611,7 +611,7 @@ async function lockPoll(tx: Db, id: string) {
   await tx.select({ id: polls.id }).from(polls).where(eq(polls.id, id)).for('share');
 }
 
-/** "Who's winning right now?": checked against the live count (your vote included) at the moment you answer. */
+/** Guess the crowd: checked against the live count (your vote included) at the moment you answer. */
 export async function guessLeader(db: Db, id: string, voterId: string, choice: string): Promise<'ok' | 'not_found' | 'not_allowed' | 'bad_option'> {
   const [poll] = await db
     .select({ category: polls.category, hidden: polls.hidden, hideUntilVoted: polls.hideUntilVoted, endsAt: polls.endsAt, groupSize: polls.groupSize, calledIt: polls.calledIt, kind: polls.kind, revealAt: polls.revealAt })

@@ -6,7 +6,7 @@ import { guessSchema } from '@/lib/validation';
 import { readVoterId } from '@/lib/voter';
 import { countEvent } from '@/lib/events';
 
-// "Who's winning right now?" One answer per vote (or "skip"), checked on the server.
+// Guess the crowd ("What do you think most people picked?"). One answer per vote (or "skip"), checked on the server.
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await rateLimit(`guess:${clientIp(req)}`, 30, 60_000))) {
     return NextResponse.json({ error: 'Too many taps. Wait a few seconds and try again.' }, { status: 429 });

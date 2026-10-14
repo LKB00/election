@@ -1158,8 +1158,8 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
       {!casting && voted && poll.needsGuess && (
         <div className="duel-guess" aria-live="polite" ref={guessRef}>
           <p className="label">{t.exitPoll}</p>
-          <h2 tabIndex={-1}>{t.whoWinning}</h2>
-          <p className="small muted">{t.exitPollNote}</p>
+          <h2 tabIndex={-1}>{t.guessTitle}</h2>
+          <p className="small muted">{t.guessLead}</p>
           {/* Each choice as a small card with its face (photo, emoji or letters): you recognise before you read. */}
           <div className={'duel-guess-options' + (poll.options.length > 4 ? ' is-many' : '')}>
             {poll.options.map((o, n) => (
