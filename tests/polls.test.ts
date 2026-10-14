@@ -205,7 +205,7 @@ describe('engagement', () => {
     expect(seen[seen.length - 1].a).toBe(50);
   });
 
-  it('toggles reactions, only for voters and only allowed emoji', async () => {
+  it('keeps one reaction each, only for voters and only allowed emoji', async () => {
     const id = await make({ title: 'Reactions' });
     const p = (await getPoll(db, id, null))!;
     expect(await toggleReaction(db, id, 'x1', '🔥')).toBe(false); // has not voted
@@ -215,9 +215,15 @@ describe('engagement', () => {
     let v = (await getPoll(db, id, 'x1'))!;
     expect(v.reactions.find((r) => r.emoji === '🔥')!.n).toBe(1);
     expect(v.myReactions).toEqual(['🔥']);
-    await toggleReaction(db, id, 'x1', '🔥'); // tap again removes it
+    // One reaction each: another emoji replaces it.
+    expect(await toggleReaction(db, id, 'x1', '😂')).toBe(true);
     v = (await getPoll(db, id, 'x1'))!;
+    expect(v.myReactions).toEqual(['😂']);
     expect(v.reactions.find((r) => r.emoji === '🔥')!.n).toBe(0);
+    expect(v.reactions.find((r) => r.emoji === '😂')!.n).toBe(1);
+    await toggleReaction(db, id, 'x1', '😂'); // tap again removes it
+    v = (await getPoll(db, id, 'x1'))!;
+    expect(v.reactions.find((r) => r.emoji === '😂')!.n).toBe(0);
     expect(v.myReactions).toEqual([]);
   });
 });
