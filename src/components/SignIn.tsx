@@ -45,6 +45,11 @@ function GoogleSheetButton({ lang, onToken, onFail }: { lang: string; onToken: (
   handler.current = onToken;
   useEffect(() => {
     let gone = false;
+    // Google's button cannot follow our colour tokens, so it is drawn again whenever the phone switches light/dark.
+    const scheme = window.matchMedia('(prefers-color-scheme: dark)');
+    let redraw = () => {};
+    const onScheme = () => redraw();
+    scheme.addEventListener('change', onScheme);
     loadGoogleButton()
       .then((id) => {
         if (gone || !box.current) return;
@@ -57,15 +62,21 @@ function GoogleSheetButton({ lang, onToken, onFail }: { lang: string; onToken: (
           use_fedcm_for_prompt: true,
           itp_support: true,
         });
-        const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        id.renderButton(box.current, {
-          type: 'standard', theme: dark ? 'filled_black' : 'outline', size: 'large', shape: 'pill', text: 'continue_with',
-          logo_alignment: 'center', width: Math.min(400, box.current.offsetWidth || 320), locale: lang === 'hi' ? 'hi' : 'en_IN',
-        });
+        redraw = () => {
+          const el = box.current;
+          if (gone || !el) return;
+          el.replaceChildren();
+          id.renderButton(el, {
+            type: 'standard', theme: scheme.matches ? 'filled_black' : 'outline', size: 'large', shape: 'pill', text: 'continue_with',
+            logo_alignment: 'center', width: Math.min(400, el.offsetWidth || 320), locale: lang === 'hi' ? 'hi' : 'en_IN',
+          });
+        };
+        redraw();
       })
       .catch(() => !gone && onFail());
     return () => {
       gone = true;
+      scheme.removeEventListener('change', onScheme);
     };
   }, [lang, onFail]);
   return <div ref={box} className="signin-google" />;
