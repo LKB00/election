@@ -1241,3 +1241,35 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
 .is-ticked .evm-btn { background: transparent; color: inherit; box-shadow: inset 0 0 0 1px currentColor; }
 .admin-stats th { white-space: nowrap; }
 
+
+/* Bio link (docs/DESIGN.md, "Bio link"): the maker's copy box, and the newest poll voted right on their page. */
+.bio-link { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; padding: 16px; border: var(--hair) solid var(--line); border-radius: var(--radius-card); background: var(--card); }
+.bio-link__row { gap: 8px; flex-wrap: nowrap; }
+.bio-link__url { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 10px 12px; border-radius: var(--radius-field); background: var(--sand); font-size: 13px; }
+.bio-link__row .btn { flex: none; gap: 6px; }
+.bio-latest { margin-bottom: 8px; }
+
+/* QR poster (docs/DESIGN.md, "QR poster"): one A4 page, light colours always (set on .poster from palette.ts). */
+.poster-tools { display: flex; justify-content: center; margin: 0 0 16px; }
+.poster { display: flex; flex-direction: column; align-items: center; gap: 20px; max-width: 640px; margin: 0 auto; padding: 32px 24px; border-radius: var(--radius-card); background: var(--card); color: var(--ink); text-align: center; }
+.poster-brand { display: flex; align-items: center; gap: 8px; margin: 0; font-weight: 700; font-size: 18px; }
+.poster-q { margin: 0; font: 700 clamp(28px, 7vw, 44px) / 1.15 var(--display); letter-spacing: -0.02em; }
+.poster-choices { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 16px; font-size: 18px; font-weight: 600; }
+.poster-choices li { display: inline-flex; align-items: center; gap: 8px; }
+.poster-disc { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: var(--sand); font-size: 16px; overflow: hidden; }
+.poster-disc img { width: 100%; height: 100%; object-fit: cover; }
+.poster-faces { margin: 0; font-size: 36px; letter-spacing: 6px; }
+.poster-qr { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.poster-qr img { width: min(320px, 70vw); height: auto; }
+.poster-scan { margin: 8px 0 0; font-size: 22px; font-weight: 700; }
+.poster-link { margin: 0; color: var(--ink-2); font-size: 15px; word-break: break-all; }
+.poster-note { margin: 0; color: var(--ink-2); font-size: 14px; }
+@media print {
+  @page { size: A4; margin: 14mm; }
+  .topnav, .bottomnav, .poster-tools, .made-by, .offline-bar { display: none !important; }
+  body { background: var(--card); }
+  .poster-page { padding: 0; }
+  .poster { max-width: none; padding: 0; gap: 28px; }
+  .poster-q { font-size: 40px; }
+  .poster-qr img { width: 90mm; }
+}

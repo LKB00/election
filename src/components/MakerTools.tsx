@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Bell, ChevronRight, Clock, Copy, Image as ImageIcon, MessageCircle, MonitorPlay, PenLine, Plus, Repeat, CircleStop, Trash2 } from 'lucide-react';
+import { Bell, ChevronRight, CircleStop, Clock, Copy, Image as ImageIcon, MessageCircle, MonitorPlay, PenLine, Plus, Printer, Repeat, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useOverlay } from '@/lib/useOverlay';
@@ -267,6 +267,18 @@ export function TvRow({ id }: { id: string }) {
     <Link href={`/p/${id}/tv`} className="al-row">
       <span className="al-row__disc" style={{ '--tone': 'var(--p-input)' } as React.CSSProperties}><MonitorPlay size={20} strokeWidth={1.75} aria-hidden /></span>
       <span className="al-row__main"><span className="al-row__title">{t.tvRow}</span><span className="al-row__meta">{t.tvRowNote}</span></span>
+      <ChevronRight size={18} strokeWidth={1.75} className="al-row__chevron" aria-hidden />
+    </Link>
+  );
+}
+
+/** A poster to print (a shop counter, notice board or event): the question and a big QR code. */
+export function PosterRow({ id }: { id: string }) {
+  const t = useT();
+  return (
+    <Link href={`/p/${id}/poster`} className="al-row">
+      <span className="al-row__disc" style={{ '--tone': 'var(--p-trust)' } as React.CSSProperties}><Printer size={20} strokeWidth={1.75} aria-hidden /></span>
+      <span className="al-row__main"><span className="al-row__title">{t.posterRow}</span><span className="al-row__meta">{t.posterRowNote}</span></span>
       <ChevronRight size={18} strokeWidth={1.75} className="al-row__chevron" aria-hidden />
     </Link>
   );
