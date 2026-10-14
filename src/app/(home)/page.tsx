@@ -15,7 +15,7 @@ import { getDb } from '@/db';
 import { cookies } from 'next/headers';
 import { advanceDueBattles } from '@/lib/battles';
 import { FOLLOW_COOKIE, readFollowed } from '@/lib/follow';
-import { getDeck, getTodaySet, rollDueSeries, listPolls, trendingPolls, voterCount } from '@/lib/polls';
+import { getTodaySet, rollDueSeries, listPolls, trendingPolls, voterCount } from '@/lib/polls';
 import { VIEWS_SHOW_MIN, VOTERS_SHOW_MIN } from '@/lib/limits';
 import { viewTotal } from '@/lib/events';
 import { dateLocale } from '@/lib/time';
@@ -45,14 +45,14 @@ export default async function Home() {
   // Weekly polls that ended open their next week first, so they are in today's lists.
   await Promise.all([rollDueSeries(db).catch(() => 0), advanceDueBattles(db).catch(() => 0)]);
   // Today's set (the same few polls for everyone today, with an end), then more polls only if you ask for them.
-  const [deck, extra, recent, trending] = await Promise.all([getTodaySet(db, voterId), getDeck(db, voterId), listPolls(db, 40), trendingPolls(db, 4)]);
+  // The polls offered after today's set are fetched by the phone when the set is done (DuelGame), not here.
+  const [deck, recent, trending] = await Promise.all([getTodaySet(db, voterId), listPolls(db, 40), trendingPolls(db, 4)]);
   const [tonight, lang, voters, viewed] = await Promise.all([upcomingPacks(db), getLang(), voterCount(db), viewTotal(db)]);
-  const more = extra.filter((p) => !deck.some((d) => d.id === p.id));
   // Every vote came with a page view too (views were counted later than votes), so never show fewer views than voters.
   const fmt = (n: number) => n.toLocaleString(dateLocale(lang));
   const views = Math.max(viewed, voters);
   const people = views >= VIEWS_SHOW_MIN && <PeopleCount views={views} voted={voters >= VOTERS_SHOW_MIN ? voters : null} fmt={fmt} t={t} />;
-  const voted = [...deck, ...more].filter((p) => p.myVote !== null).map((p) => p.id);
+  const voted = deck.filter((p) => p.myVote !== null).map((p) => p.id);
   // P2 shelves under today's set: what is hot right now, then two topics with the most open polls.
   // Each poll shows once on Home: today's set first, then trending, topic shelves and "More polls" without repeats.
   const inDeck = new Set(deck.map((p) => p.id));
@@ -87,7 +87,7 @@ export default async function Home() {
         <div className="home-main">
           {deck.length > 0 && (
             <section className="home-game duel-first" aria-label={t.pollRegion}>
-              <DuelGame deck={deck} daily more={more} />
+              <DuelGame deck={deck} daily />
             </section>
           )}
           {/* Empty: nothing open today (a new site, or a quiet day). */}

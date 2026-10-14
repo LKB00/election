@@ -7,7 +7,7 @@ import FollowTopic from '@/components/FollowTopic';
 import DuelTiles from '@/components/DuelTiles';
 import { getDb } from '@/db';
 import { CATEGORIES } from '@/lib/categories';
-import { getMyVotes, listPolls } from '@/lib/polls';
+import { votedPollIds, listPolls } from '@/lib/polls';
 import { readVoterId } from '@/lib/voter';
 import { getT, langAlternates } from '@/lib/lang-server';
 
@@ -32,7 +32,7 @@ export default async function Topic({ params }: Props) {
   const voterId = await readVoterId();
   const [polls, mine] = await Promise.all([
     listPolls(db, 60, { category }),
-    getMyVotes(db, voterId, 200),
+    votedPollIds(db, voterId),
   ]);
   const full = polls.length > 0;
   return (
@@ -61,7 +61,7 @@ export default async function Topic({ params }: Props) {
         <p className="topic-follow"><FollowTopic topic={category} /> <span className="small muted">{t.followNote}</span></p>
       </header>
       <section className="al-block">
-        <DuelTiles polls={polls} votedIds={mine.map((v) => v.pollId)} topic={category} limit={LIST_FIRST} />
+        <DuelTiles polls={polls} votedIds={mine} topic={category} limit={LIST_FIRST} />
       </section>
       </div>
     </div>

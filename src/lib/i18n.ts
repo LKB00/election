@@ -824,6 +824,13 @@ const en = {
   ogVs: 'VS',
   ogMore: (n: number) => `+${n} more`,
   ogSecretLine: 'Secret vote · one tap · see results after you vote',
+  ogIdeas: 'Add your idea. Then everyone votes.',
+  ogIdeasCta: 'Add an idea',
+  ogDates: 'Which dates work for you?',
+  ogMulti: 'Tick all you like',
+  ogRank: 'Put them in your order',
+  ogForYou: 'A question for you',
+  ogChoicesN: (n: number) => `${n} choices`,
   ogSiteLine: 'Ask anything. Vote in one tap. See what everyone thinks.',
   ogStart: 'Start voting',
   ogPoints: ['Secret vote', 'One tap', 'Free'],
@@ -835,7 +842,7 @@ const en = {
 };
 
 export type Dict = Omit<typeof en, CardKeys>;
-type CardKeys = 'cardNameVoted' | 'cardSecret' | 'cardVotersN' | 'cardYourTurn' | 'cardResultsIn' | 'cardVoters' | 'cardLeader' | 'cardBestDate' | 'cardAverage' | 'cardVotesN' | 'cardSeeAll' | 'cardFun' | 'cardVoted' | 'cardMyVote' | 'cardPicked' | 'cardGuess' | 'cardScan' | 'cardFriends' | 'cardGroup' | 'ogAsk' | 'ogRate' | 'ogPicked' | 'ogGuess' | 'ogVoted' | 'cardAskTitle' | 'cardAskLine' | 'ogVoteNow' | 'ogVs' | 'ogMore' | 'ogSecretLine' | 'ogSiteLine' | 'ogStart' | 'ogPoints';
+type CardKeys = 'cardNameVoted' | 'cardSecret' | 'cardVotersN' | 'cardYourTurn' | 'cardResultsIn' | 'cardVoters' | 'cardLeader' | 'cardBestDate' | 'cardAverage' | 'cardVotesN' | 'cardSeeAll' | 'cardFun' | 'cardVoted' | 'cardMyVote' | 'cardPicked' | 'cardGuess' | 'cardScan' | 'cardFriends' | 'cardGroup' | 'ogAsk' | 'ogRate' | 'ogPicked' | 'ogGuess' | 'ogVoted' | 'cardAskTitle' | 'cardAskLine' | 'ogVoteNow' | 'ogVs' | 'ogMore' | 'ogSecretLine' | 'ogIdeas' | 'ogIdeasCta' | 'ogDates' | 'ogMulti' | 'ogRank' | 'ogForYou' | 'ogChoicesN' | 'ogSiteLine' | 'ogStart' | 'ogPoints';
 
 const hi: Dict = {
   home: 'होम',
@@ -2376,6 +2383,13 @@ const hg: typeof en = {
   ogVs: 'VS',
   ogMore: (n: number) => `+${n} aur`,
   ogSecretLine: 'Secret vote · ek tap · vote ke baad result dekho',
+  ogIdeas: 'Apna idea jodo. Phir sab vote karenge.',
+  ogIdeasCta: 'Idea jodo',
+  ogDates: 'Aapke liye kaun si dates theek hain?',
+  ogMulti: 'Jo pasand ho, sab tick karo',
+  ogRank: 'Apne hisaab se order lagao',
+  ogForYou: 'Aapke liye ek sawaal',
+  ogChoicesN: (n: number) => `${n} options`,
   ogSiteLine: 'Kuch bhi poocho. Ek tap mein vote karo. Dekho sab kya sochte hain.',
   ogStart: 'Vote karna shuru karo',
   ogPoints: ['Secret vote', 'Ek tap', 'Free'],

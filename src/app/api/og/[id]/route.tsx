@@ -33,8 +33,16 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const rating = poll.kind === 'rating';
   const shown = rating ? poll.options : poll.options.slice(0, 2);
   // Same letters as on the ballot (worked out over all choices), or the creator's emoji.
-  const faces = faceLabels(poll.options.map((o) => o.label)).map((f, n) => poll.options[n].emoji ?? (drawable(f) ? f : String(n + 1)));
-  const headline = !voted ? (rating ? t.ogRate : t.ogAsk) : showPick && pick ? t.ogPicked(rating ? pick.emoji ?? pick.label : drawable(pick.label) ? pick.label : String(poll.options.indexOf(pick) + 1)) : t.ogGuess;
+  const dates = poll.kind === 'dates';
+  const faces = faceLabels(poll.options.map((o) => o.label)).map((f, n) => poll.options[n].emoji ?? (dates ? '📅' : drawable(f) ? f : String(n + 1)));
+  // Ideas first, still collecting: there is nothing to pick yet, so the card asks for ideas.
+  const ideasOpen = !!poll.ideas?.open;
+  // Each kind says what you do with it; only a pick-one poll is a contest with a VS.
+  const ask = ideasOpen ? t.ogIdeas : rating ? t.ogRate : dates ? t.ogDates : poll.kind === 'multi' ? t.ogMulti : poll.kind === 'rank' ? t.ogRank : t.ogAsk;
+  const versus = poll.kind === 'choice';
+  // Choices the card cannot draw at all (Hindi names with no emoji or photo): say how many instead of "1 vs 2".
+  const blind = !rating && poll.options.length > 0 && poll.options.every((o) => !o.imageUrl && !o.emoji && !drawable(o.label));
+  const headline = !voted ? ask : showPick && pick ? t.ogPicked(rating ? pick.emoji ?? pick.label : drawable(pick.label) ? pick.label : String(poll.options.indexOf(pick) + 1)) : t.ogGuess;
 
   // A crowd makes people tap; the count of people is public (never the split).
   const crowd = poll.participants >= OG_VOTERS_MIN ? t.cardVotersN(poll.participants) : null;
@@ -77,16 +85,23 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
           {voted && <img src={handDataUri(140)} width={140} height={182} alt="" />}
           <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
             {voted && <div style={{ display: 'flex', fontSize: 26, fontWeight: 700, color: CARD.green, letterSpacing: 2 }}>{t.ogVoted}</div>}
-            {drawable(poll.title) && <div style={{ display: 'flex', fontSize: poll.title.length > 44 ? 52 : 62, fontWeight: 700, letterSpacing: -1.5, lineHeight: 1.08 }}>{clip(poll.title, 70)}</div>}
+            {/* A Hindi question cannot be drawn (the chat shows it as text under the picture): a plain line instead of a gap. */}
+            <div style={{ display: 'flex', fontSize: drawable(poll.title) && poll.title.length > 44 ? 52 : 62, fontWeight: 700, letterSpacing: -1.5, lineHeight: 1.08 }}>{drawable(poll.title) ? clip(poll.title, 70) : t.ogForYou}</div>
+            {blind ? (
+              <div style={{ display: 'flex', marginTop: 24 }}>
+                <div style={{ display: 'flex', padding: '10px 22px', borderRadius: 999, background: CARD.sand, color: CARD.muted, fontSize: 28, fontWeight: 700 }}>{t.ogChoicesN(poll.options.length)}</div>
+              </div>
+            ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: rating ? 12 : 18, marginTop: 24 }}>
               {shown.map((o, n) => (
                 <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-                  {n === 1 && !rating && <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 56, height: 56, borderRadius: 28, background: CARD.ink, color: CARD.lime, fontSize: 22, fontWeight: 700 }}>{t.ogVs}</div>}
+                  {n === 1 && versus && <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 56, height: 56, borderRadius: 28, background: CARD.ink, color: CARD.lime, fontSize: 22, fontWeight: 700 }}>{t.ogVs}</div>}
                   {choice(o, n)}
                 </div>
               ))}
               {more > 0 && <div style={{ display: 'flex', padding: '10px 18px', borderRadius: 999, background: CARD.sand, color: CARD.muted, fontSize: 24, fontWeight: 700 }}>{t.ogMore(more)}</div>}
             </div>
+            )}
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, padding: '20px 20px 20px 32px', borderRadius: 28, background: CARD.ink, color: CARD.paper }}>
@@ -95,7 +110,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
             <div style={{ display: 'flex', fontSize: 21, color: CARD.sand, opacity: 0.75 }}>{crowd ? `${crowd} · ${t.cardSecret}` : t.ogSecretLine}</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 28px', borderRadius: 999, background: CARD.lime, color: CARD.ink, fontSize: 30, fontWeight: 700 }}>
-            {voted ? t.cardYourTurn : t.ogVoteNow}
+            {voted ? t.cardYourTurn : ideasOpen ? t.ogIdeasCta : t.ogVoteNow}
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={CARD.ink} strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
           </div>
         </div>
