@@ -37,7 +37,7 @@ export function hasBlockedWord(...texts: string[]): boolean {
   );
 }
 
-// Politicians' and parties' names: a user duel that names one is held back from public lists until the owner checks it.
+// Politicians' and parties' names: a poll that names one becomes a politics poll (Election mode, silence windows).
 // ("aap" is left out: in Hindi it also means "you".)
 const POLITICAL = /(?<![\p{L}\p{M}])(modi|rahul|gandhi|kejriwal|yogi|adityanath|mamata|akhilesh|mayawati|owaisi|amit shah|nitish|tejashwi|bjp|congress|tmc|bsp|dmk|aiadmk|shiv sena|ncp|rss|मोदी|राहुल|भाजपा|कांग्रेस)(?![\p{L}\p{M}])/iu;
 export const namesPolitics = (...texts: string[]) => texts.some((t) => POLITICAL.test(t.normalize('NFKC').replace(/\p{Cf}/gu, '')));

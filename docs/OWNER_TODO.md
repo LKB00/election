@@ -54,7 +54,7 @@ On Android (Chrome) the phone's own Google account picker slides up. On iPhone, 
 
 There is no Today's question (owner, Oct 2026: "only user generated content"): you never pick polls for everyone.
 
-- [ ] **Check /admin**: paused polls and **photo reports first** (the law gives 2 hours for private or sexual photos). Approve good new polls so they can appear in search.
+- [ ] **Check /admin**: paused polls and **photo reports first** (the law gives 2 hours for private or sexual photos). Polls go live the moment they are posted (no approving); /admin only lists paused and reported ones.
 
 ## 3. Growth (one time, then now and then)
 

@@ -1384,3 +1384,16 @@ The old `featured` and `today_on` database columns stay, unused, so existing dat
 | Google's button (max 400px) narrower than "Use fingerprint or face" | Profile sheet | The buttons under it are capped at the same 400px and centred, so the stack lines up. |
 | "Start voting" / "Or start your own poll" on the last welcome card | Onboarding | They made people ask "vote on what? what kind of poll?" before seeing anything. One plain **Got it** closes the cards; Home shows what there is to do. Card 3's line is now "Vote first, then see what everyone picked." |
 | "Make a poll in 30 seconds and send it on WhatsApp", "Takes 10 seconds" | Onboarding, profile sheet | Time promises removed; "share the link anywhere" (not only WhatsApp). |
+
+## No approval step (owner, Oct 2026: "There should not be any approval. If I publish something to show to everyone, it should be live directly.")
+
+| What | Before | Now |
+|---|---|---|
+| Politics polls and polls with photos | Waited for the owner's Approve before showing on Home, Polls, topics, search and profile pages; the link worked | Show everywhere the moment they are posted |
+| "Works by link now. It shows in the Polls list after a quick check." (after posting) and "Polls with photos appear after a quick check" (Create) | Shown | Removed |
+| Rules page: "Photos are checked before the poll is shown to everyone." | Shown | Removed (rules date 14 Oct 2026) |
+| Search engines (sitemap, `index`) | Only approved polls with 10+ votes | Any public poll with 10+ votes |
+| /admin | Reported, paused, hidden **and every new poll** | Only paused, reported and hidden polls. "Approve" is now **Keep it** (reports were wrong; it stays up and reports alone can no longer take it down) |
+
+Kept for safety: reports (enough reports take a poll down at once; a photo report on a photo poll takes it down at the first one), the owner's Hide, the word filter, the flood pause, politics silence windows and Election mode.
+

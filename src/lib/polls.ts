@@ -53,10 +53,8 @@ export type PollView = {
   myVote: string | null;
   /** False when the organiser hides numbers and this voter may not see them yet. */
   resultsVisible: boolean;
-  /** Checked by the owner (only reviewed duels are offered to search engines). */
+  /** The owner looked at it (after reports): reports can no longer take it down by themselves. */
   reviewed: boolean;
-  /** Waiting for the owner's check before it shows in public lists (politics and photo polls); its link works. */
-  heldForReview: boolean;
   /** Voting paused after a sudden flood of votes, until this time (results stay visible). */
   pausedUntil: string | null;
   /** Results stay sealed for everyone until this time (an election silence window, or a planned reveal). */
@@ -413,8 +411,6 @@ export async function getPoll(
     myVote,
     resultsVisible,
     reviewed: poll.reviewed,
-    // Same rule as listPolls: held until the owner looks (politics, photos); group polls are never listed anyway.
-    heldForReview: !poll.reviewed && !poll.groupSize && (poll.category === 'politics' || poll.hasPhotos),
     sealedUntil: sealed,
     revealAt: plannedReveal(poll),
     pausedUntil: poll.frozenUntil && poll.frozenUntil.getTime() > Date.now() ? poll.frozenUntil.toISOString() : null,
@@ -687,8 +683,8 @@ export async function voterCount(db: Db): Promise<number> {
   return row?.n ?? 0;
 }
 
-/** Public duels, newest first. Hidden duels never; unreviewed politics duels not until the owner checks them. */
-export async function listPolls(db: Db, limit = 20, filter: { category?: string; reviewedOnly?: boolean; q?: string; before?: Date } = {}): Promise<PollSummary[]> {
+/** Public polls, newest first. Hidden polls never. No approval step (owner, Oct 2026: "it should be live directly"). */
+export async function listPolls(db: Db, limit = 20, filter: { category?: string; q?: string; before?: Date } = {}): Promise<PollSummary[]> {
   // Search: words in the question or in any choice ("chai" finds "Tea or coffee?" if a choice is Chai).
   // % and _ are typed as plain letters, not wildcards.
   const q = filter.q?.trim().slice(0, 60);
@@ -711,8 +707,6 @@ export async function listPolls(db: Db, limit = 20, filter: { category?: string;
         eq(polls.hidden, false),
         // Group polls are for the group's link only, never in public lists or search.
         isNull(polls.groupSize),
-        // Held until the owner looks: politics duels, and duels with photos from people's phones.
-        filter.reviewedOnly ? eq(polls.reviewed, true) : or(eq(polls.reviewed, true), and(ne(polls.category, 'politics'), eq(polls.hasPhotos, false))),
         filter.category ? eq(polls.category, filter.category) : undefined,
         filter.before ? lt(polls.createdAt, filter.before) : undefined,
         q ? sql`(${polls.title} ilike ${like} or exists (select 1 from options o where o.poll_id = polls.id and o.label ilike ${like}))` : undefined,
@@ -802,7 +796,7 @@ export function nextFinalCount(now = Date.now()): Date {
 /**
  * "Trending now": recent votes count most, and every poll slowly sinks as it ages (the open Hacker News idea):
  * score = votes in the last 24 hours / (hours since it started + 2)^1.5. Polls with reports sink faster.
- * Same public rules as listPolls (no hidden, held or closed polls).
+ * Same public rules as listPolls (no hidden or closed polls).
  */
 export async function trendingPolls(db: Db, limit = 6): Promise<PollSummary[]> {
   const list = await listPolls(db, 200);
@@ -1065,7 +1059,7 @@ export async function reportPoll(db: Db, id: string, voterId: string, reason: st
 
 export type ReviewItem = { id: string; title: string; options: string[]; photos: string[]; category: string; hidden: boolean; reviewed: boolean; reports: number; reasons: string[]; createdAt: string; paused: boolean; firstReportAt: string | null };
 
-/** What the owner should look at: reported duels first, then unreviewed ones, newest first. */
+/** What the owner should look at: paused and reported polls, and ones taken down, most urgent first. */
 export async function getReviewQueue(db: Db, limit = 100): Promise<ReviewItem[]> {
   const rows = await db
     .select({
@@ -1084,7 +1078,7 @@ export async function getReviewQueue(db: Db, limit = 100): Promise<ReviewItem[]>
     .leftJoin(reports, eq(reports.pollId, polls.id))
     .groupBy(polls.id)
     // A poll its maker deleted leaves the queue, unless it was reported (the owner may still have to act on that).
-    .having(sql`(count(${reports.voterKey}) > 0 or not ${polls.reviewed} or ${polls.hidden} or coalesce(${polls.frozenUntil} > now(), false)) and (${polls.deletedAt} is null or count(${reports.voterKey}) > 0)`)
+    .having(sql`(count(${reports.voterKey}) > 0 or ${polls.hidden} or coalesce(${polls.frozenUntil} > now(), false)) and (${polls.deletedAt} is null or count(${reports.voterKey}) > 0)`)
     // Most urgent first: paused by a flood, then reported (photo reports first: the 2-hour rule), then the rest.
     .orderBy(
       sql`coalesce(${polls.frozenUntil} > now(), false) desc`,

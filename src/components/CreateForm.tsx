@@ -588,7 +588,6 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
         </>)}
       </section>
 
-      {photos.some(Boolean) && <p className="small muted">{t.photosHeld}</p>}
       {error && <p className="duel-error" role="alert">{error}</p>}
       {picking !== null && (
         <PicturePicker

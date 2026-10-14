@@ -5,7 +5,7 @@ import { getDb, schema } from '@/db';
 import { CATEGORIES } from '@/lib/categories';
 import { INDEX_MIN_VOTES } from '@/lib/polls';
 
-// Built on request (the polls live in the database). Only polls the owner has reviewed and enough people voted in are
+// Built on request (the polls live in the database). Only polls enough people voted in are
 // listed (the same rule as the poll page's own "index" setting), each dated by its last vote, with its Hindi and
 // Hinglish addresses (hreflang).
 export const dynamic = 'force-dynamic';
@@ -20,7 +20,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .select({ id: polls.id, created: polls.createdAt, last: sql<Date | string | null>`max(${votes.createdAt})`, n: sql<number>`count(${votes.id})::int` })
     .from(polls)
     .leftJoin(votes, eq(votes.pollId, polls.id))
-    .where(and(eq(polls.reviewed, true), eq(polls.hidden, false), isNull(polls.groupSize)))
+    .where(and(eq(polls.hidden, false), isNull(polls.groupSize)))
     .groupBy(polls.id)
     .having(sql`count(${votes.id}) >= ${INDEX_MIN_VOTES}`)
     .orderBy(desc(polls.createdAt))

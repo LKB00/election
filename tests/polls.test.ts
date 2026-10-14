@@ -357,23 +357,15 @@ describe('safety: word filter and politics hold', () => {
     expect(createPollSchema.safeParse({ title: 'Randi or not', options: ['A', 'B'] }).success).toBe(false);
   });
 
-  it('treats a duel naming a politician as politics, and keeps it off public lists until reviewed', async () => {
+  it('treats a poll naming a politician as politics, and lists it at once (no approval step)', async () => {
     expect(namesPolitics('Modi or Kejriwal?')).toBe(true);
     expect(namesPolitics('Aap kise chunoge?', 'Shahrukh')).toBe(false);
     const id = await make({ title: 'Kejriwal or Yogi?', options: ['Kejriwal', 'Yogi'], category: 'food' });
     expect((await getPoll(db, id, null))!.category).toBe('politics');
-    expect((await listPolls(db, 500)).some((p) => p.id === id)).toBe(false);
-    expect((await getPoll(db, id, null))!.reviewed).toBe(false); // the link still works
-    await setPollFlags(db, id, { reviewed: true });
     expect((await listPolls(db, 500)).some((p) => p.id === id)).toBe(true);
     expect((await listPolls(db, 500, { category: 'politics' })).some((p) => p.id === id)).toBe(true);
   });
 
-  it('only offers reviewed duels to search engines', async () => {
-    const id = await make({ title: 'Unreviewed tea duel', options: ['Masala', 'Adrak'] });
-    expect((await listPolls(db, 500)).some((p) => p.id === id)).toBe(true);
-    expect((await listPolls(db, 500, { reviewedOnly: true })).some((p) => p.id === id)).toBe(false);
-  });
 });
 
 describe('safety: reports and hiding', () => {
@@ -578,13 +570,11 @@ describe('edge cases, round 3', () => {
 
 describe('photos from the phone', () => {
   const jpeg = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==';
-  it('saves a photo with the choice and holds the duel from public lists until reviewed', async () => {
+  it('saves a photo with the choice and lists the poll at once', async () => {
     const id = await createPoll(db, createPollSchema.parse({ title: 'Photo duel', options: ['Mine', 'Yours'], photos: [jpeg, ''], photoConsent: true }));
     const p = (await getPoll(db, id, null))!;
     expect(p.options[0].imageUrl).toMatch(/^\/api\/img\/[\w-]{12}$/);
     expect(p.options[1].imageUrl).toBeNull();
-    expect((await listPolls(db, 500)).some((x) => x.id === id)).toBe(false);
-    await setPollFlags(db, id, { reviewed: true });
     expect((await listPolls(db, 500)).some((x) => x.id === id)).toBe(true);
     const [row] = await db.select().from(schema.photos).where(eq(schema.photos.pollId, id));
     expect(Buffer.from(row.data, 'base64')[0]).toBe(0xff);
@@ -1325,18 +1315,16 @@ describe('visitor count (Home)', () => {
   });
 });
 
-describe('held for review (after posting)', () => {
-  it('says politics polls wait for the check, not everyday polls, and stops once approved', async () => {
-    const plain = await make();
-    expect((await getPoll(db, plain, null))!.heldForReview).toBe(false);
+describe('no approval step', () => {
+  it('lists politics and photo polls the moment they are posted; the review page only has reported or paused polls', async () => {
     const pol = await make({ category: 'politics' });
-    expect((await getPoll(db, pol, null))!.heldForReview).toBe(true);
-    expect((await listPolls(db, 200)).some((p) => p.id === pol)).toBe(false);
-    await db.update(schema.polls).set({ reviewed: true }).where(eq(schema.polls.id, pol));
-    expect((await getPoll(db, pol, null))!.heldForReview).toBe(false);
     expect((await listPolls(db, 200)).some((p) => p.id === pol)).toBe(true);
+    expect((await getReviewQueue(db)).some((r) => r.id === pol)).toBe(false);
+    await reportPoll(db, pol, 'nr1', 'spam');
+    expect((await getReviewQueue(db)).some((r) => r.id === pol)).toBe(true);
   });
 });
+
 
 describe('audit fixes (Oct 2026)', () => {
   it('Hindi choices that differ only by vowel signs are different; emoji-only differences count too', async () => {
