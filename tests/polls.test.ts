@@ -1647,3 +1647,24 @@ describe('similar polls, the maker\'s pick, and you vs a friend', () => {
     expect((await getPoll(db, ids[2], 'fr-me', codes[2]))!.friendTogether).toEqual({ same: 2, all: 3 });
   });
 });
+
+describe('tie decider', () => {
+  it('starts a decider with only the tied choices, once, for the maker only', async () => {
+    const { tiedTop, startRunoff } = await import('@/lib/polls');
+    await db.insert(schema.users).values({ id: 'tie-maker', name: 'Tie Maker' }).onConflictDoNothing();
+    const id = await createPoll(db, createPollSchema.parse({ title: 'Dinner spot?', options: ['Dhaba', 'Cafe', 'Home'], hideUntilVoted: false }), undefined, undefined, 'tie-maker');
+    const p = (await getPoll(db, id, null))!;
+    await castVote(db, id, p.options[0].id, 'tie-1');
+    await castVote(db, id, p.options[1].id, 'tie-2');
+    expect(await startRunoff(db, id, 'tie-maker', 'Decider')).toBeNull(); // not ended yet
+    await db.update(schema.polls).set({ endsAt: new Date(Date.now() - 1000) }).where(eq(schema.polls.id, id));
+    const ended = (await getPoll(db, id, null))!;
+    expect(tiedTop(ended).map((o) => o.label)).toEqual(['Dhaba', 'Cafe']);
+    expect(await startRunoff(db, id, 'someone-else', 'Decider')).toBeNull();
+    const d = (await startRunoff(db, id, 'tie-maker', 'Decider'))!;
+    const decider = (await getPoll(db, d, null))!;
+    expect(decider.options.map((o) => o.label)).toEqual(['Dhaba', 'Cafe']);
+    expect(decider.closed).toBe(false);
+    expect(await startRunoff(db, id, 'tie-maker', 'Decider')).toBe(d); // once
+  });
+});

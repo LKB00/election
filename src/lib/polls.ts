@@ -6,9 +6,9 @@ import { RATING_EMOJIS, RATING_LABELS, ratingAverage, usesPicks, type PollKind }
 import { cleanText, isCode } from './validation';
 import { sameKey } from './same';
 import { schema, type Db } from '@/db';
-import type { CreatePollInput } from './validation';
+import { createPollSchema, type CreatePollInput } from './validation';
 import { hasBlockedWord, namesPolitics } from './moderation';
-import { GROUP_DEFAULT_DAYS, IDEAS_HOURS, JOIN_CODE_DIGITS, MAX_CHOICES, MIN_CHOICES, WEEKLY_TREND_WEEKS, REVEAL_MINUTES, MAX_OTHER, OTHER_MIN_PEOPLE, OTHER_TOP } from './limits';
+import { GROUP_DEFAULT_DAYS, IDEAS_HOURS, RUNOFF_HOURS, JOIN_CODE_DIGITS, MAX_CHOICES, MIN_CHOICES, WEEKLY_TREND_WEEKS, REVEAL_MINUTES, MAX_OTHER, OTHER_MIN_PEOPLE, OTHER_TOP } from './limits';
 import { sealedUntil as silenceUntil } from './silence';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { isAdminKey } from './admin';
@@ -1287,6 +1287,49 @@ const WEEK_MS = 7 * 86400_000;
  * the next 7 days, pointing back to it (previousId, so voters see "Last time" and the maker sees the trend). Only the
  * newest poll of a series repeats. Returns the id of the poll that is open now (the new one, or one made before).
  */
+/** The choices tied for first place in an ended pick-one poll (two or more, with at least one vote), else none. */
+export function tiedTop(p: Pick<PollView, 'closed' | 'kind' | 'calledIt' | 'resultsVisible' | 'options'>): PollView['options'] {
+  if (!p.closed || p.kind !== 'choice' || p.calledIt || !p.resultsVisible) return [];
+  const real = p.options.filter((o) => !o.isOther);
+  const top = Math.max(0, ...real.map((o) => o.votes));
+  const tied = real.filter((o) => o.votes === top);
+  return top > 0 && tied.length >= 2 ? tied : [];
+}
+
+/**
+ * "It's a tie": the maker starts a decider, the same question with only the tied choices, open for RUNOFF_HOURS, linked
+ * to the tied poll (its page then points to it). Once per poll: a second tap returns the decider already made.
+ */
+export async function startRunoff(db: Db, id: string, ownerId: string, description: string): Promise<string | null> {
+  const [next] = await db.select({ id: polls.id }).from(polls).where(and(eq(polls.previousId, id), eq(polls.hidden, false))).limit(1);
+  if (next) return next.id;
+  const p = await getPoll(db, id, null, null, { noPrevious: true });
+  const [row] = await db.select({ ownerId: polls.ownerId, showMaker: polls.showMaker, electionMode: polls.electionMode }).from(polls).where(eq(polls.id, id)).limit(1);
+  if (!p || row?.ownerId !== ownerId) return null;
+  const tied = tiedTop(p);
+  if (!tied.length) return null;
+  return createPoll(
+    db,
+    createPollSchema.parse({
+      title: p.title,
+      description,
+      category: p.category,
+      kind: 'choice',
+      options: tied.map((o) => o.label),
+      emojis: tied.map((o) => o.emoji ?? ''),
+      photos: [],
+      hideUntilVoted: true,
+      showMaker: row.showMaker,
+      electionMode: row.electionMode,
+      previousId: id,
+      endsAt: new Date(Date.now() + RUNOFF_HOURS * 3_600_000).toISOString(),
+    }),
+    undefined,
+    undefined,
+    ownerId,
+  );
+}
+
 export async function rollWeekly(db: Db, id: string, now = Date.now()): Promise<string | null> {
   const [next] = await db.select({ id: polls.id }).from(polls).where(and(eq(polls.previousId, id), eq(polls.hidden, false))).limit(1);
   if (next) return next.id;

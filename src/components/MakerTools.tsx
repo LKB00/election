@@ -9,7 +9,7 @@ import type { MakerView } from '@/lib/maker';
 import { apiMsg } from '@/lib/i18n';
 import { useLang, useT } from '@/lib/lang';
 import { keyBytes, PUBLIC_KEY } from './ResultAlert';
-import { DELETED_KEEP_DAYS, MAX_CHOICE, MAX_DETAILS, MAX_TITLE } from '@/lib/limits';
+import { DELETED_KEEP_DAYS, MAX_CHOICE, MAX_DETAILS, MAX_TITLE, RUNOFF_HOURS } from '@/lib/limits';
 
 // The poll maker's controls (docs/DESIGN.md, "Poll maker tools"). Everything posts to /api/polls/<id>/manage, which
 // checks the profile again; the page refreshes after each change.
@@ -387,6 +387,30 @@ export function MarkOutcome({ id, options }: { id: string; options: { id: string
           <button key={o.id} type="button" className="chip" disabled={busy} onClick={() => mark(o)}>{o.label}</button>
         ))}
       </div>
+      {error && <p className="duel-error" role="alert">{error}</p>}
+    </div>
+  );
+}
+
+/** "It's a tie": one main button that starts the decider (the tied choices only), then opens it. */
+export function Runoff({ id, names }: { id: string; names: string }) {
+  const t = useT();
+  const lang = useLang();
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  async function go() {
+    if (busy) return;
+    setBusy(true);
+    const r = await manage(id, { action: 'runoff' });
+    setBusy(false);
+    if (!r.ok || !r.data?.id) return setError(r.data?.error ? apiMsg(lang, r.data.error) : t.errGeneric);
+    router.push(`/p/${r.data.id}?new=1`);
+  }
+  return (
+    <div className="maker-lengths">
+      <p className="small muted">{t.runoffLine(names)}</p>
+      <button type="button" className="btn btn-primary btn-lg" disabled={busy} onClick={go}>{t.runoffBtn(RUNOFF_HOURS)}</button>
       {error && <p className="duel-error" role="alert">{error}</p>}
     </div>
   );

@@ -1,7 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { AlignLeft, ArrowLeft, CalendarDays, Check, ChevronDown, ChevronRight, CircleDot, Clock, Eye, EyeOff, ImagePlus, Landmark, Lightbulb, ListChecks, ListOrdered, MessageSquarePlus, PenLine, Flame, Repeat, Shuffle, SlidersHorizontal, Smile, Sparkles, Timer, UserRound, Users, WandSparkles, X } from 'lucide-react';
+import { AlignLeft, ArrowLeft, CalendarDays, Check, ChevronDown, ChevronRight, CircleDot, Clock, Eye, EyeOff, ImagePlus, Landmark, Lightbulb, ListChecks, ListOrdered, MessageSquarePlus, Mic, PenLine, Flame, Repeat, Shuffle, SlidersHorizontal, Smile, Sparkles, Timer, UserRound, Users, WandSparkles, X } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { CATEGORIES, FIRST_TOPICS, TOPIC_EMOJI, type Category } from '@/lib/categories';
@@ -58,7 +58,7 @@ const Row = ({ icon: Icon, name, note, value, on, open: isOpen, onClick, tone = 
 /** "Ask again": the earlier poll's question, choices and type, filled in (the new poll links back to it). */
 export type AskAgain = { id: string; title: string; options: string[]; emojis: string[]; kind: PollKind; calledIt: boolean; category: string; showMaker: boolean };
 
-export default function CreateForm({ initialTitle = '', initialTopic, signedIn = false, again }: { initialTitle?: string; initialTopic?: string; signedIn?: boolean; again?: AskAgain }) {
+export default function CreateForm({ initialTitle = '', initialTopic, signedIn = false, again, askBack = false }: { initialTitle?: string; initialTopic?: string; signedIn?: boolean; again?: AskAgain; /** Came from "Ask them back" after voting on a friend's poll. */ askBack?: boolean }) {
   const router = useRouter();
   const t = useT();
   const lang = useLang();
@@ -169,6 +169,12 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   // "A poll like this is already live": looked up a moment after you stop typing the question (not for "Ask again").
   const [similar, setSimilar] = useState<{ id: string; title: string; votes: number }[]>([]);
   const [simHidden, setSimHidden] = useState(false);
+  // "Speak your question" (owner, Oct 2026: typing Hindi on a phone is slow): the phone's own speech-to-text, only where
+  // the browser has it (Chrome on Android, Safari). Hindi screens listen for Hindi; English and Hinglish for Indian English.
+  const [speechOk, setSpeechOk] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [speakErr, setSpeakErr] = useState(false);
+  useEffect(() => setSpeechOk('SpeechRecognition' in window || 'webkitSpeechRecognition' in window), []);
   // Create in three short steps (owner, Oct 2026: "first ask what kind of poll, then the topic"): the kind of poll, what
   // it is about, then the question and choices, with help that fits both. "Ask again" starts at the question (all set).
   type Step = 'type' | 'topic' | 'write';
@@ -261,6 +267,37 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
     return d.toISOString().slice(0, 16);
   };
 
+  function speak() {
+    type Rec = { lang: string; interimResults: boolean; maxAlternatives: number; start(): void; onresult: ((e: { results: { 0: { transcript: string } }[] }) => void) | null; onend: (() => void) | null; onerror: (() => void) | null };
+    const w = window as unknown as { SpeechRecognition?: new () => Rec; webkitSpeechRecognition?: new () => Rec };
+    const SR = w.SpeechRecognition ?? w.webkitSpeechRecognition;
+    if (!SR) return;
+    const r = new SR();
+    r.lang = lang === 'hi' ? 'hi-IN' : 'en-IN';
+    r.interimResults = false;
+    r.maxAlternatives = 1;
+    r.onresult = (e) => {
+      const said = e.results[0]?.[0]?.transcript.trim() ?? '';
+      if (!said) return;
+      const q = (/[?？]$/u.test(said) ? said : `${said}?`).slice(0, MAX_TITLE);
+      setTitle(q.charAt(0).toUpperCase() + q.slice(1));
+      setFieldError((f) => ({ ...f, title: undefined }));
+      // "Chai ya coffee?" fills the choices too, when none are typed yet.
+      const parts = kind === 'rating' || kind === 'dates' || hot ? null : choicesFromQuestion(q);
+      if (parts && !choices.some((c) => c.trim())) fill(parts);
+    };
+    r.onerror = () => setSpeakErr(true);
+    r.onend = () => setListening(false);
+    setSpeakErr(false);
+    setListening(true);
+    try {
+      r.start();
+    } catch {
+      setListening(false);
+      setSpeakErr(true);
+    }
+  }
+
   function check() {
     const filled = choices.map((c) => c.trim().replace(/\s+/g, ' ')).filter(Boolean);
     const errs: { title?: string; choices?: string; end?: string; group?: string } = {};
@@ -341,7 +378,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
         sessionStorage.removeItem(DRAFT);
       } catch {}
       // Replace, not push: Back from the new poll must not reopen a filled Create (it looked like it had not worked).
-      return router.replace(`/p/${data.id}?new=1`);
+      return router.replace(`/p/${data.id}?new=1${askBack ? '&back=1' : ''}`);
     }
     setBusy(false);
     // Signed out on another tab, or the sign-in ran out: ask again.
@@ -420,6 +457,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   if (step === 'type') {
     return (
       <div className="create-step">
+        {askBack && <p className="create-again" role="status"><Repeat size={16} strokeWidth={2} aria-hidden /><span>{t.askBackLead}</span></p>}
         <h2 className="create-step__title">{t.stepType}</h2>
         <div className="create-types create-types--step" role="list">
           {TYPES.filter((x) => typesAll || x.main).map((x) => (
@@ -533,6 +571,16 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
             setFieldError((f) => ({ ...f, title: undefined }));
           }}
         />
+        {speechOk && (
+          <p className="create-speak" aria-live="polite">
+            {listening ? (
+              <span className="small"><span className="live-dot" aria-hidden /> {t.speakListening}</span>
+            ) : (
+              <button type="button" className="link-like small" onClick={speak}><Mic size={14} strokeWidth={2} aria-hidden /> {t.speakBtn}</button>
+            )}
+            {speakErr && !listening && <span className="small muted"> {t.speakErr}</span>}
+          </p>
+        )}
         {title.length >= MAX_TITLE - 20 && <p className="small muted create-count" aria-live="polite">{t.charsLeft(MAX_TITLE - title.length)}</p>}
         {fieldError.title && <p className="field-error" role="alert">{fieldError.title}</p>}
         {/* P2: a live poll that asks the same thing. Voting there gets you results now; posting yours is still fine. */}

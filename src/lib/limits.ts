@@ -69,3 +69,5 @@ export const BATTLE_SIZES = [4, 8] as const;
 export const BATTLE_ROUND_HOURS = [1, 24, 72] as const;
 /** Long lists show this many first, then "Show N more" adds this many again (Miller's and Hick's laws: a few at a time). */
 export const LIST_FIRST = 6;
+/** A tie's decider poll (two or more tied choices, the same question) runs this long. */
+export const RUNOFF_HOURS = 24;

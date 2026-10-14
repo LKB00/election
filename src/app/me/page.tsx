@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import SinceLooked from '@/components/SinceLooked';
 import MoreList from '@/components/MoreList';
 import Link from 'next/link';
 import { Check, ChevronRight, Vote } from 'lucide-react';
@@ -64,6 +65,8 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
         {stats.friends > 0 && <p className="lead">{t.friendsFromLink(stats.friends)}</p>}
       </header>
 
+      {/* P1 when there is news: what changed in your polls since this phone last opened this page. */}
+      {mine.length > 0 && <SinceLooked votes={mine} />}
       {/* P2: your month, described (3+ votes this month). */}
       {month && month.polls >= 3 && (
         <section className="block block-tight me-month">

@@ -13,9 +13,9 @@ export default async function Privacy() {
   const t = await getT();
   const { name, email } = grievanceContact();
   const parts: [string, string][] = [
-    [t.privacyStoreH, t.privacyStore],
+    [t.privacyStoreH, `${t.privacyStore} ${t.privacyVoice}`],
     [t.privacyKeepH, t.privacyKeep],
-    [t.privacyShareH, t.privacyShare],
+    [t.privacyShareH, `${t.privacyShare} ${t.privacyMakerPick}`],
     [t.privacyReportH, `${t.privacyReport} ${email ? t.grievance(name, email) : t.grievanceNone}`],
   ];
   return (

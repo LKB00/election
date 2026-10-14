@@ -25,7 +25,7 @@ import { OG_VOTERS_MIN } from '@/lib/limits';
 import { ogBase } from '@/lib/og';
 
 export const dynamic = 'force-dynamic';
-type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ new?: string; f?: string; s?: string; o?: string; l?: string }> };
+type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ new?: string; f?: string; s?: string; o?: string; l?: string; back?: string }> };
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { id } = await params;
@@ -55,7 +55,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 // A shared link: that duel first. Docs: docs/DESIGN.md (Flow 2, J2).
 export default async function DuelPage({ params, searchParams }: Props) {
   const { id } = await params;
-  const { new: isNew, f } = await searchParams;
+  const { new: isNew, f, back } = await searchParams;
   const justCreated = isNew === '1';
   const db = await getDb();
   const t = await getT();
@@ -117,7 +117,7 @@ export default async function DuelPage({ params, searchParams }: Props) {
           {label}
         </p>
       )}
-      {justCreated && <CreatedPanel id={poll.id} title={poll.title} manageHref={`/p/${poll.id}/manage`} />}
+      {justCreated && <CreatedPanel id={poll.id} title={poll.title} manageHref={`/p/${poll.id}/manage`} text={back === '1' ? t.askBackShare(poll.title) : undefined} />}
       {mine && !justCreated && (
         <Link href={`/p/${poll.id}/manage`} className="maker-bar">
           <SlidersHorizontal size={16} strokeWidth={2} aria-hidden /> {t.manageLink}
