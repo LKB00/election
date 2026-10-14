@@ -1178,6 +1178,22 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
                 {t.friendTheyPicked(poll.options.find((o) => o.id === poll.friend.optionId)?.label ?? '')}
               </p>
             )}
+            {/* Across the polls this friend sent you: how often you two picked the same, and one tap to tell them. */}
+            {poll.friendTogether && (
+              <p className="small duel-together">
+                {t.friendTogether(poll.friendTogether.same, poll.friendTogether.all)}{' '}
+                <a className="link-like small" href={`https://wa.me/?text=${encodeURIComponent(t.friendTogetherText(poll.friendTogether.same, poll.friendTogether.all, `${origin}/p/${poll.id}${poll.myShareCode ? `?f=${poll.myShareCode}` : ''}`))}`} target="_blank" rel="noopener noreferrer" onClick={() => track('whatsapp')}>
+                  {t.friendTogetherShare}
+                </a>
+              </p>
+            )}
+            {/* The maker's own pick, when they chose to show it. */}
+            {poll.makerPick && poll.maker && (
+              <p className="small duel-maker-pick">
+                <span aria-hidden>{poll.maker.avatar}</span>{' '}
+                {poll.makerPick === poll.myVote ? t.makerPickedSame(poll.maker.name) : t.makerPicked(poll.maker.name, poll.options.find((o) => o.id === poll.makerPick)?.label ?? '')}
+              </p>
+            )}
             {happenedIdx < 0 && !poll.closed && <p><strong className={rareNow ? 'is-rare' : undefined}>{vTitle}</strong> {vLine}</p>}
             {poll.friends.agree + poll.friends.disagree > 0 && <p className="small muted">{t.dares(poll.friends.agree + poll.friends.disagree, poll.friends.agree, poll.friends.disagree)}</p>}
             {!poll.closed && (
@@ -1394,11 +1410,12 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
       {revealed && mine && !counting && (
         <ul className="al-listcard own-question">
           <li>
-            <Link href="/create" className="al-row" onClick={() => track('create_after_vote')}>
+            {/* From a friend's link: "Ask them back" (they asked you; now send one to them), else a question of your own. */}
+            <Link href={poll.friend.known ? '/create?back=1' : '/create'} className="al-row" onClick={() => track('create_after_vote')}>
               <span className="al-row__disc" style={{ '--tone': 'var(--lime-badge)' } as React.CSSProperties} aria-hidden><Plus size={20} strokeWidth={1.75} /></span>
               <span className="al-row__main">
-                <span className="al-row__title">{t.ownQuestion}</span>
-                <span className="al-row__meta">{t.startOwnLine}</span>
+                <span className="al-row__title">{poll.friend.known ? t.askBackTitle : t.ownQuestion}</span>
+                <span className="al-row__meta">{poll.friend.known ? t.askBackLine : t.startOwnLine}</span>
               </span>
               <ArrowRight size={18} strokeWidth={1.75} className="al-row__chevron" aria-hidden />
             </Link>

@@ -6,7 +6,8 @@ import { decideSuggestion, deletePoll, editPoll, markOutcome, ownPoll, setEnd } 
 import { isPushSub, pushEnabled, sendResultAlerts, wantMilestone } from '@/lib/push';
 import { clientIp, rateLimit } from '@/lib/rate-limit';
 import { editPollSchema, isCode } from '@/lib/validation';
-import { nextFinalCount, setWeekly, startVoting } from '@/lib/polls';
+import { nextFinalCount, setWeekly, startRunoff, startVoting } from '@/lib/polls';
+import { getT } from '@/lib/lang-server';
 import { getOrCreateVoterId } from '@/lib/voter';
 
 // Poll maker tools (only the profile that made the poll): end now, a new length, fix a typo before the first vote,
@@ -61,6 +62,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // The answer is in: tell the people who asked for the result.
     if (r === 'ok' && pushEnabled()) await sendResultAlerts(db, [id]).catch(() => 0);
     return NextResponse.json({ ok: true });
+  }
+  // "It's a tie": the decider (the same question, only the tied choices), made once; the poll page links to it.
+  if (action === 'runoff') {
+    const newId = await startRunoff(db, id, user.id, (await getT()).runoffDesc).catch(() => null);
+    if (!newId) return NextResponse.json({ error: 'There is no tie to decide.' }, { status: 409 });
+    return NextResponse.json({ ok: true, id: newId });
   }
   if (action === 'startVoting') {
     const r = await startVoting(db, id);

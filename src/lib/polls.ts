@@ -6,9 +6,9 @@ import { RATING_EMOJIS, RATING_LABELS, ratingAverage, usesPicks, type PollKind }
 import { cleanText, isCode } from './validation';
 import { sameKey } from './same';
 import { schema, type Db } from '@/db';
-import type { CreatePollInput } from './validation';
+import { createPollSchema, type CreatePollInput } from './validation';
 import { hasBlockedWord, namesPolitics } from './moderation';
-import { GROUP_DEFAULT_DAYS, IDEAS_HOURS, JOIN_CODE_DIGITS, MAX_CHOICES, MIN_CHOICES, WEEKLY_TREND_WEEKS, REVEAL_MINUTES, MAX_OTHER, OTHER_MIN_PEOPLE, OTHER_TOP } from './limits';
+import { GROUP_DEFAULT_DAYS, IDEAS_HOURS, RUNOFF_HOURS, JOIN_CODE_DIGITS, MAX_CHOICES, MIN_CHOICES, WEEKLY_TREND_WEEKS, REVEAL_MINUTES, MAX_OTHER, OTHER_MIN_PEOPLE, OTHER_TOP } from './limits';
 import { sealedUntil as silenceUntil } from './silence';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { isAdminKey } from './admin';
@@ -107,6 +107,10 @@ export type PollView = {
   outcome: string | null;
   /** Opened from a friend's link: whether that friend exists, and their pick once you can see results. */
   friend: { known: boolean; optionId: string | null };
+  /** From a friend's link, after you vote: on how many of the polls this friend sent you, you two picked the same. */
+  friendTogether: { same: number; all: number } | null;
+  /** The maker's own pick, shown after you vote when the maker chose so. */
+  makerPick: string | null;
   /** The maker's name and face, only when they chose to show them on this poll. */
   maker: { id: string; name: string; avatar: string; verified: boolean } | null;
   /** Voters may suggest a missing choice (the maker approves it first). */
@@ -182,6 +186,8 @@ export async function createPoll(db: Db, raw: CreatePollInput, manageKey?: strin
     shuffle: input.shuffle && (input.kind === 'choice' || input.kind === 'multi' || input.kind === 'rank'),
     suggestionsOn: input.suggestionsOn && (input.kind === 'choice' || input.kind === 'multi') && !input.groupSize && !ideasUntil,
     showMaker: input.showMaker && !!ownerId,
+    // Only with the maker's name on it, and never on politics (a maker's vote there is nobody else's business).
+    showMakerPick: input.showMakerPick && input.showMaker && !!ownerId && input.category !== 'politics',
     previousId: input.previousId && ownerId && (await ownsPoll(tx as unknown as Db, input.previousId, ownerId)) ? input.previousId : null,
     electionMode: input.electionMode,
     kind: input.kind,
@@ -370,6 +376,25 @@ async function loadPoll(
     ? (await db.select({ optionId: votes.optionId, voterKey: votes.voterKey }).from(votes).where(and(eq(votes.pollId, id), eq(votes.shareCode, via))).limit(1))[0]
     : undefined;
   const friendKnown = !!friendVote && friendVote.voterKey !== voterId;
+  // "You and your friend agree on 3 of 4 polls they sent you": only polls this friend sent you (you came by their link),
+  // where their pick is shown to you after you vote anyway, so nothing secret is worked out from it.
+  const together =
+    friendKnown && myVote !== null && resultsVisible && voterId
+      ? (
+          await db.execute(sql`
+            select count(*)::int as "all", count(*) filter (where a.option_id = b.option_id)::int as same
+            from votes a join votes b on b.share_code = a.via and b.poll_id = a.poll_id
+            join polls p on p.id = a.poll_id
+            where a.voter_key = ${voterId} and b.voter_key = ${friendVote!.voterKey} and not p.hidden`)
+        )
+      : null;
+  const togetherRows = together as unknown as { rows?: { all: number; same: number }[] } | { all: number; same: number }[] | null;
+  const togetherRow = togetherRows ? (Array.isArray(togetherRows) ? togetherRows : togetherRows.rows ?? [])[0] : undefined;
+  // The maker's own pick, after you vote, when they chose to show it (not to the maker, not on politics).
+  const makerPick =
+    poll.showMaker && poll.showMakerPick && poll.makerVoter && poll.category !== 'politics' && myVote !== null && resultsVisible && voterId !== poll.makerVoter
+      ? ((await db.select({ optionId: votes.optionId }).from(votes).where(and(eq(votes.pollId, id), eq(votes.voterKey, poll.makerVoter))).limit(1))[0]?.optionId ?? null)
+      : null;
 
   const myVoterNumber = mine[0]
     ? (
@@ -462,6 +487,9 @@ async function loadPoll(
         : null,
     // The friend's pick stays a surprise until you have voted (and guessed).
     friend: { known: friendKnown, optionId: friendKnown && myVote !== null && resultsVisible ? friendVote!.optionId : null },
+    // Two or more polls from this friend: how often you two picked the same.
+    friendTogether: togetherRow && Number(togetherRow.all) >= 2 ? { same: Number(togetherRow.same), all: Number(togetherRow.all) } : null,
+    makerPick,
     options: opts.map((o) => {
       const n = resultsVisible ? (byOption.get(o.id) ?? 0) : 0;
       return {
@@ -886,6 +914,30 @@ export async function trendingPolls(db: Db, limit = 6): Promise<PollSummary[]> {
  */
 export const getPoll = cache(loadPoll);
 
+// Words that say nothing about what a poll is about, left out when comparing two questions.
+const STOP = new Set(['the', 'and', 'for', 'you', 'your', 'which', 'what', 'who', 'whom', 'best', 'better', 'more', 'most', 'are', 'is', 'or', 'vs', 'ya', 'kya', 'kaun', 'hai', 'ka', 'ki', 'ke', 'do', 'does', 'will', 'would', 'should', 'one', 'this', 'that', 'with', 'than', 'ever', 'all', 'time', 'कौन', 'क्या', 'सबसे', 'अच्छा', 'अच्छी', 'बेहतर']);
+const wordsOf = (text: string) => new Set(text.toLowerCase().normalize('NFKC').split(/[^\p{L}\p{N}]+/u).filter((w) => w.length >= 3 && !STOP.has(w)));
+
+/**
+ * "A poll like this is already live" on Create: open, public polls whose question and choices share most of their words
+ * with what is being typed (two or more words, and at least half of the smaller set). Newest first; at most two.
+ */
+export async function findSimilar(db: Db, title: string, choices: string[] = []): Promise<PollSummary[]> {
+  const mine = wordsOf([title, ...choices].join(' '));
+  if (mine.size < 2) return [];
+  const list = (await listPolls(db, 200)).filter((p) => !p.closed);
+  return list
+    .map((p) => {
+      const theirs = wordsOf([p.title, ...p.options].join(' '));
+      const shared = [...mine].filter((w) => theirs.has(w)).length;
+      return { p, shared, ratio: shared / Math.min(mine.size, theirs.size || 1) };
+    })
+    .filter((x) => x.shared >= 2 && x.ratio >= 0.5)
+    .sort((a, b) => b.ratio - a.ratio)
+    .slice(0, 2)
+    .map((x) => x.p);
+}
+
 /** The ids of the polls this voter voted in (for ticks on a list), one small lookup. */
 export async function votedPollIds(db: Db, voterId: string | null): Promise<string[]> {
   if (!voterId) return [];
@@ -1235,6 +1287,49 @@ const WEEK_MS = 7 * 86400_000;
  * the next 7 days, pointing back to it (previousId, so voters see "Last time" and the maker sees the trend). Only the
  * newest poll of a series repeats. Returns the id of the poll that is open now (the new one, or one made before).
  */
+/** The choices tied for first place in an ended pick-one poll (two or more, with at least one vote), else none. */
+export function tiedTop(p: Pick<PollView, 'closed' | 'kind' | 'calledIt' | 'resultsVisible' | 'options'>): PollView['options'] {
+  if (!p.closed || p.kind !== 'choice' || p.calledIt || !p.resultsVisible) return [];
+  const real = p.options.filter((o) => !o.isOther);
+  const top = Math.max(0, ...real.map((o) => o.votes));
+  const tied = real.filter((o) => o.votes === top);
+  return top > 0 && tied.length >= 2 ? tied : [];
+}
+
+/**
+ * "It's a tie": the maker starts a decider, the same question with only the tied choices, open for RUNOFF_HOURS, linked
+ * to the tied poll (its page then points to it). Once per poll: a second tap returns the decider already made.
+ */
+export async function startRunoff(db: Db, id: string, ownerId: string, description: string): Promise<string | null> {
+  const [next] = await db.select({ id: polls.id }).from(polls).where(and(eq(polls.previousId, id), eq(polls.hidden, false))).limit(1);
+  if (next) return next.id;
+  const p = await getPoll(db, id, null, null, { noPrevious: true });
+  const [row] = await db.select({ ownerId: polls.ownerId, showMaker: polls.showMaker, electionMode: polls.electionMode }).from(polls).where(eq(polls.id, id)).limit(1);
+  if (!p || row?.ownerId !== ownerId) return null;
+  const tied = tiedTop(p);
+  if (!tied.length) return null;
+  return createPoll(
+    db,
+    createPollSchema.parse({
+      title: p.title,
+      description,
+      category: p.category,
+      kind: 'choice',
+      options: tied.map((o) => o.label),
+      emojis: tied.map((o) => o.emoji ?? ''),
+      photos: [],
+      hideUntilVoted: true,
+      showMaker: row.showMaker,
+      electionMode: row.electionMode,
+      previousId: id,
+      endsAt: new Date(Date.now() + RUNOFF_HOURS * 3_600_000).toISOString(),
+    }),
+    undefined,
+    undefined,
+    ownerId,
+  );
+}
+
 export async function rollWeekly(db: Db, id: string, now = Date.now()): Promise<string | null> {
   const [next] = await db.select({ id: polls.id }).from(polls).where(and(eq(polls.previousId, id), eq(polls.hidden, false))).limit(1);
   if (next) return next.id;

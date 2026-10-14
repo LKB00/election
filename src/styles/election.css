@@ -1353,3 +1353,17 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
 .create-picked__chip svg:last-child { color: var(--ink-3); }
 /* "More kinds of polls" / "More topics": a quiet pill under the first few (Miller's and Hick's laws). */
 .create-more { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; }
+/* Create: "A poll like this is already live" (P2, under the question). */
+.create-similar { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--card); }
+.create-similar .label { margin: 0; }
+.create-similar__row { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'title chev' 'meta chev'; align-items: center; column-gap: 8px; padding: 8px 10px; border-radius: var(--radius-inner); background: var(--sand); color: var(--ink); text-decoration: none; }
+.create-similar__title { grid-area: title; font-weight: 600; overflow-wrap: anywhere; }
+.create-similar__row .small { grid-area: meta; }
+.create-similar__row svg { grid-area: chev; color: var(--ink-3); }
+.create-similar > .link-like { align-self: flex-start; }
+/* After voting: the maker's pick and "you two picked the same in 3 of 4". */
+.duel-together, .duel-maker-pick { margin: 0; }
+/* Create: "Speak your question" (the phone's speech-to-text), right under the question box. */
+.create-speak { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; }
+.create-speak .link-like { display: inline-flex; align-items: center; gap: 6px; }
+.since-row { font-weight: 600; }

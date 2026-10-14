@@ -67,6 +67,7 @@ export const createPollSchema = z.object({
   revealIn: z.enum(REVEAL_IN).default('now'),
   // The maker's name and face shown on the poll (their choice; off by default).
   showMaker: z.boolean().default(false),
+  showMakerPick: z.boolean().default(false),
   // "Ask again": the earlier poll (made by the same person) this one repeats.
   previousId: z.string().regex(/^[\w-]{1,64}$/).optional(),
   // "Called it": about a real event that has not happened yet; the creator marks what happened later.

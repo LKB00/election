@@ -4,12 +4,12 @@ import { Clock, Eye } from 'lucide-react';
 import { getDb } from '@/db';
 import { currentUser } from '@/lib/auth';
 import { makerView } from '@/lib/maker';
-import { weeklyTrend } from '@/lib/polls';
+import { getPoll, rollWeekly, tiedTop, weeklyTrend } from '@/lib/polls';
 import { MILESTONE } from '@/lib/push';
 import { getLang, getT } from '@/lib/lang-server';
 import EmptyState from '@/components/EmptyState';
 import { YouSignIn } from '@/components/Profile';
-import { AskAgainRow, FixTypo, Lengths, MarkOutcome, MilestoneAlert, ResultsCard, ShareLink, Suggestions, TvRow, PosterRow, WeeklyRow, DeletePoll } from '@/components/MakerTools';
+import { AskAgainRow, FixTypo, Runoff, Lengths, MarkOutcome, MilestoneAlert, ResultsCard, ShareLink, Suggestions, TvRow, PosterRow, WeeklyRow, DeletePoll } from '@/components/MakerTools';
 import { INDIA_TZ, dateLocale, monthStyle } from '@/lib/time';
 
 export const dynamic = 'force-dynamic';
@@ -45,6 +45,10 @@ export default async function ManagePage({ params, searchParams }: { params: Pro
   const peak = Math.max(1, ...v.byHour);
   // Week by week (a weekly poll, or one asked again): newest first, totals only.
   const weeks = await weeklyTrend(db, v.id);
+  // An ended pick-one poll with a tie: the decider is the one thing to do (or open it, once made).
+  const view = v.closed ? await getPoll(db, v.id, null, null, { noPrevious: true }) : null;
+  const tied = view ? tiedTop(view) : [];
+  const decider = tied.length ? await rollWeekly(db, v.id) : null;
   const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(dateLocale(lang), { day: 'numeric', month: monthStyle(lang), timeZone: INDIA_TZ }) : '');
   const srcTotal = v.sources.reduce((s, x) => s + x.n, 0);
   return (
@@ -61,6 +65,16 @@ export default async function ManagePage({ params, searchParams }: { params: Pro
       </header>
 
       <div className="maker-main">
+      {tied.length > 0 && (
+        <section className="al-block" aria-label={t.runoffTitle}>
+          <h2 className="al-block__title">{t.runoffTitle}</h2>
+          {decider ? (
+            <Link href={`/p/${decider}`} className="btn btn-primary btn-lg">{t.runoffOpen}</Link>
+          ) : (
+            <Runoff id={v.id} names={tied.map((o) => o.label).join(' · ')} />
+          )}
+        </section>
+      )}
       {/* "Called it": mark what happened (only the maker, on any phone). */}
       {v.calledOpen && (
         <section className="al-block" aria-label={t.calledMarkTitle}>

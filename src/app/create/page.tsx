@@ -16,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 // "Ask it yourself" from an empty search lands here with ?title=…, already typed in.
-export default async function CreatePage({ searchParams }: { searchParams: Promise<{ title?: string | string[]; topic?: string | string[]; again?: string }> }) {
+export default async function CreatePage({ searchParams }: { searchParams: Promise<{ title?: string | string[]; topic?: string | string[]; again?: string; back?: string }> }) {
   const sp = await searchParams;
   const raw = sp.title;
   // An empty topic page's "Start a poll" lands here with ?topic=food, so the poll starts in that topic.
@@ -52,7 +52,7 @@ export default async function CreatePage({ searchParams }: { searchParams: Promi
         <h1 className="display">{t.startDuel}</h1>
       </header>
       <section className="block block-tight">
-        <CreateForm initialTitle={title} initialTopic={topic} signedIn={!!user} again={again} />
+        <CreateForm initialTitle={title} initialTopic={topic} signedIn={!!user} again={again} askBack={sp.back === '1'} />
       </section>
       <p className="small block row wrap">
         <Link href="/terms" className="text-link">{t.termsLink}</Link>

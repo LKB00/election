@@ -1281,6 +1281,23 @@ phone it squeezed "When results show" to one letter per line.
   - "VS" only on pick-one polls. Dates say "Which dates work for you?" with a calendar face; Pick several says "Tick all
     you like"; Put in order says "Put them in your order".
 
+## Similar polls, the maker's pick, you and your friend (owner, Oct 2026: "Okay" to ideas 1, 3 and 5)
+
+| Element | Where | Priority | Why |
+|---|---|---|---|
+| **"A poll like this is already live"** | Create, under the question, a moment after you stop typing (`findSimilar`, `/api/polls/similar`) | P2 | Up to two open polls whose question and choices share most of their words with yours (2+ words, half or more of the smaller set; words like "best", "which" ignored). Each row opens that poll; "Post mine anyway" hides the card. Fewer duplicate polls with 2 votes each, and you get results at once. Not for "Ask again". |
+| **"Riya (who asked) picked Chai"** | Poll, in the card after voting | P2 | The maker's own pick, after you vote (and guess), when the maker chose "Show my pick after people vote". It is offered only with "Show my name" on and never for politics. The maker's vote is kept by their voter key when they vote while signed in (`polls.maker_voter`); never shown to the maker. |
+| **"You two picked the same in 3 of 4 polls they sent you"** + **Tell them** | Poll, in the card after voting, from a friend's link | P2 | Counted only over the polls this friend sent you (you came by their link), where their pick is shown to you after voting anyway, so nothing secret is worked out from it. Shows from 2 polls. "Tell them" opens WhatsApp with the line and your own link. Described, never scored. |
+
+## Four journeys (owner, Oct 2026: "put yourself in the shoes of all the different users", then "Go ahead")
+
+| Who | Element | Where | Priority | Why |
+|---|---|---|---|---|
+| First-timer from a friend's link | **"Ask them something back"** (instead of "Have a question of your own?") → Create with "They asked you. Now ask them something back." → the new poll's share text "I answered your poll. Now your turn: …" | After voting from a friend's link; Create (`?back=1`); the new poll (`?back=1`) | P3 (it leaves the poll) | Turns a voter into a maker in one step. Voters have no names, so the friend's name is not filled in. |
+| Hindi-first or older user | **Speak your question** (mic) | Create, under the question box, only where the phone's browser can listen | P3 | Typing Hindi on a phone is slow. The phone's own speech-to-text (Hindi screens listen for Hindi, others for Indian English); "chai ya coffee" fills the question and both choices. The privacy page says the phone's speech service hears it; Chunav gets only the text. |
+| Group organiser | **"It's a tie" → Start a decider (24 hours)** | The maker's page of an ended pick-one poll with 2+ choices tied at the top | P1 there | The same question with only the tied choices, ending in `RUNOFF_HOURS`, linked to the tied poll (its page shows "newer poll"). Made once; later it is "Go to the decider". |
+| Returning voter | **Since you last looked** | Your votes, top, only when something changed | P1 when shown | "Ambur took the lead", "Your pick is now ahead", "Result is in: … won", "Results are open", "It's now a tie", "It happened: you called it". Compared with what this phone saw last time (kept on the phone); up to `LIST_FIRST` rows. |
+
 ## Engagement round (owner, Oct 2026: "the product is social engagement; polls are the mechanism")
 
 - **"Ask your friends"** is the main button everywhere it said "Start a poll" (top bar, Home, empty pages, after voting,
