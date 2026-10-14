@@ -33,7 +33,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
         <h1 className="display">{t.adminTitle}</h1>
         <p className="lead">{t.adminLead}</p>
         {items.length > 0 && (
-          <p className="small"><strong>{t.adminSummary(items.filter((i) => i.paused).length, items.filter((i) => i.reports > 0).length, items.filter((i) => !i.reviewed && i.reports === 0).length)}</strong></p>
+          <p className="small"><strong>{t.adminSummary(items.filter((i) => i.paused).length, items.filter((i) => i.reports > 0).length)}</strong></p>
         )}
       </header>
       <section className="block">

@@ -5,4 +5,4 @@ export function grievanceContact() {
 }
 
 /** When the rules last changed (shown on /terms). Change it whenever the Terms text changes. */
-export const RULES_UPDATED = '2026-10-04';
+export const RULES_UPDATED = '2026-10-14';

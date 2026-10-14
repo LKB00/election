@@ -50,7 +50,6 @@ export default function AdminRow({ item, adminKey }: { item: ReviewItem; adminKe
         {item.reports > 0 && <> · <span className="txt-bad">{t.adminReports(item.reports)}</span>: {item.reasons.map((r) => t.reportReasons[r] ?? r).join(', ')}</>}
         {mins !== null && <> · {t.adminReportedAgo(mins)}</>}
         {state.hidden && <> · {t.adminHidden}</>}
-        {!state.reviewed && <> · {t.adminUnreviewed}</>}
       </p>
       {state.paused && <p className="small txt-bad">{t.adminPaused}</p>}
       {photoReport && !state.hidden && !done && <p className="small txt-bad"><strong>{t.adminUrgent}</strong></p>}
@@ -62,6 +61,7 @@ export default function AdminRow({ item, adminKey }: { item: ReviewItem; adminKe
         ) : (
           <button type="button" className="btn btn-primary" disabled={busy} onClick={() => act('hide')}>{t.adminHide}</button>
         )}
+        {/* Keep it: the reports were wrong; it stays up and reports alone can no longer take it down. */}
         {!state.reviewed && <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => act('approve')}>{t.adminApprove}</button>}
       </span>
       {failed && <p className="small duel-error" role="alert">{failed}</p>}

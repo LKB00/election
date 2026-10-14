@@ -18,9 +18,9 @@ Where: Vercel → your project **election** → Settings → Environment Variabl
 | [ ] `VAPID_SUBJECT` | `mailto:` + an email you check, e.g. `mailto:you@gmail.com` | Push services contact this address if alerts misbehave | Alerts use a placeholder address |
 | [ ] `CRON_SECRET` | Any long random text (16+ letters) | Lets Vercel's evening job send the 9 pm result alerts (only Vercel knows it) | Only "Called it" alerts are sent; 9 pm result alerts are not |
 | [x] `NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID` (done Oct 2026; the key box holds only the `AIza…` key, never the whole code block) | From Firebase (steps below) | Turns on "Continue with Google" on the profile screen (free) | Only fingerprint/face sign-in shows |
-| [ ] `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | The **Web client ID** (steps below, "Google's account sheet") | Android shows Google's own account picker sliding up, instead of a new window | Google opens in a window |
+| [x] `NEXT_PUBLIC_GOOGLE_CLIENT_ID` (done Oct 2026) | The **Web client ID** (steps below, "Google's account sheet") | Android shows Google's own account picker sliding up, instead of a new window | Google opens in a window |
 | [ ] `NEXT_PUBLIC_FIREBASE_PHONE` = `on` | Only if you later choose to pay for SMS (Firebase Blaze plan) | Shows "Continue with phone number" too | No phone button (owner, Oct 2026: "I don't want to pay") |
-| [ ] `NEXT_PUBLIC_SITE_URL` | Only if you buy your own domain, e.g. `https://yourname.in` | Share links and QR codes use your domain | They use the Vercel address (fine for now) |
+| [x] `NEXT_PUBLIC_SITE_URL` (`https://chunav.lokeshbhatia.com`, Oct 2026) | Only if you buy your own domain, e.g. `https://yourname.in` | Share links and QR codes use your domain | They use the Vercel address (fine for now) |
 
 **Phone alerts (ntfy), step by step:** install the free **ntfy** app → tap + → subscribe to a long secret name you make up (like `election-alerts-7f3k9q`) → put `https://ntfy.sh/election-alerts-7f3k9q` in `REPORT_ALERT_URL`. Keep the name secret: anyone who knows it can read the alerts.
 
@@ -54,7 +54,7 @@ On Android (Chrome) the phone's own Google account picker slides up. On iPhone, 
 
 There is no Today's question (owner, Oct 2026: "only user generated content"): you never pick polls for everyone.
 
-- [ ] **Check /admin**: paused polls and **photo reports first** (the law gives 2 hours for private or sexual photos). Approve good new polls so they can appear in search.
+- [ ] **Check /admin**: paused polls and **photo reports first** (the law gives 2 hours for private or sexual photos). Polls go live the moment they are posted (no approving); /admin only lists paused and reported ones.
 
 ## 3. Growth (one time, then now and then)
 
@@ -70,7 +70,7 @@ There is no Today's question (owner, Oct 2026: "only user generated content"): y
 
 - [x] **"Reset this phone" removed** for the public launch (Oct 2026).
 - [x] **Name:** the site is now called **Chunav** (Oct 2026).
-- [ ] **Own address: `chunav.lokeshbhatia.com`** (owner, Oct 2026: "use a subdomain of lokeshbhatia.com"). About 15 minutes, no cost:
+- [x] **Own address: `chunav.lokeshbhatia.com`** (done 14 Oct 2026: Cloudflare CNAME, DNS only; `NEXT_PUBLIC_SITE_URL` set; the old address jumps to the new one by itself, so Vercel's redirect in step 3 is not needed) (owner, Oct 2026: "use a subdomain of lokeshbhatia.com"). About 15 minutes, no cost:
   1. Vercel → project **election** → **Settings → Domains** → type `chunav.lokeshbhatia.com` → **Add**. Vercel then shows one DNS record to add (usually **CNAME**, name `chunav`, value like `cname.vercel-dns.com`; copy exactly what Vercel shows).
   2. Where lokeshbhatia.com's DNS lives (the company you bought the domain from, or Cloudflare / your portfolio host): **add that CNAME record**. Do not change any other record, so your portfolio keeps working. Vercel's Domains page turns green when it works (a few minutes, sometimes up to an hour); it also sets up the padlock (HTTPS) by itself.
   3. In the same Domains page, open `election-three-ruby.vercel.app` → **Edit** → **Redirect to** `chunav.lokeshbhatia.com` (permanent). Old links people already shared keep working and land on the new address.

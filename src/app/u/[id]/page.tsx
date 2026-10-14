@@ -23,14 +23,13 @@ async function load(id: string) {
     .select({ id: polls.id, title: polls.title, endsAt: polls.endsAt, n: sql<number>`count(${votes.id})::int` })
     .from(polls)
     .leftJoin(votes, eq(votes.pollId, polls.id))
-    // Same as the public lists: no group polls (link only), no politics or photo polls still waiting for review.
+    // Same as the public lists: no group polls (link only).
     .where(
       and(
         eq(polls.ownerId, id),
         eq(polls.showMaker, true),
         eq(polls.hidden, false),
         isNull(polls.groupSize),
-        or(eq(polls.reviewed, true), and(ne(polls.category, 'politics'), eq(polls.hasPhotos, false))),
       ),
     )
     .groupBy(polls.id)

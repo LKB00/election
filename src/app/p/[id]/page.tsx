@@ -40,7 +40,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     title: poll.title,
     // Search engines only get polls the owner has checked that enough people voted in (a thin page with two votes
     // looks like spam to Google), and never someone's personal share link.
-    robots: poll.reviewed && !f && poll.participants >= INDEX_MIN_VOTES ? undefined : { index: false, follow: true },
+    robots: !f && poll.participants >= INDEX_MIN_VOTES ? undefined : { index: false, follow: true },
     alternates: await langAlternates(`/p/${poll.id}`),
     description: t.metaPollDesc(names),
     // A crowd makes people tap: "N people have voted" once there is one (never the split).
@@ -108,7 +108,7 @@ export default async function DuelPage({ params, searchParams }: Props) {
           {label}
         </p>
       )}
-      {justCreated && <CreatedPanel id={poll.id} title={poll.title} manageHref={`/p/${poll.id}/manage`} held={poll.heldForReview} />}
+      {justCreated && <CreatedPanel id={poll.id} title={poll.title} manageHref={`/p/${poll.id}/manage`} />}
       {mine && !justCreated && (
         <Link href={`/p/${poll.id}/manage`} className="maker-bar">
           <SlidersHorizontal size={16} strokeWidth={2} aria-hidden /> {t.manageLink}
