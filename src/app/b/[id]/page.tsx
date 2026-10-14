@@ -65,7 +65,8 @@ export default async function BattlePage({ params, searchParams }: Props) {
         const live = matches.some((m) => m.open);
         return (
           <section key={r} className={'al-block battle-round' + (live ? ' is-live' : '')}>
-            <h2 className="al-block__title">{roundName(t, r, total)}{live && when && <span className="al-block__aside">{t.battleEnds(when)}</span>}</h2>
+            <h2 className="al-block__title">{roundName(t, r, total)}</h2>
+            {live && when && <p className="small muted battle-ends">{t.battleEnds(when)}</p>}
             <ul className="al-listcard">
               {matches.length
                 ? matches.map((m) => (

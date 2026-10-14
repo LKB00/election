@@ -1,10 +1,7 @@
 import type { Metadata } from 'next';
-import { redirect } from 'next/navigation';
 import { Hash } from 'lucide-react';
-import { getDb } from '@/db';
 import { getT, langAlternates } from '@/lib/lang-server';
 import { JOIN_CODE_DIGITS } from '@/lib/limits';
-import { pollForJoinCode } from '@/lib/polls';
 
 export const dynamic = 'force-dynamic';
 export async function generateMetadata(): Promise<Metadata> {
@@ -14,13 +11,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 // Join with a code (docs/DESIGN.md, "Join with a code"): a class, an office or an event types the number on the big
 // screen or poster and lands on the poll (counted as "Join code" on the maker's page). One box, one button.
-export default async function Join({ searchParams }: { searchParams: Promise<{ code?: string | string[] }> }) {
-  const raw = (await searchParams).code;
+export default async function Join({ searchParams }: { searchParams: Promise<{ code?: string | string[]; bad?: string }> }) {
+  const sp = await searchParams;
+  const raw = sp.code;
   const code = (Array.isArray(raw) ? raw[0] : raw ?? '').trim();
-  if (code) {
-    const id = await pollForJoinCode(await getDb(), code);
-    if (id) redirect(`/p/${id}?src=code`);
-  }
   const t = await getT();
   return (
     <div className="page join-page">
@@ -28,14 +22,14 @@ export default async function Join({ searchParams }: { searchParams: Promise<{ c
         <h1 className="display">{t.joinTitle}</h1>
         <p className="lead">{t.joinLead}</p>
       </header>
-      <form action="/join" className="join-form">
+      <form action="/join/go" className="join-form">
         <label className="search join-box">
           <Hash size={18} strokeWidth={1.75} aria-hidden />
           <span className="sr-only">{t.joinPh}</span>
           <input name="code" defaultValue={code} inputMode="numeric" autoComplete="off" pattern={`[0-9 ]{${JOIN_CODE_DIGITS},${JOIN_CODE_DIGITS + 2}}`} maxLength={JOIN_CODE_DIGITS + 2} placeholder={t.joinPh} autoFocus required />
         </label>
         <button className="btn btn-primary btn-lg">{t.joinGo}</button>
-        {code && <p className="duel-error" role="alert">{t.joinBad}</p>}
+        {sp.bad && <p className="duel-error" role="alert">{t.joinBad}</p>}
       </form>
     </div>
   );

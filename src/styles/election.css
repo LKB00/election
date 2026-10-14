@@ -1244,9 +1244,9 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
 
 /* Bio link (docs/DESIGN.md, "Bio link"): the maker's copy box, and the newest poll voted right on their page. */
 .bio-link { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; padding: 16px; border: var(--hair) solid var(--line); border-radius: var(--radius-card); background: var(--card); }
-.bio-link__row { gap: 8px; flex-wrap: nowrap; }
-.bio-link__url { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 10px 12px; border-radius: var(--radius-field); background: var(--sand); font-size: 13px; }
-.bio-link__row .btn { flex: none; gap: 6px; }
+.bio-link__row { gap: 8px; flex-wrap: wrap; }
+.bio-link__url { flex: 1 1 180px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 10px 12px; border-radius: var(--radius-field); background: var(--sand); font-size: 13px; }
+.bio-link__row .btn { flex: 1 0 auto; gap: 6px; }
 .bio-latest { margin-bottom: 8px; }
 
 /* QR poster (docs/DESIGN.md, "QR poster"): one A4 page, light colours always (set on .poster from palette.ts). */
@@ -1322,3 +1322,4 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
 .verify-form { gap: 8px; flex-wrap: nowrap; margin: 8px 0; }
 .verify-form .search { flex: 1; min-width: 0; }
 .verify-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; }
+.battle-ends { margin: -4px 0 8px; }
