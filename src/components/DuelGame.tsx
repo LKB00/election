@@ -863,6 +863,10 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
 
   // The card under the result (P1 after voting): shown once the numbers are in and counting day has finished.
   const verdictOn = revealed && !!mine && !counting;
+  // Voted, and the crowd guess comes next (owner, Oct 2026: "everything looks cluttered"): the full ballot with its
+  // Vote keys folds into one "Your pick" line, so the guess is the one thing left to do.
+  const askGuess = !casting && voted && poll.needsGuess;
+  const myPicks = multi ? poll.options.filter((o) => poll.myPicks.includes(o.id)) : mine ? [mine] : [];
   // What the main button leads to, said on it (owner, Oct 2026: "what does Next mean?"): another poll, or the end.
   const hasNext = deck.some((p, k) => k !== i && p.id !== poll.id && isOpen(p));
   return (
@@ -924,7 +928,20 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
         <p className="small duel-friend"><Users size={14} strokeWidth={1.75} aria-hidden /> {t.friendSealed}</p>
       )}
 
-      {rating ? (
+      {askGuess ? (
+        <div className={'duel-myvote' + (inkedFor === poll.id ? ' is-new' : '')}>
+          {myPicks[0] && <Face o={myPicks[0]} tone={TONES[poll.options.indexOf(myPicks[0]) % TONES.length]} letters={letters[poll.options.indexOf(myPicks[0])]} />}
+          <span className="duel-myvote__text">
+            <span className="label">{t.yourPick}</span>
+            <strong className="duel-myvote__name" lang={hindiText(myPicks.map((o) => o.label).join(', '))}>{myPicks.map((o) => o.label).join(', ')}</strong>
+            <span className="small muted">
+              {t.inked}.
+              {poll.electionMode && poll.myVoterNumber ? <> {t.voterId} EL-{String(poll.myVoterNumber).padStart(6, '0')}</> : null}
+            </span>
+          </span>
+          <InkFinger size={28} />
+        </div>
+      ) : rating ? (
         // Rate it: five faces in a row. Before voting, tap one; after, the average and how many picked each face.
         revealed ? (
           <div className="rate-result" aria-live="polite">
@@ -1146,7 +1163,7 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
         </div>
       )}
 
-      {!casting && voted && mine && !poll.closed && !verdictOn && (
+      {!casting && voted && mine && !poll.closed && !verdictOn && !askGuess && (
         // The record of the ink moment (the moment itself plays in CastVote).
         <div className={'duel-inked' + (inkedFor === poll.id ? ' is-new' : '')}>
           <InkFinger size={32} />
@@ -1157,7 +1174,7 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
         </div>
       )}
 
-      {!casting && voted && poll.needsGuess && (
+      {askGuess && (
         <div className="duel-guess" aria-live="polite" ref={guessRef}>
           <p className="label">{t.exitPoll}</p>
           <h2 tabIndex={-1}>{t.guessTitle}</h2>
@@ -1174,9 +1191,9 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
             ))}
           </div>
           {guessing && <p className="small guess-checking" role="status"><span className="live-dot" aria-hidden /> {t.guessChecking}</p>}
-          <p className="small muted">
-            <button type="button" className="link-like duel-undo" onClick={() => guess('skip')} disabled={guessBusy}>{t.skipShow}</button>
-            {undoUntil > 0 && <> · <button type="button" className="link-like duel-undo" onClick={undo}>{t.undoVote}</button></>}
+          <p className="row wrap duel-guess__more">
+            <button type="button" className="link-like small duel-undo" onClick={() => guess('skip')} disabled={guessBusy}>{t.skipShow}</button>
+            {undoUntil > 0 && <button type="button" className="link-like small muted duel-undo" onClick={undo}>{t.undoVote}</button>}
           </p>
         </div>
       )}

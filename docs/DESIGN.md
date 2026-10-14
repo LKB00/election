@@ -168,6 +168,7 @@ no surprise, always one obvious next step, and mistakes can be undone.
 | Element | Level | Job / why |
 |---|---|---|
 | **Guess the crowd** step after you vote ("What do you think most people picked?"; was "Who's winning right now?") (hidden-results duels) | **P1 at that moment** | A second, instant game inside every duel: you guess the crowd, then the reveal tells you if you were right. Makes the reveal a moment, not just numbers. Checked on the server at the moment you answer (a tie counts for either leader). "Skip, just show me" is always there, so it never blocks. |
+| While the guess waits, the ballot folds into one **"Your pick"** line (your choice's face on yellow, its name, the ink record and Vote no.) | P2 | Owner, Oct 2026: "everything looks cluttered". Before, the whole ballot stayed with its Vote keys, serials and lights, so the guess was pushed down and competed with it. Now there is one record of what you did and one thing to do next. Skip and Undo are quiet pills under the guess cards. |
 | "Your exit poll was right!" / "Your exit poll was wrong. X is ahead." (was "+1") | P1 in the result bar | The win (or the near miss) is the first line you read after the reveal. Confetti only for a right guess. |
 | ~~🎯 pill~~ | removed | A score; see the election rule. Your exit poll record is one sentence on My votes. |
 | "A friend dared you" label + "A friend already picked. Vote to see if you agree." | P2 | You came because a friend asked: that is the strongest reason to vote. Their pick stays a surprise until you vote and guess. |

@@ -66,6 +66,16 @@
 /* Guess the crowd: the one step between voting and the results (P1 at that moment) */
 .duel-guess { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 16px; border-radius: var(--radius-card); background: var(--card); animation: pop 0.35s ease; }
 .duel-guess h2 { margin: 0; }
+/* Voted, guess next: the ballot folds into one quiet "Your pick" line (P2) so the guess card below is the one step. */
+.duel-myvote { --pc: var(--you-soft); display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: var(--radius-card); border: 1px solid var(--line); background: var(--card); }
+.duel-myvote .duel-face, .duel-myvote .duel-photo { flex: none; width: 44px; height: 44px; aspect-ratio: auto; border-radius: 50%; font-size: 15px; }
+.duel-myvote__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.duel-myvote__text .label { margin: 0; }
+.duel-myvote__name { font-size: 17px; line-height: 1.25; overflow-wrap: anywhere; }
+.duel-myvote > svg { flex: none; }
+.duel-myvote.is-new { animation: fade-in 0.3s backwards; }
+.duel-guess__more { gap: 8px; margin: 4px 0 0; }
+@media (prefers-reduced-motion: reduce) { .duel-myvote.is-new { animation: none; } }
 .duel-guess-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; margin-top: 8px; }
 .duel-guess-options .btn { justify-content: flex-start; }
 
@@ -1194,7 +1204,7 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
 .duel-more[open] > summary::after { transform: rotate(-135deg) translateY(-2px); }
 .duel-more__body { display: flex; flex-direction: column; gap: 16px; padding: 8px 4px 4px; }
 /* "Someone wants your pick" is the reason to vote; once you have voted it is gone. */
-.poll-main:has(.duel.is-revealed, .duel-inked, .duel-verdict) .poll-ask { display: none; }
+.poll-main:has(.duel.is-revealed, .duel-inked, .duel-myvote, .duel-verdict) .poll-ask { display: none; }
 
 /* Share / Next poll: part of the page, right under the result card, not a floating box (owner, Oct 2026: "this looks off,
    not part of the UI"). gb's phone.css pins .tot-result as a white card with a shadow; this undoes it for the poll. */
