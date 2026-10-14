@@ -32,9 +32,11 @@ export default function RulesNotice() {
   };
   return (
     <aside className="rules-note small" aria-label={t.termsTitle}>
-      <span>{t.rulesNote}</span>
-      <Link href="/terms" className="text-link" onClick={ok}>{t.rulesRead}</Link>
-      <button type="button" className="link-like muted" onClick={ok}>{t.rulesOk}</button>
+      <p className="rules-note__text">{t.rulesNote}</p>
+      <div className="rules-note__actions">
+        <Link href="/terms" className="text-link" onClick={ok}>{t.rulesRead}</Link>
+        <button type="button" className="link-like muted" onClick={ok}>{t.rulesOk}</button>
+      </div>
     </aside>
   );
 }

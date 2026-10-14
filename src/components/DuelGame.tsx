@@ -196,7 +196,8 @@ function ReportDuel({ pollId, t, lang }: { pollId: string; t: Dict; lang: Lang }
         {Object.entries(t.reportReasons).map(([key, label]) => (
           <button key={key} type="button" className="chip" disabled={state === 'busy'} onClick={() => send(key)}>{label}</button>
         ))}
-        <button type="button" className="link-like small muted" onClick={() => setState('closed')}>{t.cancel}</button>
+        {/* Its own line, so it never reads as one more reason. */}
+        <span className="report-cancel"><button type="button" className="link-like muted" onClick={() => setState('closed')}>{t.cancel}</button></span>
       </div>
       {error && <p className="small duel-error" role="alert">{error}</p>}
     </div>
@@ -903,7 +904,7 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
           {/* No votes yet: "be the first" says it (not "0 votes cast · be the first"). */}
           {poll.participants === 0 && !poll.closed ? ` · ${t.beFirst}` : <> · <span key={poll.participants} className="tick">{poll.participants.toLocaleString('en-IN')}</span> {t.votesCast(poll.participants)}</>}
           {/* Time left depends on the clock, so the server's and the phone's text can differ by a minute: that is fine. */}
-          {!poll.closed && poll.endsAt && <span suppressHydrationWarning>{` · ${t.closes(closesIn(t, poll.endsAt))}`}</span>}
+          {!poll.closed && poll.endsAt && <> · <span className="nowrap" suppressHydrationWarning>{t.closes(closesIn(t, poll.endsAt))}</span></>}
           {!revealed && poll.pulse.lastHour > 0 && poll.pulse.lastHour < poll.participants && ` · ${t.inLastHour(poll.pulse.lastHour)}`}
           {fresh && fresh.id === poll.id && <span className="duel-fresh"> · {t.newVotes(fresh.n)}</span>}
         </p>
@@ -1047,7 +1048,7 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
             </span>
             <button type="submit" className="btn btn-primary" disabled={!otherText.trim() || !!busy}>{t.vote}</button>
           </span>
-          <button type="button" className="link-like small muted other-cancel" onClick={() => setWriting(null)}>{t.cancel}</button>
+          <button type="button" className="link-like muted other-cancel" onClick={() => setWriting(null)}>{t.cancel}</button>
         </form>
       )}
 
@@ -1253,7 +1254,7 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
           )}
           <div className="duel-group">
             <p className="label">{t.react}</p>
-            <div className="row wrap" role="group" aria-label={t.react}>
+            <div className="row wrap react-row" role="group" aria-label={t.react}>
               {poll.reactions.map((r) => {
                 const on = poll.myReactions.includes(r.emoji);
                 return (

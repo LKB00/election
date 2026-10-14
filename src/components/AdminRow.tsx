@@ -37,7 +37,7 @@ export default function AdminRow({ item, adminKey }: { item: ReviewItem; adminKe
   }
   return (
     <div className={'review-row' + (done ? ' is-done' : '')}>
-      <Link href={`/p/${item.id}`} className="text-link"><strong>{item.title}</strong></Link>
+      <Link href={`/p/${item.id}`} className="plain-link"><strong>{item.title}</strong></Link>
       <p className="small">{item.options.join(' · ')}</p>
       {item.photos.length > 0 && (
         <span className="row wrap review-photos">

@@ -49,9 +49,11 @@ export default function InstallInvite() {
   };
   return (
     <aside className="rules-note small install-invite" aria-label={t.installTitle}>
-      <span><strong>{t.installTitle}</strong> {mode === 'ios' ? t.installIos : t.installWhy}</span>
-      {mode === 'android' && <button type="button" className="btn btn-ghost" onClick={add}>{t.installAdd}</button>}
-      <button type="button" className="link-like muted" onClick={done}>{mode === 'ios' ? t.rulesOk : t.installNotNow}</button>
+      <p className="rules-note__text"><strong>{t.installTitle}</strong> {mode === 'ios' ? t.installIos : t.installWhy}</p>
+      <div className="rules-note__actions">
+        {mode === 'android' && <button type="button" className="text-link" onClick={add}>{t.installAdd}</button>}
+        <button type="button" className="link-like muted" onClick={done}>{mode === 'ios' ? t.rulesOk : t.installNotNow}</button>
+      </div>
     </aside>
   );
 }
