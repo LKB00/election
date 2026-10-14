@@ -1525,3 +1525,39 @@ describe('ideas first', () => {
     expect(createPollSchema.safeParse({ title: 'Only one choice?', options: ['A'] }).success).toBe(false);
   });
 });
+
+describe('knockout battles', () => {
+  it('plays 4 choices two at a time: winners go through, ties go to the first, then a champion', async () => {
+    const { createBattle, advanceBattle, getBattle } = await import('@/lib/battles');
+    const entrants = ['Hyderabad', 'Lucknow', 'Kolkata', 'Delhi'].map((label) => ({ label, emoji: '' }));
+    const id = await createBattle(db, { title: 'Best biryani city', entrants, roundHours: 24, showMaker: false, category: 'food' }, 'battle-owner');
+    let b = (await getBattle(db, id, null))!;
+    expect(b.rounds[0].map((m) => [m.a.label, m.b.label])).toEqual([['Hyderabad', 'Lucknow'], ['Kolkata', 'Delhi']]);
+    expect(await advanceBattle(db, id)).toBe('waiting');
+    // Lucknow wins match 1; match 2 is a tie (Kolkata, the first, goes through).
+    const m1 = (await getPoll(db, b.rounds[0][0].pollId, null))!;
+    await castVote(db, m1.id, m1.options[1].id, 'kb1');
+    const m2 = (await getPoll(db, b.rounds[0][1].pollId, null))!;
+    await castVote(db, m2.id, m2.options[0].id, 'kb2');
+    await castVote(db, m2.id, m2.options[1].id, 'kb3');
+    await db.update(schema.polls).set({ endsAt: new Date(Date.now() - 1000) }).where(eq(schema.polls.battleId, id));
+    expect(await advanceBattle(db, id)).toBe('next');
+    b = (await getBattle(db, id, null))!;
+    expect(b.rounds[1].map((m) => [m.a.label, m.b.label])).toEqual([['Lucknow', 'Kolkata']]);
+    expect(b.rounds[0].map((m) => m.winner)).toEqual(['b', 'a']);
+    const fin = (await getPoll(db, b.rounds[1][0].pollId, null))!;
+    expect(fin.title).toBe('Best biryani city: Lucknow or Kolkata?');
+    await castVote(db, fin.id, fin.options[1].id, 'kb4');
+    await db.update(schema.polls).set({ endsAt: new Date(Date.now() - 1000) }).where(eq(schema.polls.id, fin.id));
+    expect(await advanceBattle(db, id)).toBe('champion');
+    expect((await getBattle(db, id, null))!.champion).toBe('Kolkata');
+    expect(await advanceBattle(db, id)).toBe('done');
+  });
+  it('needs 4 or 8 different choices', async () => {
+    const { battleSchema } = await import('@/lib/validation');
+    const e = (n: number) => Array.from({ length: n }, (_, k) => ({ label: `Choice ${k}`, emoji: '' }));
+    expect(battleSchema.safeParse({ title: 'Best tea', entrants: e(3), roundHours: 24 }).success).toBe(false);
+    expect(battleSchema.safeParse({ title: 'Best tea', entrants: e(8), roundHours: 24 }).success).toBe(true);
+    expect(battleSchema.safeParse({ title: 'Best tea', entrants: e(4), roundHours: 5 }).success).toBe(false);
+  });
+});

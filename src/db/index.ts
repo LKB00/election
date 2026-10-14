@@ -95,6 +95,20 @@ ALTER TABLE polls ADD COLUMN IF NOT EXISTS today_on text;
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS join_code text;
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS repeat_weekly boolean NOT NULL DEFAULT false;
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS ideas_until timestamptz;
+CREATE TABLE IF NOT EXISTS battles (
+  id text PRIMARY KEY,
+  title text NOT NULL,
+  owner_id text,
+  show_maker boolean NOT NULL DEFAULT false,
+  category text NOT NULL DEFAULT 'general',
+  entrants text NOT NULL,
+  round_hours integer NOT NULL,
+  champion text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE polls ADD COLUMN IF NOT EXISTS battle_id text;
+ALTER TABLE polls ADD COLUMN IF NOT EXISTS battle_round integer;
+ALTER TABLE polls ADD COLUMN IF NOT EXISTS battle_slot integer;
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS reveal_at timestamptz;
 -- "Called it" polls: a real future event; the creator (or the owner) marks what happened.
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS called_it boolean NOT NULL DEFAULT false;
@@ -203,6 +217,7 @@ CREATE TABLE IF NOT EXISTS push_milestones (
 CREATE INDEX IF NOT EXISTS polls_today_on_idx ON polls (today_on);
 CREATE UNIQUE INDEX IF NOT EXISTS polls_join_code_idx ON polls (join_code);
 CREATE INDEX IF NOT EXISTS polls_previous_idx ON polls (previous_id);
+CREATE INDEX IF NOT EXISTS polls_battle_idx ON polls (battle_id);
 CREATE INDEX IF NOT EXISTS polls_repeat_idx ON polls (ends_at) WHERE repeat_weekly;
 CREATE TABLE IF NOT EXISTS vote_flow (
   poll_id text NOT NULL REFERENCES polls(id) ON DELETE CASCADE,

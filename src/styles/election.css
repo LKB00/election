@@ -1298,3 +1298,19 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
 .ideas-add .search input { font-size: 16px; }
 .ideas-actions { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; }
 .ideas-actions > .btn { min-width: 0; }
+
+/* Knockout battles (docs/DESIGN.md, "Knockout battles"): the form's numbered choices, then the bracket by round. */
+.battle-entrants { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.battle-entrants li { display: flex; flex-direction: column; gap: 6px; }
+.battle-entrants li:nth-child(2n) { margin-bottom: 10px; }
+.battle-entrants .search { height: 48px; }
+.battle-seed { flex: none; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--sand); font-size: 12px; font-weight: 700; }
+.battle-vs { align-self: center; color: var(--ink-3); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+.battle-pair { display: flex; flex-direction: column; gap: 2px; }
+.battle-pair .battle-vs { align-self: flex-start; }
+.battle-side { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-weight: 600; }
+.battle-side.is-out { color: var(--ink-3); font-weight: 400; text-decoration: line-through; text-decoration-thickness: 1px; }
+.battle-match.is-later { color: var(--ink-3); }
+.battle-champion { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 8px 0 16px; padding: 24px 16px; border-radius: var(--radius-card); background: var(--you-soft); color: var(--ink); text-align: center; }
+.battle-champion .display { margin: 0; font-size: 28px; }
+.battle-share { display: flex; justify-content: center; margin-top: 16px; }

@@ -34,6 +34,10 @@ export const polls = pgTable(
     // "Ideas first": until this time (and until there are 2 ideas) people add choices; then voting opens. Null = a
     // normal poll. The maker can start voting earlier.
     ideasUntil: timestamp('ideas_until', { withTimezone: true }),
+    // A knockout battle's match (battles below): which battle, which round (1 = first) and which match in the round.
+    battleId: text('battle_id'),
+    battleRound: integer('battle_round'),
+    battleSlot: integer('battle_slot'),
     // "Show results at a set time" (the maker's choice): numbers stay hidden for everyone until then.
     revealAt: timestamp('reveal_at', { withTimezone: true }),
     // Election mode: the full booth ritual (EVM, VVPAT slip, voter ID, counting day). Politics polls always have it.
@@ -292,3 +296,19 @@ export const dailyEvents = pgTable(
   },
   (t) => [primaryKey({ columns: [t.day, t.event] })],
 );
+
+// Knockout battles (docs/DESIGN.md, "Knockout battles"): 4 or 8 entrants, two at a time. Each match is an ordinary
+// 2-choice poll (polls.battle_id); when a round's matches have all ended, the winners meet in the next round, until
+// one is left (champion). entrants is JSON: [{ "label": "Hyderabad", "emoji": "🍗" }, …] in seed order.
+export const battles = pgTable('battles', {
+  id: text('id').primaryKey(),
+  title: text('title').notNull(),
+  ownerId: text('owner_id'),
+  showMaker: boolean('show_maker').notNull().default(false),
+  category: text('category').notNull().default('general'),
+  entrants: text('entrants').notNull(),
+  roundHours: integer('round_hours').notNull(),
+  champion: text('champion'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+

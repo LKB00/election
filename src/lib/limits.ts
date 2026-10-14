@@ -63,3 +63,7 @@ export const WEEKLY_TREND_WEEKS = 8;
  * ideas one person may add to one poll. */
 export const IDEAS_HOURS = 24;
 export const IDEAS_PER_PERSON = 3;
+
+/** Knockout battles: how many entrants (a full bracket), and how long each round runs. */
+export const BATTLE_SIZES = [4, 8] as const;
+export const BATTLE_ROUND_HOURS = [1, 24, 72] as const;
