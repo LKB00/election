@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { CATEGORIES } from './categories';
 import { hasBlockedWord } from './moderation';
-import { BATTLE_ROUND_HOURS, BATTLE_SIZES, REVEAL_IN } from './limits';
+import { BATTLE_ROUND_HOURS, BATTLE_SIZES, REVEAL_IN, START_MAX_DAYS } from './limits';
 import { ERR, MAX_CHOICE, MAX_CHOICES, MAX_DETAILS, MAX_GROUP, MAX_PHOTO_CHARS, MAX_TITLE, MIN_CHOICES, MIN_TITLE } from './limits';
 
 /** One emoji (flags, skin tones and joined emoji like 👨‍👩‍👧 count as one). */
@@ -79,7 +79,14 @@ export const createPollSchema = z.object({
     .datetime()
     .optional()
     .refine((v) => !v || new Date(v).getTime() > Date.now(), 'The end time must be in the future.'),
+  // "Post later": opens at this time (in the future, at most START_MAX_DAYS ahead).
+  startsAt: z
+    .string()
+    .datetime()
+    .optional()
+    .refine((v) => !v || (new Date(v).getTime() > Date.now() && new Date(v).getTime() < Date.now() + START_MAX_DAYS * 86_400_000), 'The start time must be in the next two weeks.'),
 })
+  .refine((p) => !p.startsAt || !p.endsAt || new Date(p.endsAt).getTime() > new Date(p.startsAt).getTime(), 'The poll must end after it starts.')
   .refine((p) => p.options.length >= MIN_CHOICES || (p.collectIdeas && (p.kind === 'choice' || p.kind === 'multi')), ERR.fewChoices)
   .refine((p) => !hasBlockedWord(p.title, p.description, ...p.options, ...p.emojis), 'Please remove the abusive words.');
 export type CreatePollInput = z.infer<typeof createPollSchema>;

@@ -9,7 +9,7 @@ import type { MakerView } from '@/lib/maker';
 import { apiMsg } from '@/lib/i18n';
 import { useLang, useT } from '@/lib/lang';
 import { keyBytes, PUBLIC_KEY } from './ResultAlert';
-import { DELETED_KEEP_DAYS, MAX_CHOICE, MAX_DETAILS, MAX_TITLE, RUNOFF_HOURS } from '@/lib/limits';
+import { DELETED_KEEP_DAYS, MAX_CHOICE, MAX_DETAILS, MAX_TITLE, QUIET_HOURS, RUNOFF_HOURS } from '@/lib/limits';
 
 // The poll maker's controls (docs/DESIGN.md, "Poll maker tools"). Everything posts to /api/polls/<id>/manage, which
 // checks the profile again; the page refreshes after each change.
@@ -19,14 +19,14 @@ async function manage(id: string, body: Record<string, unknown>) {
 }
 
 /** Share the poll link (tagged so the maker's view can count where votes came from). */
-export function ShareLink({ id, title }: { id: string; title: string }) {
+export function ShareLink({ id, title, quiet = false }: { id: string; title: string; /** "It's quiet": the Status picture is the main button, this one steps back. */ quiet?: boolean }) {
   const t = useT();
   const [copied, setCopied] = useState(false);
   const url = (src: string) => `${window.location.origin}/p/${id}?src=${src}`;
   const text = () => t.shareTextAsk(title);
   return (
     <div className="maker-share">
-      <a className="btn btn-primary btn-lg" href="#" onClick={(e) => { e.preventDefault(); window.open(`https://wa.me/?text=${encodeURIComponent(`${text()} ${url('wa')}`)}`, '_blank', 'noopener'); }}>
+      <a className={quiet ? 'btn btn-ghost' : 'btn btn-primary btn-lg'} href="#" onClick={(e) => { e.preventDefault(); window.open(`https://wa.me/?text=${encodeURIComponent(`${text()} ${url('wa')}`)}`, '_blank', 'noopener'); }}>
         <MessageCircle size={18} strokeWidth={2} aria-hidden /> {t.sharePollLink}
       </a>
       <button
@@ -412,6 +412,37 @@ export function Runoff({ id, names }: { id: string; names: string }) {
       <p className="small muted">{t.runoffLine(names)}</p>
       <button type="button" className="btn btn-primary btn-lg" disabled={busy} onClick={go}>{t.runoffBtn(RUNOFF_HOURS)}</button>
       {error && <p className="duel-error" role="alert">{error}</p>}
+    </div>
+  );
+}
+
+/** "It's quiet" (owner, Oct 2026): the WhatsApp Status picture of the poll, one tap to share (or save on a computer). */
+export function QuietHelp({ id, title, votes }: { id: string; title: string; votes: number }) {
+  const t = useT();
+  const lang = useLang();
+  const card = `/api/card/${id}?ask=1${lang === 'hg' ? '&l=hg' : ''}`;
+  async function share() {
+    try {
+      const blob = await fetch(card).then((r) => r.blob());
+      const file = new File([blob], 'chunav-poll.png', { type: 'image/png' });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], text: `${title} ${window.location.origin}/p/${id}?src=wa` });
+        return;
+      }
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'chunav-poll.png';
+      a.click();
+      const href = a.href;
+      setTimeout(() => URL.revokeObjectURL(href), 10_000);
+    } catch {
+      // Closed the share menu, or no internet: nothing to undo.
+    }
+  }
+  return (
+    <div className="maker-quiet">
+      <p className="small">{t.quietLine(votes, QUIET_HOURS)}</p>
+      <button type="button" className="btn btn-primary" onClick={share}><ImageIcon size={16} strokeWidth={2} aria-hidden /> {t.quietBtn}</button>
     </div>
   );
 }

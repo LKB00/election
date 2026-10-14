@@ -9,7 +9,7 @@ import { MILESTONE } from '@/lib/push';
 import { getLang, getT } from '@/lib/lang-server';
 import EmptyState from '@/components/EmptyState';
 import { YouSignIn } from '@/components/Profile';
-import { AskAgainRow, FixTypo, Runoff, Lengths, MarkOutcome, MilestoneAlert, ResultsCard, ShareLink, Suggestions, TvRow, PosterRow, WeeklyRow, DeletePoll } from '@/components/MakerTools';
+import { AskAgainRow, FixTypo, QuietHelp, Runoff, Lengths, MarkOutcome, MilestoneAlert, ResultsCard, ShareLink, Suggestions, TvRow, PosterRow, WeeklyRow, DeletePoll } from '@/components/MakerTools';
 import { INDIA_TZ, dateLocale, monthStyle } from '@/lib/time';
 
 export const dynamic = 'force-dynamic';
@@ -55,7 +55,7 @@ export default async function ManagePage({ params, searchParams }: { params: Pro
     // Computers (election.css, "Desktop"): how it is going on the left; length, tools and delete in a column beside it.
     <div className="page maker-page">
       <header className="page-head page-head-tight">
-        <p className="eyebrow"><Clock size={13} strokeWidth={2} aria-hidden />{v.closed ? t.statusEnded : v.endsAt ? t.statusEnds(when) : t.statusOpenNoEnd}</p>
+        <p className="eyebrow"><Clock size={13} strokeWidth={2} aria-hidden />{v.closed ? t.statusEnded : v.startsAt ? t.opensAt(new Date(v.startsAt).toLocaleString(dateLocale(lang), { day: 'numeric', month: monthStyle(lang), hour: 'numeric', minute: '2-digit', timeZone: INDIA_TZ })) : v.endsAt ? t.statusEnds(when) : t.statusOpenNoEnd}</p>
         <h1 className="display maker-title">{v.title}</h1>
         <Link href={`/p/${v.id}`} className="text-link small"><Eye size={14} strokeWidth={2} aria-hidden /> {t.openPoll}</Link>
         {/* What just changed, said once at the top. */}
@@ -111,7 +111,9 @@ export default async function ManagePage({ params, searchParams }: { params: Pro
             )}
           </div>
         )}
-        {!v.closed && <ShareLink id={v.id} title={v.title} />}
+        {/* It's quiet: the Status picture is the next step (the link alone has stopped bringing votes). */}
+        {v.quiet && <QuietHelp id={v.id} title={v.title} votes={v.votes} />}
+        {!v.closed && <ShareLink id={v.id} title={v.title} quiet={v.quiet} />}
       </section>
 
       {/* "The result is in" only once there is a result to share. Before the first vote there is nothing to say (the

@@ -421,6 +421,20 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
     fetchedAt.current[p.id] = Date.now();
     setDeck((d) => d.map((x) => (x.id === p.id ? p : x)));
   };
+  // "Post later": the moment it opens, the poll reloads by itself (its keys turn on).
+  const startsAt = deck[i]?.startsAt ?? null;
+  useEffect(() => {
+    if (!startsAt || !deck[i]) return;
+    const id = deck[i]!.id;
+    const ms = Math.max(0, Date.parse(startsAt) - Date.now()) + 1500;
+    const open = setTimeout(async () => {
+      const res = await fetch(`/api/polls/${id}`, { cache: 'no-store' }).catch(() => null);
+      const fresh = res?.ok ? ((await res.json().catch(() => null)) as PollView | null) : null;
+      if (fresh) replace(fresh);
+    }, Math.min(ms, 2_147_000_000));
+    return () => clearTimeout(open);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startsAt]);
   // A planned reveal: the countdown ticks every 30 s, and the moment the results open the poll reloads by itself.
   const [clock, setClock] = useState(() => Date.now());
   const revealAt = deck[i]?.revealAt ?? null;
@@ -932,9 +946,10 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
         {/* The creator's "Details" line (and a pack's "Fan poll, not the official vote"). */}
         {poll.description && <p className="small muted duel-desc">{poll.description}</p>}
         <p className="small muted">
-          {poll.closed ? t.pollingClosed : <><span className="live-dot" aria-hidden /> {t.pollingOpen}</>}
+          {/* "Post later": not open yet, so the line says when it opens (not "Voting open"). */}
+          {poll.closed ? t.pollingClosed : poll.startsAt ? <span suppressHydrationWarning>{t.opensAt(revealWhen(poll.startsAt, lang))}</span> : <><span className="live-dot" aria-hidden /> {t.pollingOpen}</>}
           {/* No votes yet: "be the first" says it (not "0 votes cast · be the first"). */}
-          {poll.participants === 0 && !poll.closed ? ` · ${t.beFirst}` : <> · <span key={poll.participants} className="tick">{poll.participants.toLocaleString('en-IN')}</span> {t.votesCast(poll.participants)}</>}
+          {poll.participants === 0 && !poll.closed ? (poll.startsAt ? '' : ` · ${t.beFirst}`) : <> · <span key={poll.participants} className="tick">{poll.participants.toLocaleString('en-IN')}</span> {t.votesCast(poll.participants)}</>}
           {/* Time left depends on the clock, so the server's and the phone's text can differ by a minute: that is fine. */}
           {!poll.closed && poll.endsAt && <> · <span className="nowrap" suppressHydrationWarning>{t.closes(closesIn(t, poll.endsAt))}</span></>}
           {!revealed && poll.pulse.lastHour > 0 && poll.pulse.lastHour < poll.participants && ` · ${t.inLastHour(poll.pulse.lastHour)}`}
@@ -999,7 +1014,7 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
                 type="button"
                 className={'rate-step' + (poll.myVote === o.id ? ' is-mine' : '') + (busy === o.id ? ' is-busy' : '')}
                 onClick={() => vote(o.id)}
-                disabled={voted || !!busy || poll.closed || !!poll.pausedUntil}
+                disabled={voted || !!busy || poll.closed || !!poll.pausedUntil || !!poll.startsAt}
                 aria-pressed={poll.myVote === o.id}
               >
                 <span className="rate-step-face" aria-hidden>{o.emoji}</span>
@@ -1023,7 +1038,7 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
                 // --i: the order the result builds in (your pick first, then the rest), so the eye lands on you.
                 style={{ '--pc': `var(--p-${TONES[n % TONES.length]})`, '--dc': `var(--d-${TONES[n % TONES.length]})`, '--i': isMine ? 0 : n + 1 } as React.CSSProperties}
                 onClick={() => (multi ? toggleTick(o.id) : o.isOther ? setWriting(poll.id) : vote(o.id))}
-                disabled={voted || !!busy || poll.closed || !!poll.pausedUntil}
+                disabled={voted || !!busy || poll.closed || !!poll.pausedUntil || !!poll.startsAt}
                 aria-pressed={multi && !voted && !dates ? ticked : undefined}
                 aria-label={dates && !voted ? `${o.label}: ${ticked ? t.datesWorks : maybe ? t.datesMaybe : t.datesNo}` : `${voted || multi || revealed ? o.label : t.voteFor(o.label)}${revealed ? `, ${t.percent(pcts[n])}` : ''}`}
               >
@@ -1130,8 +1145,17 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
 
       {/* Not on a paused poll: its keys are off, and the paused note below says why. */}
       {/* Not on a timed poll either: its note says when results open ("results open after you vote" would contradict it). */}
-      {!voted && !poll.closed && !poll.pausedUntil && !poll.revealAt && (
+      {!voted && !poll.closed && !poll.pausedUntil && !poll.revealAt && !poll.startsAt && (
         <p className="small muted duel-hint" data-hint>{t.ballotHint}</p>
+      )}
+      {/* "Who can see my vote?" (owner, Oct 2026, for the privacy-worried voter): one tap, three plain lines. */}
+      {!voted && !poll.closed && (
+        <details className="who-sees">
+          <summary className="small">{t.whoSeesQ}</summary>
+          <ul className="small muted">
+            {t.whoSees.map((line) => <li key={line}>{line}</li>)}
+          </ul>
+        </details>
       )}
 
       {/* The creator's one job on a "Called it" poll (P1 for them): mark what happened. */}

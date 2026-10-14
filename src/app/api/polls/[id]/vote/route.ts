@@ -22,6 +22,7 @@ const MESSAGES = {
   bad_other: ERR.otherBad,
   frozen: 'Voting on this poll is paused for a few minutes: we saw unusual activity. Results are still open.',
   ideas: 'People are still adding ideas. Voting opens soon.',
+  not_started: 'This poll opens later.',
   busy: 'Too many votes from your internet connection just now. Try again in a few minutes.',
 } as const;
 

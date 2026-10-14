@@ -3,7 +3,7 @@ import { nanoid } from 'nanoid';
 import { schema, type Db } from '@/db';
 import { sameKey } from './validation';
 import { namesPolitics } from './moderation';
-import { DELETED_KEEP_DAYS, MAX_CHOICES, MAX_WAITING_SUGGESTIONS } from './limits';
+import { DELETED_KEEP_DAYS, MAX_CHOICES, MAX_WAITING_SUGGESTIONS, QUIET_HOURS, QUIET_MAX_VOTES } from './limits';
 
 // Poll maker tools (docs/DESIGN.md, "Poll maker tools"): only the profile that made a poll can use them. Everything the
 // maker sees is counted for the whole poll (votes per hour, where votes came from), never per voter.
@@ -36,6 +36,10 @@ export type MakerView = {
   repeatWeekly: boolean;
   /** Weekly repeat is offered (not for group polls or "Called it"). */
   canRepeat: boolean;
+  /** "It's quiet": open, under QUIET_MAX_VOTES votes, none in the last QUIET_HOURS (and at least that old, and open). */
+  quiet: boolean;
+  /** "Post later": when it opens, while that is still ahead. */
+  startsAt: string | null;
 };
 
 /** The poll, if this profile made it. */
@@ -81,6 +85,13 @@ export async function makerView(db: Db, id: string, uid: string): Promise<MakerV
     calledOpen: p.calledIt && !p.outcome,
     repeatWeekly: p.repeatWeekly,
     canRepeat: !p.groupSize && !p.calledIt,
+    startsAt: p.startsAt && p.startsAt.getTime() > Date.now() ? p.startsAt.toISOString() : null,
+    quiet:
+      !closed &&
+      !(p.startsAt && p.startsAt.getTime() > Date.now()) &&
+      n < QUIET_MAX_VOTES &&
+      Date.now() - (p.startsAt ?? p.createdAt).getTime() > QUIET_HOURS * 3_600_000 &&
+      byHour.slice(-QUIET_HOURS).every((x) => x === 0),
   };
 }
 
