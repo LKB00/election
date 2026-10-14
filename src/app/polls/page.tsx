@@ -1,3 +1,4 @@
+import { LIST_FIRST } from '@/lib/limits';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { topicIcon, topicTone } from '@/lib/topicIcons';
@@ -95,7 +96,7 @@ export default async function Duels({ searchParams }: { searchParams: Promise<{ 
       {(rest.length > 0 || hot.length === 0) && <section className="al-block">
         {/* A heading only when something sits above; otherwise it would just repeat the page title. */}
         {hot.length > 0 && <h2 className="al-block__title">{t.allDuels}<span className="al-block__aside">{t.pollsN(rest.length)}</span></h2>}
-        <DuelTiles polls={rest} votedIds={mine.map((v) => v.pollId)} limit={12} />
+        <DuelTiles polls={rest} votedIds={mine.map((v) => v.pollId)} limit={LIST_FIRST} />
       </section>}
       </>)}
       </div>

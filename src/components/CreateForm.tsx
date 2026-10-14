@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import { AlignLeft, ArrowLeft, CalendarDays, Check, ChevronDown, ChevronRight, CircleDot, Clock, Eye, EyeOff, ImagePlus, Landmark, Lightbulb, ListChecks, ListOrdered, MessageSquarePlus, PenLine, Flame, Repeat, Shuffle, SlidersHorizontal, Smile, Sparkles, Timer, UserRound, Users, WandSparkles, X } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
-import { CATEGORIES, TOPIC_EMOJI, type Category } from '@/lib/categories';
+import { CATEGORIES, FIRST_TOPICS, TOPIC_EMOJI, type Category } from '@/lib/categories';
 import { useLang, useT } from '@/lib/lang';
 import { apiMsg } from '@/lib/i18n';
 import { choicesFromQuestion, emojiFor } from '@/lib/createHelp';
@@ -42,10 +42,11 @@ const Row = ({ icon: Icon, name, note, value, on, open: isOpen, onClick, tone = 
     <span className="al-row__main">
       <span className="al-row__title">{name}</span>
       {note && <span className="al-row__meta">{note}</span>}
+      {/* The current value under the name, not beside it: "Right after voting" squeezed the name on small phones. */}
+      {on === undefined && value && <span className="al-row__meta create-row__value" suppressHydrationWarning>{value}</span>}
     </span>
     {on === undefined ? (
       <>
-        {value && <span className="al-row__when create-row__value" suppressHydrationWarning>{value}</span>}
         <ChevronDown size={18} strokeWidth={1.75} className={'create-row__chev' + (isOpen ? ' is-open' : '')} aria-hidden />
       </>
     ) : (
@@ -170,6 +171,9 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   const [step, setStep] = useState<Step>(firstStep.current);
   // Both picked once: changing one later comes straight back to the question.
   const [setupDone, setSetupDone] = useState(!!again);
+  // A few choices first, the rest one tap away.
+  const [allTypes, setAllTypes] = useState(false);
+  const [allTopics, setAllTopics] = useState(false);
   const [topicSet, setTopicSet] = useState(!!again || !!initialTopic);
   // Each step is a history entry, so the phone's Back goes one step back, not out of Create.
   const go = (s: Step) => {
@@ -343,17 +347,22 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
       setEmojis([...HOT_EMOJIS, ''].slice(0, t.hotChoices.length + 1));
     }
   };
+  // The four most used kinds first (Miller's and Hick's laws: fewer choices, quicker decision); "More kinds of polls"
+  // opens the other four, and the ways to make several polls at once.
   const TYPES = [
-    { k: 'choice', Icon: CircleDot, name: t.fmtAsk, desc: t.typeDesc.choice, pick: () => { setHot(false); pickKind('choice'); } },
-    { k: 'hot', Icon: Flame, name: t.fmtHot, desc: t.typeDesc.hot, pick: pickHot },
-    { k: 'called', Icon: WandSparkles, name: t.fmtPredict, desc: t.typeDesc.called, pick: () => { setHot(false); pickKind('choice', true); } },
-    { k: 'multi', Icon: ListChecks, name: t.formatMulti, desc: t.typeDesc.multi, pick: () => { setHot(false); pickKind('multi'); } },
-    { k: 'rank', Icon: ListOrdered, name: t.formatRank, desc: t.typeDesc.rank, pick: () => { setHot(false); pickKind('rank'); } },
-    { k: 'rating', Icon: Smile, name: t.fmtRate, desc: t.typeDesc.rating, pick: () => { setHot(false); pickKind('rating'); } },
-    { k: 'dates', Icon: CalendarDays, name: t.fmtDecide, desc: t.typeDesc.dates, pick: () => { setHot(false); pickKind('dates'); } },
-    { k: 'ideas', Icon: Lightbulb, name: t.fmtIdeas, desc: t.typeDesc.ideas, pick: () => { setHot(false); pickKind('choice', false, true); } },
+    { k: 'choice', main: true, Icon: CircleDot, name: t.fmtAsk, desc: t.typeDesc.choice, pick: () => { setHot(false); pickKind('choice'); } },
+    { k: 'hot', main: true, Icon: Flame, name: t.fmtHot, desc: t.typeDesc.hot, pick: pickHot },
+    { k: 'called', main: true, Icon: WandSparkles, name: t.fmtPredict, desc: t.typeDesc.called, pick: () => { setHot(false); pickKind('choice', true); } },
+    { k: 'rating', main: true, Icon: Smile, name: t.fmtRate, desc: t.typeDesc.rating, pick: () => { setHot(false); pickKind('rating'); } },
+    { k: 'multi', main: false, Icon: ListChecks, name: t.formatMulti, desc: t.typeDesc.multi, pick: () => { setHot(false); pickKind('multi'); } },
+    { k: 'rank', main: false, Icon: ListOrdered, name: t.formatRank, desc: t.typeDesc.rank, pick: () => { setHot(false); pickKind('rank'); } },
+    { k: 'dates', main: false, Icon: CalendarDays, name: t.fmtDecide, desc: t.typeDesc.dates, pick: () => { setHot(false); pickKind('dates'); } },
+    { k: 'ideas', main: false, Icon: Lightbulb, name: t.fmtIdeas, desc: t.typeDesc.ideas, pick: () => { setHot(false); pickKind('choice', false, true); } },
   ];
   const current = TYPES.find((x) => x.k === (ideas ? 'ideas' : calledIt ? 'called' : kind === 'choice' && hot ? 'hot' : kind)) ?? TYPES[0];
+  // Opened "More…", or the one you picked earlier is among the rest: everything shows.
+  const typesAll = allTypes || (setupDone && !current.main);
+  const topicsAll = allTopics || (topicSet && !FIRST_TOPICS.includes(category as Category));
   const pickType = (x: (typeof TYPES)[number]) => {
     x.pick();
     if (setupDone || topicSet) {
@@ -392,7 +401,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
       <div className="create-step">
         <h2 className="create-step__title">{t.stepType}</h2>
         <div className="create-types create-types--step" role="list">
-          {TYPES.map((x) => (
+          {TYPES.filter((x) => typesAll || x.main).map((x) => (
             <button key={x.k} type="button" role="listitem" className={'create-type' + (setupDone && x.k === current.k ? ' is-on' : '')} onClick={() => pickType(x)}>
               <span className="create-type__disc" aria-hidden><x.Icon size={18} strokeWidth={1.75} /></span>
               <span><strong>{x.name}</strong><span className="small muted">{x.desc}</span></span>
@@ -400,7 +409,12 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
             </button>
           ))}
         </div>
-        {!setupDone && (
+        {!typesAll && (
+          <button type="button" className="link-like create-more" onClick={() => setAllTypes(true)}>
+            <ChevronDown size={16} strokeWidth={2} aria-hidden /> {t.moreTypes(TYPES.filter((x) => !x.main).length + (setupDone ? 0 : 2))}
+          </button>
+        )}
+        {typesAll && !setupDone && (
           <section className="al-block">
             <h3 className="al-block__title">{t.packOr}</h3>
             <ul className="al-listcard">
@@ -439,13 +453,18 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
         </button>
         <h2 className="create-step__title">{t.stepTopic}</h2>
         <div className="create-topics">
-          {CATEGORIES.map((c) => (
+          {CATEGORIES.filter((c) => topicsAll || FIRST_TOPICS.includes(c)).map((c) => (
             <button key={c} type="button" className={'create-topic' + (topicSet && c === category ? ' is-on' : '')} aria-pressed={topicSet && c === category} onClick={() => pickTopic(c)}>
               <span className="create-topic__face" aria-hidden>{TOPIC_EMOJI[c]}</span>
               <span>{t.categories[c] ?? c}</span>
             </button>
           ))}
         </div>
+        {!topicsAll && (
+          <button type="button" className="link-like create-more" onClick={() => setAllTopics(true)}>
+            <ChevronDown size={16} strokeWidth={2} aria-hidden /> {t.moreTopics(CATEGORIES.length - FIRST_TOPICS.length)}
+          </button>
+        )}
       </div>
     );
   }

@@ -10,7 +10,7 @@ import { useT } from '@/lib/lang';
 import { emojiFor } from '@/lib/createHelp';
 import { RATING_EMOJIS } from '@/lib/rating';
 import type { VotedEvent } from '@/lib/useStats';
-import { LIVE_COUNTS_MAX, LIVE_COUNTS_MS, LIVE_COUNTS_TIMES } from '@/lib/limits';
+import { LIST_FIRST, LIVE_COUNTS_MAX, LIVE_COUNTS_MS, LIVE_COUNTS_TIMES } from '@/lib/limits';
 
 // A list of polls in Arogya Line's grouped list card: one row per poll, a tinted disc with the topic icon, the question,
 // the choices as a quiet line, the vote count on the right, a chevron. (Was a grid of pastel tiles.)
@@ -80,9 +80,11 @@ export default function DuelTiles({ polls, votedIds = [], noCreate = false, limi
   const rank = (p: PollSummary) => (p.closed ? 2 : voted.includes(p.id) ? 1 : 0);
   const sorted = [...polls].sort((a, b) => rank(a) - rank(b));
   // A long list shows its first rows, then "Show N more" (what you can still vote on comes first anyway).
-  const [all, setAll] = useState(false);
-  const shown = limit && !all ? sorted.slice(0, limit) : sorted;
+  // A few at a time: "Show N more" adds another few, never the whole list at once.
+  const [count, setCount] = useState(limit ?? 0);
+  const shown = limit ? sorted.slice(0, count) : sorted;
   const hiddenN = sorted.length - shown.length;
+  const nextN = Math.min(hiddenN, LIST_FIRST);
 
   // Empty list: a picture, one line and the one next step (start the first poll), instead of a lone "Start" row.
   if (!polls.length && !noCreate) {
@@ -129,7 +131,7 @@ export default function DuelTiles({ polls, votedIds = [], noCreate = false, limi
       {/* No "Ask your friends" row at the end (owner, Oct 2026: remove what adds nothing): the + button is always on screen. */}
     </ul>
     {hiddenN > 0 && (
-      <button type="button" className="btn btn-ghost btn-lg al-more" onClick={() => setAll(true)}>{t.showMorePolls(hiddenN)}</button>
+      <button type="button" className="btn btn-ghost btn-lg al-more" onClick={() => setCount((c) => c + LIST_FIRST)}>{t.showMorePolls(nextN)}</button>
     )}
     </>
   );

@@ -1,3 +1,4 @@
+import { LIST_FIRST } from '@/lib/limits';
 import { topicIcon, topicTone } from '@/lib/topicIcons';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -60,7 +61,7 @@ export default async function Topic({ params }: Props) {
         <p className="topic-follow"><FollowTopic topic={category} /> <span className="small muted">{t.followNote}</span></p>
       </header>
       <section className="al-block">
-        <DuelTiles polls={polls} votedIds={mine.map((v) => v.pollId)} topic={category} limit={12} />
+        <DuelTiles polls={polls} votedIds={mine.map((v) => v.pollId)} topic={category} limit={LIST_FIRST} />
       </section>
       </div>
     </div>
