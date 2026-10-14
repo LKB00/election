@@ -127,8 +127,8 @@ export const reactions = pgTable(
     emoji: text('emoji').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  // One of each emoji per person per poll: tapping again removes it.
-  (t) => [primaryKey({ columns: [t.pollId, t.voterKey, t.emoji] })],
+  // One reaction per person per poll: another emoji replaces it, the same one again removes it.
+  (t) => [primaryKey({ columns: [t.pollId, t.voterKey, t.emoji] }), uniqueIndex('reactions_one_each').on(t.pollId, t.voterKey)],
 );
 
 export const reports = pgTable(

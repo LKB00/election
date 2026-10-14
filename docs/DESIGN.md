@@ -73,7 +73,7 @@ Why: most people arrive from a WhatsApp link with zero context. Every extra word
 | "Dare a friend" (one ghost button, next to Next) | P2 | Growth comes from sharing, but it must not beat "Next" for attention. One button; the phone share sheet already offers WhatsApp, copy, etc. |
 | Voter number "You're voter #65" | P3 | A small personal touch inside the verdict line. Not a lime pill: lime is for "your progress", and it pulled the eye away from the result. |
 | "Why Modi?" chips | P3 | Optional, one tap, feeds the "why people pick them" data. Collapsed under the result, never above it. |
-| Emoji reactions | P3 | A feeling without typing. Same row style as the why chips so they read as one optional group. |
+| Emoji reactions | P3 | A feeling without typing. Same row style as the why chips so they read as one optional group. **One reaction each** (owner, Oct 2026): tapping another emoji moves yours there, tapping yours again removes it. The server keeps it so (one row per person per poll, a unique index). |
 
 ## Flow 2: shared link (`/p/...`)
 

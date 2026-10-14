@@ -796,7 +796,7 @@ export async function setReason(db: Db, id: string, voterId: string, reason: str
   return updated.length > 0;
 }
 
-/** Adds or removes one emoji reaction. Only people who voted can react. */
+/** Your one reaction: tap an emoji to pick it, another to switch, the same again to remove it. Only voters react. */
 export async function toggleReaction(db: Db, id: string, voterId: string, emoji: string): Promise<boolean> {
   if (!(REACTIONS as readonly string[]).includes(emoji)) return false;
   if (!(await isVisible(db, id))) return false;
@@ -806,7 +806,12 @@ export async function toggleReaction(db: Db, id: string, voterId: string, emoji:
     .delete(reactions)
     .where(and(eq(reactions.pollId, id), eq(reactions.voterKey, voterId), eq(reactions.emoji, emoji)))
     .returning({ e: reactions.emoji });
-  if (!removed.length) await db.insert(reactions).values({ pollId: id, voterKey: voterId, emoji }).onConflictDoNothing();
+  if (!removed.length) {
+    await db
+      .insert(reactions)
+      .values({ pollId: id, voterKey: voterId, emoji })
+      .onConflictDoUpdate({ target: [reactions.pollId, reactions.voterKey], set: { emoji, createdAt: new Date() } });
+  }
   return true;
 }
 

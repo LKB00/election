@@ -63,6 +63,14 @@ CREATE TABLE IF NOT EXISTS reactions (
   created_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (poll_id, voter_key, emoji)
 );
+-- One reaction per person per poll (owner, Oct 2026). Once: keep each person's newest, then the index holds it.
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'reactions_one_each') THEN
+    DELETE FROM reactions r USING reactions r2
+      WHERE r.poll_id = r2.poll_id AND r.voter_key = r2.voter_key AND (r.created_at, r.emoji) < (r2.created_at, r2.emoji);
+    CREATE UNIQUE INDEX reactions_one_each ON reactions (poll_id, voter_key);
+  END IF;
+END $$;
 CREATE TABLE IF NOT EXISTS reports (
   poll_id text NOT NULL REFERENCES polls(id) ON DELETE CASCADE,
   voter_key text NOT NULL,
