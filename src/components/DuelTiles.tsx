@@ -107,7 +107,7 @@ export default function DuelTiles({ polls, votedIds = [], noCreate = false, limi
               <span className="al-row__main">
                 <span className="al-row__title">{p.title}</span>
                 {/* Long polls (IPL's 10 teams) show the first three and how many more. */}
-                {!repeatsTitle(p) && <span className="al-row__meta">
+                {p.ideas ? <span className="al-row__meta">💡 {t.brainTile}</span> : !repeatsTitle(p) && <span className="al-row__meta">
                   {p.kind === 'rating' ? t.tileRate : <>{p.calledIt ? `🔮 ${t.tileCalled}: ` : p.kind === 'multi' ? `${t.tileMulti}: ` : p.kind === 'rank' ? `${t.tileRank}: ` : ''}{p.options.slice(0, 3).join(p.kind === 'multi' || p.kind === 'rank' ? ', ' : ' vs ')}{p.options.length > 3 && ` +${p.options.length - 3}`}</>}
                 </span>}
                 {/* Where it stands, on its own line under the title (a side column squeezed titles on phones). */}

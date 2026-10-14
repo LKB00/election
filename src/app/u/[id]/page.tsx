@@ -8,16 +8,23 @@ import { currentUser } from '@/lib/auth';
 import { getT } from '@/lib/lang-server';
 import { isCode } from '@/lib/validation';
 import EmptyState from '@/components/EmptyState';
+import BioLink from '@/components/BioLink';
+import Verified from '@/components/Verified';
+import DuelGame from '@/components/DuelGame';
+import { getPoll, type PollView } from '@/lib/polls';
+import { readVoterId } from '@/lib/voter';
+import { SITE_URL } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
 
-// A poll maker's public page (docs/DESIGN.md, "Poll maker tools"): their name and face and the polls they chose to put
-// their name on (only those). No follower counts, no rankings. A friend who voted once finds the next poll here.
+// A poll maker's public page (docs/DESIGN.md, "Poll maker tools", "Bio link"): their name and face, their newest open
+// poll ready to vote in one tap (the page a creator puts in their Instagram, X or YouTube bio), then every poll they chose
+// to put their name on (only those). No follower counts, no rankings.
 async function load(id: string) {
   if (!isCode(id)) return null;
   const db = await getDb();
   const { users, polls, votes } = schema;
-  const [u] = await db.select({ id: users.id, name: users.name, avatar: users.avatar }).from(users).where(eq(users.id, id)).limit(1);
+  const [u] = await db.select({ id: users.id, name: users.name, avatar: users.avatar, verified: users.verified }).from(users).where(eq(users.id, id)).limit(1);
   if (!u) return null;
   const rows = await db
     .select({ id: polls.id, title: polls.title, endsAt: polls.endsAt, n: sql<number>`count(${votes.id})::int` })
@@ -52,7 +59,14 @@ export default async function MakerPage({ params }: { params: Promise<{ id: stri
   const t = await getT();
   const { u, rows } = data;
   // Your own page: a way to your tools (You).
-  const me = await currentUser(await getDb());
+  const db = await getDb();
+  const me = await currentUser(db);
+  // P1: the newest open polls, voted right here (a few, newest first; the first you have not voted in comes up).
+  const voterId = await readVoterId();
+  const openIds = rows.filter((p) => !p.endsAt || p.endsAt.getTime() > Date.now()).slice(0, 5).map((p) => p.id);
+  const deck = (await Promise.all(openIds.map((id) => getPoll(db, id, voterId)))).filter((v): v is PollView => v !== null && !v.ideas?.open);
+  const start = Math.max(0, deck.findIndex((v) => v.myVote === null));
+  const mine = me?.id === u.id;
   // Computers (election.css, "Desktop"): the same shape as You, the maker on the left and their polls beside them.
   return (
     <div className="page you-page">
@@ -60,14 +74,22 @@ export default async function MakerPage({ params }: { params: Promise<{ id: stri
         <div className="profile-card">
           <span className="profile-face" aria-hidden>{u.avatar}</span>
           <span className="profile-who">
-            <h1 className="profile-name">{t.makerPolls(u.name)}</h1>
+            <h1 className="profile-name">{t.makerPolls(u.name)}{u.verified && <Verified label={t.verifiedLabel} />}</h1>
             <span className="small muted">{t.makerLead}</span>
           </span>
         </div>
-        {me?.id === u.id && <Link href="/you" className="text-link small">{t.thisIsYou} →</Link>}
+        {mine && <Link href="/you" className="text-link small">{t.thisIsYou} →</Link>}
+        {mine && <BioLink url={`${SITE_URL}/u/${u.id}`} />}
       </header>
+      {deck.length > 0 && (
+        <section className="al-block bio-latest" aria-label={t.bioLatest}>
+          <h2 className="al-block__title">{t.bioLatest}</h2>
+          <DuelGame deck={deck} start={start} ownId={mine ? deck[start]?.id : undefined} />
+        </section>
+      )}
       {rows.length ? (
         <section className="al-block you-polls">
+          {deck.length > 0 && <h2 className="al-block__title">{t.bioEarlier}<span className="al-block__aside">{t.pollsN(rows.length)}</span></h2>}
           <ul className="al-listcard al-stagger">
             {rows.map((p, n) => {
               const closed = !!p.endsAt && p.endsAt.getTime() <= Date.now();

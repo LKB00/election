@@ -6,7 +6,7 @@ import { decideSuggestion, deletePoll, editPoll, markOutcome, ownPoll, setEnd } 
 import { isPushSub, pushEnabled, sendResultAlerts, wantMilestone } from '@/lib/push';
 import { clientIp, rateLimit } from '@/lib/rate-limit';
 import { editPollSchema, isCode } from '@/lib/validation';
-import { nextFinalCount } from '@/lib/polls';
+import { nextFinalCount, setWeekly, startVoting } from '@/lib/polls';
 import { getOrCreateVoterId } from '@/lib/voter';
 
 // Poll maker tools (only the profile that made the poll): end now, a new length, fix a typo before the first vote,
@@ -60,6 +60,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (r === 'not_found') return NextResponse.json({ error: 'We could not find this poll. It may have been removed.' }, { status: 404 });
     // The answer is in: tell the people who asked for the result.
     if (r === 'ok' && pushEnabled()) await sendResultAlerts(db, [id]).catch(() => 0);
+    return NextResponse.json({ ok: true });
+  }
+  if (action === 'startVoting') {
+    const r = await startVoting(db, id);
+    if (r === 'few') return NextResponse.json({ error: 'Voting needs at least 2 ideas.' }, { status: 409 });
+    if (r !== 'ok') return NextResponse.json({ error: 'We could not find this poll. It may have been removed.' }, { status: 404 });
+    return NextResponse.json({ ok: true });
+  }
+  if (action === 'weekly') {
+    if (!(await setWeekly(db, id, body?.on === true))) return NextResponse.json({ error: 'This poll can’t repeat every week.' }, { status: 400 });
     return NextResponse.json({ ok: true });
   }
   if (action === 'delete') {

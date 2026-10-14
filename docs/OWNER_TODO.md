@@ -50,6 +50,12 @@ On Android (Chrome) the phone's own Google account picker slides up. On iPhone, 
 
 - [ ] **Test with 10 real people** using `docs/USER_TEST.md` (15 minutes each, no helping). Then send Claude the top 3 places people got stuck.
 
+## New tools you can use (Oct 2026)
+
+- [ ] **Verified badges:** when a real creator, brand or college asks, check it is really them (for example a message from their official Instagram), then on `/admin` → **Verified profiles** paste their profile link (…/u/…) and tap **Verify**. Remove it the same way. Never verify someone you have not checked.
+- **Rooms and events:** open any of your polls → Manage → **Show on a big screen** (it shows a 6-digit code) or **Print a poster**. People type the code at chunav.lokeshbhatia.com/join.
+- **Your bio link:** You → your name → copy "Your link for your bio" into Instagram/X. It always opens on your newest poll.
+
 ## 2. Daily habit (5 minutes a day)
 
 There is no Today's question (owner, Oct 2026: "only user generated content"): you never pick polls for everyone.

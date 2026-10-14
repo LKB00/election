@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Bell, ChevronRight, Clock, Copy, Image as ImageIcon, MessageCircle, MonitorPlay, PenLine, Plus, Repeat, CircleStop, Trash2 } from 'lucide-react';
+import { Bell, CalendarSync, ChevronRight, CircleStop, Clock, Copy, Image as ImageIcon, MessageCircle, MonitorPlay, PenLine, Plus, Printer, Repeat, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useOverlay } from '@/lib/useOverlay';
@@ -267,6 +267,39 @@ export function TvRow({ id }: { id: string }) {
     <Link href={`/p/${id}/tv`} className="al-row">
       <span className="al-row__disc" style={{ '--tone': 'var(--p-input)' } as React.CSSProperties}><MonitorPlay size={20} strokeWidth={1.75} aria-hidden /></span>
       <span className="al-row__main"><span className="al-row__title">{t.tvRow}</span><span className="al-row__meta">{t.tvRowNote}</span></span>
+      <ChevronRight size={18} strokeWidth={1.75} className="al-row__chevron" aria-hidden />
+    </Link>
+  );
+}
+
+/** "Ask again every week": a switch. The page reloads so the end time and the trend show the change. */
+export function WeeklyRow({ id, on: initial }: { id: string; on: boolean }) {
+  const t = useT();
+  const router = useRouter();
+  const [on, setOn] = useState(initial);
+  const [busy, setBusy] = useState(false);
+  const flip = async () => {
+    setBusy(true);
+    const r = await manage(id, { action: 'weekly', on: !on });
+    setBusy(false);
+    if (r.ok) { setOn(!on); router.refresh(); }
+  };
+  return (
+    <button type="button" role="switch" aria-checked={on} className="al-row create-row" onClick={flip} disabled={busy}>
+      <span className="al-row__disc" style={{ '--tone': 'var(--p-control)' } as React.CSSProperties}><CalendarSync size={20} strokeWidth={1.75} aria-hidden /></span>
+      <span className="al-row__main"><span className="al-row__title">{t.weeklyRow}</span><span className="al-row__meta">{t.weeklyNote}</span></span>
+      <span className={'switch' + (on ? ' is-on' : '')} aria-hidden><span /></span>
+    </button>
+  );
+}
+
+/** A poster to print (a shop counter, notice board or event): the question and a big QR code. */
+export function PosterRow({ id }: { id: string }) {
+  const t = useT();
+  return (
+    <Link href={`/p/${id}/poster`} className="al-row">
+      <span className="al-row__disc" style={{ '--tone': 'var(--p-trust)' } as React.CSSProperties}><Printer size={20} strokeWidth={1.75} aria-hidden /></span>
+      <span className="al-row__main"><span className="al-row__title">{t.posterRow}</span><span className="al-row__meta">{t.posterRowNote}</span></span>
       <ChevronRight size={18} strokeWidth={1.75} className="al-row__chevron" aria-hidden />
     </Link>
   );

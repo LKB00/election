@@ -15,7 +15,7 @@ const REFRESH_SECONDS = 4;
 
 // The big screen: the question large enough to read across a room (P1), the live bars or the plain choices (P1), and a
 // QR code with the short link to vote from a phone (P2). One quiet Full screen button (P3), hidden in full screen.
-export default function TvScreen({ initial, qr, link }: { initial: PollView; qr: string; link: string }) {
+export default function TvScreen({ initial, qr, link, code, host }: { initial: PollView; qr: string; link: string; code: string | null; host: string }) {
   const t = useT();
   const lang = useLang();
   const [poll, setPoll] = useState(initial);
@@ -105,7 +105,13 @@ export default function TvScreen({ initial, qr, link }: { initial: PollView; qr:
           <img src={qr} alt="" width={240} height={240} />
           <div className="tv-scan-text">
             <p className="tv-scan-title">{poll.closed ? t.tvScanResult : t.tvScan}</p>
-            <p className="tv-link">{t.tvOr} <strong>{link}</strong></p>
+            {code ? (
+              <>
+                <p className="tv-code-label">{t.joinCodeLabel}</p>
+                <p className="tv-code">{code.slice(0, 3)} {code.slice(3)}</p>
+                <p className="tv-link">{t.joinAt(host)}</p>
+              </>
+            ) : <p className="tv-link">{t.tvOr} <strong>{link}</strong></p>}
           </div>
         </aside>
       </main>

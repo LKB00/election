@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { CATEGORIES } from './categories';
 import { hasBlockedWord } from './moderation';
-import { REVEAL_IN } from './limits';
+import { BATTLE_ROUND_HOURS, BATTLE_SIZES, REVEAL_IN } from './limits';
 import { ERR, MAX_CHOICE, MAX_CHOICES, MAX_DETAILS, MAX_GROUP, MAX_PHOTO_CHARS, MAX_TITLE, MIN_CHOICES, MIN_TITLE } from './limits';
 
 /** One emoji (flags, skin tones and joined emoji like 👨‍👩‍👧 count as one). */
@@ -42,9 +42,10 @@ export const createPollSchema = z.object({
   category: z.enum(CATEGORIES).default('general'),
   options: z
     .array(text().pipe(z.string().min(1, 'One choice is empty. Fill it in or remove it.').max(MAX_CHOICE, ERR.choiceLong)).refine(visible, 'One choice is empty. Fill it in or remove it.'))
-    .min(MIN_CHOICES, ERR.fewChoices)
     .max(MAX_CHOICES, ERR.manyChoices)
     .refine((a) => new Set(a.map(sameKey)).size === a.length, 'Two choices are the same. Make each one different.'),
+  // "Ideas first": people add the choices before voting opens, so the maker may start with none.
+  collectIdeas: z.boolean().default(false),
   // One optional emoji per choice, in the same order as the choices ('' = none).
   emojis: z.array(z.string().max(16).refine((e) => e === '' || isEmoji(e), 'Pick one emoji per choice.')).max(MAX_CHOICES).default([]),
   // One optional photo per choice, in the same order ('' = none): a small JPEG made on the phone, as a data URL.
@@ -77,7 +78,9 @@ export const createPollSchema = z.object({
     .datetime()
     .optional()
     .refine((v) => !v || new Date(v).getTime() > Date.now(), 'The end time must be in the future.'),
-}).refine((p) => !hasBlockedWord(p.title, p.description, ...p.options, ...p.emojis), 'Please remove the abusive words.');
+})
+  .refine((p) => p.options.length >= MIN_CHOICES || (p.collectIdeas && (p.kind === 'choice' || p.kind === 'multi')), ERR.fewChoices)
+  .refine((p) => !hasBlockedWord(p.title, p.description, ...p.options, ...p.emojis), 'Please remove the abusive words.');
 export type CreatePollInput = z.infer<typeof createPollSchema>;
 
 /** Ids and share codes are plain letters, digits, "-" and "_"; anything else (a NUL byte, spaces) is refused early. */
@@ -98,7 +101,7 @@ export const suggestSchema = z
   .object({ label: text().pipe(z.string().min(1, 'One choice is empty. Fill it in or remove it.').max(MAX_CHOICE, ERR.choiceLong)).refine(visible, 'One choice is empty. Fill it in or remove it.') })
   .refine((p) => !hasBlockedWord(p.label), 'Please remove the abusive words.');
 const code = () => z.string().regex(/^[\w-]{1,64}$/);
-const VOTE_SOURCES = ['wa', 'ig', 'x', 'fb', 'tg', 'qr', 'link', 'other'] as const;
+const VOTE_SOURCES = ['wa', 'ig', 'x', 'fb', 'tg', 'qr', 'code', 'link', 'other'] as const;
 export const voteSchema = z.object({
   optionId: code(),
   picks: z.array(code()).max(MAX_CHOICES).optional(),
@@ -123,3 +126,18 @@ export const outcomeSchema = z.object({ optionId: code(), key: z.string().min(1)
 export const guessSchema = z.object({ choice: code() });
 export const reportSchema = z.object({ reason: z.string().min(1).max(20) });
 export const adminSchema = z.object({ key: z.string().min(1).max(200), action: z.enum(['hide', 'show', 'approve', 'resume']) });
+
+/** A knockout battle: a name, 4 or 8 different choices (an emoji each, optional), and how long each round runs. */
+export const battleSchema = z
+  .object({
+    title: text().pipe(z.string().min(MIN_TITLE, ERR.titleShort).max(60)).refine(visible, ERR.titleShort),
+    entrants: z
+      .array(z.object({ label: text().pipe(z.string().min(1, 'One choice is empty. Fill it in or remove it.').max(MAX_CHOICE, ERR.choiceLong)).refine(visible, 'One choice is empty. Fill it in or remove it.'), emoji: z.string().max(16).refine((e) => e === '' || isEmoji(e), 'Pick one emoji per choice.').default('') }))
+      .refine((a) => (BATTLE_SIZES as readonly number[]).includes(a.length), 'Pick 4 or 8 choices.')
+      .refine((a) => new Set(a.map((e) => sameKey(e.label))).size === a.length, 'Two choices are the same. Make each one different.'),
+    roundHours: z.number().int().refine((h) => (BATTLE_ROUND_HOURS as readonly number[]).includes(h), 'Pick how long each round lasts.'),
+    showMaker: z.boolean().default(false),
+    category: z.enum(CATEGORIES).default('general'),
+  })
+  .refine((p) => !hasBlockedWord(p.title, ...p.entrants.map((e) => e.label)), 'Please remove the abusive words.');
+

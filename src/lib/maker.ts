@@ -32,6 +32,10 @@ export type MakerView = {
   groupSize: number | null;
   /** "Called it": the answer still to mark (null once marked, or for other polls). */
   calledOpen: boolean;
+  /** "Ask again every week" is on (only the newest poll of a series carries it). */
+  repeatWeekly: boolean;
+  /** Weekly repeat is offered (not for group polls or "Called it"). */
+  canRepeat: boolean;
 };
 
 /** The poll, if this profile made it. */
@@ -75,6 +79,8 @@ export async function makerView(db: Db, id: string, uid: string): Promise<MakerV
     resultsPublic: n > 0 && p.category !== 'politics' && !(p.revealAt && p.revealAt.getTime() > Date.now()) && (closed || (!p.hideUntilVoted && groupDone)),
     groupSize: p.groupSize,
     calledOpen: p.calledIt && !p.outcome,
+    repeatWeekly: p.repeatWeekly,
+    canRepeat: !p.groupSize && !p.calledIt,
   };
 }
 

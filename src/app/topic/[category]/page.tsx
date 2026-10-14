@@ -2,6 +2,7 @@ import { topicIcon, topicTone } from '@/lib/topicIcons';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import FollowTopic from '@/components/FollowTopic';
 import DuelTiles from '@/components/DuelTiles';
 import { getDb } from '@/db';
 import { CATEGORIES } from '@/lib/categories';
@@ -55,6 +56,8 @@ export default async function Topic({ params }: Props) {
         {polls.length > 0 && <span className="topic-hero" style={{ '--tone': topicTone(category) } as React.CSSProperties} aria-hidden>{(() => { const I = topicIcon(category); return <I size={28} strokeWidth={1.75} />; })()}</span>}
         {/* Empty: the empty picture says the topic already ("No Cricket polls yet"), so the title stays for screen readers only. */}
         <h1 className={polls.length > 0 ? 'display' : 'sr-only'}>{t.topicTitle(t.categories[category] ?? category)}</h1>
+        {/* P3: put this topic first on Home (this phone only). */}
+        <p className="topic-follow"><FollowTopic topic={category} /> <span className="small muted">{t.followNote}</span></p>
       </header>
       <section className="al-block">
         <DuelTiles polls={polls} votedIds={mine.map((v) => v.pollId)} topic={category} limit={12} />

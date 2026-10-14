@@ -1449,3 +1449,137 @@ describe('engagement score (admin)', () => {
     expect(e.topics.some((x) => x.category === 'food')).toBe(true);
   });
 });
+
+describe('join with a code', () => {
+  it('gives a poll one 6-digit code, finds the poll by it (spaces allowed), and never for a hidden poll', async () => {
+    const { ensureJoinCode, pollForJoinCode } = await import('@/lib/polls');
+    const id = await make({ title: 'Join code check' });
+    const code = (await ensureJoinCode(db, id))!;
+    expect(code).toMatch(/^[1-9]\d{5}$/);
+    expect(await ensureJoinCode(db, id)).toBe(code);
+    expect(await pollForJoinCode(db, `${code.slice(0, 3)} ${code.slice(3)}`)).toBe(id);
+    expect(await pollForJoinCode(db, '12')).toBeNull();
+    const other = await make({ title: 'Join code two' });
+    expect(await ensureJoinCode(db, other)).not.toBe(code);
+    await setPollFlags(db, id, { hidden: true });
+    expect(await pollForJoinCode(db, code)).toBeNull();
+    expect(await ensureJoinCode(db, id)).toBeNull();
+  });
+});
+
+describe('ask again every week', () => {
+  it('opens the same question again when it ends, points back to it, and shows week by week', async () => {
+    const { setWeekly, rollDueSeries, rollWeekly, weeklyTrend } = await import('@/lib/polls');
+    const id = await make({ title: 'Weekly mood check', options: ['Good', 'Bad'] });
+    expect(await setWeekly(db, id, true)).toBe(true);
+    const first = (await getPoll(db, id, null))!;
+    expect(first.endsAt).not.toBeNull();
+    await castVote(db, id, first.options[0].id, 'wk1');
+    // The week ends: the next one opens by itself, with the same choices and a future end.
+    await db.update(schema.polls).set({ endsAt: new Date(Date.now() - 60_000) }).where(eq(schema.polls.id, id));
+    expect(await rollDueSeries(db)).toBeGreaterThanOrEqual(1);
+    const nextId = (await rollWeekly(db, id))!;
+    expect(nextId).not.toBe(id);
+    const next = (await getPoll(db, nextId, null))!;
+    expect(next.title).toBe('Weekly mood check');
+    expect(next.options.map((o) => o.label)).toEqual(['Good', 'Bad']);
+    expect(next.closed).toBe(false);
+    expect(next.previous?.id).toBe(id);
+    const [oldRow] = await db.select().from(schema.polls).where(eq(schema.polls.id, id));
+    const [newRow] = await db.select().from(schema.polls).where(eq(schema.polls.id, nextId));
+    expect([oldRow.repeatWeekly, newRow.repeatWeekly]).toEqual([false, true]);
+    // Asking again does not make a second copy.
+    expect(await rollWeekly(db, id)).toBe(nextId);
+    const weeks = await weeklyTrend(db, nextId);
+    expect(weeks.map((w) => w.id)).toEqual([nextId, id]);
+    expect(weeks[1].voters).toBe(1);
+  });
+  it('is not offered for group polls', async () => {
+    const { setWeekly } = await import('@/lib/polls');
+    const group = await make({ title: 'Group weekly', groupSize: 3 });
+    expect(await setWeekly(db, group, true)).toBe(false);
+  });
+});
+
+describe('ideas first', () => {
+  it('collects ideas (no voting) until the maker starts voting, then votes as usual', async () => {
+    const { addIdea, startVoting } = await import('@/lib/polls');
+    const id = await createPoll(db, createPollSchema.parse({ title: 'Where should we eat on Friday?', options: [], collectIdeas: true }));
+    let p = (await getPoll(db, id, null))!;
+    expect(p.ideas?.open).toBe(true);
+    expect(await startVoting(db, id)).toBe('few');
+    expect(await addIdea(db, id, 'Dosa place')).toBe('ok');
+    expect(await addIdea(db, id, 'dosa  place')).toBe('exists');
+    expect(await addIdea(db, id, 'Biryani house')).toBe('ok');
+    p = (await getPoll(db, id, null))!;
+    expect(p.options.map((o) => o.label)).toEqual(['Dosa place', 'Biryani house']);
+    expect(await castVote(db, id, p.options[0].id, 'idea-v1')).toBe('ideas');
+    expect((await listPolls(db, 500)).find((x) => x.id === id)?.ideas).toBe(true);
+    expect(await startVoting(db, id)).toBe('ok');
+    expect(await addIdea(db, id, 'Pizza')).toBe('closed');
+    p = (await getPoll(db, id, null))!;
+    expect(p.ideas?.open).toBe(false);
+    expect(await castVote(db, id, p.options[0].id, 'idea-v1')).toBe('ok');
+  });
+  it('still needs 2 choices for a normal poll', () => {
+    expect(createPollSchema.safeParse({ title: 'Only one choice?', options: ['A'] }).success).toBe(false);
+  });
+});
+
+describe('knockout battles', () => {
+  it('plays 4 choices two at a time: winners go through, ties go to the first, then a champion', async () => {
+    const { createBattle, advanceBattle, getBattle } = await import('@/lib/battles');
+    const entrants = ['Hyderabad', 'Lucknow', 'Kolkata', 'Delhi'].map((label) => ({ label, emoji: '' }));
+    const id = await createBattle(db, { title: 'Best biryani city', entrants, roundHours: 24, showMaker: false, category: 'food' }, 'battle-owner');
+    let b = (await getBattle(db, id, null))!;
+    expect(b.rounds[0].map((m) => [m.a.label, m.b.label])).toEqual([['Hyderabad', 'Lucknow'], ['Kolkata', 'Delhi']]);
+    expect(await advanceBattle(db, id)).toBe('waiting');
+    // Lucknow wins match 1; match 2 is a tie (Kolkata, the first, goes through).
+    const m1 = (await getPoll(db, b.rounds[0][0].pollId, null))!;
+    await castVote(db, m1.id, m1.options[1].id, 'kb1');
+    const m2 = (await getPoll(db, b.rounds[0][1].pollId, null))!;
+    await castVote(db, m2.id, m2.options[0].id, 'kb2');
+    await castVote(db, m2.id, m2.options[1].id, 'kb3');
+    await db.update(schema.polls).set({ endsAt: new Date(Date.now() - 1000) }).where(eq(schema.polls.battleId, id));
+    expect(await advanceBattle(db, id)).toBe('next');
+    b = (await getBattle(db, id, null))!;
+    expect(b.rounds[1].map((m) => [m.a.label, m.b.label])).toEqual([['Lucknow', 'Kolkata']]);
+    expect(b.rounds[0].map((m) => m.winner)).toEqual(['b', 'a']);
+    const fin = (await getPoll(db, b.rounds[1][0].pollId, null))!;
+    expect(fin.title).toBe('Best biryani city: Lucknow or Kolkata?');
+    await castVote(db, fin.id, fin.options[1].id, 'kb4');
+    await db.update(schema.polls).set({ endsAt: new Date(Date.now() - 1000) }).where(eq(schema.polls.id, fin.id));
+    expect(await advanceBattle(db, id)).toBe('champion');
+    expect((await getBattle(db, id, null))!.champion).toBe('Kolkata');
+    expect(await advanceBattle(db, id)).toBe('done');
+  });
+  it('needs 4 or 8 different choices', async () => {
+    const { battleSchema } = await import('@/lib/validation');
+    const e = (n: number) => Array.from({ length: n }, (_, k) => ({ label: `Choice ${k}`, emoji: '' }));
+    expect(battleSchema.safeParse({ title: 'Best tea', entrants: e(3), roundHours: 24 }).success).toBe(false);
+    expect(battleSchema.safeParse({ title: 'Best tea', entrants: e(8), roundHours: 24 }).success).toBe(true);
+    expect(battleSchema.safeParse({ title: 'Best tea', entrants: e(4), roundHours: 5 }).success).toBe(false);
+  });
+});
+
+describe('follow a topic', () => {
+  it('reads back only real topics, once each', async () => {
+    const { readFollowed } = await import('@/lib/follow');
+    expect(readFollowed('cricket,food,cricket,hacker,%3Cscript%3E')).toEqual(['cricket', 'food']);
+    expect(readFollowed(undefined)).toEqual([]);
+  });
+});
+
+describe('verified badge', () => {
+  it('the owner verifies a profile by its link, and the badge shows on its polls', async () => {
+    const { setVerified, profileIdFrom } = await import('@/lib/verify');
+    expect(profileIdFrom('https://chunav.lokeshbhatia.com/u/abc123?x=1')).toBe('abc123');
+    expect(profileIdFrom('/u/abc123/')).toBe('abc123');
+    await db.insert(schema.users).values({ id: 'veri-1', name: 'Maker One' });
+    const id = await createPoll(db, createPollSchema.parse({ title: 'Verified maker poll', options: ['A', 'B'], showMaker: true }), undefined, undefined, 'veri-1');
+    expect((await getPoll(db, id, null))!.maker?.verified).toBe(false);
+    expect(await setVerified(db, 'https://x.example/u/veri-1', true)).toMatchObject({ id: 'veri-1' });
+    expect((await getPoll(db, id, null))!.maker?.verified).toBe(true);
+    expect(await setVerified(db, 'no-such-profile', true)).toBeNull();
+  });
+});

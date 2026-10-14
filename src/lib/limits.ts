@@ -52,3 +52,18 @@ export const ERR = {
 /** "Show results" at a set time: the choices on Create (minutes from now; 'ninepm' is tonight's 9 pm final count). */
 export const REVEAL_IN = ['now', 'm30', 'h1', 'ninepm'] as const;
 export const REVEAL_MINUTES: Record<string, number> = { m30: 30, h1: 60 };
+
+/** Join codes (/join, the big screen and the poster): digits only, so a phone shows its number keypad. */
+export const JOIN_CODE_DIGITS = 6;
+
+/** "Ask again every week": how many past weeks the maker's trend shows. */
+export const WEEKLY_TREND_WEEKS = 8;
+
+/** "Ideas first": how long people add ideas before voting opens (the maker can start voting sooner), and how many
+ * ideas one person may add to one poll. */
+export const IDEAS_HOURS = 24;
+export const IDEAS_PER_PERSON = 3;
+
+/** Knockout battles: how many entrants (a full bracket), and how long each round runs. */
+export const BATTLE_SIZES = [4, 8] as const;
+export const BATTLE_ROUND_HOURS = [1, 24, 72] as const;

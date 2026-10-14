@@ -70,6 +70,16 @@ export default async function CreatePage({ searchParams }: { searchParams: Promi
               <ChevronRight size={18} strokeWidth={1.75} className="al-row__chevron" aria-hidden />
             </Link>
           </li>
+          <li>
+            <Link href="/create/battle" className="al-row">
+              <span className="al-row__disc is-faces" style={{ '--tone': 'var(--p-feedback)' } as React.CSSProperties} aria-hidden>⚔️</span>
+              <span className="al-row__main">
+                <span className="al-row__title">{t.battleRow}</span>
+                <span className="al-row__meta">{t.battleRowNote}</span>
+              </span>
+              <ChevronRight size={18} strokeWidth={1.75} className="al-row__chevron" aria-hidden />
+            </Link>
+          </li>
         </ul>
       </section>
       <p className="small block row wrap">

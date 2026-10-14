@@ -1423,3 +1423,18 @@ Bug found by the click-through test: on "Which dates work?" polls, dates you pic
 - **320px phones:** "Share that you voted" + "Next poll" are two equal halves that always fit; "closes in 2 d 21 h" never breaks; report "Cancel" sits on its own line; "Other" Cancel is a normal pill; reactions are bigger and fit one row; the picked row's "Remove" (Put in order) is an outline pill; a main button that is not ready is a clear grey pill; admin table headers don't wrap; the search box just says "Search polls".
 - **Guess the crowd result** says it is about the guess: "Your guess was right!" / "Your guess missed." (it read like a contradiction next to "You're with the crowd").
 
+## More ways to use Chunav (owner, Oct 2026: "Think about more use cases… can we build all?")
+
+Built together; each is an ordinary poll underneath (secret vote, one vote each, results after you vote, reports).
+
+| Feature | Where | Priority | Why / how |
+|---|---|---|---|
+| **Bio link** | `/u/<id>` | P1 = the maker's newest open poll, voted right there | A creator puts this one link in their Instagram, X or YouTube bio; it always opens on their newest poll (only polls with "Show my name"). The maker alone sees "Your link for your bio" with **Copy link**. |
+| **QR poster** | Maker page → "Print a poster" → `/p/<id>/poster` | P1 = Print or save as PDF | For a shop counter, notice board or event: the question, its choices, a big QR code and the join code. Always light colours (set from `palette.ts`), A4 print rules hide the site's bars. |
+| **Join with a code** | `/join` (Polls page: "Have a code? Join"), big screen, poster | P1 = one number box + Join | Each poll gets a 6-digit code the first time its big screen or poster opens (`ensureJoinCode`). `/join/go` answers with a real redirect (works before scripts load, slowed against guessing). Votes from it count as "Join code" on the maker page. |
+| **Ask again every week** | Maker page switch | P2 | When it ends, the same question (choices, pictures, settings) opens again for 7 days, pointing back to the last week (`rollWeekly`). Opens on Home visits and by the evening job. "Week by week" on the maker page: the leader's share (or the 1–5 average) per week. An ended poll that was asked again links to the new one ("This poll was asked again. Vote on the new one"). Not for group polls or Called it. |
+| **Ideas first** | Create → poll type "Ideas first" | P1 on the poll page = Add an idea | People add choices for 24 hours (`IDEAS_HOURS`), at most 3 each, no duplicates, word filter; then voting opens. The maker can "Start voting now" (2 ideas or more). No votes while ideas are open; lists say "💡 Collecting ideas"; Home's decks leave it out until voting opens. |
+| **Knockout battles** | Create → "Knockout battle" → `/create/battle`; bracket `/b/<id>` | P1 = the matches open now | 4 or 8 choices, two at a time; each round lasts 1 hour, 1 day or 3 days. When a round's matches have all ended the winners meet (a tie goes to the first-listed); the last winner "wins the battle". Each match is a normal poll titled "Battle: A or B?" with a link back to the bracket. Never about politics (refused). |
+| **Follow a topic** | Topic page → Follow | P3 | Kept on this phone only (a cookie, no profile). Followed topics come first on Home (even with one open poll), marked "Following". |
+| **Verified badge** | `/admin` → Verified profiles | – | The owner pastes a profile link of a real creator, brand or college; a check badge (icon + screen-reader word) shows next to their name on polls, their page and battles. |
+
