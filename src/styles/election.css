@@ -1273,3 +1273,15 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
   .poster-q { font-size: 40px; }
   .poster-qr img { width: 90mm; }
 }
+
+/* Join with a code (docs/DESIGN.md, "Join with a code"): one big number box and one button. */
+.join-page { max-width: 480px; }
+.join-form { display: flex; flex-direction: column; gap: 12px; }
+.join-box { height: 56px; }
+.join-box input { font-size: 24px; letter-spacing: 0.2em; font-variant-numeric: tabular-nums; }
+.tv-code { margin: 0; font: 700 clamp(28px, 4vw, 72px) / 1 var(--display); letter-spacing: 0.12em; font-variant-numeric: tabular-nums; }
+.tv-code-label { margin: 0; color: var(--ink-2); font-size: clamp(13px, 1.2vw, 22px); text-transform: uppercase; letter-spacing: 0.08em; }
+.poster-code { margin: 4px 0 0; font-size: 15px; color: var(--ink-2); }
+.poster-code strong { color: var(--ink); font-size: 22px; letter-spacing: 0.12em; }
+.join-have { display: flex; justify-content: center; margin-top: 16px; }
+.join-link { margin-top: 10px; }

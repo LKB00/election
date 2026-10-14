@@ -92,6 +92,7 @@ CREATE TABLE IF NOT EXISTS photos (
 CREATE INDEX IF NOT EXISTS photos_poll_idx ON photos (poll_id);
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS frozen_until timestamptz;
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS today_on text;
+ALTER TABLE polls ADD COLUMN IF NOT EXISTS join_code text;
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS reveal_at timestamptz;
 -- "Called it" polls: a real future event; the creator (or the owner) marks what happened.
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS called_it boolean NOT NULL DEFAULT false;
@@ -198,6 +199,7 @@ CREATE TABLE IF NOT EXISTS push_milestones (
   PRIMARY KEY (poll_id, endpoint)
 );
 CREATE INDEX IF NOT EXISTS polls_today_on_idx ON polls (today_on);
+CREATE UNIQUE INDEX IF NOT EXISTS polls_join_code_idx ON polls (join_code);
 CREATE TABLE IF NOT EXISTS vote_flow (
   poll_id text NOT NULL REFERENCES polls(id) ON DELETE CASCADE,
   net text NOT NULL,

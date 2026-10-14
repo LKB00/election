@@ -52,3 +52,6 @@ export const ERR = {
 /** "Show results" at a set time: the choices on Create (minutes from now; 'ninepm' is tonight's 9 pm final count). */
 export const REVEAL_IN = ['now', 'm30', 'h1', 'ninepm'] as const;
 export const REVEAL_MINUTES: Record<string, number> = { m30: 30, h1: 60 };
+
+/** Join codes (/join, the big screen and the poster): digits only, so a phone shows its number keypad. */
+export const JOIN_CODE_DIGITS = 6;

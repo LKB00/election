@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { topicIcon, topicTone } from '@/lib/topicIcons';
-import { Search } from 'lucide-react';
+import { Hash, Search } from 'lucide-react';
 import EmptyState from '@/components/EmptyState';
 import DuelTiles from '@/components/DuelTiles';
 import { getDb } from '@/db';
@@ -53,6 +53,8 @@ export default async function Duels({ searchParams }: { searchParams: Promise<{ 
           </label>
           <button type="submit" className="btn btn-ghost">{t.searchGo}</button>
         </form>
+        {/* P3: a room (class, office, event) joins with the number on the big screen or poster. */}
+        {!q && <Link href="/join" className="text-link small join-link"><Hash size={14} strokeWidth={2} aria-hidden /> {t.joinHave}</Link>}
       </header>
       {/* P2: browse by topic, right under search (one scrolling row of pictures + words). */}
       {/* Computers only: names the topic list in the left column (on phones the row of pictures says it). */}

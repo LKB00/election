@@ -26,6 +26,8 @@ export const polls = pgTable(
     frozenUntil: timestamp('frozen_until', { withTimezone: true }),
     // No longer used (it planned Today's question for a day). Kept so old databases still match.
     todayOn: text('today_on'),
+    // A short number to type at /join (a class, an office, an event): made the first time the big screen or poster opens.
+    joinCode: text('join_code'),
     // "Show results at a set time" (the maker's choice): numbers stay hidden for everyone until then.
     revealAt: timestamp('reveal_at', { withTimezone: true }),
     // Election mode: the full booth ritual (EVM, VVPAT slip, voter ID, counting day). Politics polls always have it.

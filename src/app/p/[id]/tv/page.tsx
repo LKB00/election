@@ -5,7 +5,7 @@ import TvScreen from '@/components/TvScreen';
 import { getDb } from '@/db';
 import { getT } from '@/lib/lang-server';
 import { PALETTE } from '@/lib/palette';
-import { getPoll } from '@/lib/polls';
+import { ensureJoinCode, getPoll } from '@/lib/polls';
 import { SITE_URL } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
@@ -22,9 +22,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 // carries the poll's own link (src=qr counts where votes came from, as on the story image).
 export default async function TvPage({ params }: Props) {
   const { id } = await params;
-  const poll = await getPoll(await getDb(), id, null);
+  const db = await getDb();
+  const poll = await getPoll(db, id, null);
   if (!poll) notFound();
+  // The room's way in without a camera: a short number to type at /join.
+  const code = await ensureJoinCode(db, poll.id);
   const link = `${SITE_URL}/p/${poll.id}`;
   const qr = await QRCode.toDataURL(`${link}?src=qr`, { margin: 1, width: 480, color: { dark: PALETTE.ink, light: PALETTE.white } });
-  return <TvScreen initial={poll} qr={qr} link={link.replace(/^https?:\/\//, '')} />;
+  return <TvScreen initial={poll} qr={qr} link={link.replace(/^https?:\/\//, '')} code={code} host={SITE_URL.replace(/^https?:\/\//, '')} />;
 }

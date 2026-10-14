@@ -7,7 +7,7 @@ import { getDb } from '@/db';
 import { faceLabels } from '@/lib/labels';
 import { getT } from '@/lib/lang-server';
 import { PALETTE } from '@/lib/palette';
-import { getPoll } from '@/lib/polls';
+import { ensureJoinCode, getPoll } from '@/lib/polls';
 import { RATING_EMOJIS } from '@/lib/rating';
 import { SITE_URL } from '@/lib/site';
 
@@ -25,9 +25,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 // setting: the page sets the light values from palette.ts on itself. Never shows any numbers.
 export default async function PosterPage({ params }: Props) {
   const { id } = await params;
-  const poll = await getPoll(await getDb(), id, null);
+  const db = await getDb();
+  const poll = await getPoll(db, id, null);
   if (!poll) notFound();
   const t = await getT();
+  const code = await ensureJoinCode(db, poll.id);
+  const host = SITE_URL.replace(/^https?:\/\//, '');
   const link = `${SITE_URL}/p/${poll.id}`;
   const qr = await QRCode.toDataURL(`${link}?src=qr`, { margin: 1, width: 640, color: { dark: PALETTE.ink, light: PALETTE.white } });
   const faces = faceLabels(poll.options.map((o) => o.label));
@@ -53,7 +56,7 @@ export default async function PosterPage({ params }: Props) {
         <div className="poster-qr">
           <img src={qr} alt="" width={320} height={320} />
           <p className="poster-scan">{t.tvScan}</p>
-          <p className="poster-link">{t.tvOr} {link.replace(/^https?:\/\//, '')}</p>
+          {code ? <p className="poster-code">{t.joinAt(host)}: <strong>{code.slice(0, 3)} {code.slice(3)}</strong></p> : <p className="poster-link">{t.tvOr} {link.replace(/^https?:\/\//, '')}</p>}
         </div>
         <p className="poster-note">{t.ballotHint}</p>
       </article>

@@ -1449,3 +1449,20 @@ describe('engagement score (admin)', () => {
     expect(e.topics.some((x) => x.category === 'food')).toBe(true);
   });
 });
+
+describe('join with a code', () => {
+  it('gives a poll one 6-digit code, finds the poll by it (spaces allowed), and never for a hidden poll', async () => {
+    const { ensureJoinCode, pollForJoinCode } = await import('@/lib/polls');
+    const id = await make({ title: 'Join code check' });
+    const code = (await ensureJoinCode(db, id))!;
+    expect(code).toMatch(/^[1-9]\d{5}$/);
+    expect(await ensureJoinCode(db, id)).toBe(code);
+    expect(await pollForJoinCode(db, `${code.slice(0, 3)} ${code.slice(3)}`)).toBe(id);
+    expect(await pollForJoinCode(db, '12')).toBeNull();
+    const other = await make({ title: 'Join code two' });
+    expect(await ensureJoinCode(db, other)).not.toBe(code);
+    await setPollFlags(db, id, { hidden: true });
+    expect(await pollForJoinCode(db, code)).toBeNull();
+    expect(await ensureJoinCode(db, id)).toBeNull();
+  });
+});

@@ -6,7 +6,7 @@ import { cleanText, isCode } from './validation';
 import { schema, type Db } from '@/db';
 import type { CreatePollInput } from './validation';
 import { hasBlockedWord, namesPolitics } from './moderation';
-import { GROUP_DEFAULT_DAYS, REVEAL_MINUTES, MAX_OTHER, OTHER_MIN_PEOPLE, OTHER_TOP } from './limits';
+import { GROUP_DEFAULT_DAYS, JOIN_CODE_DIGITS, REVEAL_MINUTES, MAX_OTHER, OTHER_MIN_PEOPLE, OTHER_TOP } from './limits';
 import { sealedUntil as silenceUntil } from './silence';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { isAdminKey } from './admin';
@@ -661,6 +661,39 @@ export async function guessLeader(db: Db, id: string, voterId: string, choice: s
 
 /** Search engines only get a poll page once this many people voted in it (thin pages look like spam). */
 export const INDEX_MIN_VOTES = 10;
+
+// Join codes (docs/DESIGN.md, "Join with a code"): a room types a short number instead of a link. One per poll, made
+// the first time its big screen or poster opens, never reused. Digits only (no first 0), so "482913" is easy to say.
+const joinDigits = customAlphabet('0123456789', JOIN_CODE_DIGITS);
+const newJoinCode = () => { let c = joinDigits(); while (c[0] === '0') c = joinDigits(); return c; };
+export const normalJoinCode = (raw: string) => raw.replace(/\D/g, '').slice(0, JOIN_CODE_DIGITS);
+
+/** The poll's join code, made now if it has none. Null for a poll that does not exist or is hidden. */
+export async function ensureJoinCode(db: Db, id: string): Promise<string | null> {
+  const [row] = await db.select({ code: polls.joinCode, hidden: polls.hidden }).from(polls).where(eq(polls.id, id)).limit(1);
+  if (!row || row.hidden) return null;
+  if (row.code) return row.code;
+  for (let tries = 0; tries < 8; tries++) {
+    try {
+      const [set] = await db.update(polls).set({ joinCode: newJoinCode() }).where(and(eq(polls.id, id), isNull(polls.joinCode))).returning({ code: polls.joinCode });
+      if (set?.code) return set.code;
+      // Someone else gave it a code at the same moment: use theirs.
+      const [again] = await db.select({ code: polls.joinCode }).from(polls).where(eq(polls.id, id)).limit(1);
+      if (again?.code) return again.code;
+    } catch {
+      // The number is taken by another poll: draw again.
+    }
+  }
+  return null;
+}
+
+/** The poll a join code opens (visible polls only). */
+export async function pollForJoinCode(db: Db, raw: string): Promise<string | null> {
+  const code = normalJoinCode(raw);
+  if (code.length !== JOIN_CODE_DIGITS) return null;
+  const [row] = await db.select({ id: polls.id }).from(polls).where(and(eq(polls.joinCode, code), eq(polls.hidden, false))).limit(1);
+  return row?.id ?? null;
+}
 
 export type PollSummary = { id: string; title: string; category: string; kind: PollKind; totalVotes: number; lastHour: number; options: string[]; closed: boolean; /** The creator's emoji per choice ('' when none), in choice order. */ emojis: string[]; /** A "Called it" question about a real event. */ calledIt: boolean };
 
