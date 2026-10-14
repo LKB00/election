@@ -3,7 +3,10 @@ import Link from 'next/link';
 import { ChevronRight, PenLine } from 'lucide-react';
 import { getDb } from '@/db';
 import { currentUser } from '@/lib/auth';
-import { pollsByOwner } from '@/lib/profiles';
+import { creatorWeek, pollsByOwner } from '@/lib/profiles';
+import { myCircles } from '@/lib/circles';
+import WeekCard from '@/components/WeekCard';
+import CirclesBlock from '@/components/CirclesBlock';
 import { getT } from '@/lib/lang-server';
 import EmptyState from '@/components/EmptyState';
 import MyPolls from '@/components/MyPolls';
@@ -49,7 +52,7 @@ export default async function YouPage({ searchParams }: { searchParams: Promise<
     );
   }
 
-  const polls = await pollsByOwner(db, user.id);
+  const [polls, week, circles] = await Promise.all([pollsByOwner(db, user.id), creatorWeek(db, user.id), myCircles(db, user.id)]);
   return (
     // Computers (election.css, "Desktop"): you and your account in a left column, your polls (P1) beside it.
     <div className="page you-page">
@@ -59,6 +62,8 @@ export default async function YouPage({ searchParams }: { searchParams: Promise<
         {/* After "Delete poll" on a poll's page: one line saying it worked. */}
         {done === 'deleted' && <p className="small duel-friend" role="status">{t.deleteDone}</p>}
       </header>
+      {/* P2: your week, once something happened in it. */}
+      {(week.votes > 0 || week.made > 0) && <WeekCard uid={user.id} week={week} />}
       {polls.length ? (
         <section className="al-block you-polls" aria-label={t.yourPolls}>
           <h2 className="al-block__title">{t.yourPolls} <span className="al-block__aside">{t.pollsN(polls.length)}</span></h2>
@@ -83,6 +88,8 @@ export default async function YouPage({ searchParams }: { searchParams: Promise<
           <EmptyState kind="pen" title={t.myPollsEmpty} line={t.myPollsEmptyLine} action={{ href: '/create', label: t.startDuel }} />
         </section>
       )}
+      {/* P2: your circles (small groups), and a way to start one. */}
+      <CirclesBlock circles={circles} />
       {/* P3, last: the account, as one quiet list (Your votes is its own tab, so it is not repeated here). */}
       <div className="you-account"><ProfileActions /></div>
       <MadeBy t={t} />

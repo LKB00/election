@@ -15,7 +15,7 @@ export default async function Privacy() {
   const parts: [string, string][] = [
     [t.privacyStoreH, `${t.privacyStore} ${t.privacyVoice}`],
     [t.privacyKeepH, t.privacyKeep],
-    [t.privacyShareH, `${t.privacyShare} ${t.privacyMakerPick}`],
+    [t.privacyShareH, `${t.privacyShare} ${t.privacyMakerPick} ${t.privacyTakes} ${t.privacyCircles}`],
     [t.privacyReportH, `${t.privacyReport} ${email ? t.grievance(name, email) : t.grievanceNone}`],
   ];
   return (

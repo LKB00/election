@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { CATEGORIES } from '@/lib/categories';
+import { getCircle } from '@/lib/circles';
 import CreateForm, { type AskAgain } from '@/components/CreateForm';
 import { ownPoll } from '@/lib/maker';
 import { getPoll } from '@/lib/polls';
@@ -16,7 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 // "Ask it yourself" from an empty search lands here with ?title=…, already typed in.
-export default async function CreatePage({ searchParams }: { searchParams: Promise<{ title?: string | string[]; topic?: string | string[]; again?: string; back?: string }> }) {
+export default async function CreatePage({ searchParams }: { searchParams: Promise<{ title?: string | string[]; topic?: string | string[]; again?: string; back?: string; circle?: string }> }) {
   const sp = await searchParams;
   const raw = sp.title;
   // An empty topic page's "Start a poll" lands here with ?topic=food, so the poll starts in that topic.
@@ -26,6 +27,9 @@ export default async function CreatePage({ searchParams }: { searchParams: Promi
   const t = await getT();
   const db = await getDb();
   const user = await currentUser(db);
+  // "Ask the circle" from a circle's page: only for its members.
+  const c = user && isCode(sp.circle) ? await getCircle(db, sp.circle, user.id) : null;
+  const circle = c?.member ? { id: c.id, name: c.name, emoji: c.emoji } : undefined;
   // "Ask again" from the maker's page: the earlier poll (only your own) filled in.
   let again: AskAgain | undefined;
   if (user && isCode(sp.again) && (await ownPoll(db, sp.again, user.id))) {
@@ -52,7 +56,7 @@ export default async function CreatePage({ searchParams }: { searchParams: Promi
         <h1 className="display">{t.startDuel}</h1>
       </header>
       <section className="block block-tight">
-        <CreateForm initialTitle={title} initialTopic={topic} signedIn={!!user} again={again} askBack={sp.back === '1'} />
+        <CreateForm initialTitle={title} initialTopic={topic} signedIn={!!user} again={again} askBack={sp.back === '1'} circle={circle} />
       </section>
       <p className="small block row wrap">
         <Link href="/terms" className="text-link">{t.termsLink}</Link>

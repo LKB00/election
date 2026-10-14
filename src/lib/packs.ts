@@ -1,4 +1,4 @@
-import { and, asc, eq, gt, inArray, lt, sql } from 'drizzle-orm';
+import { and, asc, eq, gt, inArray, lt, ne, sql } from 'drizzle-orm';
 import { customAlphabet } from 'nanoid';
 import { schema, type Db } from '@/db';
 import { createPoll, getPoll, type PollView } from './polls';
@@ -9,12 +9,15 @@ import type { CreatePollInput } from './validation';
 const { packs, polls, votes } = schema;
 const packId = customAlphabet('23456789abcdefghijkmnpqrstuvwxyz', 8);
 
-export type PackKind = 'match' | 'show';
+export type PackKind = 'match' | 'show' | 'room';
+const packKind = (k: string): PackKind => (k === 'show' || k === 'room' ? k : 'match');
 export type PackSummary = { id: string; kind: PackKind; title: string; startsAt: string; polls: number; votes: number };
 export type PackView = PackSummary & { views: PollView[] };
 
 /** Makes the pack and its polls (in order). The same private key marks every "Called it" result in it. */
 export async function createPack(db: Db, p: { kind: PackKind; title: string; startsAt: string }, items: CreatePollInput[], manageKey: string, ownerId?: string) {
+  // A poll night's questions are for the room (its link and its big screen), not for public lists.
+  const unlisted = p.kind === 'room';
   const id = packId();
   await db.insert(packs).values({ id, kind: p.kind, title: p.title, startsAt: new Date(p.startsAt) });
   const pollIds: string[] = [];
@@ -23,7 +26,7 @@ export async function createPack(db: Db, p: { kind: PackKind; title: string; sta
   const start = new Date(p.startsAt).getTime();
   for (const item of items) {
     const capped = item.calledIt && (!item.endsAt || new Date(item.endsAt).getTime() > start) ? { ...item, endsAt: new Date(start).toISOString() } : item;
-    pollIds.push(await createPoll(db, capped, manageKey, id, ownerId));
+    pollIds.push(await createPoll(db, capped, manageKey, id, ownerId, { unlisted }));
   }
   return { id, pollIds };
 }
@@ -36,7 +39,7 @@ export async function getPack(db: Db, id: string, voterId: string | null): Promi
   if (!views.length) return null;
   return {
     id: pack.id,
-    kind: pack.kind === 'show' ? 'show' : 'match',
+    kind: packKind(pack.kind),
     title: pack.title,
     startsAt: pack.startsAt.toISOString(),
     polls: views.length,
@@ -51,7 +54,8 @@ export async function upcomingPacks(db: Db, limit = 4): Promise<PackSummary[]> {
   const rows = await db
     .select()
     .from(packs)
-    .where(and(gt(packs.startsAt, new Date(now - 6 * 3_600_000)), lt(packs.startsAt, new Date(now + 36 * 3_600_000))))
+    // A poll night is for its room only, never on Home.
+    .where(and(gt(packs.startsAt, new Date(now - 6 * 3_600_000)), lt(packs.startsAt, new Date(now + 36 * 3_600_000)), ne(packs.kind, 'room')))
     .orderBy(asc(packs.startsAt))
     .limit(limit);
   if (!rows.length) return [];
@@ -64,7 +68,7 @@ export async function upcomingPacks(db: Db, limit = 4): Promise<PackSummary[]> {
   return rows
     .map((r) => {
       const c = counts.find((x) => x.packId === r.id);
-      return { id: r.id, kind: (r.kind === 'show' ? 'show' : 'match') as PackKind, title: r.title, startsAt: r.startsAt.toISOString(), polls: c?.polls ?? 0, votes: c?.votes ?? 0 };
+      return { id: r.id, kind: packKind(r.kind), title: r.title, startsAt: r.startsAt.toISOString(), polls: c?.polls ?? 0, votes: c?.votes ?? 0 };
     })
     .filter((p) => p.polls > 0);
 }

@@ -19,6 +19,7 @@ import { ratingAverage, ratingEmoji } from '@/lib/rating';
 import { humanToken, prepareHumanCheck } from '@/lib/turnstile-client';
 import { sideEmoji, sideOf, type Side } from '@/lib/sides';
 import { useLang, useT } from '@/lib/lang';
+import Takes from './Takes';
 import { apiMsg, reasonLabel, type Dict, type Lang } from '@/lib/i18n';
 import { faceLabels } from '@/lib/labels';
 import { manageKeyFor } from './MyPolls';
@@ -751,7 +752,7 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
     else setOver(true);
   }
 
-  // Keyboard, like patricka's games: A/B/C… or 1/2/3… to vote, Enter for Next.
+  // Keyboard, like patricka's games: A/B/C… or 1/2/3… to vote, Enter or → for Next.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement;
@@ -767,7 +768,7 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
         else if (o.isOther) setWriting(poll.id);
         else vote(o.id);
       }
-      if (e.key === 'Enter' && revealed && !counting && !t.closest('button, a')) next();
+      if ((e.key === 'Enter' || e.key === 'ArrowRight') && revealed && !counting && !t.closest('button, a')) next();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -1147,7 +1148,11 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
       {/* Not on a paused poll: its keys are off, and the paused note below says why. */}
       {/* Not on a timed poll either: its note says when results open ("results open after you vote" would contradict it). */}
       {!voted && !poll.closed && !poll.pausedUntil && !poll.revealAt && !poll.startsAt && (
-        <p className="small muted duel-hint" data-hint>{t.ballotHint}</p>
+        <p className="small muted duel-hint" data-hint>
+          {t.ballotHint}
+          {/* Computers only (CSS): the keys that vote without the mouse. */}
+          <span className="duel-keys"> · {t.keysHint(Math.min(poll.options.length, 9))}</span>
+        </p>
       )}
       {/* "Who can see my vote?" (owner, Oct 2026, for the privacy-worried voter): one tap, three plain lines. */}
       {!voted && !poll.closed && (
@@ -1371,6 +1376,8 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
               })}
             </div>
           </div>
+          {/* P2: people's own one-line reasons, and a quiet way to add yours. */}
+          <Takes poll={poll} q={q} onPoll={replace} />
           {/* P3: everything else, folded into one row so the page stays calm: the trend, last time, everyone's reasons,
               suggest a choice, report. */}
           <details className="duel-more">

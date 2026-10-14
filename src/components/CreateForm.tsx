@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { CATEGORIES, FIRST_TOPICS, TOPIC_EMOJI, type Category } from '@/lib/categories';
 import { useLang, useT } from '@/lib/lang';
-import { apiMsg } from '@/lib/i18n';
+import { apiMsg, type Dict } from '@/lib/i18n';
 import { choicesFromQuestion, emojiFor } from '@/lib/createHelp';
 import { namesPolitics } from '@/lib/moderation';
 import { RATING_EMOJIS, RATING_LABELS, type PollKind } from '@/lib/rating';
@@ -58,7 +58,7 @@ const Row = ({ icon: Icon, name, note, value, on, open: isOpen, onClick, tone = 
 /** "Ask again": the earlier poll's question, choices and type, filled in (the new poll links back to it). */
 export type AskAgain = { id: string; title: string; options: string[]; emojis: string[]; kind: PollKind; calledIt: boolean; category: string; showMaker: boolean };
 
-export default function CreateForm({ initialTitle = '', initialTopic, signedIn = false, again, askBack = false }: { initialTitle?: string; initialTopic?: string; signedIn?: boolean; again?: AskAgain; /** Came from "Ask them back" after voting on a friend's poll. */ askBack?: boolean }) {
+export default function CreateForm({ initialTitle = '', initialTopic, signedIn = false, again, askBack = false, circle }: { initialTitle?: string; initialTopic?: string; signedIn?: boolean; again?: AskAgain; /** Came from "Ask them back" after voting on a friend's poll. */ askBack?: boolean; /** "Ask the circle": this poll goes to one circle only. */ circle?: { id: string; name: string; emoji: string } }) {
   const router = useRouter();
   const t = useT();
   const lang = useLang();
@@ -358,6 +358,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        circleId: circle?.id,
         title,
         description,
         category,
@@ -470,6 +471,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
     return (
       <div className="create-step">
         {askBack && <p className="create-again" role="status"><Repeat size={16} strokeWidth={2} aria-hidden /><span>{t.askBackLead}</span></p>}
+        {circle && <CircleNote circle={circle} t={t} />}
         <h2 className="create-step__title">{t.stepType}</h2>
         <div className="create-types create-types--step" role="list">
           {TYPES.filter((x) => typesAll || x.main).map((x) => (
@@ -482,10 +484,11 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
         </div>
         {!typesAll && (
           <button type="button" className="link-like create-more" onClick={() => setAllTypes(true)}>
-            <ChevronDown size={16} strokeWidth={2} aria-hidden /> {t.moreTypes(TYPES.filter((x) => !x.main).length + (setupDone ? 0 : 2))}
+            <ChevronDown size={16} strokeWidth={2} aria-hidden /> {t.moreTypes(TYPES.filter((x) => !x.main).length + (setupDone || circle ? 0 : 3))}
           </button>
         )}
-        {typesAll && !setupDone && (
+        {/* Not for a circle: packs, nights and battles are their own links, not a circle's polls. */}
+        {typesAll && !setupDone && !circle && (
           <section className="al-block">
             <h3 className="al-block__title">{t.packOr}</h3>
             <ul className="al-listcard">
@@ -495,6 +498,16 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
                   <span className="al-row__main">
                     <span className="al-row__title">{t.packRow}</span>
                     <span className="al-row__meta">{t.packRowNote}</span>
+                  </span>
+                  <ChevronRight size={18} strokeWidth={1.75} className="al-row__chevron" aria-hidden />
+                </Link>
+              </li>
+              <li>
+                <Link href="/create/room" className="al-row">
+                  <span className="al-row__disc is-faces" style={{ '--tone': 'var(--p-output)' } as React.CSSProperties} aria-hidden>🎉</span>
+                  <span className="al-row__main">
+                    <span className="al-row__title">{t.roomRow}</span>
+                    <span className="al-row__meta">{t.roomRowNote}</span>
                   </span>
                   <ChevronRight size={18} strokeWidth={1.75} className="al-row__chevron" aria-hidden />
                 </Link>
@@ -552,6 +565,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
           <span aria-hidden>{TOPIC_EMOJI[category as Category] ?? ''}</span> {t.categories[category] ?? category} <PenLine size={12} strokeWidth={2} aria-hidden />
         </button>
       </div>
+      {circle && <CircleNote circle={circle} t={t} />}
       {again && (
         <p className="create-again" role="status">
           <Repeat size={16} strokeWidth={2} aria-hidden />
@@ -866,5 +880,15 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
       <p className="small muted preview-rules">{previewRules(t, hideUntilVoted, preview.group, endsText)}</p>
     </aside>
     </div>
+  );
+}
+
+/** "For <circle> only": the poll goes to one circle and stays out of public lists. */
+function CircleNote({ circle, t }: { circle: { name: string; emoji: string }; t: Dict }) {
+  return (
+    <p className="create-again" role="status">
+      <span aria-hidden>{circle.emoji}</span>
+      <span><strong>{t.circleFor(circle.name)}</strong> <span className="muted">{t.circleForLine}</span></span>
+    </p>
   );
 }

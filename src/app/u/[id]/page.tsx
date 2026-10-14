@@ -37,6 +37,7 @@ async function load(id: string) {
         eq(polls.showMaker, true),
         eq(polls.hidden, false),
         isNull(polls.groupSize),
+        eq(polls.unlisted, false),
       ),
     )
     .groupBy(polls.id)

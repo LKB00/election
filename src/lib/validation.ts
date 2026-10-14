@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { CATEGORIES } from './categories';
 import { hasBlockedWord } from './moderation';
-import { BATTLE_ROUND_HOURS, BATTLE_SIZES, REVEAL_IN, START_MAX_DAYS } from './limits';
+import { BATTLE_ROUND_HOURS, BATTLE_SIZES, REVEAL_IN, ROOM_MAX, START_MAX_DAYS } from './limits';
 import { ERR, MAX_CHOICE, MAX_CHOICES, MAX_DETAILS, MAX_GROUP, MAX_PHOTO_CHARS, MAX_TITLE, MIN_CHOICES, MIN_TITLE } from './limits';
 
 /** One emoji (flags, skin tones and joined emoji like 👨‍👩‍👧 count as one). */
@@ -120,16 +120,19 @@ export const voteSchema = z.object({
   // Where the link was opened from (counted per poll only, never kept with the vote).
   src: z.enum(VOTE_SOURCES).optional().catch(undefined), via: z.string().max(64).nullish().transform((v) => (isCode(v) ? v : null)), human: z.string().max(4096).nullish() });
 // A pack: one live moment (a match, a show's night) and its 2–4 polls, made together. Predictions close at startsAt.
-export const packSchema = z.object({
-  kind: z.enum(['match', 'show']),
-  title: text().pipe(z.string().min(MIN_TITLE, ERR.titleShort).max(80)),
-  startsAt: z
-    .string()
-    .datetime()
-    .refine((v) => new Date(v).getTime() > Date.now(), 'The end time must be in the future.')
-    .refine((v) => new Date(v).getTime() < Date.now() + 30 * 86_400_000, 'Pick a time in the next 30 days.'),
-  polls: z.array(z.unknown()).min(2).max(4),
-}).refine((p) => !hasBlockedWord(p.title), 'Please remove the abusive words.');
+// Match-day and show-night packs start later (predictions close then); a poll night starts now (the server sets the
+// time) and holds up to ROOM_MAX questions of the creator's own.
+export const packSchema = z
+  .object({
+    kind: z.enum(['match', 'show', 'room']),
+    title: text().pipe(z.string().min(MIN_TITLE, ERR.titleShort).max(80)),
+    startsAt: z.string().datetime().optional(),
+    polls: z.array(z.unknown()).min(2).max(ROOM_MAX),
+  })
+  .refine((p) => !hasBlockedWord(p.title), 'Please remove the abusive words.')
+  .refine((p) => p.kind === 'room' || p.polls.length <= 4, 'Something in your poll isn’t right. Check it and try again.')
+  .refine((p) => p.kind === 'room' || (!!p.startsAt && new Date(p.startsAt).getTime() > Date.now()), 'The end time must be in the future.')
+  .refine((p) => p.kind === 'room' || (!!p.startsAt && new Date(p.startsAt).getTime() < Date.now() + 30 * 86_400_000), 'Pick a time in the next 30 days.');
 export const outcomeSchema = z.object({ optionId: code(), key: z.string().min(1).max(200) });
 export const guessSchema = z.object({ choice: code() });
 export const reportSchema = z.object({ reason: z.string().min(1).max(20) });

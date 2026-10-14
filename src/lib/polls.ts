@@ -8,13 +8,13 @@ import { sameKey } from './same';
 import { schema, type Db } from '@/db';
 import { createPollSchema, type CreatePollInput } from './validation';
 import { hasBlockedWord, namesPolitics } from './moderation';
-import { GROUP_DEFAULT_DAYS, IDEAS_HOURS, RUNOFF_HOURS, JOIN_CODE_DIGITS, MAX_CHOICES, MIN_CHOICES, WEEKLY_TREND_WEEKS, REVEAL_MINUTES, MAX_OTHER, OTHER_MIN_PEOPLE, OTHER_TOP } from './limits';
+import { TAKE_MAX, TAKES_LOAD, TAKE_REPORTS_HIDE, GROUP_DEFAULT_DAYS, IDEAS_HOURS, RUNOFF_HOURS, JOIN_CODE_DIGITS, MAX_CHOICES, MIN_CHOICES, WEEKLY_TREND_WEEKS, REVEAL_MINUTES, MAX_OTHER, OTHER_MIN_PEOPLE, OTHER_TOP } from './limits';
 import { sealedUntil as silenceUntil } from './silence';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { isAdminKey } from './admin';
 import { INDIA_OFFSET, INDIA_TZ } from './time';
 
-const { polls, options, votes, reactions, reports, photos, votePicks } = schema;
+const { polls, options, votes, reactions, reports, photos, votePicks, takeReports } = schema;
 
 const REACTIONS = ['🔥', '😂', '😮', '👏', '🤔'] as const;
 const pollId = customAlphabet('23456789abcdefghijkmnpqrstuvwxyz', 8);
@@ -70,6 +70,11 @@ export type PollView = {
   /** Choices for the one-tap "why?" question. Empty means the poll does not ask. */
   reasons: string[];
   myReason: string | null;
+  /** "Say why in one line": open on this poll (not politics), people's lines (newest first, no names; only once results
+   *  are open, since a line says what its writer picked), and this voter's own line. */
+  takesOn: boolean;
+  takes: { id: string; text: string; pick: string }[];
+  myTake: string | null;
   /** Real activity, safe to show before voting. */
   pulse: { lastHour: number; lastVoteAt: string | null };
   /** "You're voter #15". Null until this person votes. */
@@ -161,7 +166,7 @@ async function ownsPoll(db: Db, id: string, ownerId: string): Promise<boolean> {
 /** Voting needs time after the ideas: an end that falls inside the ideas time moves to a day after it. */
 const endsAfterIdeas = (ends: Date | null, ideas: Date | null) => (ends && ideas && ends.getTime() < ideas.getTime() + 3600_000 ? new Date(ideas.getTime() + 86400_000) : ends);
 
-export async function createPoll(db: Db, raw: CreatePollInput, manageKey?: string, packId?: string, ownerId?: string): Promise<string> {
+export async function createPoll(db: Db, raw: CreatePollInput, manageKey?: string, packId?: string, ownerId?: string, place: { unlisted?: boolean; circleId?: string } = {}): Promise<string> {
   // A rating poll always has the same five steps, whatever was sent.
   const input = raw.kind === 'rating' ? { ...raw, options: RATING_LABELS, emojis: RATING_EMOJIS, photos: [] } : raw;
   const id = pollId();
@@ -184,6 +189,8 @@ export async function createPoll(db: Db, raw: CreatePollInput, manageKey?: strin
     manageHash: manageKey ? hashKey(manageKey) : null,
     packId: packId ?? null,
     ownerId: ownerId ?? null,
+    circleId: place.circleId ?? null,
+    unlisted: !!place.unlisted || !!place.circleId,
     groupSize: input.groupSize ?? null,
     shuffle: input.shuffle && (input.kind === 'choice' || input.kind === 'multi' || input.kind === 'rank'),
     suggestionsOn: input.suggestionsOn && (input.kind === 'choice' || input.kind === 'multi') && !input.groupSize && !ideasUntil,
@@ -247,6 +254,9 @@ async function previousResult(db: Db, pid: string): Promise<PollView['previous']
   return { id: p.id, title: p.title, leader: lead?.label ?? null, percent: lead ? Math.round(lead.percent) : null, voters: p.participants };
 }
 
+/** "Say why in one line" is off for politics and Election mode polls (heated, and a named side in writing). */
+const takesAllowed = (p: { category: string; electionMode: boolean }) => p.category !== 'politics' && !p.electionMode;
+
 async function loadPoll(
   db: Db,
   id: string,
@@ -257,7 +267,7 @@ async function loadPoll(
   const [poll] = await db.select().from(polls).where(eq(polls.id, id)).limit(1);
   if (!poll || (poll.hidden && !flags.includeHidden)) return null;
 
-  const [optsInOrder, counts, mine, reasonRows, pulseRows, reactionRows, myReactionRows] = await Promise.all([
+  const [optsInOrder, counts, mine, reasonRows, pulseRows, reactionRows, myReactionRows, takeRows] = await Promise.all([
     db.select().from(options).where(eq(options.pollId, id)).orderBy(options.position),
     db
       .select({ optionId: votes.optionId, n: sql<number>`count(*)::int` })
@@ -274,12 +284,13 @@ async function loadPoll(
             prediction: votes.prediction,
             predictionCorrect: votes.predictionCorrect,
             shareCode: votes.shareCode,
+            take: votes.take,
           })
           .from(votes)
           .where(and(eq(votes.pollId, id), eq(votes.voterKey, voterId)))
           .limit(1)
       : Promise.resolve(
-          [] as { optionId: string; reason: string | null; otherText: string | null; createdAt: Date; prediction: string | null; predictionCorrect: boolean | null; shareCode: string | null }[],
+          [] as { optionId: string; reason: string | null; otherText: string | null; createdAt: Date; prediction: string | null; predictionCorrect: boolean | null; shareCode: string | null; take: string | null }[],
         ),
     db
       .select({ optionId: votes.optionId, reason: votes.reason, n: sql<number>`count(*)::int` })
@@ -301,6 +312,14 @@ async function loadPoll(
     voterId
       ? db.select({ emoji: reactions.emoji }).from(reactions).where(and(eq(reactions.pollId, id), eq(reactions.voterKey, voterId)))
       : Promise.resolve([] as { emoji: string }[]),
+    takesAllowed(poll)
+      ? db
+          .select({ id: votes.id, text: votes.take, optionId: votes.optionId, voterKey: votes.voterKey })
+          .from(votes)
+          .where(and(eq(votes.pollId, id), sql`${votes.take} is not null`, eq(votes.takeHidden, false)))
+          .orderBy(desc(votes.takeAt))
+          .limit(TAKES_LOAD + 1)
+      : Promise.resolve([] as { id: string; text: string | null; optionId: string; voterKey: string }[]),
   ]);
 
   // Shuffled polls: each voter gets their own fixed order (the same every visit), so no choice gains from being first.
@@ -309,6 +328,8 @@ async function loadPoll(
     poll.shuffle && voterId && poll.kind !== 'rating' && poll.kind !== 'dates' && !poll.electionMode && poll.category !== 'politics'
       ? [...optsInOrder].sort((a, b) => orderKey(voterId, a.id) - orderKey(voterId, b.id))
       : optsInOrder;
+  // A line's pick: its choice's name. Not for kinds where one vote is several choices (the stored one is only the first).
+  const optLabel = (oid: string) => (usesPicks(poll.kind) ? '' : (opts.find((o) => o.id === oid && !o.isOther)?.label ?? ''));
   // "Pick several": a voter can count for several choices. `total` stays the number of voters (percent = share of voters).
   // "Rank": each place earns points (first of N gets N-1, last gets 0); a choice's score is its points.
   // "Which dates work?": like pick several, where a date's count is its "yes" answers (rank 1); "if need be" is rank 2.
@@ -458,6 +479,15 @@ async function loadPoll(
     pausedUntil: poll.frozenUntil && poll.frozenUntil.getTime() > Date.now() ? poll.frozenUntil.toISOString() : null,
     reasons: parseReasons(poll.reasons),
     myReason: mine[0]?.reason ?? null,
+    takesOn: takesAllowed(poll),
+    // Your own line is shown to you as yours, not in the list. Other people's only once results are open.
+    takes: resultsVisible
+      ? takeRows
+          .filter((r) => r.voterKey !== voterId)
+          .slice(0, TAKES_LOAD)
+          .map((r) => ({ id: r.id, text: r.text as string, pick: optLabel(r.optionId) }))
+      : [],
+    myTake: mine[0]?.take ?? null,
     pulse: { lastHour: pulseRows[0]?.lastHour ?? 0, lastVoteAt: lastVote ? new Date(lastVote).toISOString() : null },
     myVoterNumber,
     trend,
@@ -633,7 +663,7 @@ export async function castVote(db: Db, id: string, optionId: string, voterId: st
       const [row] = await tx
         .insert(votes)
         .values(newVote)
-        .onConflictDoUpdate({ target: [votes.pollId, votes.voterKey], set: { optionId, otherText, reason: null } })
+        .onConflictDoUpdate({ target: [votes.pollId, votes.voterKey], set: { optionId, otherText, reason: null, take: null, takeAt: null, takeHidden: false } })
         .returning({ id: votes.id, created: sql<boolean>`(xmax = 0)` });
       await savePicks(tx as unknown as Db, row.id);
       return row?.created ? 'ok' : 'changed';
@@ -753,7 +783,7 @@ export async function voteTotals(db: Db, ids: string[]): Promise<Record<string, 
     .select({ id: polls.id, total: sql<number>`count(${votes.id})::int` })
     .from(polls)
     .leftJoin(votes, eq(votes.pollId, polls.id))
-    .where(and(inArray(polls.id, ids), eq(polls.hidden, false), isNull(polls.groupSize)))
+    .where(and(inArray(polls.id, ids), eq(polls.hidden, false), isNull(polls.groupSize), eq(polls.unlisted, false)))
     .groupBy(polls.id);
   return Object.fromEntries(rows.map((r) => [r.id, r.total]));
 }
@@ -787,8 +817,9 @@ export async function listPolls(db: Db, limit = 20, filter: { category?: string;
     .where(
       and(
         eq(polls.hidden, false),
-        // Group polls are for the group's link only, never in public lists or search.
+        // Group polls are for the group's link only, never in public lists or search; nor a poll night's or a circle's.
         isNull(polls.groupSize),
+        eq(polls.unlisted, false),
         filter.category ? eq(polls.category, filter.category) : undefined,
         filter.before ? lt(polls.createdAt, filter.before) : undefined,
         // "Post later": not listed before it opens.
@@ -832,6 +863,36 @@ export async function setReason(db: Db, id: string, voterId: string, reason: str
     .where(and(eq(votes.pollId, id), eq(votes.voterKey, voterId)))
     .returning({ id: votes.id });
   return updated.length > 0;
+}
+
+export type TakeResult = 'ok' | 'not_found' | 'not_allowed' | 'not_voted' | 'blocked' | 'bad';
+/**
+ * "Say why in one line": the voter's own short line about their pick (writing again replaces it; empty removes it).
+ * Only for a vote they cast, on a poll that allows lines, through the word filter. A new line starts with no reports.
+ */
+export async function setTake(db: Db, id: string, voterId: string, raw: string): Promise<TakeResult> {
+  const [poll] = await db.select({ category: polls.category, electionMode: polls.electionMode }).from(polls).where(and(eq(polls.id, id), eq(polls.hidden, false))).limit(1);
+  if (!poll) return 'not_found';
+  if (!takesAllowed(poll)) return 'not_allowed';
+  const text = cleanText(raw).replace(/\s+/g, ' ').trim();
+  if (text.length > TAKE_MAX) return 'bad';
+  if (text && (text.length < 2 || hasBlockedWord(text))) return text.length < 2 ? 'bad' : 'blocked';
+  const [vote] = await db.select({ id: votes.id }).from(votes).where(and(eq(votes.pollId, id), eq(votes.voterKey, voterId))).limit(1);
+  if (!vote) return 'not_voted';
+  await db.update(votes).set({ take: text || null, takeAt: text ? new Date() : null, takeHidden: false }).where(eq(votes.id, vote.id));
+  await db.delete(takeReports).where(eq(takeReports.voteId, vote.id));
+  return 'ok';
+}
+
+/** Reports someone's line (one report per person per line); TAKE_REPORTS_HIDE reports hide it. False for an unknown
+ *  line, or your own. */
+export async function reportTake(db: Db, id: string, voteId: string, voterId: string): Promise<boolean> {
+  const [vote] = await db.select({ voterKey: votes.voterKey }).from(votes).where(and(eq(votes.id, voteId), eq(votes.pollId, id), sql`${votes.take} is not null`)).limit(1);
+  if (!vote || vote.voterKey === voterId) return false;
+  await db.insert(takeReports).values({ voteId, voterKey: voterId }).onConflictDoNothing();
+  const [row] = await db.select({ n: sql<number>`count(*)::int` }).from(takeReports).where(eq(takeReports.voteId, voteId));
+  if ((row?.n ?? 0) >= TAKE_REPORTS_HIDE) await db.update(votes).set({ takeHidden: true }).where(eq(votes.id, voteId));
+  return true;
 }
 
 /** Your one reaction: tap an emoji to pick it, another to switch, the same again to remove it. Only voters react. */

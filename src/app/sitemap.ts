@@ -20,7 +20,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .select({ id: polls.id, created: polls.createdAt, last: sql<Date | string | null>`max(${votes.createdAt})`, n: sql<number>`count(${votes.id})::int` })
     .from(polls)
     .leftJoin(votes, eq(votes.pollId, polls.id))
-    .where(and(eq(polls.hidden, false), isNull(polls.groupSize)))
+    .where(and(eq(polls.hidden, false), isNull(polls.groupSize), eq(polls.unlisted, false)))
     .groupBy(polls.id)
     .having(sql`count(${votes.id}) >= ${INDEX_MIN_VOTES}`)
     .orderBy(desc(polls.createdAt))

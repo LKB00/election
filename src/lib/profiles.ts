@@ -77,3 +77,31 @@ export async function pollsByOwner(db: Db, uid: string, limit = 50): Promise<Own
     .limit(limit);
   return rows.map((r) => ({ id: r.id, title: r.title, votes: r.votes, closed: !!r.endsAt && r.endsAt.getTime() <= Date.now(), hidden: r.hidden, calledIt: r.calledIt, outcome: r.outcome }));
 }
+
+export type CreatorWeek = { votes: number; made: number; top: { id: string; title: string; votes: number } | null };
+/**
+ * "Your week" for a poll maker (docs/DESIGN.md, "Your week"): the last 7 days on their public polls: votes that came
+ * in, polls they made, and the poll that got the most. Unlisted, group, hidden and deleted polls are left out, so the
+ * picture (whose address carries only the profile id) tells nobody anything they could not already count.
+ */
+export async function creatorWeek(db: Db, uid: string, now = Date.now()): Promise<CreatorWeek> {
+  const since = new Date(now - 7 * 86_400_000);
+  const rows = await db
+    .select({
+      id: polls.id,
+      title: polls.title,
+      createdAt: polls.createdAt,
+      // As text: the Postgres driver cannot send a Date inside raw SQL.
+      votes: sql<number>`count(${votes.id}) filter (where ${votes.createdAt} > ${since.toISOString()}::timestamptz)::int`,
+    })
+    .from(polls)
+    .leftJoin(votes, eq(votes.pollId, polls.id))
+    .where(and(eq(polls.ownerId, uid), isNull(polls.deletedAt), eq(polls.hidden, false), eq(polls.unlisted, false), isNull(polls.groupSize)))
+    .groupBy(polls.id);
+  const top = [...rows].sort((a, b) => b.votes - a.votes)[0];
+  return {
+    votes: rows.reduce((n, r) => n + r.votes, 0),
+    made: rows.filter((r) => r.createdAt.getTime() > since.getTime()).length,
+    top: top && top.votes > 0 ? { id: top.id, title: top.title, votes: top.votes } : null,
+  };
+}
