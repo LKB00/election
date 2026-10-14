@@ -1,5 +1,6 @@
 import { and, desc, eq, inArray, isNull, lt, ne, or, sql } from 'drizzle-orm';
 import { nanoid, customAlphabet } from 'nanoid';
+import { cache } from 'react';
 import { shareProof } from './secret';
 import { RATING_EMOJIS, RATING_LABELS, ratingAverage, usesPicks, type PollKind } from './rating';
 import { cleanText, isCode } from './validation';
@@ -236,7 +237,7 @@ async function previousResult(db: Db, pid: string): Promise<PollView['previous']
   return { id: p.id, title: p.title, leader: lead?.label ?? null, percent: lead ? Math.round(lead.percent) : null, voters: p.participants };
 }
 
-export async function getPoll(
+async function loadPoll(
   db: Db,
   id: string,
   voterId: string | null,
@@ -879,7 +880,13 @@ export async function trendingPolls(db: Db, limit = 6): Promise<PollSummary[]> {
 }
 
 /** The polls to play through: the newest open ones. */
-export async function getDeck(db: Db, voterId: string | null, limit = 12): Promise<PollView[]> {
+/**
+ * One poll as a voter sees it. Within one page render the same poll is loaded once (Home's today's set and its "more"
+ * list overlap, and every poll is about 8 small lookups); outside a page render (API routes, tests) it is a plain call.
+ */
+export const getPoll = cache(loadPoll);
+
+export async function getDeck(db: Db, voterId: string | null, limit = 8): Promise<PollView[]> {
   const ids = (await listPolls(db, limit)).filter((p) => !p.closed && !p.ideas).map((p) => p.id);
   const views = await Promise.all(ids.map((id) => getPoll(db, id, voterId)));
   return views.filter((v): v is PollView => v !== null && !v.ideas?.open);

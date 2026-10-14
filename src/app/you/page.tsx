@@ -7,6 +7,7 @@ import { pollsByOwner } from '@/lib/profiles';
 import { getT } from '@/lib/lang-server';
 import EmptyState from '@/components/EmptyState';
 import MyPolls from '@/components/MyPolls';
+import MoreList from '@/components/MoreList';
 import SoundRow from '@/components/SoundRow';
 import { ProfileActions, ProfileCard, YouSignIn } from '@/components/Profile';
 import MadeBy from '@/components/MadeBy';
@@ -61,7 +62,7 @@ export default async function YouPage({ searchParams }: { searchParams: Promise<
       {polls.length ? (
         <section className="al-block you-polls" aria-label={t.yourPolls}>
           <h2 className="al-block__title">{t.yourPolls} <span className="al-block__aside">{t.pollsN(polls.length)}</span></h2>
-          <ul className="al-listcard al-stagger">
+          <MoreList className="al-listcard al-stagger">
             {polls.map((p, n) => (
               <li key={p.id} style={{ '--row': n } as React.CSSProperties}>
                 <Link href={`/p/${p.id}/manage`} className="al-row">
@@ -75,7 +76,7 @@ export default async function YouPage({ searchParams }: { searchParams: Promise<
                 </Link>
               </li>
             ))}
-          </ul>
+          </MoreList>
         </section>
       ) : (
         <section className="block you-polls">

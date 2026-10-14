@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import MoreList from '@/components/MoreList';
 import Link from 'next/link';
 import { Check, ChevronRight, Vote } from 'lucide-react';
 import { getDb } from '@/db';
@@ -74,7 +75,7 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
           // Nothing to vote on yet: the next step is making the first poll.
           <EmptyState kind="finger" title={t.noVotes} line={t.spotNoVotes} action={open.length > 0 ? { href: '/', label: t.startToday } : { href: '/create', label: t.startDuel }} />
         ) : (
-          <ul className="al-listcard block-tight al-stagger">
+          <MoreList className="al-listcard block-tight al-stagger">
             {mine.map((v, n) => {
               // Your pick in front (or won): the yellow disc of "you" with a tick; otherwise a quiet disc.
               // A "Called it" you got right counts as ahead too.
@@ -98,7 +99,7 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
                 </li>
               );
             })}
-          </ul>
+          </MoreList>
         )}
       </section>
       {/* The rest only matters once you have votes: keeping them, the rules. */}

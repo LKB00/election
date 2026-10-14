@@ -1223,6 +1223,37 @@ someone making a food poll saw cricket, and wondered if they were doing it right
 - No ideas for Politics (a ready-made politics question would be the site picking sides).
 - No step counter or dots (no steppers: CLAUDE.md); the heading says what to do.
 
+## A few at a time (owner, Oct 2026: "we should not show all the options at once… apply the UX laws")
+
+Miller's law (people hold about 5 to 7 things in mind) and Hick's law (more choices, slower decisions): every list
+shows a few first and one quiet way to see more.
+
+| Where | First | Then |
+|---|---|---|
+| Create, step 1 (kind of poll) | 4: Pick one, Agree or not, Predict, Rate it | "More kinds of polls (6)": Pick several, Put in order, Decide a date, Ideas first, and the packs and battles |
+| Create, step 2 (topic) | 6 tiles: General, Politics, Cricket, Movies, Food, Friends | "More topics (3)": Music, Tech, Sports |
+| Polls page "All polls", topic pages | 6 polls (`LIST_FIRST`) | "Show 6 more polls", 6 at a time (was all at once) |
+| You: Your polls; Your votes | 6 | "Show N more polls", 6 at a time (`MoreList`) |
+
+Already within the limit: Home shelves (3 to 5 each), Create settings (4 rows, the rest behind "More settings"),
+reactions (5), guess cards, report reasons (6). If what you picked before is among the hidden ones (changing the type
+or topic later), the full list shows so your pick is never hidden.
+
+Also fixed: Create settings rows put the current value ("Right after voting") under the name, not beside it; on a 320px
+phone it squeezed "When results show" to one letter per line.
+
+## Faster Home, real "not found" (owner, Oct 2026: "go ahead" with the improvement list)
+
+- **Home was about 2.4 s on the live site** (other pages under 1 s). Causes: 132 small database lookups per visit
+  (today's set and the "more" list loaded the same polls twice, about 8 lookups each), only 3 connections so they queued,
+  and the whole database setup script ran each time a server woke up. Now: each poll loads once per page (React
+  `cache` on `getPoll`), the "more" list holds 8 polls (was 12), 8 connections (`DB_POOL_MAX`), and the setup script runs
+  once per version of it (a fingerprint marker in `app_migrations`). Home: 132 → 77 lookups.
+- **A link to nothing now says 404** (a deleted poll, a mistyped link, an unknown topic, maker, battle or pack). Before,
+  the loading picture went out first with "OK", so Google could list empty pages. Each route now has its own loading
+  picture, and the routes that can point at nothing check first, in their layout.
+- **Create steps checked in Hindi and Hinglish at 320 px**: everything fits; no changes needed.
+
 ## Engagement round (owner, Oct 2026: "the product is social engagement; polls are the mechanism")
 
 - **"Ask your friends"** is the main button everywhere it said "Start a poll" (top bar, Home, empty pages, after voting,

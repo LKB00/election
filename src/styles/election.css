@@ -687,7 +687,7 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .create-row { width: 100%; border: 0; background: none; font: inherit; text-align: left; cursor: pointer; min-height: 72px; }
 /* Open or focused, a row keeps its look (it turned grey and its icon disc vanished into the grey). */
 .create-row, .create-row:focus, .create-row[aria-expanded='true'] { background: var(--card); }
-.create-row .al-row__when { align-self: center; color: var(--ink-2); max-width: 40%; overflow: hidden; text-overflow: ellipsis; }
+.create-row__value { color: var(--ink-2); font-weight: 600; overflow-wrap: anywhere; }
 .create-row__chev { flex: none; color: var(--ink-2); transition: transform 0.15s ease; }
 .create-row__chev.is-open { transform: rotate(180deg); }
 /* What a row opens: one panel shape for all of them (types, topics, end time, group size, details). */
@@ -1351,3 +1351,5 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
 .create-picked { gap: 8px; }
 .create-picked__chip { display: inline-flex; align-items: center; gap: 6px; }
 .create-picked__chip svg:last-child { color: var(--ink-3); }
+/* "More kinds of polls" / "More topics": a quiet pill under the first few (Miller's and Hick's laws). */
+.create-more { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; }

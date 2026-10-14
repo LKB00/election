@@ -1,10 +1,11 @@
 import { drizzle as drizzlePostgres } from 'drizzle-orm/postgres-js';
 import { drizzle as drizzlePglite } from 'drizzle-orm/pglite';
 import type { PgDatabase, PgQueryResultHKT } from 'drizzle-orm/pg-core';
+import { createHash } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import postgres from 'postgres';
 import * as schema from './schema';
-import { deleteOwnerRemoved, retireSeeded } from './retire';
+import { OWNER_DELETED_IDS, SEEDED_IDS, deleteOwnerRemoved, retireSeeded } from './retire';
 
 export type Db = PgDatabase<PgQueryResultHKT, typeof schema>;
 
@@ -248,15 +249,30 @@ async function connect(): Promise<Db> {
   if (url) {
     // Few connections per server (many servers run at once on Vercel).
     // prepare:false keeps it working with hosted connection poolers (Neon, Supabase).
-    const client = postgres(url, { max: Number(process.env.DB_POOL_MAX ?? 3), prepare: false });
-    // The lock stops two servers starting together from creating tables at the same time.
-    await client.begin(async (tx) => {
-      await tx`select pg_advisory_xact_lock(727274)`;
-      await tx.unsafe(SCHEMA_SQL);
-    });
+    // 8 at a time: a page's small lookups run side by side instead of queueing (Home waited on 3). Neon's pooled
+    // address takes many; DB_POOL_MAX overrides it.
+    const client = postgres(url, { max: Number(process.env.DB_POOL_MAX ?? 8), prepare: false });
     const db = drizzlePostgres(client, { schema }) as unknown as Db;
-    await retireSeeded(db);
-    await deleteOwnerRemoved(db);
+    // The setup script (tables, columns, indexes) runs once per version of it, not on every server start: a marker row
+    // named after the script's fingerprint says this version already ran. A woken-up server then needs one small lookup
+    // instead of the whole script (it made the first page after a quiet spell slow).
+    const marker = `schema-${createHash('sha256').update(SCHEMA_SQL + SEEDED_IDS.join() + OWNER_DELETED_IDS.join()).digest('hex').slice(0, 16)}`;
+    let ready = false;
+    try {
+      ready = (await client`select 1 from app_migrations where name = ${marker}`).length > 0;
+    } catch {
+      ready = false; // a new database: no marker table yet
+    }
+    if (!ready) {
+      // The lock stops two servers starting together from creating tables at the same time.
+      await client.begin(async (tx) => {
+        await tx`select pg_advisory_xact_lock(727274)`;
+        await tx.unsafe(SCHEMA_SQL);
+      });
+      await retireSeeded(db);
+      await deleteOwnerRemoved(db);
+      await client`insert into app_migrations (name) values (${marker}) on conflict do nothing`;
+    }
     return db;
   }
   // No database set up: use a local file database so the app "just runs".
