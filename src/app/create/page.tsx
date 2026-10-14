@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ChevronRight } from 'lucide-react';
 import { CATEGORIES } from '@/lib/categories';
 import CreateForm, { type AskAgain } from '@/components/CreateForm';
 import { ownPoll } from '@/lib/maker';
@@ -51,36 +50,9 @@ export default async function CreatePage({ searchParams }: { searchParams: Promi
       <Step e="create_open" />
       <header className="page-head">
         <h1 className="display">{t.startDuel}</h1>
-        <p className="lead">{t.createLead}</p>
       </header>
       <section className="block block-tight">
         <CreateForm initialTitle={title} initialTopic={topic} signedIn={!!user} again={again} />
-      </section>
-      {/* P3, after the form: a pack (a few polls around a match or a show night, made in one go). */}
-      <section className="al-block">
-        <h2 className="al-block__title">{t.packOr}</h2>
-        <ul className="al-listcard">
-          <li>
-            <Link href="/create/pack" className="al-row">
-              <span className="al-row__disc is-faces" style={{ '--tone': 'var(--p-control)' } as React.CSSProperties} aria-hidden>🏏</span>
-              <span className="al-row__main">
-                <span className="al-row__title">{t.packRow}</span>
-                <span className="al-row__meta">{t.packRowNote}</span>
-              </span>
-              <ChevronRight size={18} strokeWidth={1.75} className="al-row__chevron" aria-hidden />
-            </Link>
-          </li>
-          <li>
-            <Link href="/create/battle" className="al-row">
-              <span className="al-row__disc is-faces" style={{ '--tone': 'var(--p-feedback)' } as React.CSSProperties} aria-hidden>⚔️</span>
-              <span className="al-row__main">
-                <span className="al-row__title">{t.battleRow}</span>
-                <span className="al-row__meta">{t.battleRowNote}</span>
-              </span>
-              <ChevronRight size={18} strokeWidth={1.75} className="al-row__chevron" aria-hidden />
-            </Link>
-          </li>
-        </ul>
       </section>
       <p className="small block row wrap">
         <Link href="/terms" className="text-link">{t.termsLink}</Link>

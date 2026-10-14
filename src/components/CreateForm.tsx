@@ -1,9 +1,10 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { AlignLeft, CalendarDays, Check, ChevronDown, CircleDot, Clock, Eye, EyeOff, ImagePlus, Landmark, Lightbulb, ListChecks, ListOrdered, MessageSquarePlus, PenLine, Flame, Repeat, Shuffle, SlidersHorizontal, Smile, Sparkles, Tag, Timer, UserRound, Users, WandSparkles, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { CATEGORIES } from '@/lib/categories';
+import { AlignLeft, ArrowLeft, CalendarDays, Check, ChevronDown, ChevronRight, CircleDot, Clock, Eye, EyeOff, ImagePlus, Landmark, Lightbulb, ListChecks, ListOrdered, MessageSquarePlus, PenLine, Flame, Repeat, Shuffle, SlidersHorizontal, Smile, Sparkles, Timer, UserRound, Users, WandSparkles, X } from 'lucide-react';
+import Link from 'next/link';
+import { useEffect, useRef, useState } from 'react';
+import { CATEGORIES, TOPIC_EMOJI, type Category } from '@/lib/categories';
 import { useLang, useT } from '@/lib/lang';
 import { apiMsg } from '@/lib/i18n';
 import { choicesFromQuestion, emojiFor } from '@/lib/createHelp';
@@ -114,6 +115,10 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
     setCalledIt(called);
     setIdeas(collect);
   };
+  // "Hot take" chosen in the formats (a pick-one poll with Agree / Depends / Disagree ready).
+  const [hot, setHot] = useState(false);
+  // "Ideas first": people add the choices, then everyone votes (the choices typed here are optional starters).
+  const [ideas, setIdeas] = useState(false);
   const [busy, setBusy] = useState(false);
   // Closed the sign-in sheet without a profile: say the poll is kept (it is) and what is needed to post it.
   const [askedOnce, setAskedOnce] = useState(false);
@@ -123,12 +128,20 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   useEffect(() => {
     if (again || initialTitle) return;
     try {
-      const d = JSON.parse(sessionStorage.getItem(DRAFT) ?? 'null') as { title?: string; choices?: string[]; kind?: PollKind; calledIt?: boolean } | null;
+      const d = JSON.parse(sessionStorage.getItem(DRAFT) ?? 'null') as { title?: string; choices?: string[]; kind?: PollKind; calledIt?: boolean; category?: string; hot?: boolean; ideas?: boolean } | null;
       if (d?.title || d?.choices?.some(Boolean)) {
         if (d.title) setTitle(d.title);
         if (d.kind) setKind(d.kind);
         if (d.calledIt) setCalledIt(true);
+        if (d.hot) setHot(true);
+        if (d.ideas) setIdeas(true);
+        if (d.category && (CATEGORIES as readonly string[]).includes(d.category)) setCategory(d.category);
         if (d.choices?.length) fill(d.choices.filter(Boolean));
+        // Your poll as you left it: straight back to the question.
+        firstStep.current = 'write';
+        setStep('write');
+        setSetupDone(true);
+        setTopicSet(true);
       }
     } catch {}
     // Once, on opening.
@@ -136,9 +149,9 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   }, []);
   useEffect(() => {
     try {
-      if (title.trim() || choices.some((c) => c.trim())) sessionStorage.setItem(DRAFT, JSON.stringify({ title, choices, kind, calledIt }));
+      if (title.trim() || choices.some((c) => c.trim())) sessionStorage.setItem(DRAFT, JSON.stringify({ title, choices, kind, calledIt, category, hot, ideas }));
     } catch {}
-  }, [title, choices, kind, calledIt]);
+  }, [title, choices, kind, calledIt, category, hot, ideas]);
   const [error, setError] = useState('');
   // Errors show under the field they belong to, and focus moves there.
   const [fieldError, setFieldError] = useState<{ title?: string; choices?: string; end?: string; group?: string }>({});
@@ -146,16 +159,31 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   const [open, setOpen] = useState<'ends' | 'topic' | 'details' | 'group' | 'reveal' | null>(null);
   // The less-used settings (Election mode, votes can change, end time, details) wait behind "More options".
   const [showMore, setShowMore] = useState(false);
-  // "Hot take" chosen in the formats (a pick-one poll with Agree / Depends / Disagree ready).
-  const [hot, setHot] = useState(false);
-  // "Ideas first": people add the choices, then everyone votes (the choices typed here are optional starters).
-  const [ideas, setIdeas] = useState(false);
   // All settings sit behind one "Settings" row until opened (an "Ask again" poll opens with them shown).
   const [settingsOpen, setSettingsOpen] = useState(!!again);
-  // The poll-type row opens a list of the five types, each with one line on what it does.
-  const [typeOpen, setTypeOpen] = useState(false);
   // "See how it looks": the poll as a voter first meets it, before posting.
   const [previewing, setPreviewing] = useState(false);
+  // Create in three short steps (owner, Oct 2026: "first ask what kind of poll, then the topic"): the kind of poll, what
+  // it is about, then the question and choices, with help that fits both. "Ask again" starts at the question (all set).
+  type Step = 'type' | 'topic' | 'write';
+  const firstStep = useRef<Step>(again ? 'write' : 'type');
+  const [step, setStep] = useState<Step>(firstStep.current);
+  // Both picked once: changing one later comes straight back to the question.
+  const [setupDone, setSetupDone] = useState(!!again);
+  const [topicSet, setTopicSet] = useState(!!again || !!initialTopic);
+  // Each step is a history entry, so the phone's Back goes one step back, not out of Create.
+  const go = (s: Step) => {
+    setStep(s);
+    try {
+      window.history.pushState({ createStep: s }, '');
+    } catch {}
+    window.scrollTo({ top: 0 });
+  };
+  useEffect(() => {
+    const onPop = (e: PopStateEvent) => setStep((e.state?.createStep as Step | undefined) ?? firstStep.current);
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
 
   // Like a WhatsApp poll: typing in the last box adds the next empty one (up to 10), so there is no "add" step.
   const setChoice = (i: number, v: string) => {
@@ -183,8 +211,9 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
     setFieldError({});
   };
   // A ready-made idea: question and choices in one tap (only offered while the form is empty).
+  const topicIdeas = t.ideaSets[category] ?? [];
   function idea(n: number) {
-    const it = t.ideas[n];
+    const it = topicIdeas[n];
     setTitle(it.q);
     fill(it.c);
   }
@@ -325,8 +354,21 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
     { k: 'ideas', Icon: Lightbulb, name: t.fmtIdeas, desc: t.typeDesc.ideas, pick: () => { setHot(false); pickKind('choice', false, true); } },
   ];
   const current = TYPES.find((x) => x.k === (ideas ? 'ideas' : calledIt ? 'called' : kind === 'choice' && hot ? 'hot' : kind)) ?? TYPES[0];
-  // What the folded Settings row says: the poll type and the topic (the two people most often look for).
-  const settingsSummary = `${current.name} · ${t.categories[category] ?? category}`;
+  const pickType = (x: (typeof TYPES)[number]) => {
+    x.pick();
+    if (setupDone || topicSet) {
+      setSetupDone(true);
+      go('write');
+    } else go('topic');
+  };
+  const pickTopic = (c: Category) => {
+    setCategory(c);
+    setTopicSet(true);
+    setSetupDone(true);
+    go('write');
+  };
+  // The question box's hint says what to type for this kind of poll, never an example that may not fit yours.
+  const questionPh = calledIt ? t.calledPh : hot && kind === 'choice' ? t.hotPh : isRating ? t.rateQPh : isDates ? t.datesQPh : t.questionPh;
 
   // The poll as voters will meet it: drawn in the "See how it looks" sheet, and live beside the form on a computer.
   const endsText = endsAt ? endsLabel : isGroup ? new Date(Date.now() + GROUP_DEFAULT_DAYS * 86_400_000).toLocaleString(dateLocale(lang), { day: 'numeric', month: monthStyle(lang), hour: 'numeric', minute: '2-digit' }) : null;
@@ -343,9 +385,83 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
     other: otherOn && kind === 'choice' && !calledIt && !ideas,
   };
 
+  // Step 1: what kind of poll. Each type is one tap with one line on what voters do. Packs and battles (several polls
+  // in one go) sit last, as other ways to start.
+  if (step === 'type') {
+    return (
+      <div className="create-step">
+        <h2 className="create-step__title">{t.stepType}</h2>
+        <div className="create-types create-types--step" role="list">
+          {TYPES.map((x) => (
+            <button key={x.k} type="button" role="listitem" className={'create-type' + (setupDone && x.k === current.k ? ' is-on' : '')} onClick={() => pickType(x)}>
+              <span className="create-type__disc" aria-hidden><x.Icon size={18} strokeWidth={1.75} /></span>
+              <span><strong>{x.name}</strong><span className="small muted">{x.desc}</span></span>
+              {setupDone && x.k === current.k ? <Check size={16} strokeWidth={2.25} aria-hidden /> : <ChevronRight size={18} strokeWidth={1.75} className="al-row__chevron" aria-hidden />}
+            </button>
+          ))}
+        </div>
+        {!setupDone && (
+          <section className="al-block">
+            <h3 className="al-block__title">{t.packOr}</h3>
+            <ul className="al-listcard">
+              <li>
+                <Link href="/create/pack" className="al-row">
+                  <span className="al-row__disc is-faces" style={{ '--tone': 'var(--p-control)' } as React.CSSProperties} aria-hidden>🏏</span>
+                  <span className="al-row__main">
+                    <span className="al-row__title">{t.packRow}</span>
+                    <span className="al-row__meta">{t.packRowNote}</span>
+                  </span>
+                  <ChevronRight size={18} strokeWidth={1.75} className="al-row__chevron" aria-hidden />
+                </Link>
+              </li>
+              <li>
+                <Link href="/create/battle" className="al-row">
+                  <span className="al-row__disc is-faces" style={{ '--tone': 'var(--p-feedback)' } as React.CSSProperties} aria-hidden>⚔️</span>
+                  <span className="al-row__main">
+                    <span className="al-row__title">{t.battleRow}</span>
+                    <span className="al-row__meta">{t.battleRowNote}</span>
+                  </span>
+                  <ChevronRight size={18} strokeWidth={1.75} className="al-row__chevron" aria-hidden />
+                </Link>
+              </li>
+            </ul>
+          </section>
+        )}
+      </div>
+    );
+  }
+  // Step 2: what it is about. The topic decides the ideas offered next and where the poll is listed.
+  if (step === 'topic') {
+    return (
+      <div className="create-step">
+        <button type="button" className="link-like small muted create-step__back" onClick={() => window.history.back()}>
+          <ArrowLeft size={14} strokeWidth={2} aria-hidden /> {t.back}
+        </button>
+        <h2 className="create-step__title">{t.stepTopic}</h2>
+        <div className="create-topics">
+          {CATEGORIES.map((c) => (
+            <button key={c} type="button" className={'create-topic' + (topicSet && c === category ? ' is-on' : '')} aria-pressed={topicSet && c === category} onClick={() => pickTopic(c)}>
+              <span className="create-topic__face" aria-hidden>{TOPIC_EMOJI[c]}</span>
+              <span>{t.categories[c] ?? c}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="create-grid">
     <form className="builder create" onSubmit={submit}>
+      {/* What you picked in steps 1 and 2, each one tap to change (your question and choices stay). */}
+      <div className="row wrap create-picked">
+        <button type="button" className="chip create-picked__chip" aria-label={`${t.changeType}: ${current.name}`} onClick={() => go('type')}>
+          <current.Icon size={14} strokeWidth={2} aria-hidden /> {current.name} <PenLine size={12} strokeWidth={2} aria-hidden />
+        </button>
+        <button type="button" className="chip create-picked__chip" aria-label={`${t.changeTopic}: ${t.categories[category] ?? category}`} onClick={() => go('topic')}>
+          <span aria-hidden>{TOPIC_EMOJI[category as Category] ?? ''}</span> {t.categories[category] ?? category} <PenLine size={12} strokeWidth={2} aria-hidden />
+        </button>
+      </div>
       {again && (
         <p className="create-again" role="status">
           <Repeat size={16} strokeWidth={2} aria-hidden />
@@ -364,7 +480,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
           autoComplete="off"
           value={title}
           maxLength={MAX_TITLE}
-          placeholder={calledIt ? t.calledPh : hot && kind === 'choice' ? t.hotPh : t.questionPh}
+          placeholder={questionPh}
           aria-invalid={!!fieldError.title}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
@@ -387,11 +503,12 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
         )}
         {calledIt && <p className="small muted">{t.calledHint}</p>}
         {/* P3: ideas, only on an empty form (a blank page is the hardest part); one scrolling row. */}
-        {!title.trim() && !typedChoices && (
+        {/* Ideas fit the type and the topic you picked (a food poll never gets cricket ideas); only for "Pick one". */}
+        {!title.trim() && !typedChoices && current.k === 'choice' && (
           <div className="create-ideas-wrap">
             <span className="small muted"><Lightbulb size={12} strokeWidth={1.75} aria-hidden /> {t.ideasLabel}</span>
             <div className="create-ideas">
-              {t.ideas.map((it, n) => (
+              {topicIdeas.map((it, n) => (
                 <button key={n} type="button" className="chip" onClick={() => idea(n)}>{it.q}</button>
               ))}
               <button type="button" className="chip" onClick={() => fill([t.yes, t.no])}>{t.starterYesNo}</button>
@@ -491,25 +608,11 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
       <section className="create-block">
         {!settingsOpen ? (
           <ul className="al-listcard create-settings">
-            <li><Row icon={SlidersHorizontal} name={t.settingsLabel} value={settingsSummary} open={false} onClick={() => setSettingsOpen(true)} /></li>
+            <li><Row icon={SlidersHorizontal} name={t.settingsLabel} open={false} onClick={() => setSettingsOpen(true)} /></li>
           </ul>
         ) : (<>
         <p className="create-label">{t.settingsLabel}</p>
         <ul className="al-listcard create-settings">
-          <li>
-            <Row icon={current.Icon} name={t.typeLabel} value={current.name} open={typeOpen} tone="var(--p-input)" onClick={() => setTypeOpen((v) => !v)} />
-            {typeOpen && (
-              <div className="create-panel create-types" role="radiogroup" aria-label={t.typeLabel}>
-                {TYPES.map((x) => (
-                  <button key={x.k} type="button" role="radio" aria-checked={x.k === current.k} className={'create-type' + (x.k === current.k ? ' is-on' : '')} onClick={(e) => steady(e.currentTarget, x.pick)}>
-                    <span className="create-type__disc" aria-hidden><x.Icon size={18} strokeWidth={1.75} /></span>
-                    <span><strong>{x.name}</strong><span className="small muted">{x.desc}</span></span>
-                    {x.k === current.k && <Check size={16} strokeWidth={2.25} aria-hidden />}
-                  </button>
-                ))}
-              </div>
-            )}
-          </li>
           <li><Row icon={EyeOff} name={t.setHidden} note={t.hideResultsNote} on={hideUntilVoted} onClick={() => setHide((v) => !v)} /></li>
           {/* Show results at a set time (not for group polls or "Called it": those open by themselves). */}
           {!isGroup && !calledIt && (
@@ -531,18 +634,6 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
           )}
           <li><Row icon={UserRound} name={t.setShowMe} note={t.setShowMeNote} on={showMaker} onClick={() => setShowMaker((v) => !v)} /></li>
           {kind === 'choice' && !calledIt && !ideas && <li><Row icon={PenLine} name={t.setOther} note={t.setOtherNote} on={otherOn} onClick={() => setOtherSet(!otherOn)} /></li>}
-          <li>
-            <Row icon={Tag} name={t.category} value={t.categories[category] ?? category} open={open === 'topic'} onClick={() => toggleOpen('topic')} />
-            {open === 'topic' && (
-              <div className="create-panel row wrap" role="radiogroup" aria-label={t.category}>
-                {CATEGORIES.map((c) => (
-                  <button key={c} type="button" role="radio" aria-checked={category === c} className={'chip' + (category === c ? ' chip-on' : '')} onClick={(e) => steady(e.currentTarget, () => setCategory(c))}>
-                    {t.categories[c] ?? c}
-                  </button>
-                ))}
-              </div>
-            )}
-          </li>
           {showMore || endsAt || isGroup || allowChange || electionMode || shuffle || description.trim() || fieldError.end ? (
             <>
               <li>

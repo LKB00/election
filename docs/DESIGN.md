@@ -1196,13 +1196,32 @@ Share, Start a poll → made, polls made by voters. The Privacy page says so in 
 
 ## Create: settings folded into one row (owner, Oct 2026, from the product feedback)
 
-A first poll is: the question, its choices, **Start poll**. All settings (poll type, results after voting, show my
-name, Other, topic, more settings) sit behind one **Settings** row that says what is set now ("Pick one · General").
+A first poll is: the question, its choices, **Start poll**. All settings (results after voting, show my name,
+Other, more settings) sit behind one **Settings** row. (Poll type and topic are now steps 1 and 2: "Create in three
+steps" below.)
 One tap opens the full list as before. It opens by itself when an end-time error needs fixing, and is open for "Ask
 again" polls. The live preview on computers still shows the effect of every setting (e.g. "Other" for politics).
 
 Step counter: "Guess the crowd" answered / skipped (not counted when yours was the only vote), with one more rate line on
 /admin: "Asked to guess the crowd → answered". Test plan for the first real users: `docs/USER_TEST.md`.
+
+## Create in three steps (owner, Oct 2026: "first ask what kind of poll, then the category… there should not be any element which could push the user to think whether they are right or wrong")
+
+Before, Create opened on an empty question with an example ("Virat, Rohit or Dhoni?") and ideas from any topic, so
+someone making a food poll saw cricket, and wondered if they were doing it right. Now:
+
+| Step | What you see | Priority | Why |
+|---|---|---|---|
+| 1. **What kind of poll?** | The 8 types as one list, each with one line on what voters do (Pick one first). Packs and knockout battles last, under "Or make a few polls together". | P1: one tap | You start from what you want to do; nothing to type yet. |
+| 2. **What is it about?** | The 9 topics as big tiles with a face each (💬 🗳️ 🏏 🎬 🎵 🍛 📱 ⚽ 👫), and Back. | P1: one tap | The topic picks the ideas you see next and where the poll is listed. Skipped when you came from a topic page ("Start a poll" there). |
+| 3. **The question and choices** | Two chips on top say what you picked ("Pick one ✎", "🍛 Food ✎"), each one tap to change (what you typed stays). The question box says what to type, never an example ("Type your question", "Type your opinion", "Ask what will happen", "Type what people should rate", "Type what you are planning"). Ideas come from your topic, only for Pick one. Then choices, Settings, Start poll. | P1: Start poll | Every hint fits what you picked, so there is no moment of "am I doing this right?". |
+
+- Each step is a page in the phone's history: Back goes one step back, not out of Create.
+- After both are picked once, changing the type or topic comes straight back to the question.
+- "Ask again" and a half-written draft open on step 3 with everything filled in.
+- Settings no longer hold Poll type and Topic (they are the two chips); the folded Settings row has no summary.
+- No ideas for Politics (a ready-made politics question would be the site picking sides).
+- No step counter or dots (no steppers: CLAUDE.md); the heading says what to do.
 
 ## Engagement round (owner, Oct 2026: "the product is social engagement; polls are the mechanism")
 
