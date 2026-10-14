@@ -313,4 +313,7 @@ a.al-block__aside { color: var(--ink-2); font-weight: 500; text-decoration: none
 /* Titles in the owner's lists stay plain words (a pill per row would be noise). */
 .plain-link { color: var(--ink); font-weight: 600; text-decoration: none; }
 @media (hover: hover) and (pointer: fine) { .plain-link:hover { text-decoration: underline; } }
+/* A main button that is not ready yet ("Vote" before you type): a clear grey pill, not a faded ink one that almost
+   disappears on the light ground. */
+.btn-primary:disabled { opacity: 1; background: var(--quiet); color: var(--ink-3); }
 

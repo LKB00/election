@@ -1227,3 +1227,17 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
 /* The Chunav mark (src/components/LogoMark.tsx): the drawing itself, not gb's dot. Its size comes from the component. */
 .logo-mark.brand-mark { width: auto; height: auto; border-radius: 0; background: none; box-shadow: none; display: block; }
 .topnav .logo-mark.brand-mark, .logo .logo-mark.brand-mark { width: 24px; height: 24px; }
+
+/* Small-phone layout fixes (owner, Oct 2026: "identify more such things if UI is breaking"). */
+.nowrap { white-space: nowrap; }
+/* Share + Next: two equal halves that always fit a 320px phone (the second button ran past the edge). */
+.duel-actions { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; }
+.duel-actions > .btn { min-width: 0; padding-inline: 12px; white-space: normal; text-align: center; line-height: 18px; }
+.report-cancel { flex-basis: 100%; display: flex; }
+.other-cancel { align-self: flex-start; }
+.react-row { gap: 6px; }
+.react-row .chip { font-size: 18px; min-width: 44px; padding: 0 10px; justify-content: center; }
+/* Put in order: the picked row's "Remove" is an outline pill (it vanished on the picked row's tint). */
+.is-ticked .evm-btn { background: transparent; color: inherit; box-shadow: inset 0 0 0 1px currentColor; }
+.admin-stats th { white-space: nowrap; }
+

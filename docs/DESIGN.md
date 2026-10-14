@@ -1416,3 +1416,10 @@ Every English line was reviewed (three passes over `i18n.ts` plus the server mes
 
 Bug found by the click-through test: on "Which dates work?" polls, dates you picked that were not the best date were captioned with the sender's label; they now say "Your pick".
 
+## Text buttons and small-phone fixes (owner, Oct 2026: "don't use underline to highlight a ghost button"; "the UI is breaking in these two cards")
+
+- **Text actions are soft pills, never underlined** (`.text-link`, `.link-like` in `arogya.css`): a filled `--quiet` pill for a quiet action ("Read the rules", "Undo my vote", "Skip and see the results"), an outline pill (`.muted`) for dismiss or cancel ("Got it", "Not now", "Cancel"). New tokens `--quiet` / `--quiet-hover` (light and dark). Only the "Lokesh Bhatia" credit stays underlined (owner's choice); admin list titles are plain bold words (`.plain-link`).
+- **Rules reminder and "Open Chunav in one tap" cards:** the words on top, then one row of pill buttons under them (they used to wrap into odd places).
+- **320px phones:** "Share that you voted" + "Next poll" are two equal halves that always fit; "closes in 2 d 21 h" never breaks; report "Cancel" sits on its own line; "Other" Cancel is a normal pill; reactions are bigger and fit one row; the picked row's "Remove" (Put in order) is an outline pill; a main button that is not ready is a clear grey pill; admin table headers don't wrap; the search box just says "Search polls".
+- **Guess the crowd result** says it is about the guess: "Your guess was right!" / "Your guess missed." (it read like a contradiction next to "You're with the crowd").
+
