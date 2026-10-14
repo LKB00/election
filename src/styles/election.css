@@ -1382,3 +1382,35 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
 .duel-verdict__facts li svg { vertical-align: -2px; }
 .duel-verdict__facts .link-like { margin-left: 2px; }
 .duel-verdict__ink { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+
+/* Number keys (docs/DESIGN.md, "Keys"): the hint is for a real keyboard and mouse only. */
+.duel-keys { display: none; }
+@media (hover: hover) and (pointer: fine) { .duel-keys { display: inline; } }
+
+/* One line (docs/DESIGN.md, "One line"): people's short reasons after the vote. */
+.takes__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; align-self: stretch; }
+.takes__item { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 10px 12px; border-radius: 12px; background: var(--quiet); }
+.takes__text { overflow-wrap: anywhere; }
+.takes__form { display: flex; flex-direction: column; gap: 6px; }
+.takes__mine { overflow-wrap: anywhere; }
+.takes__add { align-self: flex-start; }
+.takes > .link-like { align-self: flex-start; }
+
+/* Poll night (docs/DESIGN.md, "Poll night"): the question rows, and the presenter's back / next on the big screen. */
+.room-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 16px; }
+.room-row { display: flex; flex-direction: column; gap: 6px; padding: 14px; border: 1px solid var(--line); border-radius: 18px; background: var(--card); }
+.tv-step { display: inline-flex; align-items: center; gap: 8px; }
+.tv-step__n { font-weight: 700; font-variant-numeric: tabular-nums; }
+.tv-step .icon-btn:disabled { opacity: 0.35; }
+.pack-tv-link { align-self: flex-start; }
+
+/* Circles (docs/DESIGN.md, "Circles"): members' faces, the main row, the start form, and the quiet manage row. */
+.circle-page { display: flex; flex-direction: column; gap: 20px; }
+.circle-faces { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 12px; }
+.circle-face { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 64px; text-align: center; }
+.circle-face > span:first-child { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--card); border: 1px solid var(--line); font-size: 22px; }
+.circle-face > .small { max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.circle-main { gap: 12px; }
+.circle-form { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.circle-start { align-self: flex-start; margin-top: 8px; }
+.you-circles .small.muted { margin: 0; }

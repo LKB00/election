@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { getDb, schema } from '@/db';
 import { currentUser } from '@/lib/auth';
+import { isMember } from '@/lib/circles';
 import { createPoll } from '@/lib/polls';
 import { clientIp, rateLimit } from '@/lib/rate-limit';
 import { createPollSchema } from '@/lib/validation';
@@ -30,7 +31,10 @@ export async function POST(req: Request) {
     const [prev] = await db.select({ ownerId: schema.polls.ownerId }).from(schema.polls).where(eq(schema.polls.id, input.previousId)).limit(1);
     if (prev?.ownerId !== user.id) input.previousId = undefined;
   }
-  const id = await createPoll(db, input, manageKey, undefined, user.id);
+  // A circle's poll (docs/DESIGN.md, "Circles"): only a member may post into it; it stays out of public lists.
+  const circleId = typeof body?.circleId === 'string' ? body.circleId : undefined;
+  if (circleId && !(await isMember(db, circleId, user.id))) return NextResponse.json({ error: 'You are not in this circle.' }, { status: 403 });
+  const id = await createPoll(db, input, manageKey, undefined, user.id, { circleId });
   // The owner's step counter: a poll made, and whether its maker had voted before (a voter who became a maker).
   await countEvent(db, 'poll_created');
   const voter = await readVoterId();

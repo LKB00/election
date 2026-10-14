@@ -1,5 +1,5 @@
 'use client';
-import { Maximize2, Minimize2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
 import LogoMark from './LogoMark';
 import { useEffect, useState } from 'react';
 import { faceLabels } from '@/lib/labels';
@@ -15,7 +15,10 @@ const REFRESH_SECONDS = 4;
 
 // The big screen: the question large enough to read across a room (P1), the live bars or the plain choices (P1), and a
 // QR code with the short link to vote from a phone (P2). One quiet Full screen button (P3), hidden in full screen.
-export default function TvScreen({ initial, qr, link, code, host }: { initial: PollView; qr: string; link: string; code: string | null; host: string }) {
+/** A pack's big screen steps through its questions: which one this is, and the presenter's back and next. */
+type Step = { n: number; of: number; go: (d: number) => void };
+
+export default function TvScreen({ initial, qr, link, code, host, step }: { initial: PollView; qr: string; link: string; code: string | null; host: string; step?: Step }) {
   const t = useT();
   const lang = useLang();
   const [poll, setPoll] = useState(initial);
@@ -71,6 +74,17 @@ export default function TvScreen({ initial, qr, link, code, host }: { initial: P
           {poll.closed ? <strong>{poll.electionMode ? t.declaredTitle : t.finalTitle}</strong> : <><span className="live-dot" aria-hidden /> {t.tvLive}</>}
           <span className="tv-count"> · {t.votes(poll.participants)}</span>
         </p>
+        {step && (
+          <div className="tv-step" role="group" aria-label={t.tvStep(step.n + 1, step.of)}>
+            <button type="button" className="icon-btn" disabled={step.n === 0} onClick={() => step.go(-1)} aria-label={t.tvPrev}>
+              <ChevronLeft size={20} strokeWidth={2} aria-hidden />
+            </button>
+            <span className="tv-step__n">{t.tvStep(step.n + 1, step.of)}</span>
+            <button type="button" className="icon-btn" disabled={step.n === step.of - 1} onClick={() => step.go(1)} aria-label={t.tvNext}>
+              <ChevronRight size={20} strokeWidth={2} aria-hidden />
+            </button>
+          </div>
+        )}
         {!full && canFull && (
           <button type="button" className="btn btn-ghost tv-full" onClick={toggleFull}>
             <Maximize2 size={16} strokeWidth={2} aria-hidden /> {t.tvFull}

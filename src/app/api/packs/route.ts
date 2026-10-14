@@ -6,7 +6,7 @@ import { createPack } from '@/lib/packs';
 import { clientIp, rateLimit } from '@/lib/rate-limit';
 import { createPollSchema, packSchema } from '@/lib/validation';
 
-// A match-day or show-night pack: its polls are checked one by one with the same rules as any poll.
+// A match-day, show-night or poll-night pack: its polls are checked one by one with the same rules as any poll.
 export async function POST(req: Request) {
   // Making a poll needs a profile (voting never does): every poll is made by a person.
   const db = await getDb();
@@ -25,6 +25,8 @@ export async function POST(req: Request) {
     items.push({ ...p.data, photos: [], photoConsent: false });
   }
   const manageKey = randomBytes(18).toString('base64url');
-  const { id, pollIds } = await createPack(db, parsed.data, items, manageKey, user.id);
+  // A poll night starts now; the others when the creator said.
+  const startsAt = parsed.data.kind === 'room' ? new Date().toISOString() : parsed.data.startsAt!;
+  const { id, pollIds } = await createPack(db, { ...parsed.data, startsAt }, items, manageKey, user.id);
   return NextResponse.json({ id, pollIds, manageKey }, { status: 201 });
 }

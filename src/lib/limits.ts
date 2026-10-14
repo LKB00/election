@@ -77,3 +77,15 @@ export const START_MAX_DAYS = 14;
  *  (and at least that old) gets the WhatsApp Status picture as its next step. */
 export const QUIET_HOURS = 6;
 export const QUIET_MAX_VOTES = 10;
+/** "Say why in one line": how long a line may be, how many lines a poll loads (shown LIST_FIRST-style, 3 first), and
+ *  how many reports hide one. */
+export const TAKE_MAX = 80;
+export const TAKES_LOAD = 12;
+export const TAKES_FIRST = 3;
+export const TAKE_REPORTS_HIDE = 2;
+/** Poll night: how many questions one night holds. */
+export const ROOM_MAX = 8;
+/** Circles: a circle's name length, how many members it holds, and how many circles one person may make. */
+export const CIRCLE_NAME_MAX = 40;
+export const CIRCLE_MAX_MEMBERS = 50;
+export const CIRCLES_PER_PERSON = 10;

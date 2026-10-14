@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import { Clock } from 'lucide-react';
+import { Clock, Tv } from 'lucide-react';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import CreatedPanel from '@/components/CreatedPanel';
 import DuelGame from '@/components/DuelGame';
@@ -36,23 +37,30 @@ export default async function PackPage({ params, searchParams }: Props) {
   const pack = await getPack(db, id, await readVoterId());
   if (!pack) notFound();
   const started = new Date(pack.startsAt).getTime() <= Date.now();
+  const room = pack.kind === 'room';
   const when = new Date(pack.startsAt).toLocaleString(dateLocale(lang), { weekday: 'short', hour: 'numeric', minute: '2-digit', timeZone: INDIA_TZ });
   // Computers (election.css, "Desktop"): the pack's polls on the left; what it is, when it closes and sharing on the right.
   return (
     <div className="page page-wide pack-page">
       <header className="page-head page-head-tight pack-head">
-        <p className="eyebrow">{pack.kind === 'match' ? '🏏' : '📺'} {pack.kind === 'match' ? t.packMatch : t.packShow}</p>
+        <p className="eyebrow">{room ? `🎉 ${t.roomTitle}` : pack.kind === 'match' ? `🏏 ${t.packMatch}` : `📺 ${t.packShow}`}</p>
         <h1 className="display">{pack.title}</h1>
         <p className="small muted pack-head__when">
-          <Clock size={14} strokeWidth={1.75} aria-hidden /> {started ? t.packStarted : t.packCloses(when)}
+          <Clock size={14} strokeWidth={1.75} aria-hidden /> {room ? t.roomStarted : started ? t.packStarted : t.packCloses(when)}
         </p>
+        {/* Poll night: the presenter's next step is the big screen (anyone with the link may open it; it is the public view). */}
+        {room && (
+          <Link href={`/pack/${pack.id}/tv`} className="btn btn-ghost pack-tv-link">
+            <Tv size={16} strokeWidth={2} aria-hidden /> {t.roomTv}
+          </Link>
+        )}
         {pack.kind === 'show' && <p className="small muted">{t.packFanNote}</p>}
       </header>
       <div className="pack-share">
       {isNew === '1' ? (
-        <CreatedPanel id={pack.id} title={pack.title} path={`/pack/${pack.id}`} heading={t.packCreated} text={t.packShare(pack.title)} button={t.packShareBtn} />
+        <CreatedPanel id={pack.id} title={pack.title} path={`/pack/${pack.id}`} heading={t.packCreated} text={room ? t.roomShare(pack.title) : t.packShare(pack.title)} button={t.packShareBtn} />
       ) : (
-        <PackShare id={pack.id} title={pack.title} />
+        <PackShare id={pack.id} title={pack.title} room={room} />
       )}
       </div>
       <section className="home-game duel-first pack-game" aria-label={pack.title}>

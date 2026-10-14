@@ -64,6 +64,10 @@ export const polls = pgTable(
     // "Show my pick after people vote" (the maker's choice), and the maker's voter key, kept when they vote on it.
     showMakerPick: boolean('show_maker_pick').notNull().default(false),
     makerVoter: text('maker_voter'),
+    // A circle's poll (circles below): kept out of every public list; its members see it on the circle's page.
+    circleId: text('circle_id'),
+    // Kept out of every public list and search (a poll night's or a circle's polls).
+    unlisted: boolean('unlisted').notNull().default(false),
     // "Post later": opens for votes (and shows in lists) at this time.
     startsAt: timestamp('starts_at', { withTimezone: true }),
     // Each voter sees the choices in their own order.
@@ -115,6 +119,10 @@ export const votes = pgTable(
     // Private code in this voter's share link (never the voter id), and the code they arrived with.
     shareCode: text('share_code'),
     via: text('via'),
+    // "Say why in one line": the voter's own short line (no name shown), when they wrote it, and hidden by reports.
+    take: text('take'),
+    takeAt: timestamp('take_at', { withTimezone: true }),
+    takeHidden: boolean('take_hidden').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -319,3 +327,37 @@ export const battles = pgTable('battles', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+
+// One report per person per line ("Say why in one line"); enough of them hide the line.
+export const takeReports = pgTable(
+  'take_reports',
+  {
+    voteId: text('vote_id').notNull().references(() => votes.id, { onDelete: 'cascade' }),
+    voterKey: text('voter_key').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.voteId, t.voterKey] })],
+);
+
+// Circles (docs/DESIGN.md, "Circles"): a small named group of profiles. Anyone with the invite link joins; the circle's
+// polls are ordinary polls with circle_id set, kept out of public lists, listed on the circle's page for its members.
+export const circles = pgTable(
+  'circles',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    emoji: text('emoji').notNull().default('👥'),
+    ownerId: text('owner_id').notNull(),
+    invite: text('invite').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('circles_invite_idx').on(t.invite)],
+);
+export const circleMembers = pgTable(
+  'circle_members',
+  {
+    circleId: text('circle_id').notNull().references(() => circles.id, { onDelete: 'cascade' }),
+    userId: text('user_id').notNull(),
+    joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.circleId, t.userId] }), index('circle_members_user_idx').on(t.userId)],
+);

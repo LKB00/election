@@ -241,6 +241,36 @@ CREATE TABLE IF NOT EXISTS vote_flow (
 );
 CREATE INDEX IF NOT EXISTS vote_flow_poll_at_idx ON vote_flow (poll_id, at);
 CREATE INDEX IF NOT EXISTS vote_flow_at_idx ON vote_flow (at);
+-- "Say why in one line": a voter's own short line, shown without their name once results are open. Enough reports hide it.
+ALTER TABLE votes ADD COLUMN IF NOT EXISTS take text;
+ALTER TABLE votes ADD COLUMN IF NOT EXISTS take_at timestamptz;
+ALTER TABLE votes ADD COLUMN IF NOT EXISTS take_hidden boolean NOT NULL DEFAULT false;
+CREATE TABLE IF NOT EXISTS take_reports (
+  vote_id text NOT NULL REFERENCES votes(id) ON DELETE CASCADE,
+  voter_key text NOT NULL,
+  PRIMARY KEY (vote_id, voter_key)
+);
+-- Circles: a small named group (family, friends, a team). Its polls stay out of public lists.
+CREATE TABLE IF NOT EXISTS circles (
+  id text PRIMARY KEY,
+  name text NOT NULL,
+  emoji text NOT NULL DEFAULT '👥',
+  owner_id text NOT NULL,
+  invite text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS circles_invite_idx ON circles (invite);
+CREATE TABLE IF NOT EXISTS circle_members (
+  circle_id text NOT NULL REFERENCES circles(id) ON DELETE CASCADE,
+  user_id text NOT NULL,
+  joined_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (circle_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS circle_members_user_idx ON circle_members (user_id);
+ALTER TABLE polls ADD COLUMN IF NOT EXISTS circle_id text;
+-- Kept out of every public list and search (a poll night's or a circle's polls): only its link and its own page show it.
+ALTER TABLE polls ADD COLUMN IF NOT EXISTS unlisted boolean NOT NULL DEFAULT false;
+CREATE INDEX IF NOT EXISTS polls_circle_idx ON polls (circle_id);
 `;
 
 const g = globalThis as unknown as { __db?: Promise<Db> };

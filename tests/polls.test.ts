@@ -1698,3 +1698,124 @@ describe('post later and quiet polls', () => {
     expect((await makerView(db, id, 'quiet-maker'))!.quiet).toBe(false); // a vote just now
   });
 });
+
+describe('one line, poll night, your week and circles', () => {
+  it('saves a line only for a voter, filters words, shows it to others once results open, and hides it after reports', async () => {
+    const { setTake, reportTake } = await import('@/lib/polls');
+    const id = await make({ title: 'Chai or coffee tonight?', options: ['Chai', 'Coffee'] });
+    const p = (await getPoll(db, id, null))!;
+    expect(p.takesOn).toBe(true);
+    expect(await setTake(db, id, 'line-1', 'Because chai is life')).toBe('not_voted');
+    await castVote(db, id, p.options[0].id, 'line-1');
+    expect(await setTake(db, id, 'line-1', 'x')).toBe('bad');
+    expect(await setTake(db, id, 'line-1', 'a'.repeat(200))).toBe('bad');
+    expect(await setTake(db, id, 'line-1', 'chutiya')).toBe('blocked');
+    expect(await setTake(db, id, 'line-1', '  Because   chai is life ')).toBe('ok');
+    const mine = (await getPoll(db, id, 'line-1'))!;
+    expect(mine.myTake).toBe('Because chai is life');
+    expect(mine.takes).toEqual([]); // your own line is shown as yours, not in the list
+    await castVote(db, id, p.options[1].id, 'line-2');
+    const other = (await getPoll(db, id, 'line-2'))!;
+    expect(other.takes).toEqual([{ id: other.takes[0].id, text: 'Because chai is life', pick: 'Chai' }]);
+    // Hidden results: nobody sees lines (a line says what its writer picked).
+    const hid = await make({ title: 'Secret line poll?', options: ['A', 'B'], hideUntilVoted: true });
+    const h = (await getPoll(db, hid, null))!;
+    await castVote(db, hid, h.options[0].id, 'line-3');
+    await setTake(db, hid, 'line-3', 'A is better');
+    expect((await getPoll(db, hid, 'line-9'))!.takes).toEqual([]);
+    // Reports: not your own; two people hide it.
+    const lineId = other.takes[0].id;
+    expect(await reportTake(db, id, lineId, 'line-1')).toBe(false);
+    expect(await reportTake(db, id, lineId, 'line-2')).toBe(true);
+    expect((await getPoll(db, id, 'line-2'))!.takes).toHaveLength(1);
+    await reportTake(db, id, lineId, 'line-4');
+    expect((await getPoll(db, id, 'line-2'))!.takes).toEqual([]);
+    // Changing your vote clears your line (it was about the old pick).
+    const changeable = await make({ title: 'Changeable line?', options: ['A', 'B'], allowChange: true });
+    const c = (await getPoll(db, changeable, null))!;
+    await castVote(db, changeable, c.options[0].id, 'line-5');
+    await setTake(db, changeable, 'line-5', 'A all the way');
+    await castVote(db, changeable, c.options[1].id, 'line-5');
+    expect((await getPoll(db, changeable, 'line-5'))!.myTake).toBeNull();
+    // Off for politics.
+    const pol = await make({ title: 'Modi or Rahul as PM?', options: ['Modi', 'Rahul'] });
+    const pp = (await getPoll(db, pol, null))!;
+    expect(pp.takesOn).toBe(false);
+    await castVote(db, pol, pp.options[0].id, 'line-6');
+    expect(await setTake(db, pol, 'line-6', 'Just because')).toBe('not_allowed');
+  });
+
+  it('makes a poll night that starts now and stays out of public lists and Home', async () => {
+    const { createPack, getPack, upcomingPacks } = await import('@/lib/packs');
+    const { packSchema } = await import('@/lib/validation');
+    const items = [
+      { title: 'Best dancer here?', options: ['Riya', 'Aman'] },
+      { title: 'Next song?', options: ['Bollywood', 'Punjabi', 'Old'] },
+    ];
+    // A night needs no start time; a match still does, and holds at most 4 polls.
+    expect(packSchema.safeParse({ kind: 'room', title: 'Diwali night', polls: items }).success).toBe(true);
+    expect(packSchema.safeParse({ kind: 'match', title: 'CSK vs MI', polls: items }).success).toBe(false);
+    expect(packSchema.safeParse({ kind: 'match', title: 'CSK vs MI', startsAt: new Date(Date.now() + 3_600_000).toISOString(), polls: [...items, ...items, ...items] }).success).toBe(false);
+    expect(packSchema.safeParse({ kind: 'room', title: 'Big night', polls: [...items, ...items, ...items] }).success).toBe(true);
+    const parsed = items.map((x) => createPollSchema.parse({ ...x, hideUntilVoted: false }));
+    const { id, pollIds } = await createPack(db, { kind: 'room', title: 'Diwali night', startsAt: new Date().toISOString() }, parsed, 'room-key');
+    const pack = (await getPack(db, id, null))!;
+    expect(pack.kind).toBe('room');
+    expect(pack.views.map((v) => v.title)).toEqual(['Best dancer here?', 'Next song?']);
+    const listed = await listPolls(db, 500);
+    expect(pollIds.some((pid) => listed.some((x) => x.id === pid))).toBe(false);
+    expect((await upcomingPacks(db, 50)).some((x) => x.id === id)).toBe(false);
+    expect(await castVote(db, pollIds[0], pack.views[0].options[0].id, 'room-v')).toBe('ok');
+  });
+
+  it('counts a maker\'s week from public polls only', async () => {
+    const { creatorWeek } = await import('@/lib/profiles');
+    await db.insert(schema.users).values({ id: 'week-maker', name: 'Week Maker' }).onConflictDoNothing();
+    const a = await createPoll(db, createPollSchema.parse({ title: 'Week poll one?', options: ['A', 'B'], hideUntilVoted: false }), undefined, undefined, 'week-maker');
+    const b = await createPoll(db, createPollSchema.parse({ title: 'Week poll two?', options: ['A', 'B'], hideUntilVoted: false }), undefined, undefined, 'week-maker');
+    const hidden = await createPoll(db, createPollSchema.parse({ title: 'Unlisted week poll?', options: ['A', 'B'] }), undefined, undefined, 'week-maker', { unlisted: true });
+    const va = (await getPoll(db, a, null))!;
+    const vb = (await getPoll(db, b, null))!;
+    const vh = (await getPoll(db, hidden, null))!;
+    for (let k = 0; k < 3; k++) await castVote(db, a, va.options[0].id, `wk-a${k}`);
+    await castVote(db, b, vb.options[0].id, 'wk-b0');
+    await castVote(db, hidden, vh.options[0].id, 'wk-h0');
+    // An old vote does not count this week.
+    await castVote(db, b, vb.options[1].id, 'wk-old');
+    await db.update(schema.votes).set({ createdAt: new Date(Date.now() - 9 * 86_400_000) }).where(eq(schema.votes.voterKey, 'wk-old'));
+    const week = await creatorWeek(db, 'week-maker');
+    expect(week).toEqual({ votes: 4, made: 2, top: { id: a, title: 'Week poll one?', votes: 3 } });
+  });
+
+  it('keeps a circle\'s polls for its members, out of public lists', async () => {
+    const { createCircle, getCircle, joinCircle, leaveCircle, myCircles, ownerAction } = await import('@/lib/circles');
+    await db.insert(schema.users).values([{ id: 'circ-a', name: 'Asha' }, { id: 'circ-b', name: 'Bilal' }, { id: 'circ-c', name: 'Chetan' }]).onConflictDoNothing();
+    expect(await createCircle(db, 'circ-a', ' ', '👥')).toEqual({ ok: false, error: 'name' });
+    const made = await createCircle(db, 'circ-a', 'Sharma family', '🏠');
+    if (!made.ok) throw new Error('circle not made');
+    const cid = made.id;
+    const owner = (await getCircle(db, cid, 'circ-a'))!;
+    expect(owner).toMatchObject({ name: 'Sharma family', emoji: '🏠', member: true, mine: true, members: 1 });
+    // Not a member: the name only, no invite, no polls.
+    const outsider = (await getCircle(db, cid, 'circ-b'))!;
+    expect(outsider.member).toBe(false);
+    expect(outsider.invite).toBeNull();
+    expect(await joinCircle(db, cid, 'wrong-code', 'circ-b')).toEqual({ ok: false, error: 'not_found' });
+    expect(await joinCircle(db, cid, owner.invite!, 'circ-b')).toEqual({ ok: true, id: cid });
+    // A circle's poll: listed on its page, never in public lists.
+    const pid = await createPoll(db, createPollSchema.parse({ title: 'Dinner tonight?', options: ['Pizza', 'Dal'] }), undefined, undefined, 'circ-b', { circleId: cid });
+    expect((await listPolls(db, 500)).some((x) => x.id === pid)).toBe(false);
+    expect((await getCircle(db, cid, 'circ-b'))!.list.map((x) => x.id)).toEqual([pid]);
+    expect((await myCircles(db, 'circ-b'))[0]).toMatchObject({ id: cid, members: 2, polls: 1, mine: false });
+    // A new invite link: the old one stops working. Only the maker may do it, and the maker cannot just leave.
+    expect(await ownerAction(db, cid, 'circ-b', 'invite')).toEqual({ ok: false, error: 'not_allowed' });
+    await ownerAction(db, cid, 'circ-a', 'invite');
+    expect(await joinCircle(db, cid, owner.invite!, 'circ-c')).toEqual({ ok: false, error: 'not_found' });
+    expect(await leaveCircle(db, cid, 'circ-a')).toEqual({ ok: false, error: 'not_allowed' });
+    expect(await leaveCircle(db, cid, 'circ-b')).toEqual({ ok: true, id: cid });
+    expect(await myCircles(db, 'circ-b')).toEqual([]);
+    await ownerAction(db, cid, 'circ-a', 'delete');
+    expect(await getCircle(db, cid, 'circ-a')).toBeNull();
+    expect((await getPoll(db, pid, null))?.title).toBe('Dinner tonight?'); // its poll stays at its own link
+  });
+});
