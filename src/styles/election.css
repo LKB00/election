@@ -51,7 +51,7 @@
 
 /* Journeys (docs/DESIGN.md) */
 .duel { scroll-margin-top: 72px; }
-.duel-undo { padding: 0; border: 0; background: none; cursor: pointer; font-size: 14px; }
+.duel-undo { cursor: pointer; }
 .duel-created { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; margin-top: 16px; padding: 16px; border-radius: var(--radius-card); background: var(--card); border: var(--hair) solid var(--line); }
 .duel-created h2 { margin: 0; }
 .field-error { margin: 0; color: var(--negative); font-size: 13px; line-height: 20px; }
@@ -147,7 +147,6 @@
   ::view-transition-old(ballot), ::view-transition-new(ballot) { animation: none; }
   .skeleton { animation: none; }
 }
-.duel-undo { padding: 8px 0; }   /* a bigger touch area for small text links */
 
 /* ---- Batch 5: Hindi. Devanagari letters fall back to Noto Sans Devanagari (bundled, downloaded only when Hindi is on screen). ---- */
 :root {
@@ -190,7 +189,7 @@
 /* Report: P3, the last and quietest thing on the duel. */
 .duel-report { margin: 0; padding: 0 4px; }
 /* Text-link buttons (report, cancel, delete my votes): no button box, a bigger touch area. */
-button.link-like { border: 0; background: none; padding: 8px 0; cursor: pointer; }
+button.link-like, button.text-link { border: 0; cursor: pointer; font-family: inherit; }
 .duel-after .text-link svg { vertical-align: -2px; }
 /* Topic chips on Duels, and the plain text pages (privacy, review). */
 .topic-chips { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -530,8 +529,11 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .picker-consent { display: flex; align-items: flex-start; gap: 10px; text-align: left; cursor: pointer; }
 .picker-consent input { width: 18px; height: 18px; margin: 2px 0 0; flex: none; accent-color: var(--ink); }
 /* The 3-monthly rules reminder on Home (P3): one quiet line, not a banner. */
-.rules-note { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-top: 24px; padding: 12px 16px; border: var(--hair) solid var(--line); border-radius: var(--radius-inner); color: var(--ink-3); }
-.rules-note > span { flex: 1 1 220px; }
+.rules-note { display: flex; flex-direction: column; align-items: stretch; gap: 12px; margin-top: 24px; padding: 16px; border: var(--hair) solid var(--line); border-radius: var(--radius-inner); color: var(--ink-2); }
+/* The words on top, the buttons in one row under them (owner, Oct 2026: the buttons used to wrap into odd places). */
+.rules-note__text { margin: 0; }
+.rules-note__text strong { color: var(--ink); }
+.rules-note__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 /* Review page: a row you have acted on steps back so the next one stands out. */
 .review-row.is-done { opacity: 0.55; }
 
@@ -616,7 +618,7 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .spot-empty__title { margin: 0; max-width: 24ch; font: 700 22px / 28px var(--display); letter-spacing: -0.01em; text-wrap: balance; }
 .spot-empty__line { margin: 0; max-width: 32ch; color: var(--ink-2); font-size: 16px; line-height: 24px; text-wrap: pretty; }
 .spot-empty__go { margin-top: 16px; min-width: 200px; }
-.spot-empty__more { margin-top: 4px; padding: 8px; }
+.spot-empty__more { margin-top: 4px; }
 /* A page that is only an empty state: the picture and its words sit in the middle of the screen, with air around. */
 .empty-page { display: flex; flex-direction: column; justify-content: center; min-height: calc(100dvh - 220px); }
 /* Topic chips with their picture; the topic page's big picture. */
@@ -765,7 +767,7 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 .signin-face.is-on { background: var(--you-soft); border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); transform: scale(1.06); }
 .signin-face:has(input:focus-visible) { outline: 3px solid var(--lime); outline-offset: 2px; }
 .signin-go { width: 100%; gap: 8px; margin-top: 4px; }
-.signin-switch { align-self: center; background: none; border: 0; padding: 8px; font: inherit; font-weight: 600; cursor: pointer; }
+.signin-switch { align-self: center; }
 .signin-trust { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 0; text-align: center; }
 .signin-trust svg { flex: none; }
 .signin-sheet { padding-top: 16px; }

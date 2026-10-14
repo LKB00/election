@@ -58,7 +58,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
         {engage.polls.length === 0 ? <p className="small">{t.engageNone}</p> : (
           <>
             <ol className="small">
-              {engage.polls.map((p) => <li key={p.id}><Link href={`/p/${p.id}`} className="text-link">{p.title}</Link> · <strong>{t.engageRow(p.score, p.votes)}</strong></li>)}
+              {engage.polls.map((p) => <li key={p.id}><Link href={`/p/${p.id}`} className="plain-link">{p.title}</Link> · <strong>{t.engageRow(p.score, p.votes)}</strong></li>)}
             </ol>
             <p className="label">{t.engageTopics}</p>
             <ul className="small">

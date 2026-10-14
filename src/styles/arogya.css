@@ -18,6 +18,8 @@
   --paper: #fbf9f6;
   --sand: #f5f2ed;
   --sand-dark: #efebe5;
+  --quiet: #eeeae3;           /* the soft pill behind text actions ("Read the rules", "Undo my vote") */
+  --quiet-hover: #e5e0d7;
   --card: #ffffff;
   --ink: #1d1b18;
   --ink-hover: #000000;
@@ -116,6 +118,8 @@
     --paper: #141311;
     --sand: #1c1a17;
     --sand-dark: #24211d;
+    --quiet: #2d2a25;
+    --quiet-hover: #38342e;
     --card: #1f1d1a;
     --ink: #f2eee7;
     --ink-hover: #ffffff;
@@ -290,3 +294,23 @@ a.al-block__aside { color: var(--ink-2); font-weight: 500; text-decoration: none
   .tot-option:not(:disabled):hover, .game:hover { transform: none; box-shadow: var(--shadow-card); }
   .topnav-links a:not(.active):hover { background: transparent; color: var(--ink-2); }
 }
+
+/* Text actions (owner, Oct 2026: "don't use underline to highlight a ghost button"): a soft pill, never underlined.
+   Filled = a quiet action ("Read the rules", "Undo my vote"); .muted = an outline pill for dismiss/cancel ("Got it",
+   "Cancel"). gb/base.css underlines them; this wins because it is loaded last. */
+:is(a, button).text-link, :is(a, button).link-like {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 36px; padding: 0 14px; border-radius: 9999px;
+  background: var(--quiet); color: var(--ink);
+  font-size: 14px; font-weight: 600; line-height: 20px; text-decoration: none; white-space: nowrap;
+}
+:is(a, button).text-link.muted, :is(a, button).link-like.muted { background: transparent; color: var(--ink-2); box-shadow: inset 0 0 0 var(--hair) var(--line-control); }
+:is(a, button).text-link.small, :is(a, button).link-like.small { min-height: 32px; padding: 0 12px; font-size: 13px; }
+:is(a, button).link-like:disabled { opacity: 0.5; cursor: default; }
+@media (hover: hover) and (pointer: fine) {
+  :is(a, button).text-link:hover, :is(a, button).link-like:hover:not(:disabled) { background: var(--quiet-hover); color: var(--ink); }
+}
+/* Titles in the owner's lists stay plain words (a pill per row would be noise). */
+.plain-link { color: var(--ink); font-weight: 600; text-decoration: none; }
+@media (hover: hover) and (pointer: fine) { .plain-link:hover { text-decoration: underline; } }
+
