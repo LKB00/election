@@ -42,9 +42,10 @@ export const createPollSchema = z.object({
   category: z.enum(CATEGORIES).default('general'),
   options: z
     .array(text().pipe(z.string().min(1, 'One choice is empty. Fill it in or remove it.').max(MAX_CHOICE, ERR.choiceLong)).refine(visible, 'One choice is empty. Fill it in or remove it.'))
-    .min(MIN_CHOICES, ERR.fewChoices)
     .max(MAX_CHOICES, ERR.manyChoices)
     .refine((a) => new Set(a.map(sameKey)).size === a.length, 'Two choices are the same. Make each one different.'),
+  // "Ideas first": people add the choices before voting opens, so the maker may start with none.
+  collectIdeas: z.boolean().default(false),
   // One optional emoji per choice, in the same order as the choices ('' = none).
   emojis: z.array(z.string().max(16).refine((e) => e === '' || isEmoji(e), 'Pick one emoji per choice.')).max(MAX_CHOICES).default([]),
   // One optional photo per choice, in the same order ('' = none): a small JPEG made on the phone, as a data URL.
@@ -77,7 +78,9 @@ export const createPollSchema = z.object({
     .datetime()
     .optional()
     .refine((v) => !v || new Date(v).getTime() > Date.now(), 'The end time must be in the future.'),
-}).refine((p) => !hasBlockedWord(p.title, p.description, ...p.options, ...p.emojis), 'Please remove the abusive words.');
+})
+  .refine((p) => p.options.length >= MIN_CHOICES || (p.collectIdeas && (p.kind === 'choice' || p.kind === 'multi')), ERR.fewChoices)
+  .refine((p) => !hasBlockedWord(p.title, p.description, ...p.options, ...p.emojis), 'Please remove the abusive words.');
 export type CreatePollInput = z.infer<typeof createPollSchema>;
 
 /** Ids and share codes are plain letters, digits, "-" and "_"; anything else (a NUL byte, spaces) is refused early. */

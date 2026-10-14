@@ -3,10 +3,11 @@ import { nanoid, customAlphabet } from 'nanoid';
 import { shareProof } from './secret';
 import { RATING_EMOJIS, RATING_LABELS, ratingAverage, usesPicks, type PollKind } from './rating';
 import { cleanText, isCode } from './validation';
+import { sameKey } from './same';
 import { schema, type Db } from '@/db';
 import type { CreatePollInput } from './validation';
 import { hasBlockedWord, namesPolitics } from './moderation';
-import { GROUP_DEFAULT_DAYS, JOIN_CODE_DIGITS, WEEKLY_TREND_WEEKS, REVEAL_MINUTES, MAX_OTHER, OTHER_MIN_PEOPLE, OTHER_TOP } from './limits';
+import { GROUP_DEFAULT_DAYS, IDEAS_HOURS, JOIN_CODE_DIGITS, MAX_CHOICES, MIN_CHOICES, WEEKLY_TREND_WEEKS, REVEAL_MINUTES, MAX_OTHER, OTHER_MIN_PEOPLE, OTHER_TOP } from './limits';
 import { sealedUntil as silenceUntil } from './silence';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { isAdminKey } from './admin';
@@ -46,6 +47,8 @@ export type PollView = {
   allowChange: boolean;
   endsAt: string | null;
   closed: boolean;
+  /** "Ideas first": people are adding choices until `until` (and until there are 2); no voting meanwhile. */
+  ideas: { until: string; open: boolean } | null;
   totalVotes: number;
   /** How many people voted. Safe to show before voting: it does not reveal the split. */
   participants: number;
@@ -148,6 +151,9 @@ async function ownsPoll(db: Db, id: string, ownerId: string): Promise<boolean> {
 }
 
 /** `manageKey`: the creator's private key (kept on their phone); only its hash is stored. */
+/** Voting needs time after the ideas: an end that falls inside the ideas time moves to a day after it. */
+const endsAfterIdeas = (ends: Date | null, ideas: Date | null) => (ends && ideas && ends.getTime() < ideas.getTime() + 3600_000 ? new Date(ideas.getTime() + 86400_000) : ends);
+
 export async function createPoll(db: Db, raw: CreatePollInput, manageKey?: string, packId?: string, ownerId?: string): Promise<string> {
   // A rating poll always has the same five steps, whatever was sent.
   const input = raw.kind === 'rating' ? { ...raw, options: RATING_LABELS, emojis: RATING_EMOJIS, photos: [] } : raw;
@@ -156,11 +162,13 @@ export async function createPoll(db: Db, raw: CreatePollInput, manageKey?: strin
   const photoIds = input.options.map((_, n) => (input.photos[n] ? nanoid(12) : null));
   const hasPhotos = photoIds.some(Boolean);
   // One transaction: a duel is never saved without its choices (or with half its photos).
+  // "Ideas first" (pick one or pick several): people add choices for IDEAS_HOURS, then voting opens.
+  const ideasUntil = input.collectIdeas && (input.kind === 'choice' || input.kind === 'multi') ? new Date(Date.now() + IDEAS_HOURS * 3600_000) : null;
   await db.transaction(async (tx) => {
   const category = namesPolitics(input.title, input.description, ...input.options) ? 'politics' : input.category;
-  const calledIt = input.calledIt && input.kind === 'choice' && category !== 'politics';
+  const calledIt = input.calledIt && input.kind === 'choice' && category !== 'politics' && !ideasUntil;
   // "Other (write your own)": pick-one ballots only, and not "Called it" (the maker marks one of the listed answers).
-  const allowOther = input.allowOther && input.kind === 'choice' && !calledIt;
+  const allowOther = input.allowOther && input.kind === 'choice' && !calledIt && !ideasUntil;
   await tx.insert(polls).values({
     hasPhotos,
     allowOther,
@@ -171,7 +179,7 @@ export async function createPoll(db: Db, raw: CreatePollInput, manageKey?: strin
     ownerId: ownerId ?? null,
     groupSize: input.groupSize ?? null,
     shuffle: input.shuffle && (input.kind === 'choice' || input.kind === 'multi' || input.kind === 'rank'),
-    suggestionsOn: input.suggestionsOn && (input.kind === 'choice' || input.kind === 'multi') && !input.groupSize,
+    suggestionsOn: input.suggestionsOn && (input.kind === 'choice' || input.kind === 'multi') && !input.groupSize && !ideasUntil,
     showMaker: input.showMaker && !!ownerId,
     previousId: input.previousId && ownerId && (await ownsPoll(tx as unknown as Db, input.previousId, ownerId)) ? input.previousId : null,
     electionMode: input.electionMode,
@@ -185,7 +193,8 @@ export async function createPoll(db: Db, raw: CreatePollInput, manageKey?: strin
     // "Called it": your call cannot move after the event (someone could switch to the real winner before it is marked).
     allowChange: input.allowChange && !calledIt,
     // A group poll always has an end, so one friend who never votes cannot keep the group waiting for ever.
-    endsAt: input.endsAt ? new Date(input.endsAt) : input.groupSize ? new Date(Date.now() + GROUP_DEFAULT_DAYS * 86_400_000) : null,
+    endsAt: endsAfterIdeas(input.endsAt ? new Date(input.endsAt) : input.groupSize ? new Date(Date.now() + GROUP_DEFAULT_DAYS * 86_400_000) : null, ideasUntil),
+    ideasUntil,
     // "Show results at a set time": from the server's clock. Not for group polls (they open when the group is in) or
     // "Called it" (the answer opens it).
     revealAt: input.groupSize || calledIt || input.revealIn === 'now' ? null : input.revealIn === 'ninepm' ? nextFinalCount() : new Date(Date.now() + (REVEAL_MINUTES[input.revealIn] ?? 0) * 60_000),
@@ -195,7 +204,8 @@ export async function createPoll(db: Db, raw: CreatePollInput, manageKey?: strin
       photoIds.flatMap((pid, n) => (pid ? [{ id: pid, pollId: id, data: input.photos[n].slice(input.photos[n].indexOf(',') + 1) }] : [])),
     );
   }
-  await tx.insert(options).values(
+  // An "Ideas first" poll may start with no choices at all.
+  if (input.options.length) await tx.insert(options).values(
     input.options.map((label, position) => ({
       id: nanoid(10),
       pollId: id,
@@ -405,6 +415,7 @@ export async function getPoll(
     hideUntilVoted: poll.hideUntilVoted,
     allowChange: poll.allowChange,
     endsAt: poll.endsAt?.toISOString() ?? null,
+    ideas: poll.ideasUntil ? { until: poll.ideasUntil.toISOString(), open: poll.ideasUntil.getTime() > Date.now() || optsInOrder.filter((o) => !o.isOther).length < MIN_CHOICES } : null,
     closed,
     totalVotes: resultsVisible ? total : 0,
     participants: total,
@@ -534,7 +545,7 @@ async function shareOverTime(db: Db, id: string, createdAt: Date, firstOptionId:
   return points.slice(-48);
 }
 
-export type VoteResult = 'ok' | 'changed' | 'already_voted' | 'closed' | 'not_found' | 'bad_option' | 'bad_other' | 'frozen';
+export type VoteResult = 'ok' | 'changed' | 'already_voted' | 'closed' | 'not_found' | 'bad_option' | 'bad_other' | 'frozen' | 'ideas';
 
 export async function castVote(db: Db, id: string, optionId: string, voterId: string, via?: string | null, morePicks: string[] = [], maybes: string[] = [], other?: string | null): Promise<VoteResult> {
   const [poll] = await db.select().from(polls).where(eq(polls.id, id)).limit(1);
@@ -542,6 +553,8 @@ export async function castVote(db: Db, id: string, optionId: string, voterId: st
   if (poll.endsAt && poll.endsAt.getTime() <= Date.now()) return 'closed';
   // Paused after a flood of votes (src/lib/flood.ts) until the time runs out or the owner resumes it.
   if (poll.frozenUntil && poll.frozenUntil.getTime() > Date.now()) return 'frozen';
+  // "Ideas first": no votes while people are still adding the choices.
+  if (poll.ideasUntil && (await ideasOpen(db, poll.id, poll.ideasUntil))) return 'ideas';
   // "Pick several": every ticked choice must belong to this poll (the first one is the vote row's own choice).
   // "Rank": the list is the order, first = #1, and every choice must be placed.
   // "Which dates work?": the yes dates and the "if need be" dates (a date is one or the other).
@@ -695,7 +708,7 @@ export async function pollForJoinCode(db: Db, raw: string): Promise<string | nul
   return row?.id ?? null;
 }
 
-export type PollSummary = { id: string; title: string; category: string; kind: PollKind; totalVotes: number; lastHour: number; options: string[]; closed: boolean; /** The creator's emoji per choice ('' when none), in choice order. */ emojis: string[]; /** A "Called it" question about a real event. */ calledIt: boolean };
+export type PollSummary = { id: string; title: string; category: string; kind: PollKind; totalVotes: number; lastHour: number; options: string[]; closed: boolean; /** The creator's emoji per choice ('' when none), in choice order. */ emojis: string[]; /** A "Called it" question about a real event. */ calledIt: boolean; /** "Ideas first": still collecting ideas (no voting yet). */ ideas: boolean };
 
 /** Vote counts for a few public polls (the same count as listPolls), for lists that tick up while open. Hidden and
  * group polls are never counted here. */
@@ -730,6 +743,7 @@ export async function listPolls(db: Db, limit = 20, filter: { category?: string;
       kind: polls.kind,
       endsAt: polls.endsAt,
       calledIt: polls.calledIt,
+      ideasUntil: polls.ideasUntil,
       totalVotes: sql<number>`count(${votes.id})::int`,
       lastHour: sql<number>`count(${votes.id}) filter (where ${votes.createdAt} > now() - interval '1 hour')::int`,
     })
@@ -766,6 +780,7 @@ export async function listPolls(db: Db, limit = 20, filter: { category?: string;
     options: opts.filter((o) => o.pollId === r.id).map((o) => o.label),
     emojis: opts.filter((o) => o.pollId === r.id).map((o) => o.emoji ?? ''),
     calledIt: r.calledIt,
+    ideas: !!r.ideasUntil && (r.ideasUntil.getTime() > Date.now() || opts.filter((o) => o.pollId === r.id).length < MIN_CHOICES),
   }));
 }
 
@@ -860,9 +875,9 @@ export async function trendingPolls(db: Db, limit = 6): Promise<PollSummary[]> {
 
 /** The polls to play through: the newest open ones. */
 export async function getDeck(db: Db, voterId: string | null, limit = 12): Promise<PollView[]> {
-  const ids = (await listPolls(db, limit)).filter((p) => !p.closed).map((p) => p.id);
+  const ids = (await listPolls(db, limit)).filter((p) => !p.closed && !p.ideas).map((p) => p.id);
   const views = await Promise.all(ids.map((id) => getPoll(db, id, voterId)));
-  return views.filter((v): v is PollView => v !== null);
+  return views.filter((v): v is PollView => v !== null && !v.ideas?.open);
 }
 
 /** How many polls make "today's set". */
@@ -891,7 +906,7 @@ function dayHash(day: string, id: string) {
 export async function getTodaySet(db: Db, voterId: string | null, size = SET_SIZE): Promise<PollView[]> {
   const day = indiaDay();
   const list = await listPolls(db, 200, { before: day.start });
-  const open = list.filter((p) => !p.closed).sort((a, b) => dayHash(day.label, a.id) - dayHash(day.label, b.id));
+  const open = list.filter((p) => !p.closed && !p.ideas).sort((a, b) => dayHash(day.label, a.id) - dayHash(day.label, b.id));
   const picked: PollSummary[] = [];
   const topics = new Set<string>();
   for (const p of open) if (picked.length < size && !topics.has(p.category)) (picked.push(p), topics.add(p.category));
@@ -902,7 +917,7 @@ export async function getTodaySet(db: Db, voterId: string | null, size = SET_SIZ
     for (const p of await listPolls(db, 50)) if (ids.length < size && !p.closed && !ids.includes(p.id)) ids.push(p.id);
   }
   const views = await Promise.all(ids.map((id) => getPoll(db, id, voterId)));
-  return views.filter((v): v is PollView => v !== null && !v.closed);
+  return views.filter((v): v is PollView => v !== null && !v.closed && !v.ideas?.open);
 }
 
 /** Where a duel you voted in stands now, as far as you are allowed to see (same rules as getPoll). */
@@ -1263,5 +1278,44 @@ export async function weeklyTrend(db: Db, id: string): Promise<WeekRow[]> {
     cur = prev?.previousId ?? null;
   }
   return rows;
+}
+
+// ---- "Ideas first" (docs/DESIGN.md, "Ideas first") ----
+
+/** Ideas are still being collected: before the ideas time ends, and always while there are fewer than 2 choices. */
+async function ideasOpen(db: Db, id: string, until: Date, now = Date.now()): Promise<boolean> {
+  if (until.getTime() > now) return true;
+  const [{ n }] = await db.select({ n: sql<number>`count(*)::int` }).from(options).where(and(eq(options.pollId, id), eq(options.isOther, false)));
+  return n < MIN_CHOICES;
+}
+
+export type IdeaResult = 'ok' | 'exists' | 'full' | 'closed' | 'not_found';
+
+/** Anyone with the link adds an idea while ideas are open. Same words as typed (cleaned), no duplicates, at most
+ * MAX_CHOICES ideas in all. The word filter and the per-person limit are checked by the route. */
+export async function addIdea(db: Db, id: string, label: string): Promise<IdeaResult> {
+  return db.transaction(async (tx) => {
+    const [p] = await tx.select({ hidden: polls.hidden, ideasUntil: polls.ideasUntil, endsAt: polls.endsAt }).from(polls).where(eq(polls.id, id)).for('update').limit(1);
+    if (!p || p.hidden) return 'not_found';
+    if (!p.ideasUntil || !(await ideasOpen(tx as unknown as Db, id, p.ideasUntil))) return 'closed';
+    const opts = await tx.select({ label: options.label }).from(options).where(eq(options.pollId, id));
+    if (opts.some((o) => sameKey(o.label) === sameKey(label))) return 'exists';
+    if (opts.length >= MAX_CHOICES) return 'full';
+    await tx.insert(options).values({ id: nanoid(10), pollId: id, label, position: opts.length });
+    // A politician's name makes it a politics poll, as making it would (Election mode, silence windows).
+    if (namesPolitics(label)) await tx.update(polls).set({ category: 'politics', calledIt: false }).where(eq(polls.id, id));
+    return 'ok';
+  });
+}
+
+/** The maker starts voting now (needs 2 ideas). */
+export async function startVoting(db: Db, id: string, now = Date.now()): Promise<'ok' | 'few' | 'not_found'> {
+  const [p] = await db.select({ ideasUntil: polls.ideasUntil, endsAt: polls.endsAt }).from(polls).where(eq(polls.id, id)).limit(1);
+  if (!p?.ideasUntil) return 'not_found';
+  const [{ n }] = await db.select({ n: sql<number>`count(*)::int` }).from(options).where(and(eq(options.pollId, id), eq(options.isOther, false)));
+  if (n < MIN_CHOICES) return 'few';
+  const at = new Date(now - 1000);
+  await db.update(polls).set({ ideasUntil: at, endsAt: endsAfterIdeas(p.endsAt, at) }).where(eq(polls.id, id));
+  return 'ok';
 }
 

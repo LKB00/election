@@ -63,7 +63,7 @@ export default async function MakerPage({ params }: { params: Promise<{ id: stri
   // P1: the newest open polls, voted right here (a few, newest first; the first you have not voted in comes up).
   const voterId = await readVoterId();
   const openIds = rows.filter((p) => !p.endsAt || p.endsAt.getTime() > Date.now()).slice(0, 5).map((p) => p.id);
-  const deck = (await Promise.all(openIds.map((id) => getPoll(db, id, voterId)))).filter((v): v is PollView => v !== null);
+  const deck = (await Promise.all(openIds.map((id) => getPoll(db, id, voterId)))).filter((v): v is PollView => v !== null && !v.ideas?.open);
   const start = Math.max(0, deck.findIndex((v) => v.myVote === null));
   const mine = me?.id === u.id;
   // Computers (election.css, "Desktop"): the same shape as You, the maker on the left and their polls beside them.

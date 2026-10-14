@@ -8,6 +8,7 @@ import { notFound } from 'next/navigation';
 import CreatedPanel from '@/components/CreatedPanel';
 import PollIntro from '@/components/PollIntro';
 import DuelGame from '@/components/DuelGame';
+import IdeasBoard from '@/components/IdeasBoard';
 import Step from '@/components/Step';
 import { getDb } from '@/db';
 import { SITE_URL } from '@/lib/site';
@@ -131,7 +132,8 @@ export default async function DuelPage({ params, searchParams }: Props) {
       )}
       </PollIntro>
       <section className="home-game duel-first" aria-label={t.pollRegion}>
-        <DuelGame deck={deck} start={0} via={f ?? null} ownId={mine ? poll.id : undefined} />
+        {/* "Ideas first": the board to add ideas until voting opens; then the ballot as usual. */}
+        {poll.ideas?.open ? <IdeasBoard poll={poll} mine={mine} /> : <DuelGame deck={deck} start={0} via={f ?? null} ownId={mine ? poll.id : undefined} />}
       </section>
       </div>
       {/* Computers (election.css, "Desktop"): the poll on the left, a few more to vote on in a column on the right, the

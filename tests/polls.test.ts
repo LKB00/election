@@ -1500,3 +1500,28 @@ describe('ask again every week', () => {
     expect(await setWeekly(db, group, true)).toBe(false);
   });
 });
+
+describe('ideas first', () => {
+  it('collects ideas (no voting) until the maker starts voting, then votes as usual', async () => {
+    const { addIdea, startVoting } = await import('@/lib/polls');
+    const id = await createPoll(db, createPollSchema.parse({ title: 'Where should we eat on Friday?', options: [], collectIdeas: true }));
+    let p = (await getPoll(db, id, null))!;
+    expect(p.ideas?.open).toBe(true);
+    expect(await startVoting(db, id)).toBe('few');
+    expect(await addIdea(db, id, 'Dosa place')).toBe('ok');
+    expect(await addIdea(db, id, 'dosa  place')).toBe('exists');
+    expect(await addIdea(db, id, 'Biryani house')).toBe('ok');
+    p = (await getPoll(db, id, null))!;
+    expect(p.options.map((o) => o.label)).toEqual(['Dosa place', 'Biryani house']);
+    expect(await castVote(db, id, p.options[0].id, 'idea-v1')).toBe('ideas');
+    expect((await listPolls(db, 500)).find((x) => x.id === id)?.ideas).toBe(true);
+    expect(await startVoting(db, id)).toBe('ok');
+    expect(await addIdea(db, id, 'Pizza')).toBe('closed');
+    p = (await getPoll(db, id, null))!;
+    expect(p.ideas?.open).toBe(false);
+    expect(await castVote(db, id, p.options[0].id, 'idea-v1')).toBe('ok');
+  });
+  it('still needs 2 choices for a normal poll', () => {
+    expect(createPollSchema.safeParse({ title: 'Only one choice?', options: ['A'] }).success).toBe(false);
+  });
+});

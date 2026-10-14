@@ -31,6 +31,9 @@ export const polls = pgTable(
     // "Ask again every week": when this poll ends, the same question opens again for 7 days (rollWeekly, polls.ts).
     // Only the newest poll of a series carries it; each new one points back with previousId.
     repeatWeekly: boolean('repeat_weekly').notNull().default(false),
+    // "Ideas first": until this time (and until there are 2 ideas) people add choices; then voting opens. Null = a
+    // normal poll. The maker can start voting earlier.
+    ideasUntil: timestamp('ideas_until', { withTimezone: true }),
     // "Show results at a set time" (the maker's choice): numbers stay hidden for everyone until then.
     revealAt: timestamp('reveal_at', { withTimezone: true }),
     // Election mode: the full booth ritual (EVM, VVPAT slip, voter ID, counting day). Politics polls always have it.

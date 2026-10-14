@@ -58,3 +58,8 @@ export const JOIN_CODE_DIGITS = 6;
 
 /** "Ask again every week": how many past weeks the maker's trend shows. */
 export const WEEKLY_TREND_WEEKS = 8;
+
+/** "Ideas first": how long people add ideas before voting opens (the maker can start voting sooner), and how many
+ * ideas one person may add to one poll. */
+export const IDEAS_HOURS = 24;
+export const IDEAS_PER_PERSON = 3;

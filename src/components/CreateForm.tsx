@@ -109,9 +109,10 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   const isDates = kind === 'dates';
   // "Called it": a pick-one question about a real event; you mark what happened later.
   const [calledIt, setCalledIt] = useState(again?.calledIt ?? false);
-  const pickKind = (k: PollKind, called = false) => {
+  const pickKind = (k: PollKind, called = false, collect = false) => {
     setKind(k);
     setCalledIt(called);
+    setIdeas(collect);
   };
   const [busy, setBusy] = useState(false);
   // Closed the sign-in sheet without a profile: say the poll is kept (it is) and what is needed to post it.
@@ -147,6 +148,8 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   const [showMore, setShowMore] = useState(false);
   // "Hot take" chosen in the formats (a pick-one poll with Agree / Depends / Disagree ready).
   const [hot, setHot] = useState(false);
+  // "Ideas first": people add the choices, then everyone votes (the choices typed here are optional starters).
+  const [ideas, setIdeas] = useState(false);
   // All settings sit behind one "Settings" row until opened (an "Ask again" poll opens with them shown).
   const [settingsOpen, setSettingsOpen] = useState(!!again);
   // The poll-type row opens a list of the five types, each with one line on what it does.
@@ -197,8 +200,8 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   const fromQuestion = typedChoices || kind === 'rating' || kind === 'dates' ? null : choicesFromQuestion(title);
   const filledCount = isDates ? filledDates.length : choices.filter((c) => c.trim()).length;
   // The main button says what is still missing, then "Create duel".
-  const ready = title.trim().length >= MIN_TITLE && (isRating || filledCount >= MIN_CHOICES);
-  const buttonText = busy ? t.creating : title.trim().length < MIN_TITLE ? t.needQuestion : !isRating && filledCount < MIN_CHOICES ? t.needChoices(MIN_CHOICES - filledCount) : t.createDuel;
+  const ready = title.trim().length >= MIN_TITLE && (isRating || ideas || filledCount >= MIN_CHOICES);
+  const buttonText = busy ? t.creating : title.trim().length < MIN_TITLE ? t.needQuestion : !isRating && !ideas && filledCount < MIN_CHOICES ? t.needChoices(MIN_CHOICES - filledCount) : t.createDuel;
   // The end time as the phone shows it (local time, no seconds), for the picker's earliest allowed value.
   const localNow = () => {
     const d = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000);
@@ -213,7 +216,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
       /* a rating poll has its five faces already */
     } else if (isDates) {
       if (filledDates.length < MIN_CHOICES) errs.choices = t.errChoices;
-    } else if (filled.length < MIN_CHOICES) errs.choices = t.errChoices;
+    } else if (!ideas && filled.length < MIN_CHOICES) errs.choices = t.errChoices;
     // The server's own rule (Hindi vowel signs count), so the form and the server never disagree.
     else if (new Set(filled.map(sameKey)).size !== filled.length) errs.choices = t.errSame;
     // A group size outside 2–MAX_GROUP used to be dropped without a word.
@@ -258,13 +261,14 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
         description,
         category,
         kind,
-        calledIt,
+        calledIt: calledIt && !ideas,
+        collectIdeas: ideas && kind === 'choice',
         options: isRating ? RATING_LABELS : isDates ? filledDates.map(dateLabel) : kept.map((x) => x.c),
         emojis: isRating ? RATING_EMOJIS : isDates ? [] : kept.map((x) => x.e),
         photos: isRating || isDates ? [] : kept.map((x) => x.p),
         shuffle: shuffle && !isDates && !isRating,
-        suggestionsOn: suggestionsOn && (kind === 'choice' || kind === 'multi'),
-        allowOther: otherOn && kind === 'choice' && !calledIt,
+        suggestionsOn: suggestionsOn && (kind === 'choice' || kind === 'multi') && !ideas,
+        allowOther: otherOn && kind === 'choice' && !calledIt && !ideas,
         showMaker,
         previousId: again?.id,
         hideUntilVoted,
@@ -318,8 +322,9 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
     { k: 'rank', Icon: ListOrdered, name: t.formatRank, desc: t.typeDesc.rank, pick: () => { setHot(false); pickKind('rank'); } },
     { k: 'rating', Icon: Smile, name: t.fmtRate, desc: t.typeDesc.rating, pick: () => { setHot(false); pickKind('rating'); } },
     { k: 'dates', Icon: CalendarDays, name: t.fmtDecide, desc: t.typeDesc.dates, pick: () => { setHot(false); pickKind('dates'); } },
+    { k: 'ideas', Icon: Lightbulb, name: t.fmtIdeas, desc: t.typeDesc.ideas, pick: () => { setHot(false); pickKind('choice', false, true); } },
   ];
-  const current = TYPES.find((x) => x.k === (calledIt ? 'called' : kind === 'choice' && hot ? 'hot' : kind)) ?? TYPES[0];
+  const current = TYPES.find((x) => x.k === (ideas ? 'ideas' : calledIt ? 'called' : kind === 'choice' && hot ? 'hot' : kind)) ?? TYPES[0];
   // What the folded Settings row says: the poll type and the topic (the two people most often look for).
   const settingsSummary = `${current.name} · ${t.categories[category] ?? category}`;
 
@@ -335,7 +340,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
     choices: isDates ? filledDates.map((d) => ({ label: dateLabel(d), emoji: '', photo: '' })) : choices.map((c, i) => ({ label: c.trim(), emoji: emojiAt(i), photo: photos[i] ?? '' })).filter((c) => c.label),
     rateWords: t.rateWords,
     rateEmojis: RATING_EMOJIS,
-    other: otherOn && kind === 'choice' && !calledIt,
+    other: otherOn && kind === 'choice' && !calledIt && !ideas,
   };
 
   return (
@@ -397,7 +402,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
 
       {/* 2. The choices: a picture and a name each; typing in the last row adds the next one. */}
       <section className="create-block">
-        <p className="create-label">{isRating ? t.formatRate : isDates ? t.formatDates : t.choicesTitle}</p>
+        <p className="create-label">{isRating ? t.formatRate : isDates ? t.formatDates : ideas ? t.brainStartChoices : t.choicesTitle}</p>
         {isDates ? (
           <div className="create-dates">
             {dateVals.map((d, i) => (
@@ -525,7 +530,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
             </li>
           )}
           <li><Row icon={UserRound} name={t.setShowMe} note={t.setShowMeNote} on={showMaker} onClick={() => setShowMaker((v) => !v)} /></li>
-          {kind === 'choice' && !calledIt && <li><Row icon={PenLine} name={t.setOther} note={t.setOtherNote} on={otherOn} onClick={() => setOtherSet(!otherOn)} /></li>}
+          {kind === 'choice' && !calledIt && !ideas && <li><Row icon={PenLine} name={t.setOther} note={t.setOtherNote} on={otherOn} onClick={() => setOtherSet(!otherOn)} /></li>}
           <li>
             <Row icon={Tag} name={t.category} value={t.categories[category] ?? category} open={open === 'topic'} onClick={() => toggleOpen('topic')} />
             {open === 'topic' && (
@@ -566,7 +571,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
                 )}
               </li>
               <li><Row icon={Repeat} name={t.setChange} note={t.allowChangeNote} on={allowChange} onClick={() => setChange((v) => !v)} /></li>
-              {(kind === 'choice' || kind === 'multi') && <li><Row icon={MessageSquarePlus} name={t.setSuggest} note={t.setSuggestNote} on={suggestionsOn} onClick={() => setSuggestionsOn((v) => !v)} /></li>}
+              {(kind === 'choice' || kind === 'multi') && !ideas && <li><Row icon={MessageSquarePlus} name={t.setSuggest} note={t.setSuggestNote} on={suggestionsOn} onClick={() => setSuggestionsOn((v) => !v)} /></li>}
               {(kind === 'choice' || kind === 'multi' || kind === 'rank') && !electionMode && <li><Row icon={Shuffle} name={t.setShuffle} note={t.setShuffleNote} on={shuffle} onClick={() => setShuffle((v) => !v)} /></li>}
               <li><Row icon={Landmark} name={t.setElection} note={t.setElectionShort} on={electionMode} onClick={() => setElectionMode((v) => !v)} /></li>
               <li>

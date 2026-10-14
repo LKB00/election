@@ -94,6 +94,7 @@ ALTER TABLE polls ADD COLUMN IF NOT EXISTS frozen_until timestamptz;
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS today_on text;
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS join_code text;
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS repeat_weekly boolean NOT NULL DEFAULT false;
+ALTER TABLE polls ADD COLUMN IF NOT EXISTS ideas_until timestamptz;
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS reveal_at timestamptz;
 -- "Called it" polls: a real future event; the creator (or the owner) marks what happened.
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS called_it boolean NOT NULL DEFAULT false;
