@@ -92,7 +92,7 @@ export const votes = pgTable(
     reason: text('reason'),
     // What a voter wrote under "Other" (only on the Other choice).
     otherText: text('other_text'),
-    // "Who's winning right now?" guess: an option id, 'skip', or null = not asked yet.
+    // Guess the crowd: an option id, 'skip', or null = not asked yet.
     prediction: text('prediction'),
     predictionCorrect: boolean('prediction_correct'),
     // Private code in this voter's share link (never the voter id), and the code they arrived with.

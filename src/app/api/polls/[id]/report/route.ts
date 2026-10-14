@@ -15,7 +15,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const parsed = reportSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: 'Pick a reason.' }, { status: 400 });
   const ok = await reportPoll(await getDb(), id, await getOrCreateVoterId(), parsed.data.reason, clientIp(req));
-  if (!ok) return NextResponse.json({ error: 'Poll not found.' }, { status: 404 });
+  if (!ok) return NextResponse.json({ error: 'We could not find this poll. It may have been removed.' }, { status: 404 });
   // After the answer is sent, so a slow alert never slows the reporter down.
   const photo = parsed.data.reason === 'private' || parsed.data.reason === 'me';
   after(() => alertOwner(`Report: ${parsed.data.reason}${ok.hidden ? ' (taken down)' : ''}`, `"${ok.title}" /p/${id}. Check it on /admin.`, photo));

@@ -6,7 +6,7 @@ import { guessSchema } from '@/lib/validation';
 import { readVoterId } from '@/lib/voter';
 import { countEvent } from '@/lib/events';
 
-// "Who's winning right now?" One answer per vote (or "skip"), checked on the server.
+// Guess the crowd ("What do you think most people picked?"). One answer per vote (or "skip"), checked on the server.
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await rateLimit(`guess:${clientIp(req)}`, 30, 60_000))) {
     return NextResponse.json({ error: 'Too many taps. Wait a few seconds and try again.' }, { status: 429 });
@@ -17,9 +17,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!parsed.success || !voterId) return NextResponse.json({ error: 'Vote first.' }, { status: 400 });
   const db = await getDb();
   const result = await guessLeader(db, id, voterId, parsed.data.choice);
-  if (result === 'not_found') return NextResponse.json({ error: 'Poll not found.' }, { status: 404 });
+  if (result === 'not_found') return NextResponse.json({ error: 'We could not find this poll. It may have been removed.' }, { status: 404 });
   if (result === 'bad_option') return NextResponse.json({ error: 'That choice is not in this poll.' }, { status: 400 });
-  if (result !== 'ok') return NextResponse.json({ error: 'You already answered this one.' }, { status: 409 });
+  if (result !== 'ok') return NextResponse.json({ error: 'You already made your guess.' }, { status: 409 });
   const via = new URL(req.url).searchParams.get('f');
   const poll = await getPoll(db, id, voterId, via);
   // The owner's step counter: was "Guess the crowd" answered or skipped? Not counted when yours was the only vote

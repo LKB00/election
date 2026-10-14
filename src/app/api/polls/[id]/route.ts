@@ -11,6 +11,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   // hidden results on a TV in front of the room.
   const voter = url.searchParams.get('public') === '1' ? null : await readVoterId();
   const poll = await getPoll(await getDb(), id, voter, via);
-  if (!poll) return NextResponse.json({ error: 'Poll not found' }, { status: 404 });
+  if (!poll) return NextResponse.json({ error: 'We could not find this poll. It may have been removed.' }, { status: 404 });
   return NextResponse.json(poll, { headers: { 'Cache-Control': 'no-store' } });
 }
