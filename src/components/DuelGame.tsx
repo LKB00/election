@@ -990,7 +990,8 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
                 {revealed && (lead || (isMine && !ranking) || poll.friend.optionId === o.id || happened === o.id) && (
                   <span className="tot-caption">
                     {/* "Called it": what happened is the answer; the most-picked choice is only "most called". */}
-                    {isMine && !ranking && !dates ? t.yourPick : dates && lead ? t.bestDate : happened === o.id ? `✓ ${t.calledHappened}` : lead ? (poll.calledIt ? t.calledCrowd : poll.closed && !counting ? t.won : t.leading) : t.friendsPick}
+                    {/* Dates: the best date says so; any other date you said works for is "Your pick" (it fell through to the sender's pick). */}
+                    {dates && lead ? t.bestDate : isMine && !ranking ? t.yourPick : happened === o.id ? `✓ ${t.calledHappened}` : lead ? (poll.calledIt ? t.calledCrowd : poll.closed && !counting ? t.won : t.leading) : t.friendsPick}
                     {isMine && happened === o.id ? ` · ✓ ${t.calledHappened}` : isMine && !ranking && !dates && lead && !poll.calledIt ? ` · ${poll.closed && !counting ? t.wonLower : t.leadingLower}` : ''}
                     {poll.friend.optionId === o.id && (isMine || lead) ? ` · ${t.friendsPickLower}` : ''}
                   </span>

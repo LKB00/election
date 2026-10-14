@@ -17,9 +17,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!parsed.success || !voterId) return NextResponse.json({ error: 'Vote first.' }, { status: 400 });
   const db = await getDb();
   const result = await guessLeader(db, id, voterId, parsed.data.choice);
-  if (result === 'not_found') return NextResponse.json({ error: 'Poll not found.' }, { status: 404 });
+  if (result === 'not_found') return NextResponse.json({ error: 'We could not find this poll. It may have been removed.' }, { status: 404 });
   if (result === 'bad_option') return NextResponse.json({ error: 'That choice is not in this poll.' }, { status: 400 });
-  if (result !== 'ok') return NextResponse.json({ error: 'You already answered this one.' }, { status: 409 });
+  if (result !== 'ok') return NextResponse.json({ error: 'You already made your guess.' }, { status: 409 });
   const via = new URL(req.url).searchParams.get('f');
   const poll = await getPoll(db, id, voterId, via);
   // The owner's step counter: was "Guess the crowd" answered or skipped? Not counted when yours was the only vote

@@ -42,7 +42,7 @@ export function middleware(req: NextRequest) {
   }
   if (ok) return path.startsWith('/api/') ? NextResponse.next() : withLang(req);
   return req.nextUrl.pathname.startsWith('/api/')
-    ? NextResponse.json({ error: 'Poll not found.' }, { status: 404 })
+    ? NextResponse.json({ error: 'We could not find this poll. It may have been removed.' }, { status: 404 })
     : NextResponse.rewrite(new URL('/not-found-page', req.url), { status: 404 });
 }
 

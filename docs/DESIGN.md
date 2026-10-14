@@ -1403,3 +1403,16 @@ Kept for safety: reports (enough reports take a poll down at once; a photo repor
 - Line: **"Just a guess, for fun. Tap one to see the real result."** (was "What did most people pick? Make your guess, then the results open.").
 - Not "Who will win?": on politics polls that reads like predicting the real election, which the product never does (no "exit poll" wording, RP Act s.126A).
 
+## Copy audit (owner, Oct 2026: "check each and every UX copy… it should not put the user in a situation where they have to think")
+
+Every English line was reviewed (three passes over `i18n.ts` plus the server messages), and about 120 unclear lines were rewritten in English, Hindi and Hinglish. The rules used, for any new text:
+
+- **One meaning, said plainly.** No idioms or insider words on screen: not "neck and neck", "take", "win people over", "set", "pack", "sealed", "VVPAT", "Election mode", "if need be", "where you stand", "Polling open". Use "very close", "pick", "Today's polls", "match or show polls", "hidden", "your vote slip", "Voting booth style", "maybe", "see the results", "Voting open".
+- **Say who.** "Sender's pick", not "Their pick"; "The person who made this poll", not "the maker".
+- **Say what happens.** Buttons name the result ("Vote with this order", "Make it #2", "Remove end time", "Share that you voted"); settings read as settings ("When results show"), not as actions.
+- **Errors say what to do next** ("Check your internet and try again", "Reload the page and try again").
+- **No time promises, no "friends only"** (any audience), no prediction of a real election, never "exit poll".
+- "Voter ID" became **"Vote no."** (it must not sound like a government ID).
+
+Bug found by the click-through test: on "Which dates work?" polls, dates you picked that were not the best date were captioned with the sender's label; they now say "Your pick".
+

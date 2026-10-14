@@ -17,7 +17,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!parsed.success || !voterId) return NextResponse.json({ error: 'Vote first, then react.' }, { status: 400 });
   const db = await getDb();
   if (!(await toggleReaction(db, id, voterId, parsed.data.emoji))) {
-    return NextResponse.json({ error: 'Could not save that reaction.' }, { status: 400 });
+    return NextResponse.json({ error: 'Could not save that reaction. Try again.' }, { status: 400 });
   }
   return NextResponse.json({ poll: await getPoll(db, id, voterId, new URL(req.url).searchParams.get('f')) });
 }

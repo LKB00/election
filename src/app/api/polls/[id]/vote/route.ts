@@ -16,11 +16,11 @@ import { getOrCreateVoterId, readVoterId } from '@/lib/voter';
 const MESSAGES = {
   already_voted: 'You already voted in this poll.',
   closed: 'This poll has ended.',
-  not_found: 'Poll not found.',
+  not_found: 'We could not find this poll. It may have been removed.',
   bad_option: 'That choice is not in this poll.',
   bad_other: ERR.otherBad,
   frozen: 'Voting on this poll is paused for a few minutes: we saw unusual activity. Results are still open.',
-  busy: 'Lots of votes from your network on this poll just now. Try again in a few minutes.',
+  busy: 'Too many votes from your internet connection just now. Try again in a few minutes.',
 } as const;
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -31,7 +31,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const parsed = voteSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: 'Pick a choice.' }, { status: 400 });
   if (!(await verifyHuman(parsed.data.human, req))) {
-    return NextResponse.json({ error: 'Could not check that you are a person. Try again.' }, { status: 403 });
+    return NextResponse.json({ error: 'We couldn’t check you’re not a robot. Reload the page and try again.' }, { status: 403 });
   }
 
   const db = await getDb();
