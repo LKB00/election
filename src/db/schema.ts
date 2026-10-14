@@ -64,6 +64,8 @@ export const polls = pgTable(
     // "Show my pick after people vote" (the maker's choice), and the maker's voter key, kept when they vote on it.
     showMakerPick: boolean('show_maker_pick').notNull().default(false),
     makerVoter: text('maker_voter'),
+    // "Post later": opens for votes (and shows in lists) at this time.
+    startsAt: timestamp('starts_at', { withTimezone: true }),
     // Each voter sees the choices in their own order.
     shuffle: boolean('shuffle').notNull().default(false),
     // Voters may suggest a missing choice; the maker approves it first.

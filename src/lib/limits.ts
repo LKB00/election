@@ -71,3 +71,9 @@ export const BATTLE_ROUND_HOURS = [1, 24, 72] as const;
 export const LIST_FIRST = 6;
 /** A tie's decider poll (two or more tied choices, the same question) runs this long. */
 export const RUNOFF_HOURS = 24;
+/** "Post later": a poll can be set to open at most this many days ahead. */
+export const START_MAX_DAYS = 14;
+/** "It's quiet" on the maker's page: an open poll with fewer than QUIET_MAX_VOTES votes and none in the last QUIET_HOURS
+ *  (and at least that old) gets the WhatsApp Status picture as its next step. */
+export const QUIET_HOURS = 6;
+export const QUIET_MAX_VOTES = 10;

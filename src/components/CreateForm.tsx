@@ -15,7 +15,7 @@ import type { Picture } from './PicturePicker';
 import PreviewCard, { previewRules, type PreviewPoll } from './PreviewCard';
 import { dateLocale, monthStyle } from '@/lib/time';
 import { sameKey } from '@/lib/same';
-import { REVEAL_IN, GROUP_DEFAULT_DAYS, MAX_CHOICE, MAX_CHOICES, MAX_DETAILS, MAX_GROUP, MAX_TITLE, MIN_CHOICES, MIN_TITLE } from '@/lib/limits';
+import { REVEAL_IN, START_MAX_DAYS, GROUP_DEFAULT_DAYS, MAX_CHOICE, MAX_CHOICES, MAX_DETAILS, MAX_GROUP, MAX_TITLE, MIN_CHOICES, MIN_TITLE } from '@/lib/limits';
 // Loaded only when opened (less code for cheap phones to download before the form works).
 /** "Hot take": the faces for Agree / Depends / Disagree (the words come from i18n, in the maker's language). */
 const HOT_EMOJIS = ['🔥', '🤔', '🙅'];
@@ -97,6 +97,8 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   // Only what the person picked (owner: nothing shown before you choose); the fitting emoji is offered first in the picker.
   const emojiAt = (i: number) => emojis[i] ?? '';
   const [endsAt, setEndsAt] = useState('');
+  // "Post later": opens for votes at this time (phone's local time, like the end time).
+  const [startsAt, setStartsAt] = useState('');
   const [hideUntilVoted, setHide] = useState(true); // on by default: guess first, then see (the guess game)
   // "Show results": right after voting (default), or at a set time for everyone at once (a reason to come back).
   const [revealIn, setRevealIn] = useState<(typeof REVEAL_IN)[number]>('now');
@@ -157,9 +159,9 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   }, [title, choices, kind, calledIt, category, hot, ideas]);
   const [error, setError] = useState('');
   // Errors show under the field they belong to, and focus moves there.
-  const [fieldError, setFieldError] = useState<{ title?: string; choices?: string; end?: string; group?: string }>({});
+  const [fieldError, setFieldError] = useState<{ title?: string; choices?: string; end?: string; group?: string; start?: string }>({});
   // P3 settings are one line of chips; each opens its small box underneath, one at a time.
-  const [open, setOpen] = useState<'ends' | 'topic' | 'details' | 'group' | 'reveal' | null>(null);
+  const [open, setOpen] = useState<'ends' | 'starts' | 'topic' | 'details' | 'group' | 'reveal' | null>(null);
   // The less-used settings (Election mode, votes can change, end time, details) wait behind "More options".
   const [showMore, setShowMore] = useState(false);
   // All settings sit behind one "Settings" row until opened (an "Ask again" poll opens with them shown).
@@ -300,7 +302,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
 
   function check() {
     const filled = choices.map((c) => c.trim().replace(/\s+/g, ' ')).filter(Boolean);
-    const errs: { title?: string; choices?: string; end?: string; group?: string } = {};
+    const errs: { title?: string; choices?: string; end?: string; group?: string; start?: string } = {};
     if (title.trim().length < MIN_TITLE) errs.title = t.errTitle;
     if (isRating) {
       /* a rating poll has its five faces already */
@@ -312,6 +314,10 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
     // A group size outside 2–MAX_GROUP used to be dropped without a word.
     if (groupSize && !isGroup) errs.group = t.errGroup(MAX_GROUP);
     if (endsAt && !(new Date(endsAt).getTime() > Date.now())) errs.end = t.errEnd;
+    if (startsAt) {
+      const at = new Date(startsAt).getTime();
+      if (!(at > Date.now() && at < Date.now() + START_MAX_DAYS * 86_400_000) || (endsAt && new Date(endsAt).getTime() <= at)) errs.start = t.errStart;
+    }
     setFieldError(errs);
     if (errs.title) document.getElementById('title')?.focus();
     else if (errs.choices) document.querySelector<HTMLInputElement>('input[data-choice]')?.focus();
@@ -319,13 +325,18 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
       setOpen('group');
       setSettingsOpen(true);
       setTimeout(() => document.getElementById('group')?.focus(), 0);
+    } else if (errs.start) {
+      setOpen('starts');
+      setSettingsOpen(true);
+      setShowMore(true);
+      setTimeout(() => document.getElementById('start')?.focus(), 0);
     } else if (errs.end) {
       // The end time sits under "More options": open it so the message is seen.
       setOpen('ends');
       setSettingsOpen(true);
       setTimeout(() => document.getElementById('end')?.focus(), 0);
     }
-    return !errs.title && !errs.choices && !errs.end && !errs.group;
+    return !errs.title && !errs.choices && !errs.end && !errs.group && !errs.start;
   }
 
   function post() {
@@ -368,6 +379,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
         electionMode,
         groupSize: isGroup ? groupN : undefined,
         // A group poll with no end time would wait forever for one missing friend: it ends in 3 days unless you pick a time.
+        startsAt: startsAt && !ideas ? new Date(startsAt).toISOString() : undefined,
         endsAt: endsAt ? new Date(endsAt).toISOString() : isGroup ? new Date(Date.now() + GROUP_DEFAULT_DAYS * 86_400_000).toISOString() : undefined,
       }),
     }).catch(() => null);
@@ -390,7 +402,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   }
 
   const TONES = ['input', 'feedback', 'control', 'agents', 'output', 'trust'];
-  const toggleOpen = (k: 'ends' | 'topic' | 'details' | 'group' | 'reveal') => setOpen((o) => (o === k ? null : k));
+  const toggleOpen = (k: 'ends' | 'starts' | 'topic' | 'details' | 'group' | 'reveal') => setOpen((o) => (o === k ? null : k));
   const endsLabel = endsAt ? new Date(endsAt).toLocaleString(dateLocale(lang), { day: 'numeric', month: monthStyle(lang), hour: 'numeric', minute: '2-digit' }) : t.setEnds;
 
   // Create, top to bottom (docs/DESIGN.md, "Create, tidied"): the question in a real box, the choices, then every
@@ -737,8 +749,24 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
           <li><Row icon={UserRound} name={t.setShowMe} note={t.setShowMeNote} on={showMaker} onClick={() => setShowMaker((v) => !v)} /></li>
           {showMaker && category !== 'politics' && <li><Row icon={Eye} name={t.setMakerPick} note={t.setMakerPickNote} on={makerPick} onClick={() => setMakerPick((v) => !v)} /></li>}
           {kind === 'choice' && !calledIt && !ideas && <li><Row icon={PenLine} name={t.setOther} note={t.setOtherNote} on={otherOn} onClick={() => setOtherSet(!otherOn)} /></li>}
-          {showMore || endsAt || isGroup || allowChange || electionMode || shuffle || description.trim() || fieldError.end ? (
+          {showMore || endsAt || startsAt || isGroup || allowChange || electionMode || shuffle || description.trim() || fieldError.end || fieldError.start ? (
             <>
+              {!ideas && (
+                <li>
+                  <Row icon={Timer} name={t.setStart} value={startsAt ? new Date(startsAt).toLocaleString(dateLocale(lang), { day: 'numeric', month: monthStyle(lang), hour: 'numeric', minute: '2-digit' }) : undefined} open={open === 'starts' || !!fieldError.start} onClick={() => toggleOpen('starts')} />
+                  {(open === 'starts' || fieldError.start) && (
+                    <div className="create-panel">
+                      <span className="search">
+                        <Timer size={14} strokeWidth={1.75} aria-hidden />
+                        <input id="start" type="datetime-local" min={localNow()} value={startsAt} aria-label={t.setStart} aria-invalid={!!fieldError.start} onChange={(e) => { setStartsAt(e.target.value); setFieldError((f) => ({ ...f, start: undefined })); }} />
+                      </span>
+                      <p className="small muted">{t.opensNote}</p>
+                      {startsAt && <button type="button" className="link-like small muted" onClick={() => setStartsAt('')}>{t.startsClear}</button>}
+                      {fieldError.start && <p className="field-error" role="alert">{fieldError.start}</p>}
+                    </div>
+                  )}
+                </li>
+              )}
               <li>
                 <Row icon={Clock} name={t.setEnds} value={endsAt ? endsLabel : undefined} open={open === 'ends' || !!fieldError.end} onClick={() => toggleOpen('ends')} />
                 {(open === 'ends' || fieldError.end) && (

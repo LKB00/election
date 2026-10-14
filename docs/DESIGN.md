@@ -1298,6 +1298,14 @@ phone it squeezed "When results show" to one letter per line.
 | Group organiser | **"It's a tie" → Start a decider (24 hours)** | The maker's page of an ended pick-one poll with 2+ choices tied at the top | P1 there | The same question with only the tied choices, ending in `RUNOFF_HOURS`, linked to the tied poll (its page shows "newer poll"). Made once; later it is "Go to the decider". |
 | Returning voter | **Since you last looked** | Your votes, top, only when something changed | P1 when shown | "Ambur took the lead", "Your pick is now ahead", "Result is in: … won", "Results are open", "It's now a tie", "It happened: you called it". Compared with what this phone saw last time (kept on the phone); up to `LIST_FIRST` rows. |
 
+## Post later, who can see my vote, it's quiet (owner, Oct 2026: "okay")
+
+| Element | Where | Priority | Why |
+|---|---|---|---|
+| **Start later** (date and time) | Create → Settings → More settings, above End time; not for "Ideas first" | P3 | For a match toss or a show start. Until then the poll is left out of every list and refuses votes ("This poll opens later."); its link works, and the status line says "Opens 15 Oct, 7:30 pm" instead of "Voting open". At that moment the open page turns its keys on by itself. At most `START_MAX_DAYS` ahead, and before the end time. Lists sort it by when it opened. |
+| **Who can see my vote?** | Poll, under the ballot, before you vote | P3 | A quiet pill that opens three plain lines: nobody sees your pick unless you share it, makers see only totals, your vote is tied to this phone and can be deleted. For the voter who worries "secret vote" is just words. |
+| **It's quiet** + Share the Status picture | Maker's page, in "How it's going" | P1 there (the WhatsApp button steps back to an outline) | An open poll with under `QUIET_MAX_VOTES` votes and none in the last `QUIET_HOURS` (and at least that old): "5 votes so far, none in the last 6 hours. Post it in your WhatsApp Status: people tap the picture to vote." The button shares the story picture (saved on a computer). |
+
 ## Engagement round (owner, Oct 2026: "the product is social engagement; polls are the mechanism")
 
 - **"Ask your friends"** is the main button everywhere it said "Start a poll" (top bar, Home, empty pages, after voting,

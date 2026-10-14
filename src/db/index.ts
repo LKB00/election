@@ -174,6 +174,8 @@ ALTER TABLE polls ADD COLUMN IF NOT EXISTS show_maker boolean NOT NULL DEFAULT f
 -- The maker's own pick, shown to voters after they vote if the maker chose so (the maker's voter key, set when they vote).
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS show_maker_pick boolean NOT NULL DEFAULT false;
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS maker_voter text;
+-- "Post later": hidden from lists and closed to votes until this time (the link works and says when it opens).
+ALTER TABLE polls ADD COLUMN IF NOT EXISTS starts_at timestamptz;
 -- Each voter sees the choices in their own order (fairer: no first-place advantage).
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS shuffle boolean NOT NULL DEFAULT false;
 -- Voters may suggest a missing choice; it shows only after the maker approves it.

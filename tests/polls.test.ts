@@ -1668,3 +1668,33 @@ describe('tie decider', () => {
     expect(await startRunoff(db, id, 'tie-maker', 'Decider')).toBe(d); // once
   });
 });
+
+describe('post later and quiet polls', () => {
+  it('keeps a "post later" poll out of lists and closed to votes until it opens', async () => {
+    const startsAt = new Date(Date.now() + 3_600_000).toISOString();
+    const id = await make({ title: 'Toss time question?', startsAt });
+    const p = (await getPoll(db, id, null))!;
+    expect(p.startsAt).toBe(startsAt);
+    expect((await listPolls(db, 200)).some((x) => x.id === id)).toBe(false);
+    expect(await castVote(db, id, p.options[0].id, 'later-1')).toBe('not_started');
+    await db.update(schema.polls).set({ startsAt: new Date(Date.now() - 1000) }).where(eq(schema.polls.id, id));
+    expect((await listPolls(db, 200)).some((x) => x.id === id)).toBe(true);
+    expect((await getPoll(db, id, null))!.startsAt).toBeNull();
+    expect(await castVote(db, id, p.options[0].id, 'later-1')).toBe('ok');
+    // An end before the start, or a start weeks away, is refused.
+    expect(createPollSchema.safeParse({ title: 'Bad order?', options: ['A', 'B'], startsAt, endsAt: new Date(Date.now() + 60_000).toISOString() }).success).toBe(false);
+    expect(createPollSchema.safeParse({ title: 'Too far?', options: ['A', 'B'], startsAt: new Date(Date.now() + 30 * 86_400_000).toISOString() }).success).toBe(false);
+  });
+
+  it('marks a poll quiet for its maker when nobody has voted for a while', async () => {
+    const { makerView } = await import('@/lib/maker');
+    await db.insert(schema.users).values({ id: 'quiet-maker', name: 'Quiet Maker' }).onConflictDoNothing();
+    const id = await createPoll(db, createPollSchema.parse({ title: 'Anyone there?', options: ['Yes', 'No'] }), undefined, undefined, 'quiet-maker');
+    expect((await makerView(db, id, 'quiet-maker'))!.quiet).toBe(false); // brand new
+    await db.update(schema.polls).set({ createdAt: new Date(Date.now() - 8 * 3_600_000) }).where(eq(schema.polls.id, id));
+    expect((await makerView(db, id, 'quiet-maker'))!.quiet).toBe(true);
+    const p = (await getPoll(db, id, null))!;
+    await castVote(db, id, p.options[0].id, 'quiet-v');
+    expect((await makerView(db, id, 'quiet-maker'))!.quiet).toBe(false); // a vote just now
+  });
+});

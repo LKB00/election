@@ -1367,3 +1367,11 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
 .create-speak { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; }
 .create-speak .link-like { display: inline-flex; align-items: center; gap: 6px; }
 .since-row { font-weight: 600; }
+/* "Who can see my vote?" under the ballot: a quiet pill that opens three plain lines. */
+.who-sees { align-self: flex-start; }
+.who-sees > summary { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 14px; border-radius: 999px; background: var(--quiet); color: var(--ink-2); font-weight: 600; cursor: pointer; list-style: none; }
+.who-sees > summary::-webkit-details-marker { display: none; }
+.who-sees ul { margin: 8px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+@media (hover: hover) and (pointer: fine) { .who-sees > summary:hover { background: var(--quiet-hover); } }
+.maker-quiet { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px 16px; border-radius: var(--radius-card); background: var(--you-soft); color: var(--on-you-soft); }
+.maker-quiet p { margin: 0; }

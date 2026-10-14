@@ -47,6 +47,8 @@ export type PollView = {
   hideUntilVoted: boolean;
   allowChange: boolean;
   endsAt: string | null;
+  /** "Post later": when it opens for votes (only while that is still ahead). */
+  startsAt: string | null;
   closed: boolean;
   /** "Ideas first": people are adding choices until `until` (and until there are 2); no voting meanwhile. */
   ideas: { until: string; open: boolean } | null;
@@ -202,6 +204,8 @@ export async function createPoll(db: Db, raw: CreatePollInput, manageKey?: strin
     // A group poll always has an end, so one friend who never votes cannot keep the group waiting for ever.
     endsAt: endsAfterIdeas(input.endsAt ? new Date(input.endsAt) : input.groupSize ? new Date(Date.now() + GROUP_DEFAULT_DAYS * 86_400_000) : null, ideasUntil),
     ideasUntil,
+    // "Post later": closed to votes and left out of lists until then (not with "Ideas first", which opens at once).
+    startsAt: input.startsAt && !ideasUntil ? new Date(input.startsAt) : null,
     // "Show results at a set time": from the server's clock. Not for group polls (they open when the group is in) or
     // "Called it" (the answer opens it).
     revealAt: input.groupSize || calledIt || input.revealIn === 'now' ? null : input.revealIn === 'ninepm' ? nextFinalCount() : new Date(Date.now() + (REVEAL_MINUTES[input.revealIn] ?? 0) * 60_000),
@@ -441,6 +445,7 @@ async function loadPoll(
     hideUntilVoted: poll.hideUntilVoted,
     allowChange: poll.allowChange,
     endsAt: poll.endsAt?.toISOString() ?? null,
+    startsAt: poll.startsAt && poll.startsAt.getTime() > Date.now() ? poll.startsAt.toISOString() : null,
     ideas: poll.ideasUntil ? { until: poll.ideasUntil.toISOString(), open: poll.ideasUntil.getTime() > Date.now() || optsInOrder.filter((o) => !o.isOther).length < MIN_CHOICES } : null,
     closed,
     totalVotes: resultsVisible ? total : 0,
@@ -574,7 +579,7 @@ async function shareOverTime(db: Db, id: string, createdAt: Date, firstOptionId:
   return points.slice(-48);
 }
 
-export type VoteResult = 'ok' | 'changed' | 'already_voted' | 'closed' | 'not_found' | 'bad_option' | 'bad_other' | 'frozen' | 'ideas';
+export type VoteResult = 'ok' | 'changed' | 'already_voted' | 'closed' | 'not_found' | 'bad_option' | 'bad_other' | 'frozen' | 'ideas' | 'not_started';
 
 export async function castVote(db: Db, id: string, optionId: string, voterId: string, via?: string | null, morePicks: string[] = [], maybes: string[] = [], other?: string | null): Promise<VoteResult> {
   const [poll] = await db.select().from(polls).where(eq(polls.id, id)).limit(1);
@@ -582,6 +587,7 @@ export async function castVote(db: Db, id: string, optionId: string, voterId: st
   if (poll.endsAt && poll.endsAt.getTime() <= Date.now()) return 'closed';
   // Paused after a flood of votes (src/lib/flood.ts) until the time runs out or the owner resumes it.
   if (poll.frozenUntil && poll.frozenUntil.getTime() > Date.now()) return 'frozen';
+  if (poll.startsAt && poll.startsAt.getTime() > Date.now()) return 'not_started';
   // "Ideas first": no votes while people are still adding the choices.
   if (poll.ideasUntil && (await ideasOpen(db, poll.id, poll.ideasUntil))) return 'ideas';
   // "Pick several": every ticked choice must belong to this poll (the first one is the vote row's own choice).
@@ -785,11 +791,14 @@ export async function listPolls(db: Db, limit = 20, filter: { category?: string;
         isNull(polls.groupSize),
         filter.category ? eq(polls.category, filter.category) : undefined,
         filter.before ? lt(polls.createdAt, filter.before) : undefined,
+        // "Post later": not listed before it opens.
+        or(isNull(polls.startsAt), sql`${polls.startsAt} <= now()`),
         q ? sql`(${polls.title} ilike ${like} or exists (select 1 from options o where o.poll_id = polls.id and o.label ilike ${like}))` : undefined,
       ),
     )
     .groupBy(polls.id)
-    .orderBy(desc(polls.createdAt))
+    // Newest first, a "Post later" poll by when it opened.
+    .orderBy(desc(sql`coalesce(${polls.startsAt}, ${polls.createdAt})`))
     .limit(limit);
   if (!rows.length) return [];
   const opts = await db
