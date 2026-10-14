@@ -1,4 +1,4 @@
-import { ArrowRight, ChevronRight, SlidersHorizontal, Users, Vote } from 'lucide-react';
+import { ArrowRight, ChevronRight, Repeat, SlidersHorizontal, Users, Vote } from 'lucide-react';
 import Link from 'next/link';
 import { currentUser } from '@/lib/auth';
 import { ownPoll } from '@/lib/maker';
@@ -11,7 +11,7 @@ import DuelGame from '@/components/DuelGame';
 import Step from '@/components/Step';
 import { getDb } from '@/db';
 import { SITE_URL } from '@/lib/site';
-import { getDeck, getMyVotes, getPoll, INDEX_MIN_VOTES, listPolls } from '@/lib/polls';
+import { getDeck, getMyVotes, getPoll, INDEX_MIN_VOTES, listPolls, rollWeekly } from '@/lib/polls';
 import DuelTiles from '@/components/DuelTiles';
 import { readVoterId } from '@/lib/voter';
 import { getT, langAlternates } from '@/lib/lang-server';
@@ -64,6 +64,9 @@ export default async function DuelPage({ params, searchParams }: Props) {
   const others = recent.filter((p) => !p.closed && p.id !== poll.id).slice(0, 5);
   // The poll's maker gets a way to their tools (votes so far, end it, results picture).
   const mine = !!user && !!(await ownPoll(db, poll.id, user.id));
+  // An ended poll that was asked again (every week, or "Ask again"): one step to the new one. A weekly poll opens its
+  // next week here if nobody has yet.
+  const newer = poll.closed ? await rollWeekly(db, poll.id).catch(() => null) : null;
   // Opened from inside the site (Duels list, a tile): nobody "wants your pick", so no label then.
   const h = await headers();
   let fromInside = false;
@@ -118,6 +121,12 @@ export default async function DuelPage({ params, searchParams }: Props) {
       {poll.maker && (
         <Link href={`/u/${poll.maker.id}`} className="maker-by">
           <span className="maker-by-face" aria-hidden>{poll.maker.avatar}</span> {t.askedBy(poll.maker.name)}
+        </Link>
+      )}
+      {newer && (
+        <Link href={`/p/${newer}`} className="maker-bar newer-bar">
+          <Repeat size={16} strokeWidth={2} aria-hidden /> {t.newerPoll}
+          <ChevronRight size={16} strokeWidth={2} aria-hidden />
         </Link>
       )}
       </PollIntro>

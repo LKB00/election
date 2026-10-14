@@ -1285,3 +1285,8 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
 .poster-code strong { color: var(--ink); font-size: 22px; letter-spacing: 0.12em; }
 .join-have { display: flex; justify-content: center; margin-top: 16px; }
 .join-link { margin-top: 10px; }
+
+/* Week by week (docs/DESIGN.md, "Weekly repeat"): one row per week, a thin bar for the leader's share (or the rating). */
+.week-trend .al-row { align-items: center; }
+.week-bar { flex: 0 0 72px; height: 6px; border-radius: 9999px; background: var(--line); overflow: hidden; }
+.week-bar > span { display: block; height: 100%; border-radius: inherit; background: var(--indigo); }

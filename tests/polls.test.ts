@@ -1466,3 +1466,37 @@ describe('join with a code', () => {
     expect(await ensureJoinCode(db, id)).toBeNull();
   });
 });
+
+describe('ask again every week', () => {
+  it('opens the same question again when it ends, points back to it, and shows week by week', async () => {
+    const { setWeekly, rollDueSeries, rollWeekly, weeklyTrend } = await import('@/lib/polls');
+    const id = await make({ title: 'Weekly mood check', options: ['Good', 'Bad'] });
+    expect(await setWeekly(db, id, true)).toBe(true);
+    const first = (await getPoll(db, id, null))!;
+    expect(first.endsAt).not.toBeNull();
+    await castVote(db, id, first.options[0].id, 'wk1');
+    // The week ends: the next one opens by itself, with the same choices and a future end.
+    await db.update(schema.polls).set({ endsAt: new Date(Date.now() - 60_000) }).where(eq(schema.polls.id, id));
+    expect(await rollDueSeries(db)).toBeGreaterThanOrEqual(1);
+    const nextId = (await rollWeekly(db, id))!;
+    expect(nextId).not.toBe(id);
+    const next = (await getPoll(db, nextId, null))!;
+    expect(next.title).toBe('Weekly mood check');
+    expect(next.options.map((o) => o.label)).toEqual(['Good', 'Bad']);
+    expect(next.closed).toBe(false);
+    expect(next.previous?.id).toBe(id);
+    const [oldRow] = await db.select().from(schema.polls).where(eq(schema.polls.id, id));
+    const [newRow] = await db.select().from(schema.polls).where(eq(schema.polls.id, nextId));
+    expect([oldRow.repeatWeekly, newRow.repeatWeekly]).toEqual([false, true]);
+    // Asking again does not make a second copy.
+    expect(await rollWeekly(db, id)).toBe(nextId);
+    const weeks = await weeklyTrend(db, nextId);
+    expect(weeks.map((w) => w.id)).toEqual([nextId, id]);
+    expect(weeks[1].voters).toBe(1);
+  });
+  it('is not offered for group polls', async () => {
+    const { setWeekly } = await import('@/lib/polls');
+    const group = await make({ title: 'Group weekly', groupSize: 3 });
+    expect(await setWeekly(db, group, true)).toBe(false);
+  });
+});

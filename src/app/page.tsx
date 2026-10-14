@@ -12,7 +12,7 @@ import DuelTiles from '@/components/DuelTiles';
 import PackRows from '@/components/PackRows';
 import { upcomingPacks } from '@/lib/packs';
 import { getDb } from '@/db';
-import { getDeck, getTodaySet, listPolls, trendingPolls, voterCount } from '@/lib/polls';
+import { getDeck, getTodaySet, rollDueSeries, listPolls, trendingPolls, voterCount } from '@/lib/polls';
 import { VIEWS_SHOW_MIN, VOTERS_SHOW_MIN } from '@/lib/limits';
 import { viewTotal } from '@/lib/events';
 import { dateLocale } from '@/lib/time';
@@ -39,6 +39,8 @@ export default async function Home() {
   const db = await getDb();
   const t = await getT();
   const voterId = await readVoterId();
+  // Weekly polls that ended open their next week first, so they are in today's lists.
+  await rollDueSeries(db).catch(() => 0);
   // Today's set (the same few polls for everyone today, with an end), then more polls only if you ask for them.
   const [deck, extra, recent, trending] = await Promise.all([getTodaySet(db, voterId), getDeck(db, voterId), listPolls(db, 40), trendingPolls(db, 4)]);
   const [tonight, lang, voters, viewed] = await Promise.all([upcomingPacks(db), getLang(), voterCount(db), viewTotal(db)]);

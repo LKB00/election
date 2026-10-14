@@ -6,7 +6,7 @@ import { cleanText, isCode } from './validation';
 import { schema, type Db } from '@/db';
 import type { CreatePollInput } from './validation';
 import { hasBlockedWord, namesPolitics } from './moderation';
-import { GROUP_DEFAULT_DAYS, JOIN_CODE_DIGITS, REVEAL_MINUTES, MAX_OTHER, OTHER_MIN_PEOPLE, OTHER_TOP } from './limits';
+import { GROUP_DEFAULT_DAYS, JOIN_CODE_DIGITS, WEEKLY_TREND_WEEKS, REVEAL_MINUTES, MAX_OTHER, OTHER_MIN_PEOPLE, OTHER_TOP } from './limits';
 import { sealedUntil as silenceUntil } from './silence';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { isAdminKey } from './admin';
@@ -1171,3 +1171,97 @@ export async function setOutcome(db: Db, id: string, optionId: string, key: stri
     .returning({ id: polls.id });
   return set.length ? 'ok' : 'taken';
 }
+
+// ---- "Ask again every week" (docs/DESIGN.md, "Weekly repeat") ----
+const WEEK_MS = 7 * 86400_000;
+
+/**
+ * A weekly poll that has ended opens again: a copy of the same question (same choices, pictures and settings) for
+ * the next 7 days, pointing back to it (previousId, so voters see "Last time" and the maker sees the trend). Only the
+ * newest poll of a series repeats. Returns the id of the poll that is open now (the new one, or one made before).
+ */
+export async function rollWeekly(db: Db, id: string, now = Date.now()): Promise<string | null> {
+  const [next] = await db.select({ id: polls.id }).from(polls).where(and(eq(polls.previousId, id), eq(polls.hidden, false))).limit(1);
+  if (next) return next.id;
+  return db.transaction(async (tx) => {
+    const [p] = await tx.select().from(polls).where(eq(polls.id, id)).for('update').limit(1);
+    if (!p || p.hidden || !p.repeatWeekly || !p.endsAt || p.endsAt.getTime() > now) return null;
+    const [made] = await tx.select({ id: polls.id }).from(polls).where(eq(polls.previousId, id)).limit(1);
+    if (made) return made.id;
+    // The same weekday and time as before, the first one still ahead (a series nobody opened for weeks skips ahead).
+    let ends = p.endsAt.getTime() + WEEK_MS;
+    while (ends <= now + 3600_000) ends += WEEK_MS;
+    const newId = pollId();
+    await tx.insert(polls).values({
+      ...p,
+      id: newId,
+      previousId: p.id,
+      createdAt: new Date(now),
+      endsAt: new Date(ends),
+      revealAt: p.revealAt ? new Date(ends) : null,
+      outcome: null,
+      frozenUntil: null,
+      joinCode: null,
+      featured: false,
+      todayOn: null,
+      repeatWeekly: true,
+    });
+    await tx.update(polls).set({ repeatWeekly: false }).where(eq(polls.id, p.id));
+    const opts = await tx.select().from(options).where(eq(options.pollId, p.id));
+    const pics = new Map((await tx.select().from(photos).where(eq(photos.pollId, p.id))).map((ph) => [ph.id, ph]));
+    for (const o of opts) {
+      // Photos are copied too, so the new week keeps them even if the old poll is deleted later.
+      let imageUrl = o.imageUrl;
+      const photoId = o.imageUrl?.match(/^\/api\/img\/([\w-]+)$/)?.[1];
+      const pic = photoId ? pics.get(photoId) : undefined;
+      if (pic) {
+        const copyId = nanoid(12);
+        await tx.insert(photos).values({ id: copyId, pollId: newId, data: pic.data });
+        imageUrl = `/api/img/${copyId}`;
+      }
+      await tx.insert(options).values({ ...o, id: nanoid(10), pollId: newId, imageUrl });
+    }
+    return newId;
+  });
+}
+
+/** Opens every weekly poll that has ended (run on Home and by the evening job, so a series never waits for a visit). */
+export async function rollDueSeries(db: Db, now = Date.now()): Promise<number> {
+  const due = await db
+    .select({ id: polls.id })
+    .from(polls)
+    .where(and(eq(polls.repeatWeekly, true), eq(polls.hidden, false), lt(polls.endsAt, new Date(now))))
+    .limit(20);
+  let n = 0;
+  for (const d of due) if (await rollWeekly(db, d.id, now).catch(() => null)) n++;
+  return n;
+}
+
+/** The maker turns "Ask again every week" on or off. Turning it on gives an open poll without an end a 7-day end. */
+export async function setWeekly(db: Db, id: string, on: boolean, now = Date.now()): Promise<boolean> {
+  const [p] = await db.select({ endsAt: polls.endsAt, groupSize: polls.groupSize, calledIt: polls.calledIt }).from(polls).where(eq(polls.id, id)).limit(1);
+  // Not for group polls (one group, one decision) or "Called it" (one real event).
+  if (!p || (on && (p.groupSize || p.calledIt))) return false;
+  const ends = on && !p.endsAt ? new Date(now + WEEK_MS) : undefined;
+  await db.update(polls).set({ repeatWeekly: on, ...(ends ? { endsAt: ends } : {}) }).where(eq(polls.id, id));
+  if (on && p.endsAt && p.endsAt.getTime() <= now) await rollWeekly(db, id, now);
+  return true;
+}
+
+export type WeekRow = { id: string; endsAt: string | null; voters: number; leader: string | null; percent: number | null; average: number | null };
+
+/** Week by week, newest first: who led (or the average for a 1 to 5 rating) and how many voted. Totals only. */
+export async function weeklyTrend(db: Db, id: string): Promise<WeekRow[]> {
+  const rows: WeekRow[] = [];
+  let cur: string | null = id;
+  for (let k = 0; cur && k < WEEKLY_TREND_WEEKS; k++) {
+    const p = await getPoll(db, cur, null, null, { noPrevious: true, includeHidden: false });
+    if (!p) break;
+    const lead = p.resultsVisible && p.totalVotes ? [...p.options].sort((a, b) => b.percent - a.percent)[0] : null;
+    rows.push({ id: p.id, endsAt: p.endsAt, voters: p.participants, leader: lead ? (lead.isOther ? null : lead.label) : null, percent: lead ? Math.round(lead.percent) : null, average: p.kind === 'rating' && p.resultsVisible && p.totalVotes ? ratingAverage(p.options.map((o) => o.votes)) : null });
+    const [prev] = await db.select({ previousId: polls.previousId }).from(polls).where(eq(polls.id, cur)).limit(1);
+    cur = prev?.previousId ?? null;
+  }
+  return rows;
+}
+

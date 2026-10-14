@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/db';
 import { purgeDeleted } from '@/lib/maker';
+import { rollDueSeries } from '@/lib/polls';
 import { duePolls, pushEnabled, sendResultAlerts } from '@/lib/push';
 import { sameSecret } from '@/lib/admin';
 
@@ -12,7 +13,9 @@ export async function GET(req: Request) {
   const db = await getDb();
   // Polls their makers deleted, past the 180 days the Rules promise to keep them, are erased with their votes.
   const purged = await purgeDeleted(db);
-  if (!pushEnabled()) return NextResponse.json({ sent: 0, purged });
+  // Weekly polls that ended open their next week.
+  const weekly = await rollDueSeries(db).catch(() => 0);
+  if (!pushEnabled()) return NextResponse.json({ sent: 0, purged, weekly });
   const sent = await sendResultAlerts(db, await duePolls(db));
-  return NextResponse.json({ sent, purged });
+  return NextResponse.json({ sent, purged, weekly });
 }

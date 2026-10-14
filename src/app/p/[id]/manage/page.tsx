@@ -4,11 +4,12 @@ import { Clock, Eye } from 'lucide-react';
 import { getDb } from '@/db';
 import { currentUser } from '@/lib/auth';
 import { makerView } from '@/lib/maker';
+import { weeklyTrend } from '@/lib/polls';
 import { MILESTONE } from '@/lib/push';
 import { getLang, getT } from '@/lib/lang-server';
 import EmptyState from '@/components/EmptyState';
 import { YouSignIn } from '@/components/Profile';
-import { AskAgainRow, FixTypo, Lengths, MarkOutcome, MilestoneAlert, ResultsCard, ShareLink, Suggestions, TvRow, PosterRow, DeletePoll } from '@/components/MakerTools';
+import { AskAgainRow, FixTypo, Lengths, MarkOutcome, MilestoneAlert, ResultsCard, ShareLink, Suggestions, TvRow, PosterRow, WeeklyRow, DeletePoll } from '@/components/MakerTools';
 import { INDIA_TZ, dateLocale, monthStyle } from '@/lib/time';
 
 export const dynamic = 'force-dynamic';
@@ -42,6 +43,9 @@ export default async function ManagePage({ params, searchParams }: { params: Pro
   }
   const when = v.endsAt ? new Date(v.endsAt).toLocaleString(dateLocale(lang), { weekday: 'short', day: 'numeric', month: monthStyle(lang), hour: 'numeric', minute: '2-digit', timeZone: INDIA_TZ }) : '';
   const peak = Math.max(1, ...v.byHour);
+  // Week by week (a weekly poll, or one asked again): newest first, totals only.
+  const weeks = await weeklyTrend(db, v.id);
+  const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(dateLocale(lang), { day: 'numeric', month: monthStyle(lang), timeZone: INDIA_TZ }) : '');
   const srcTotal = v.sources.reduce((s, x) => s + x.n, 0);
   return (
     // Computers (election.css, "Desktop"): how it is going on the left; length, tools and delete in a column beside it.
@@ -124,8 +128,28 @@ export default async function ManagePage({ params, searchParams }: { params: Pro
         </section>
       )}
 
+      {weeks.length > 1 && (
+        <section className="al-block" aria-label={t.weeklyTrend}>
+          <h2 className="al-block__title">{t.weeklyTrend}</h2>
+          <ul className="al-listcard week-trend">
+            {weeks.map((w, n) => (
+              <li key={w.id}>
+                <Link href={`/p/${w.id}`} className="al-row">
+                  <span className="al-row__main">
+                    <span className="al-row__title">{n === 0 ? t.weeklyNow : day(w.endsAt)}</span>
+                    <span className="al-row__meta">{w.average != null ? t.weeklyAvg(w.average) : w.leader ? `${w.leader} · ${w.percent}%` : w.voters ? '' : t.weeklyNone}{w.voters ? `${w.average != null || w.leader ? ' · ' : ''}${t.votes(w.voters)}` : ''}</span>
+                  </span>
+                  {w.percent != null && <span className="week-bar" aria-hidden><span style={{ width: `${w.average != null ? w.average * 20 : w.percent}%` }} /></span>}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section className="al-block">
         <ul className="al-listcard">
+          {v.canRepeat && <li><WeeklyRow id={v.id} on={v.repeatWeekly} /></li>}
           {v.canEdit && <li><FixTypo view={v} /></li>}
           {!v.closed && v.votes < MILESTONE && <li><MilestoneAlert id={v.id} n={MILESTONE} /></li>}
           <li><TvRow id={v.id} /></li>
