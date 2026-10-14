@@ -1281,6 +1281,14 @@ phone it squeezed "When results show" to one letter per line.
   - "VS" only on pick-one polls. Dates say "Which dates work for you?" with a calendar face; Pick several says "Tick all
     you like"; Put in order says "Put them in your order".
 
+## Similar polls, the maker's pick, you and your friend (owner, Oct 2026: "Okay" to ideas 1, 3 and 5)
+
+| Element | Where | Priority | Why |
+|---|---|---|---|
+| **"A poll like this is already live"** | Create, under the question, a moment after you stop typing (`findSimilar`, `/api/polls/similar`) | P2 | Up to two open polls whose question and choices share most of their words with yours (2+ words, half or more of the smaller set; words like "best", "which" ignored). Each row opens that poll; "Post mine anyway" hides the card. Fewer duplicate polls with 2 votes each, and you get results at once. Not for "Ask again". |
+| **"Riya (who asked) picked Chai"** | Poll, in the card after voting | P2 | The maker's own pick, after you vote (and guess), when the maker chose "Show my pick after people vote". It is offered only with "Show my name" on and never for politics. The maker's vote is kept by their voter key when they vote while signed in (`polls.maker_voter`); never shown to the maker. |
+| **"You two picked the same in 3 of 4 polls they sent you"** + **Tell them** | Poll, in the card after voting, from a friend's link | P2 | Counted only over the polls this friend sent you (you came by their link), where their pick is shown to you after voting anyway, so nothing secret is worked out from it. Shows from 2 polls. "Tell them" opens WhatsApp with the line and your own link. Described, never scored. |
+
 ## Engagement round (owner, Oct 2026: "the product is social engagement; polls are the mechanism")
 
 - **"Ask your friends"** is the main button everywhere it said "Start a poll" (top bar, Home, empty pages, after voting,

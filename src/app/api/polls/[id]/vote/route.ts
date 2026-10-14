@@ -1,7 +1,8 @@
 import { after, NextResponse } from 'next/server';
 import { alertOwner } from '@/lib/alert';
 import { checkFlow, recordFlow } from '@/lib/flood';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
+import { currentUser } from '@/lib/auth';
 import { getDb, schema } from '@/db';
 import { castVote, getPoll, undoVote } from '@/lib/polls';
 import { MILESTONE, pushEnabled, sendMilestone, sendResultAlerts } from '@/lib/push';
@@ -39,7 +40,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const voterId = await getOrCreateVoterId();
   // Flood guard (src/lib/flood.ts): a paused poll, or too many votes from one network on it just now.
   const net = clientIp(req);
-  const [meta] = await db.select({ category: schema.polls.category, title: schema.polls.title }).from(schema.polls).where(eq(schema.polls.id, id)).limit(1);
+  const [meta] = await db.select({ category: schema.polls.category, title: schema.polls.title, ownerId: schema.polls.ownerId, makerVoter: schema.polls.makerVoter }).from(schema.polls).where(eq(schema.polls.id, id)).limit(1);
   if (meta) {
     const flow = await checkFlow(db, id, net, meta.category);
     if (flow !== 'ok') return NextResponse.json({ error: MESSAGES[flow], result: flow }, { status: flow === 'frozen' ? 423 : 429 });
@@ -52,6 +53,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
   if (meta && result === 'ok' && (await recordFlow(db, id, net, meta.category))) {
     after(() => alertOwner('Poll paused: flood of votes', `"${meta.title}" /p/${id} got a sudden flood of votes and is paused. Resume it on /admin if it looks fine.`, true));
+  }
+  // The maker voting on their own poll (signed in): keep their voter key, so "show my pick" can show it to voters.
+  if (result === 'ok' && meta?.ownerId && !meta.makerVoter) {
+    const user = await currentUser(db).catch(() => null);
+    if (user?.id === meta.ownerId) await db.update(schema.polls).set({ makerVoter: voterId }).where(and(eq(schema.polls.id, id), isNull(schema.polls.makerVoter)));
   }
   // Where the vote came from, for the maker's view (a count per poll, never kept with the vote).
   if (result === 'ok') await countSource(db, id, parsed.data.src ?? 'other').catch(() => undefined);

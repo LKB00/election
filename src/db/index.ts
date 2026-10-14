@@ -171,6 +171,9 @@ CREATE INDEX IF NOT EXISTS polls_pack_idx ON polls (pack_id);
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS previous_id text;
 -- The maker chose to show their name and face on this poll (off unless they turn it on).
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS show_maker boolean NOT NULL DEFAULT false;
+-- The maker's own pick, shown to voters after they vote if the maker chose so (the maker's voter key, set when they vote).
+ALTER TABLE polls ADD COLUMN IF NOT EXISTS show_maker_pick boolean NOT NULL DEFAULT false;
+ALTER TABLE polls ADD COLUMN IF NOT EXISTS maker_voter text;
 -- Each voter sees the choices in their own order (fairer: no first-place advantage).
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS shuffle boolean NOT NULL DEFAULT false;
 -- Voters may suggest a missing choice; it shows only after the maker approves it.

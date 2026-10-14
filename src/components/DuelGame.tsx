@@ -1178,6 +1178,22 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
                 {t.friendTheyPicked(poll.options.find((o) => o.id === poll.friend.optionId)?.label ?? '')}
               </p>
             )}
+            {/* Across the polls this friend sent you: how often you two picked the same, and one tap to tell them. */}
+            {poll.friendTogether && (
+              <p className="small duel-together">
+                {t.friendTogether(poll.friendTogether.same, poll.friendTogether.all)}{' '}
+                <a className="link-like small" href={`https://wa.me/?text=${encodeURIComponent(t.friendTogetherText(poll.friendTogether.same, poll.friendTogether.all, `${origin}/p/${poll.id}${poll.myShareCode ? `?f=${poll.myShareCode}` : ''}`))}`} target="_blank" rel="noopener noreferrer" onClick={() => track('whatsapp')}>
+                  {t.friendTogetherShare}
+                </a>
+              </p>
+            )}
+            {/* The maker's own pick, when they chose to show it. */}
+            {poll.makerPick && poll.maker && (
+              <p className="small duel-maker-pick">
+                <span aria-hidden>{poll.maker.avatar}</span>{' '}
+                {poll.makerPick === poll.myVote ? t.makerPickedSame(poll.maker.name) : t.makerPicked(poll.maker.name, poll.options.find((o) => o.id === poll.makerPick)?.label ?? '')}
+              </p>
+            )}
             {happenedIdx < 0 && !poll.closed && <p><strong className={rareNow ? 'is-rare' : undefined}>{vTitle}</strong> {vLine}</p>}
             {poll.friends.agree + poll.friends.disagree > 0 && <p className="small muted">{t.dares(poll.friends.agree + poll.friends.disagree, poll.friends.agree, poll.friends.disagree)}</p>}
             {!poll.closed && (

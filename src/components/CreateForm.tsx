@@ -85,6 +85,8 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   const [suggestionsOn, setSuggestionsOn] = useState(true);
   // The maker's name on the poll: their choice, off unless they turn it on.
   const [showMaker, setShowMaker] = useState(again?.showMaker ?? false);
+  // With your name on: also show your own pick to voters once they have voted (your choice; never on politics).
+  const [makerPick, setMakerPick] = useState(true);
   // "Other (write your own)" at the end of the ballot. Until you touch it, it follows the topic: on for politics (a
   // two-name ballot leaves out everyone else; also when the question or choices name a politician or party), off
   // otherwise.
@@ -164,6 +166,9 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
   const [settingsOpen, setSettingsOpen] = useState(!!again);
   // "See how it looks": the poll as a voter first meets it, before posting.
   const [previewing, setPreviewing] = useState(false);
+  // "A poll like this is already live": looked up a moment after you stop typing the question (not for "Ask again").
+  const [similar, setSimilar] = useState<{ id: string; title: string; votes: number }[]>([]);
+  const [simHidden, setSimHidden] = useState(false);
   // Create in three short steps (owner, Oct 2026: "first ask what kind of poll, then the topic"): the kind of poll, what
   // it is about, then the question and choices, with help that fits both. "Ask again" starts at the question (all set).
   type Step = 'type' | 'topic' | 'write';
@@ -229,6 +234,21 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
     document.getElementById(next)?.focus();
   }
   const typedChoices = choices.some((c) => c.trim());
+  useEffect(() => {
+    if (again || simHidden || title.trim().length < MIN_TITLE) return setSimilar([]);
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => {
+      const c = choices.map((x) => x.trim()).filter(Boolean).join('|');
+      fetch(`/api/polls/similar?q=${encodeURIComponent(title.trim())}${c ? `&c=${encodeURIComponent(c)}` : ''}`, { signal: ctrl.signal })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d: { polls?: { id: string; title: string; votes: number }[] } | null) => setSimilar(d?.polls ?? []))
+        .catch(() => undefined);
+    }, 700);
+    return () => {
+      clearTimeout(timer);
+      ctrl.abort();
+    };
+  }, [title, choices, again, simHidden]);
   // "Virat, Rohit or Dhoni?" → offer those three as the choices (until you type your own).
   const fromQuestion = typedChoices || kind === 'rating' || kind === 'dates' ? null : choicesFromQuestion(title);
   const filledCount = isDates ? filledDates.length : choices.filter((c) => c.trim()).length;
@@ -303,6 +323,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
         suggestionsOn: suggestionsOn && (kind === 'choice' || kind === 'multi') && !ideas,
         allowOther: otherOn && kind === 'choice' && !calledIt && !ideas,
         showMaker,
+        showMakerPick: showMaker && makerPick && category !== 'politics',
         previousId: again?.id,
         hideUntilVoted,
         revealIn: isGroup || calledIt ? 'now' : revealIn,
@@ -514,6 +535,20 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
         />
         {title.length >= MAX_TITLE - 20 && <p className="small muted create-count" aria-live="polite">{t.charsLeft(MAX_TITLE - title.length)}</p>}
         {fieldError.title && <p className="field-error" role="alert">{fieldError.title}</p>}
+        {/* P2: a live poll that asks the same thing. Voting there gets you results now; posting yours is still fine. */}
+        {similar.length > 0 && !simHidden && (
+          <div className="create-similar" role="status">
+            <p className="label">{t.simTitle}</p>
+            {similar.map((p) => (
+              <Link key={p.id} href={`/p/${p.id}`} className="create-similar__row">
+                <span className="create-similar__title">{p.title}</span>
+                <span className="small muted">{t.votes(p.votes)} · {t.simVote}</span>
+                <ChevronRight size={16} strokeWidth={1.75} aria-hidden />
+              </Link>
+            ))}
+            <button type="button" className="link-like small muted" onClick={() => setSimHidden(true)}>{t.simKeep}</button>
+          </div>
+        )}
         {fromQuestion && (
           <button type="button" className="create-suggest" onClick={() => fill(fromQuestion)}>
             <Sparkles size={14} strokeWidth={1.75} aria-hidden />
@@ -652,6 +687,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
             </li>
           )}
           <li><Row icon={UserRound} name={t.setShowMe} note={t.setShowMeNote} on={showMaker} onClick={() => setShowMaker((v) => !v)} /></li>
+          {showMaker && category !== 'politics' && <li><Row icon={Eye} name={t.setMakerPick} note={t.setMakerPickNote} on={makerPick} onClick={() => setMakerPick((v) => !v)} /></li>}
           {kind === 'choice' && !calledIt && !ideas && <li><Row icon={PenLine} name={t.setOther} note={t.setOtherNote} on={otherOn} onClick={() => setOtherSet(!otherOn)} /></li>}
           {showMore || endsAt || isGroup || allowChange || electionMode || shuffle || description.trim() || fieldError.end ? (
             <>

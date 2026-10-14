@@ -61,6 +61,9 @@ export const polls = pgTable(
     previousId: text('previous_id'),
     // The maker chose to show their name and face on this poll.
     showMaker: boolean('show_maker').notNull().default(false),
+    // "Show my pick after people vote" (the maker's choice), and the maker's voter key, kept when they vote on it.
+    showMakerPick: boolean('show_maker_pick').notNull().default(false),
+    makerVoter: text('maker_voter'),
     // Each voter sees the choices in their own order.
     shuffle: boolean('shuffle').notNull().default(false),
     // Voters may suggest a missing choice; the maker approves it first.

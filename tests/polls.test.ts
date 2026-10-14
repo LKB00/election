@@ -1605,3 +1605,45 @@ describe('verified badge', () => {
     expect(await setVerified(db, 'no-such-profile', true)).toBeNull();
   });
 });
+
+describe('similar polls, the maker\'s pick, and you vs a friend', () => {
+  it('finds a live poll that asks the same thing, and not unrelated ones', async () => {
+    const { findSimilar } = await import('@/lib/polls');
+    const id = await make({ title: 'Best street food in Mumbai?', options: ['Vada pav', 'Pani puri'] });
+    expect((await findSimilar(db, 'Which is the best street food of Mumbai')).map((p) => p.id)).toContain(id);
+    expect((await findSimilar(db, 'Vada pav or pani puri?')).map((p) => p.id)).toContain(id);
+    expect((await findSimilar(db, 'Best cricket captain ever?')).map((p) => p.id)).not.toContain(id);
+    expect(await findSimilar(db, 'Best?')).toEqual([]); // too little to compare
+  });
+
+  it('shows the maker\'s pick to voters only after they vote, and only when the maker chose so', async () => {
+    await db.insert(schema.users).values({ id: 'pick-maker', name: 'Riya' }).onConflictDoNothing();
+    const id = await createPoll(db, createPollSchema.parse({ title: 'Tea time snack?', options: ['Samosa', 'Pakora'], showMaker: true, showMakerPick: true, hideUntilVoted: false }), undefined, undefined, 'pick-maker');
+    const p = (await getPoll(db, id, null))!;
+    await castVote(db, id, p.options[0].id, 'mk-voter');
+    await db.update(schema.polls).set({ makerVoter: 'mk-voter' }).where(eq(schema.polls.id, id));
+    expect((await getPoll(db, id, 'mk-other'))!.makerPick).toBeNull(); // not voted yet
+    await castVote(db, id, p.options[1].id, 'mk-other');
+    expect((await getPoll(db, id, 'mk-other'))!.makerPick).toBe(p.options[0].id);
+    expect((await getPoll(db, id, 'mk-voter'))!.makerPick).toBeNull(); // not shown to the maker
+    // Off when the maker did not choose it, and never on politics.
+    const off = await createPoll(db, createPollSchema.parse({ title: 'Lunch spot?', options: ['A', 'B'], showMaker: true }), undefined, undefined, 'pick-maker');
+    const pol = await createPoll(db, createPollSchema.parse({ title: 'Who wins the state?', options: ['A', 'B'], showMaker: true, showMakerPick: true, category: 'politics' }), undefined, undefined, 'pick-maker');
+    const [o] = await db.select().from(schema.polls).where(inArray(schema.polls.id, [off, pol]));
+    expect(o.showMakerPick).toBe(false);
+    expect((await db.select().from(schema.polls).where(eq(schema.polls.id, pol)))[0].showMakerPick).toBe(false);
+  });
+
+  it('counts how often you and a friend picked the same, over the polls they sent you', async () => {
+    const ids = [await make({ title: 'Friend A?' }), await make({ title: 'Friend B?' }), await make({ title: 'Friend C?' })];
+    const views = await Promise.all(ids.map(async (id) => (await getPoll(db, id, null))!));
+    // The friend votes on all three; you come by their link each time.
+    for (const v of views) await castVote(db, v.id, v.options[0].id, 'fr-them');
+    const codes = await Promise.all(ids.map(async (id) => (await getPoll(db, id, 'fr-them'))!.myShareCode!));
+    await castVote(db, ids[0], views[0].options[0].id, 'fr-me', codes[0]);
+    expect((await getPoll(db, ids[0], 'fr-me', codes[0]))!.friendTogether).toBeNull(); // one poll is not enough to say
+    await castVote(db, ids[1], views[1].options[1].id, 'fr-me', codes[1]);
+    await castVote(db, ids[2], views[2].options[0].id, 'fr-me', codes[2]);
+    expect((await getPoll(db, ids[2], 'fr-me', codes[2]))!.friendTogether).toEqual({ same: 2, all: 3 });
+  });
+});
