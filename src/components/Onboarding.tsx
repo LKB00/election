@@ -1,5 +1,4 @@
 'use client';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -118,17 +117,9 @@ function Cards({ under, n, setN, close, t, lang, onLang }: { under: boolean; n: 
         <div className="onb-dots" aria-hidden>
           {slides.map((_, k) => <span key={k} className={k === n ? 'is-on' : ''} />)}
         </div>
-        {last ? (
-          <>
-            <button type="button" className="btn btn-primary btn-lg onb-go" onClick={close}>{t.obStart}</button>
-            <Link href="/create" className="text-link onb-alt" onClick={close}>{t.obStartPoll}</Link>
-          </>
-        ) : (
-          <>
-            <button type="button" className="btn btn-primary btn-lg onb-go" onClick={() => go(n + 1)}>{t.obNext}</button>
-            <span className="text-link onb-alt is-hidden" aria-hidden>{t.obStartPoll}</span>
-          </>
-        )}
+        {/* One plain button (owner, Oct 2026: no "Start voting" / "start your own poll": they ask questions people cannot
+            answer yet). The last card just closes, and Home shows what there is to do. */}
+        <button type="button" className="btn btn-primary btn-lg onb-go" onClick={last ? close : () => go(n + 1)}>{last ? t.obStart : t.obNext}</button>
       </div>
     </div>
   );
