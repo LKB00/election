@@ -12,6 +12,8 @@
 - All interface text lives in `src/lib/i18n.ts` (English + Hindi + Hinglish). Never hard-code UI text in components; add a key to all three languages. Share images are English or Hinglish (the image renderer cannot shape Hindi).
 - Fonts are bundled (fontsource), not Google Fonts, so screenshots in the sandbox match real phones.
 - Tests run on PGlite; also run them on real Postgres with TEST_DATABASE_URL (it caught Date/precision bugs).
+- Real "not found" (status 404): there is no site-wide `loading.tsx` (its loading picture went out with status 200 before a page could say "not found"). Each route has its own `loading.tsx` (re-exporting `src/components/LoadingBallot.tsx`); a route that can point at nothing (`/p/[id]`, `/b/[id]`, `/u/[id]`, `/pack/[id]`, `/topic/[category]`) checks in its `layout.tsx` (`src/lib/exists.ts`) before that. A new route needs both.
+- Speed: within one page render `getPoll` is loaded once per poll (React `cache`); the database setup script runs once per version (marker row in `app_migrations`), not on every server start. Keep pages to a few side-by-side lookups.
 - Before pushing run `npm run check`.
 - Vercel is on the free plan, which limits builds per day. Work branches (`claude/**`) do not build previews (`vercel.json`, `git.deploymentEnabled`), so only a merge to main builds. Push once per finished piece of work; when the owner says "make live": run `npm run check` (and the Postgres tests), push, open the PR, merge it, then confirm the main deployment and the live site (there is no preview check to wait for) (owner, Oct 2026).
 - Anything only the owner can do (settings, accounts, decisions, daily jobs) goes in `docs/OWNER_TODO.md` in easy English; mention it when it changes.

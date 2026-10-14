@@ -1,7 +1,7 @@
 import { getT } from '@/lib/lang-server';
 
 // While a page loads: a grey outline of the ballot instead of a blank screen.
-export default async function Loading() {
+export default async function LoadingBallot() {
   const t = await getT();
   return (
     <div className="page page-wide" aria-busy="true" aria-label={t.loading}>
