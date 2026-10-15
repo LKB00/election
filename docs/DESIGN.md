@@ -1579,3 +1579,12 @@ One rule: **your own poll lives under You.** Every step of making and looking af
 | Your poll night, match/show pack, knockout battle or circle | Its own page (made there right after posting) | You | You |
 
 Sharing your own poll anywhere (its page, Home, the maker page) always sends the question: the plain link (no friend code, so no "you and your friend" match) and "Who would you pick? Secret vote". On Home a poll counts as yours when this phone made it (its maker key is kept here). How it works: the page marks itself as yours (`OwnPollBar` on a poll, `MarkOwn` on a pack, battle or circle; `src/lib/ownNav.ts`); the top bar and the phone's bottom bar read that mark.
+
+## Shared links that always open (owner, Oct 2026: a copied poll link opened "Poll not found" in another browser)
+
+- **Computers copy the bare link.** A Mac's Chrome and Safari have a share menu too, and its "Copy" put the whole message (link, question, "Who would you pick?…") on the clipboard; pasted into the address bar, the words became part of the address. Share buttons now open the share menu on phones and tablets only (`shareMenu()` in `src/lib/shareSheet.ts`); on a computer they copy just the link and say "Link copied".
+- **A messy link still opens its poll.** Poll, pack, battle and circle ids are 8 small letters and digits, so `/p/NAXBZFVI`, `/p/naxbzfvi.` or `/p/naxbzfvi Narendra Modi or…` are sent to `/p/naxbzfvi` (`tidyLink` in `src/middleware.ts`), keeping only the site's own settings (`src`, `f`, `s`, `o`, `l`, `new`, `back`, `k`).
+
+## Two small fixes from the owner's screenshots (Oct 2026)
+- **Cloudflare's "Success!" box** (the anti-bot check) showed only when Cloudflare wanted a tap, then stayed on top of the page. Once the check passes it is hidden (`.human-check.is-done`).
+- **"with the 100%"** on the end-of-day card and the vote card read oddly. Now: "same as most people (100%)" / "same as 30% of people", and "100% picked the same as you." (three languages).

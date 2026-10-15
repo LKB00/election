@@ -8,6 +8,7 @@ import { faceLabels } from '@/lib/labels';
 import { useLang, useT } from '@/lib/lang';
 import { IDEAS_PER_PERSON, MAX_CHOICE } from '@/lib/limits';
 import { INDIA_TZ, dateLocale } from '@/lib/time';
+import { shareMenu } from '@/lib/shareSheet';
 
 // "Ideas first" (docs/DESIGN.md, "Ideas first"): while ideas are open, the poll page is this board instead of the
 // ballot. P1: add an idea (one box, one button). P2: the list so far and when voting opens. The maker also gets
@@ -52,7 +53,7 @@ export default function IdeasBoard({ poll, mine }: { poll: PollView; mine: boole
     const url = `${window.location.origin}/p/${poll.id}?src=link`;
     const words = t.brainShareText(poll.title);
     try {
-      if (navigator.share) return await navigator.share({ text: words, url });
+      if (shareMenu()) return await navigator.share({ text: words, url });
     } catch {
       return;
     }

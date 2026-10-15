@@ -38,7 +38,11 @@ export function prepareHumanCheck() {
         callback: (t: string) => {
           token = t;
           settle(t);
+          // Passed: the box (shown only when Cloudflare asked for a tap) goes away, so its "Success!" never sits on
+          // top of the page (owner, Oct 2026).
+          el.classList.add('is-done');
         },
+        'before-interactive-callback': () => el.classList.remove('is-done'),
         'expired-callback': () => {
           token = null;
           if (widget) ts()?.reset(widget);

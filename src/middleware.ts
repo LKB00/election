@@ -28,9 +28,40 @@ export function toMainAddress(req: NextRequest): NextResponse | null {
   return NextResponse.redirect(new URL(req.nextUrl.pathname + req.nextUrl.search, SITE_URL), 308);
 }
 
+/** A pasted link that got changed on the way (owner, Oct 2026: a copied poll link opened "Poll not found"): capital
+ * letters (/p/NAXBZFVI, a phone's auto-capitalise), or something stuck to its end (a space, a full stop, a bracket or
+ * the whole share message: a Mac's share menu "Copy" puts "<link> <question> Who would you pick?…" on the clipboard). Poll, pack, battle and circle ids are 8 small letters and digits, so the first 8 of
+ * those are the id: answered with a redirect to the clean address (the rest of the path and the ?query kept). */
+const CLEAN_ID = /^[23456789a-z]{8}/;
+const KEEP = ['src', 'f', 's', 'o', 'l', 'new', 'back', 'k'];
+export function tidyLink(path: string): string | null {
+  const m = /^\/(p|pack|b|c)\/([^/]+)(\/.*)?$/.exec(path);
+  if (!m) return null;
+  let seg: string;
+  try {
+    seg = decodeURIComponent(m[2]);
+  } catch {
+    return null;
+  }
+  const id = CLEAN_ID.exec(seg.trim().toLowerCase())?.[0];
+  if (!id || id === m[2]) return null;
+  return `/${m[1]}/${id}${m[3] ?? ''}`;
+}
+
 export function middleware(req: NextRequest) {
   const moved = toMainAddress(req);
   if (moved) return moved;
+  const tidy = tidyLink(req.nextUrl.pathname);
+  if (tidy) {
+    // Only the site's own settings come along (a pasted message's "?" can start a junk "query" of its words).
+    const keep = new URLSearchParams();
+    for (const k of KEEP) {
+      const v = req.nextUrl.searchParams.get(k);
+      if (v && /^[\w-]{1,64}$/.test(v)) keep.set(k, v);
+    }
+    const q = keep.toString();
+    return NextResponse.redirect(new URL(tidy + (q ? `?${q}` : ''), req.url), 308);
+  }
   const path = req.nextUrl.pathname;
   if (!(path.startsWith('/p/') || path.startsWith('/u/') || /^\/api\/(polls|og|card|admin|img|results)\//.test(path))) return withLang(req);
   const id = req.nextUrl.pathname.split('/')[req.nextUrl.pathname.startsWith('/api/') ? 3 : 2];

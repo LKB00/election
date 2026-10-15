@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Share2 } from 'lucide-react';
 import { apiMsg } from '@/lib/i18n';
 import { useLang, useT } from '@/lib/lang';
+import { shareMenu } from '@/lib/shareSheet';
 
 async function act(id: string, body: object) {
   const res = await fetch(`/api/circles/${id}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).catch(() => null);
@@ -18,7 +19,7 @@ export function CircleInvite({ id, name, invite }: { id: string; name: string; i
   async function share() {
     const url = `${window.location.origin}/c/${id}?k=${invite}`;
     const text = t.circleInviteText(name);
-    if (navigator.share) {
+    if (shareMenu()) {
       try {
         await navigator.share({ title: name, text, url });
         return;

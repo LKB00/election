@@ -172,6 +172,8 @@
 /* The invisible "are you a person?" check: shows only if Cloudflare needs a tap. */
 .human-check { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 60; }
 .human-check:empty { display: none; }
+/* Passed: hidden, so "Success!" never covers the page. */
+.human-check.is-done { display: none; }
 
 /* ---- The ink moment (docs/DESIGN.md) ---- */
 .duel-inked { display: flex; align-items: center; gap: 12px; padding: 0 4px; }

@@ -1,6 +1,7 @@
 'use client';
 import { Share2 } from 'lucide-react';
 import { useT } from '@/lib/lang';
+import { shareMenu } from '@/lib/shareSheet';
 
 /** "Share the battle": the phone's own share sheet, or WhatsApp where there is none. */
 export default function BattleShare({ id, title, primary = false }: { id: string; title: string; primary?: boolean }) {
@@ -9,7 +10,7 @@ export default function BattleShare({ id, title, primary = false }: { id: string
     const url = `${window.location.origin}/b/${id}`;
     const words = t.battleShareText(title);
     try {
-      if (navigator.share) return await navigator.share({ text: words, url });
+      if (shareMenu()) return await navigator.share({ text: words, url });
     } catch {
       return;
     }
