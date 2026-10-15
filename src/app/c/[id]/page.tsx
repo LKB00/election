@@ -9,6 +9,7 @@ import { CreateSignIn } from '@/components/Profile';
 import { getDb } from '@/db';
 import { currentUser } from '@/lib/auth';
 import { getCircle } from '@/lib/circles';
+import { MarkOwn } from '@/lib/ownNav';
 import { getT } from '@/lib/lang-server';
 
 export const dynamic = 'force-dynamic';
@@ -65,6 +66,7 @@ export default async function CirclePage({ params, searchParams }: Props) {
 
   return (
     <div className="page circle-page">
+      <MarkOwn path={`/c/${c.id}`} back="/you" kind="set" />
       {head}
       {isNew === '1' && <p className="small duel-friend" role="status">{t.circleMade}</p>}
       <ul className="circle-faces" aria-label={t.circleMembers(c.members)}>

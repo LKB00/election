@@ -5,7 +5,10 @@ import { notFound } from 'next/navigation';
 import CreatedPanel from '@/components/CreatedPanel';
 import DuelGame from '@/components/DuelGame';
 import PackShare from '@/components/PackShare';
-import { getDb } from '@/db';
+import { eq } from 'drizzle-orm';
+import { getDb, schema } from '@/db';
+import { currentUser } from '@/lib/auth';
+import { MarkOwn } from '@/lib/ownNav';
 import { getPack } from '@/lib/packs';
 import { readVoterId } from '@/lib/voter';
 import { getLang, getT } from '@/lib/lang-server';
@@ -38,10 +41,17 @@ export default async function PackPage({ params, searchParams }: Props) {
   if (!pack) notFound();
   const started = new Date(pack.startsAt).getTime() <= Date.now();
   const room = pack.kind === 'room';
+  // Your own pack or poll night sits under You (docs/DESIGN.md, "Your poll's place").
+  const [user, owner] = await Promise.all([
+    currentUser(db),
+    db.select({ ownerId: schema.polls.ownerId }).from(schema.polls).where(eq(schema.polls.packId, pack.id)).limit(1),
+  ]);
+  const mine = !!user && owner[0]?.ownerId === user.id;
   const when = new Date(pack.startsAt).toLocaleString(dateLocale(lang), { weekday: 'short', hour: 'numeric', minute: '2-digit', timeZone: INDIA_TZ });
   // Computers (election.css, "Desktop"): the pack's polls on the left; what it is, when it closes and sharing on the right.
   return (
     <div className="page page-wide pack-page">
+      {mine && <MarkOwn path={`/pack/${pack.id}`} back="/you" kind="set" />}
       <header className="page-head page-head-tight pack-head">
         <p className="eyebrow">{room ? `🎉 ${t.roomTitle}` : pack.kind === 'match' ? `🏏 ${t.packMatch}` : `📺 ${t.packShow}`}</p>
         <h1 className="display">{pack.title}</h1>

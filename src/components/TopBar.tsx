@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { setLangCookie, useLang, useT } from '@/lib/lang';
 import { LANG_NAMES, LANG_SHORT, LANGS, type Lang } from '@/lib/i18n';
 import LogoMark from './LogoMark';
-import { useOwnPoll } from '@/lib/ownNav';
+import { useOwnPage } from '@/lib/ownNav';
 
 // Set once you move from one page to another inside the site (the browser's "where you came from" only knows the page
 // you first arrived from, e.g. WhatsApp, so it used to send Back to Home after Polls → a poll).
@@ -22,9 +22,9 @@ export default function TopBar() {
   // site (Polls, My votes, a topic…), or Home when the link was opened from outside (WhatsApp).
   const managing = /^\/p\/[^/]+\/manage/.test(path);
   // Your own poll's page belongs under You too, with Back to its maker page (never Home).
-  const own = useOwnPoll();
-  const ownHere = !!own && path === `/p/${own}`;
-  const backable = managing || ['/p/', '/pack/', '/topic/', '/u/'].some((x) => path.startsWith(x));
+  const own = useOwnPage();
+  const ownHere = !!own && path === own.path;
+  const backable = managing || ['/p/', '/pack/', '/b/', '/c/', '/topic/', '/u/'].some((x) => path.startsWith(x));
   const [fromSite, setFromSite] = useState(false);
   useEffect(() => {
     if (firstPath === null) firstPath = path;
@@ -35,12 +35,12 @@ export default function TopBar() {
       setFromSite(false);
     }
   }, [path]);
-  const back = !backable ? null : managing ? { to: '/you', name: t.you } : ownHere ? { to: `/p/${own}/manage`, name: t.backYourPoll } : fromSite ? { to: null, name: t.back } : { to: '/', name: t.home };
+  const back = !backable ? null : managing ? { to: '/you', name: t.you } : ownHere ? { to: own.back, name: own.kind === 'poll' ? t.backYourPoll : t.you } : fromSite ? { to: null, name: t.back } : { to: '/', name: t.home };
   // Create opens full screen (the "+" action, not a tab): a × takes you back to where you were.
   const creating = path.startsWith('/create');
   const close = () => (window.history.length > 1 ? router.back() : router.push('/'));
   // Which place you are in: the same rules as the phone's bottom bar (BottomNav.tsx).
-  const onHome = path === '/' || (path.startsWith('/p/') && !managing && !ownHere) || path.startsWith('/pack/');
+  const onHome = path === '/' || ((path.startsWith('/p/') || path.startsWith('/pack/')) && !managing && !ownHere);
   const onPolls = path.startsWith('/polls') || path.startsWith('/topic/');
   const onYou = path.startsWith('/you') || path.startsWith('/mine') || path.startsWith('/c/') || managing || ownHere;
   const tab = (to: string, label: string, Icon: typeof House, on: boolean) => (
