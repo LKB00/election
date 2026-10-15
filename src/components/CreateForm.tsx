@@ -391,7 +391,8 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
         sessionStorage.removeItem(DRAFT);
       } catch {}
       // Replace, not push: Back from the new poll must not reopen a filled Create (it looked like it had not worked).
-      return router.replace(`/p/${data.id}?new=1${askBack ? '&back=1' : ''}`);
+      // Your poll's own place (docs/DESIGN.md, "Your poll's place"): its maker page, where sharing is the first step.
+      return router.replace(`/p/${data.id}/manage?new=1${askBack ? '&back=1' : ''}`);
     }
     setBusy(false);
     // Signed out on another tab, or the sign-in ran out: ask again.

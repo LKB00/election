@@ -1414,3 +1414,6 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
 .circle-form { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
 .circle-start { align-self: flex-start; margin-top: 8px; }
 .you-circles .small.muted { margin: 0; }
+
+/* Your own poll's page (docs/DESIGN.md, "Your poll's place"): Share the poll under the ballot, before you vote. */
+.own-share { align-self: flex-start; }

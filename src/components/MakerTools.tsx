@@ -405,7 +405,7 @@ export function Runoff({ id, names }: { id: string; names: string }) {
     const r = await manage(id, { action: 'runoff' });
     setBusy(false);
     if (!r.ok || !r.data?.id) return setError(r.data?.error ? apiMsg(lang, r.data.error) : t.errGeneric);
-    router.push(`/p/${r.data.id}?new=1`);
+    router.push(`/p/${r.data.id}/manage?new=1`);
   }
   return (
     <div className="maker-lengths">

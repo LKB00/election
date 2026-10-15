@@ -9,7 +9,7 @@ import Burst from './Burst';
 import Spot from './Spot';
 
 // Right after creating a duel, the job is to send it (P1). Voting yourself is P2 (the duel is below).
-export default function CreatedPanel({ id, title, path = `/p/${id}`, heading, text, button, manageHref }: { id: string; title: string; /** A pack's page instead of a poll's. */ path?: string; heading?: string; text?: string; button?: string; /** The maker's page for this poll (votes as they come in). */ manageHref?: string }) {
+export default function CreatedPanel({ id, title, path = `/p/${id}`, here = path, heading, note, text, button, manageHref, voteHref }: { id: string; /** The line under the heading. */ note?: string; title: string; /** A pack's page instead of a poll's. */ path?: string; /** The page this panel sits on (its address loses ?new=1). */ here?: string; heading?: string; text?: string; button?: string; /** The maker's page for this poll (votes as they come in). */ manageHref?: string; /** On the maker page: where to vote on it yourself. */ voteHref?: string }) {
   const t = useT();
   const lang = useLang();
   const [copied, setCopied] = useState(false);
@@ -50,11 +50,11 @@ export default function CreatedPanel({ id, title, path = `/p/${id}`, heading, te
   // and celebrate once: it is the creator's proudest moment (they made it), with a pop and a happy buzz.
   const [party, setParty] = useState(false);
   useEffect(() => {
-    window.history.replaceState(null, '', path);
+    window.history.replaceState(null, '', here);
     if (!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) setParty(true);
     votePop();
     navigator.vibrate?.([10, 60, 10]);
-  }, [path]);
+  }, [here]);
   // Tagged so the maker's page can count where votes came from (copied link vs. the share menu).
   const link = (src = 'link') => `${window.location.origin}${path}?src=${src}`;
   async function copy() {
@@ -86,7 +86,7 @@ export default function CreatedPanel({ id, title, path = `/p/${id}`, heading, te
       {/* The proudest moment gets its own picture: the slip goes in, the box is sealed: it is live. */}
       <Spot kind="live" size={132} />
       <h2>{heading ?? t.createdTitle}</h2>
-      <p className="small muted">{t.createdNote}</p>
+      <p className="small muted">{note ?? t.createdNote}</p>
       {/* Said up front, so a poll missing from the Polls list never looks like a bug (owner, Oct 2026). */}
       <span className="row wrap">
         <button type="button" className="btn btn-primary btn-lg" onClick={share}><Share2 size={15} strokeWidth={1.75} aria-hidden /> {button ?? t.shareDuel}</button>
@@ -96,6 +96,11 @@ export default function CreatedPanel({ id, title, path = `/p/${id}`, heading, te
         {isPoll && <button type="button" className="btn btn-ghost btn-lg" onClick={storyPicture}><ImageDown size={15} strokeWidth={1.75} aria-hidden /> {t.storyPicture}</button>}
       </span>
       {/* Where to come back to: the maker's page (votes as they come in), also under You. */}
+      {voteHref && (
+        <Link href={voteHref} className="text-link small created-manage">
+          {t.createdVote} <ArrowRight size={14} strokeWidth={1.75} aria-hidden />
+        </Link>
+      )}
       {manageHref && (
         <Link href={manageHref} className="text-link small created-manage">
           {t.createdManage} <ArrowRight size={14} strokeWidth={1.75} aria-hidden />

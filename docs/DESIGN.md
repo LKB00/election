@@ -1564,3 +1564,17 @@ Built together; each is an ordinary poll underneath (secret vote, one vote each,
 | **Your week** | You page, above Your polls (`WeekCard.tsx`); picture `/api/card/week/<id>` | P2 | The last 7 days on your public polls: votes in, new polls, the poll with the most votes, and "Share my week" (a 1080×1920 story picture with a QR code to your bio link). Unlisted, group, hidden and deleted polls never count. Shown only when something happened that week. |
 | **Circles** | You page → "Your circles" → Start a circle; `/c/<id>` | P1 on the circle page = "Ask the circle" (ink); P2 = Invite people; P3 = leave / new invite link / delete | A small named group of profiles (`CIRCLE_MAX_MEMBERS` 50, `CIRCLES_PER_PERSON` 10). Joining takes the invite link (`/c/<id>?k=…`) and a profile. Its polls (made from "Ask the circle", Create shows "For <name> only") are ordinary polls with `circle_id`, never in public lists; members see them on the circle page. Votes stay secret: a circle never shows who voted what. The page says plainly that anyone with a poll's link can still open it. The maker can make a new invite link (the old one stops working) or delete the circle (its polls stay at their links); members can leave. |
 | **Number keys** | Any poll on a computer | P3 | 1–9 (or A, B, C…) vote, Enter or → goes to the next poll. The ballot hint adds "press 1–N to vote" on a real keyboard and mouse only (CSS `hover: hover` + `pointer: fine`). |
+
+## Your poll's place (owner, Oct 2026: "if I am sharing I should be able to share without selecting the option… poll management, creation, deletion should have a dedicated place… it should not randomly redirect here and there")
+
+One rule: **your own poll lives under You.** Every step of making and looking after a poll stays there.
+
+| Step | Where you land | Back goes to | Tab lit |
+|---|---|---|---|
+| Post a poll (Create, Ask again, a tie's decider, Ask the circle) | Its maker page `/p/<id>/manage`, with "Your poll is live" on top: **Share the poll** (P1), Copy link, Picture for your Story, then "Vote on it yourself" (a link: never needed first). The usual Share row under "How it's going" is hidden there, so there is one share button. | You | You |
+| You → Your polls → a poll | Its maker page | You | You |
+| Maker page → Open the poll / Vote on it yourself | The poll's page, with "Manage your poll" on top and **Share the poll** under the ballot (before you vote) | Your poll (the maker page) | You |
+| Vote on your own poll | Stays on it. The two buttons are **Share the poll** (the question, never "I voted" or your pick) and **Manage your poll**; no "Next poll" (it used to take you into other people's polls), no "Have a question of your own?" | Your poll | You |
+| Delete poll | You, with "Poll deleted" | – | You |
+
+Sharing your own poll anywhere (its page, Home, the maker page) always sends the question: the plain link (no friend code, so no "you and your friend" match) and "Who would you pick? Secret vote". On Home a poll counts as yours when this phone made it (its maker key is kept here). How it works: the poll page marks the poll as yours (`OwnPollBar`, `src/lib/ownNav.ts`); the top bar and the phone's bottom bar read that mark.

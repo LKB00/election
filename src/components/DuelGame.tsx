@@ -768,14 +768,20 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
         else if (o.isOther) setWriting(poll.id);
         else vote(o.id);
       }
-      if ((e.key === 'Enter' || e.key === 'ArrowRight') && revealed && !counting && !t.closest('button, a')) next();
+      if ((e.key === 'Enter' || e.key === 'ArrowRight') && revealed && !counting && !own && !t.closest('button, a')) next();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   });
 
-  const link = () => `${window.location.origin}/p/${poll?.id}${poll?.myShareCode ? `?f=${poll.myShareCode}` : ''}`;
-  const shareText = () => (mine ? t.shareTextPick(mine.label) : t.shareTextAsk(poll?.title ?? ''));
+  // Your own poll is shared as a question (no pick, no "I voted"), whether or not you voted on it: on its own page
+  // (ownId) and anywhere else it shows up (Home), known from this phone's list of polls it made.
+  const own = !!poll && poll.id === ownId;
+  const [madeHere, setMadeHere] = useState(false);
+  useEffect(() => setMadeHere(!!poll && !!manageKeyFor(poll.id)), [poll?.id]);
+  const askOnly = own || madeHere;
+  const link = () => `${window.location.origin}/p/${poll?.id}${poll?.myShareCode && !askOnly ? `?f=${poll.myShareCode}` : ''}`;
+  const shareText = () => (mine && !askOnly ? t.shareTextPick(mine.label) : t.shareTextAsk(poll?.title ?? ''));
   // Phones: the share sheet (WhatsApp is in it). Computers: copy the link, then say so.
   async function share() {
     if (navigator.share) {
@@ -1154,6 +1160,12 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
           <span className="duel-keys"> · {t.keysHint(Math.min(poll.options.length, 9))}</span>
         </p>
       )}
+      {/* Your own poll: share it as a question right away, no vote needed (owner, Oct 2026). */}
+      {own && !voted && !poll.closed && (
+        <button type="button" className="btn btn-ghost own-share" onClick={share}>
+          <Share2 size={14} strokeWidth={1.75} aria-hidden /> {copied ? t.linkCopied : t.shareDuel}
+        </button>
+      )}
       {/* "Who can see my vote?" (owner, Oct 2026, for the privacy-worried voter): one tap, three plain lines. */}
       {!voted && !poll.closed && (
         <details className="who-sees">
@@ -1446,12 +1458,20 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
             )}
             <span className="row duel-actions">
               {/* A group poll still waiting: "Remind the group" (above) is the one share action. */}
-              {!poll.groupWaiting && <button type="button" className="btn btn-ghost" onClick={() => (mine && poll.myShareCode ? setSharing(true) : share())}>
-                <Share2 size={14} strokeWidth={1.75} aria-hidden /> {copied ? t.linkCopied : poll.closed ? t.shareResult : t.shareInk}
+              {!poll.groupWaiting && <button type="button" className="btn btn-ghost" onClick={() => (mine && poll.myShareCode && !askOnly ? setSharing(true) : share())}>
+                <Share2 size={14} strokeWidth={1.75} aria-hidden /> {copied ? t.linkCopied : poll.closed ? t.shareResult : askOnly ? t.shareDuel : t.shareInk}
               </button>}
-              <button type="button" className="btn btn-primary" onClick={next} ref={nextRef}>
-                {hasNext ? t.nextPoll : t.nextFinish} {hasNext && <ArrowRight size={14} strokeWidth={1.75} aria-hidden />}
-              </button>
+              {/* Your own poll: its next step is its maker page, not someone else's poll (owner, Oct 2026: "it should not
+                  randomly redirect here and there"). */}
+              {own ? (
+                <Link href={`/p/${poll.id}/manage`} className="btn btn-primary">
+                  {t.manageLink} <ArrowRight size={14} strokeWidth={1.75} aria-hidden />
+                </Link>
+              ) : (
+                <button type="button" className="btn btn-primary" onClick={next} ref={nextRef}>
+                  {hasNext ? t.nextPoll : t.nextFinish} {hasNext && <ArrowRight size={14} strokeWidth={1.75} aria-hidden />}
+                </button>
+              )}
             </span>
           </>
         )}
@@ -1459,7 +1479,7 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
 
       {/* Last, because it also leaves this poll: the voter → maker step (owner, Oct 2026, product audit). Someone who just
           answered a friend's question is asked, once and gently, for a question of their own. */}
-      {revealed && mine && !counting && (
+      {revealed && mine && !counting && !own && (
         <ul className="al-listcard own-question">
           <li>
             {/* From a friend's link: "Ask them back" (they asked you; now send one to them), else a question of your own. */}
