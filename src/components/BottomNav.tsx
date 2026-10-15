@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ChartNoAxesColumn, House, Plus, UserRound, Vote } from 'lucide-react';
 import { useT } from '@/lib/lang';
+import { useOwnPage } from '@/lib/ownNav';
 
 // Phone only (hidden on bigger screens by CSS). Two places on each side of one action, so the bar is balanced:
 // Home · Polls · ( + ) · My votes · You (your profile and the polls you made). The round ink "+" opens Create full screen (owner: "there should not be a
@@ -10,6 +11,9 @@ import { useT } from '@/lib/lang';
 export default function BottomNav() {
   const path = usePathname();
   const t = useT();
+  // Your own poll sits under You (docs/DESIGN.md, "Your poll's place").
+  const own = useOwnPage();
+  const ownHere = !!own && path === own.path;
   // Create is full screen; so is the big-screen view of a poll (/p/<id>/tv).
   if (path.startsWith('/create') || path.endsWith('/tv')) return null;
   const tab = (to: string, label: string, Icon: typeof House, on: boolean) => (
@@ -20,13 +24,13 @@ export default function BottomNav() {
   );
   return (
     <nav className="bottomnav" aria-label={t.navMain}>
-      {tab('/', t.home, House, path === '/' || (path.startsWith('/p/') && !path.endsWith('/manage')) || path.startsWith('/pack/'))}
+      {tab('/', t.home, House, path === '/' || ((path.startsWith('/p/') || path.startsWith('/pack/')) && !path.endsWith('/manage') && !ownHere))}
       {tab('/polls', t.duels, ChartNoAxesColumn, path.startsWith('/polls') || path.startsWith('/topic/'))}
       <Link href="/create" className="bottomnav-plus" aria-label={t.startDuel}>
         <span><Plus size={24} strokeWidth={2.25} aria-hidden /></span>
       </Link>
       {tab('/me', t.myVotes, Vote, path === '/me')}
-      {tab('/you', t.you, UserRound, path.startsWith('/you') || path.startsWith('/mine') || path.endsWith('/manage'))}
+      {tab('/you', t.you, UserRound, path.startsWith('/you') || path.startsWith('/mine') || path.startsWith('/c/') || path.endsWith('/manage') || ownHere)}
     </nav>
   );
 }

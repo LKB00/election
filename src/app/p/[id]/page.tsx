@@ -1,4 +1,4 @@
-import { ArrowRight, ChevronRight, Repeat, SlidersHorizontal, Swords, Users, Vote } from 'lucide-react';
+import { ArrowRight, ChevronRight, Repeat, Swords, Users, Vote } from 'lucide-react';
 import Link from 'next/link';
 import { currentUser } from '@/lib/auth';
 import { ownPoll } from '@/lib/maker';
@@ -6,6 +6,7 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import CreatedPanel from '@/components/CreatedPanel';
+import OwnPollBar from '@/components/OwnPollBar';
 import PollIntro from '@/components/PollIntro';
 import DuelGame from '@/components/DuelGame';
 import IdeasBoard from '@/components/IdeasBoard';
@@ -118,12 +119,8 @@ export default async function DuelPage({ params, searchParams }: Props) {
         </p>
       )}
       {justCreated && <CreatedPanel id={poll.id} title={poll.title} manageHref={`/p/${poll.id}/manage`} text={back === '1' ? t.askBackShare(poll.title) : undefined} />}
-      {mine && !justCreated && (
-        <Link href={`/p/${poll.id}/manage`} className="maker-bar">
-          <SlidersHorizontal size={16} strokeWidth={2} aria-hidden /> {t.manageLink}
-          <ChevronRight size={16} strokeWidth={2} aria-hidden />
-        </Link>
-      )}
+      {/* Your own poll: Share it (no vote needed) and Manage it, and the bars put it under You. */}
+      {mine && !justCreated && <OwnPollBar id={poll.id} />}
       {poll.maker && (
         <Link href={`/u/${poll.maker.id}`} className="maker-by">
           <span className="maker-by-face" aria-hidden>{poll.maker.avatar}</span> {t.askedBy(poll.maker.name)}{poll.maker.verified && <Verified label={t.verifiedLabel} />}

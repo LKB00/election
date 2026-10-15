@@ -7,6 +7,7 @@ import { makerView } from '@/lib/maker';
 import { getPoll, rollWeekly, tiedTop, weeklyTrend } from '@/lib/polls';
 import { MILESTONE } from '@/lib/push';
 import { getLang, getT } from '@/lib/lang-server';
+import CreatedPanel from '@/components/CreatedPanel';
 import EmptyState from '@/components/EmptyState';
 import { YouSignIn } from '@/components/Profile';
 import { AskAgainRow, FixTypo, QuietHelp, Runoff, Lengths, MarkOutcome, MilestoneAlert, ResultsCard, ShareLink, Suggestions, TvRow, PosterRow, WeeklyRow, DeletePoll } from '@/components/MakerTools';
@@ -20,9 +21,9 @@ export async function generateMetadata(): Promise<Metadata> {
 // The poll maker's page (docs/DESIGN.md, "Poll maker tools"). P1: how it's going (votes, the last day, where votes
 // came from), with sharing as the one main action. Then the results picture once the result is public, suggested
 // choices, how long it runs, fix a typo (before the first vote), ask again, and the first-votes alert.
-export default async function ManagePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ done?: string }> }) {
+export default async function ManagePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ done?: string; new?: string; back?: string }> }) {
   const { id } = await params;
-  const { done } = await searchParams;
+  const { done, new: isNew, back } = await searchParams;
   const db = await getDb();
   const [user, t, lang] = await Promise.all([currentUser(db), getT(), getLang()]);
   if (!user) {
@@ -64,6 +65,11 @@ export default async function ManagePage({ params, searchParams }: { params: Pro
         {done === 'outcome' && <p className="small duel-friend" role="status">{t.outcomeSaved}</p>}
       </header>
 
+      {/* Just made (docs/DESIGN.md, "Your poll's place"): sharing is the first step, here on its own page; voting on it
+          yourself is a link, never needed first. */}
+      {isNew === '1' && (
+        <CreatedPanel id={v.id} title={v.title} here={`/p/${v.id}/manage`} note={t.createdNoteManage} voteHref={`/p/${v.id}`} text={back === '1' ? t.askBackShare(v.title) : undefined} />
+      )}
       <div className="maker-main">
       {tied.length > 0 && (
         <section className="al-block" aria-label={t.runoffTitle}>
@@ -113,7 +119,8 @@ export default async function ManagePage({ params, searchParams }: { params: Pro
         )}
         {/* It's quiet: the Status picture is the next step (the link alone has stopped bringing votes). */}
         {v.quiet && <QuietHelp id={v.id} title={v.title} votes={v.votes} />}
-        {!v.closed && <ShareLink id={v.id} title={v.title} quiet={v.quiet} />}
+        {/* Just made: the panel above is the share step (one share button, not two). */}
+        {!v.closed && isNew !== '1' && <ShareLink id={v.id} title={v.title} quiet={v.quiet} />}
       </section>
 
       {/* "The result is in" only once there is a result to share. Before the first vote there is nothing to say (the

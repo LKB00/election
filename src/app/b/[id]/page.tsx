@@ -1,3 +1,5 @@
+import { currentUser } from '@/lib/auth';
+import { MarkOwn } from '@/lib/ownNav';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -31,9 +33,11 @@ export default async function BattlePage({ params, searchParams }: Props) {
   const { id } = await params;
   const { new: isNew } = await searchParams;
   const db = await getDb();
-  const [t, lang, voterId] = await Promise.all([getT(), getLang(), readVoterId()]);
+  const [t, lang, voterId, user] = await Promise.all([getT(), getLang(), readVoterId(), currentUser(db)]);
   const b = await getBattle(db, id, voterId);
   if (!b) notFound();
+  // Your own battle sits under You (docs/DESIGN.md, "Your poll's place").
+  const mine = !!user && b.ownerId === user.id;
   const maker = b.showMaker && b.ownerId ? (await db.select({ id: schema.users.id, name: schema.users.name, avatar: schema.users.avatar, verified: schema.users.verified }).from(schema.users).where(eq(schema.users.id, b.ownerId)).limit(1))[0] : null;
   const total = Math.log2(b.size);
   const when = b.endsAt ? new Date(b.endsAt).toLocaleString(dateLocale(lang), { weekday: 'short', day: 'numeric', month: monthStyle(lang), hour: 'numeric', minute: '2-digit', timeZone: INDIA_TZ }) : '';
@@ -45,6 +49,7 @@ export default async function BattlePage({ params, searchParams }: Props) {
   );
   return (
     <div className="page battle-page">
+      {mine && <MarkOwn path={`/b/${b.id}`} back="/you" kind="set" />}
       <header className="page-head page-head-tight">
         <p className="eyebrow"><Swords size={13} strokeWidth={2} aria-hidden /> {t.battleRow}</p>
         <h1 className="display">{b.title}</h1>
