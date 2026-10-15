@@ -4,6 +4,7 @@ import { useLang, useT } from '@/lib/lang';
 import type { MonthView } from '@/lib/month';
 import { topicIcon } from '@/lib/topicIcons';
 import { INDIA_TZ, dateLocale } from '@/lib/time';
+import { shareMenu } from '@/lib/shareSheet';
 
 // "Your month in opinions" (docs/DESIGN.md, "Month card"): a type word (P1), then what it rests on (P2), then share.
 // Yellow = you. It describes how you voted; it never ranks you or compares you with anyone.
@@ -16,7 +17,7 @@ export default function MonthCard({ m }: { m: MonthView }) {
   const text = t.monthShareText(month, type ? type[0] : t.monthPolls(m.polls), m.withCrowd, m.judged, m.grid);
   async function share() {
     const url = window.location.origin;
-    if (navigator.share) {
+    if (shareMenu()) {
       try {
         await navigator.share({ text, url });
         return;

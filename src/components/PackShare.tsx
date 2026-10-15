@@ -1,6 +1,7 @@
 'use client';
 import { Share2 } from 'lucide-react';
 import { useT } from '@/lib/lang';
+import { shareMenu } from '@/lib/shareSheet';
 
 // Send the whole pack to the group (WhatsApp first: that is where match-day chat happens).
 export default function PackShare({ id, title, room = false }: { id: string; title: string; room?: boolean }) {
@@ -8,7 +9,7 @@ export default function PackShare({ id, title, room = false }: { id: string; tit
   async function share() {
     const url = `${window.location.origin}/pack/${id}`;
     const text = room ? t.roomShare(title) : t.packShare(title);
-    if (navigator.share) {
+    if (shareMenu()) {
       try {
         await navigator.share({ title, text, url });
         return;

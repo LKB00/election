@@ -28,6 +28,7 @@ import ResultAlert from './ResultAlert';
 import GroupWait from './GroupWait';
 import { INDIA_TZ, dateLocale, monthStyle } from '@/lib/time';
 import { sharesAddUp, wholePercents } from '@/lib/percent';
+import { shareMenu } from '@/lib/shareSheet';
 
 // Duels, played like patricka's "This or That": tap a card, see the result on the
 // cards, then "Next duel". Results stay hidden until you vote.
@@ -784,7 +785,7 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
   const shareText = () => (mine && !askOnly ? t.shareTextPick(mine.label) : t.shareTextAsk(poll?.title ?? ''));
   // Phones: the share sheet (WhatsApp is in it). Computers: copy the link, then say so.
   async function share() {
-    if (navigator.share) {
+    if (shareMenu()) {
       try {
         await navigator.share({ title: poll?.title, text: shareText(), url: link() });
       } catch (e) {

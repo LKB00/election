@@ -7,6 +7,7 @@ import { track } from '@/lib/track';
 import { votePop } from '@/lib/sound';
 import Burst from './Burst';
 import Spot from './Spot';
+import { shareMenu } from '@/lib/shareSheet';
 
 // Right after creating a duel, the job is to send it (P1). Voting yourself is P2 (the duel is below).
 export default function CreatedPanel({ id, title, path = `/p/${id}`, here = path, heading, note, text, button, manageHref, voteHref }: { id: string; /** The line under the heading. */ note?: string; title: string; /** A pack's page instead of a poll's. */ path?: string; /** The page this panel sits on (its address loses ?new=1). */ here?: string; heading?: string; text?: string; button?: string; /** The maker's page for this poll (votes as they come in). */ manageHref?: string; /** On the maker page: where to vote on it yourself. */ voteHref?: string }) {
@@ -69,7 +70,7 @@ export default function CreatedPanel({ id, title, path = `/p/${id}`, here = path
   }
   async function share() {
     track('share_open');
-    if (navigator.share) {
+    if (shareMenu()) {
       try {
         await navigator.share({ title, text: text ?? t.shareTextAsk(title), url: link('other') });
       } catch (e) {

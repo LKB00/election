@@ -1,6 +1,7 @@
 'use client';
 import { Share2, Users } from 'lucide-react';
 import { useT } from '@/lib/lang';
+import { shareMenu } from '@/lib/shareSheet';
 
 // A group poll waiting for its group (docs/DESIGN.md, "Group polls"): one dot per person, filled as they vote
 // ("7 of 12 voted"), and the one useful action while you wait: remind the group. Results open for everyone together.
@@ -9,7 +10,7 @@ export default function GroupWait({ pollId, title, voted, of, mine }: { pollId: 
   async function remind() {
     const url = `${window.location.origin}/p/${pollId}`;
     const text = t.grpRemindText(title, voted, of);
-    if (navigator.share) {
+    if (shareMenu()) {
       try {
         await navigator.share({ title, text, url });
         return;
