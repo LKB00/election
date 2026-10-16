@@ -1428,16 +1428,29 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
 .poll-filter .chip.chip-on { background: var(--card); border-color: var(--line); color: var(--ink); font-weight: 600; }
 .poll-filter__n { font-variant-numeric: tabular-nums; opacity: 0.7; margin-left: 4px; }
 
-/* "Ask anything" (docs/DESIGN.md, "More people asking"): one line to start a poll, right where people vote. */
-.quick-ask { display: flex; flex-direction: column; gap: 10px; padding: 18px; border: 1px solid var(--line); border-radius: 18px; background: var(--card); }
-.quick-ask__title { margin: 0; font-size: 18px; font-weight: 700; }
+/* "Ask anything" (docs/DESIGN.md, "More people asking"): the brand yellow card (yours to ask), so it is the one thing
+   on the page that says "you can start one". Text and icons use --on-lime in both looks. */
+.quick-ask { display: flex; flex-direction: column; gap: 12px; padding: 20px; border-radius: 22px; background: var(--lime); color: var(--on-lime); box-shadow: 0 10px 28px -16px color-mix(in srgb, var(--on-lime) 55%, transparent); }
+.quick-ask__head { display: flex; align-items: center; gap: 12px; }
+.quick-ask__pic { flex: 0 0 auto; display: grid; place-items: center; width: 72px; height: 72px; border-radius: 50%; background: var(--card); }
+.quick-ask__title { margin: 0; font-size: 22px; line-height: 1.2; font-weight: 800; letter-spacing: -0.01em; }
+.quick-ask__line { margin: 4px 0 0; font-size: 14px; font-weight: 500; }
 .quick-ask__form { display: flex; gap: 8px; }
-.quick-ask__form .input { flex: 1 1 auto; min-width: 0; }
-.quick-ask__form .btn { flex: 0 0 auto; }
-.quick-ask__choices { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; }
-.quick-ask__ideas { display: flex; flex-direction: column; gap: 6px; }
-.quick-ask__ideas .chip { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.quick-ask__more { align-self: flex-start; }
+.quick-ask__form .input { flex: 1 1 auto; min-width: 0; min-height: 50px; padding: 0 18px; font-size: 16px; border: 0; border-radius: 999px; outline-offset: 2px; background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--on-lime) 18%, transparent); }
+.quick-ask__go { flex: 0 0 auto; min-height: 50px; padding: 0 22px; border: 0; border-radius: 999px; background: var(--on-lime); color: var(--lime); font-weight: 800; font-size: 16px; cursor: pointer; }
+.quick-ask__go:disabled { opacity: 0.6; }
+.quick-ask .small { color: var(--on-lime); }
+.quick-ask__choices { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; font-weight: 600; }
+.quick-ask__choice { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px; background: var(--card); color: var(--ink); }
+.quick-ask__ideas { display: flex; flex-direction: column; gap: 8px; }
+.quick-ask__ideas .small { font-weight: 600; }
+.quick-ask__idea { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; min-height: 40px; padding: 0 14px; border: 0; border-radius: 999px; background: color-mix(in srgb, var(--card) 70%, transparent); color: var(--ink); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.quick-ask .field-error { color: var(--on-lime); font-weight: 600; }
+.quick-ask__more.text-link, .quick-ask__more { align-self: flex-start; background: transparent; color: var(--on-lime); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--on-lime) 30%, transparent); }
+@media (hover: hover) and (pointer: fine) {
+  .quick-ask__go:hover:not(:disabled) { filter: brightness(1.15); }
+  .quick-ask__idea:hover { background: var(--card); }
+}
 .home-main .quick-ask, .polls-main .quick-ask { margin-top: 20px; }
 .tot-over .quick-ask { width: 100%; max-width: 520px; text-align: left; }
 /* Home: once today's set is done, its end screen has the "Your turn" box; the one under it would repeat it. */

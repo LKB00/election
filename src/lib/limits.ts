@@ -92,3 +92,5 @@ export const CIRCLES_PER_PERSON = 10;
 /** Polls and topic pages: the "To vote · You voted · Ended" tabs appear only above this many polls (fewer read
  *  fine as plain groups). */
 export const FILTER_MIN = 20;
+/** "Ask anything" shows "N votes here in the last day" only from this many (a small number would put people off). */
+export const RECENT_VOTES_MIN = 10;

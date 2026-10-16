@@ -788,6 +788,12 @@ export async function voteTotals(db: Db, ids: string[]): Promise<Record<string, 
   return Object.fromEntries(rows.map((r) => [r.id, r.total]));
 }
 
+/** Votes cast on the site in the last 24 hours, for "Ask anything": proof that questions here get answered. */
+export async function recentVoteCount(db: Db): Promise<number> {
+  const [row] = await db.select({ n: sql<number>`count(*)::int` }).from(votes).where(sql`${votes.createdAt} > now() - interval '24 hours'`);
+  return row?.n ?? 0;
+}
+
 /** How many different people (voter numbers) have voted on the site, for Home's "N people have voted here". */
 export async function voterCount(db: Db): Promise<number> {
   const [row] = await db.select({ n: sql<number>`count(distinct ${votes.voterKey})::int` }).from(votes);
