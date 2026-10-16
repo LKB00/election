@@ -1419,3 +1419,11 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
 
 /* Your own poll's page (docs/DESIGN.md, "Your poll's place"): Share the poll under the ballot, before you vote. */
 .own-share { align-self: flex-start; }
+
+/* Polls and topic pages with many polls: To vote · You voted · Ended, as one switch on one line (it must not read as
+   more topic chips). */
+.poll-filter { display: flex; flex-wrap: nowrap; gap: 2px; width: fit-content; max-width: 100%; margin: 4px 0 20px; padding: 3px; border-radius: 999px; background: var(--quiet); overflow-x: auto; scrollbar-width: none; }
+.poll-filter::-webkit-scrollbar { display: none; }
+.poll-filter .chip { border-color: transparent; background: transparent; white-space: nowrap; min-height: 36px; padding: 0 12px; }
+.poll-filter .chip.chip-on { background: var(--card); border-color: var(--line); color: var(--ink); font-weight: 600; }
+.poll-filter__n { font-variant-numeric: tabular-nums; opacity: 0.7; margin-left: 4px; }
