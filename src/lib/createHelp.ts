@@ -47,3 +47,34 @@ const RULES = HINTS.map(([words, emoji]) => [new RegExp(`(?<![\\p{L}\\p{M}])(?:$
 
 /** A fitting emoji for a choice ("Chai" → 🍵), or '' when nothing fits. */
 export const emojiFor = (label: string) => RULES.find(([re]) => re.test(label.normalize('NFC')))?.[1] ?? '';
+
+// "Best Diwali sweet?" has no "or": these words point at a set of ready choices (i18n `choiceSets`, the person picks
+// them; never posted for them). Whole words only, the most specific first. Never parties or politicians.
+const CHOICE_TOPICS: [string[], string][] = [
+  [['cricketer', 'batsman', 'batter', 'captain', 'kaptaan', 'कप्तान', 'क्रिकेटर', 'बल्लेबाज़', 'बल्लेबाज'], 'cricketer'],
+  [['ipl'], 'ipl'],
+  [['actor', 'hero', 'superstar', 'अभिनेता', 'हीरो'], 'actor'],
+  [['singer', 'gayak', 'गायक', 'गायिका'], 'singer'],
+  [['sweet', 'sweets', 'mithai', 'dessert', 'मिठाई'], 'sweet'],
+  [['snack', 'snacks', 'nashta', 'chaat', 'नाश्ता', 'चाट'], 'snack'],
+  [['drink', 'drinks', 'peena', 'पेय'], 'drink'],
+  [['food', 'dish', 'khana', 'खाना', 'डिश'], 'food'],
+  [['movie', 'movies', 'film', 'films', 'फ़िल्म', 'फिल्म'], 'movie'],
+  [['city', 'cities', 'shehar', 'shahar', 'शहर'], 'city'],
+  [['trip', 'holiday', 'vacation', 'travel', 'ghoomna', 'घूमने', 'छुट्टी', 'यात्रा'], 'trip'],
+  [['season', 'mausam', 'मौसम'], 'season'],
+  [['festival', 'tyohar', 'tyohaar', 'त्योहार', 'त्यौहार'], 'festival'],
+  [['phone', 'mobile', 'smartphone', 'फ़ोन', 'फोन', 'मोबाइल'], 'phone'],
+  [['sport', 'sports', 'khel', 'खेल'], 'sport'],
+  [['pet', 'pets', 'paltu', 'पालतू'], 'pet'],
+  [['colour', 'color', 'rang', 'रंग'], 'colour'],
+];
+
+/** The ready-choices topic a question points at ("Best Diwali sweet?" → "sweet"), or null. */
+export function choiceTopic(question: string): string | null {
+  const s = question.toLowerCase();
+  for (const [words, topic] of CHOICE_TOPICS) {
+    if (words.some((w) => new RegExp(`(^|[^\\p{L}\\p{M}])${w}($|[^\\p{L}\\p{M}])`, 'u').test(s))) return topic;
+  }
+  return null;
+}

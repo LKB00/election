@@ -14,10 +14,13 @@ import { INDIA_TZ } from './time';
 //   poll_created     a poll made                      voter_created a poll made by someone who has voted before
 //   create_after_vote  "Have a question of your own?" tapped after voting
 //   guess / guess_skip "Guess the crowd": answered, or skipped (is the extra step welcome or in the way?)
-export const EVENTS = ['visitor', 'page_view', 'home_view', 'poll_view', 'shared_open', 'vote', 'shared_vote', 'share_open', 'whatsapp', 'copy_link', 'create_open', 'create_after_vote', 'poll_created', 'voter_created', 'guess', 'guess_skip'] as const;
+//   ask_posted     a poll posted from the yellow "Ask anything" card        remix_posted  a poll made from "Ask your own version"
+//   fresh_open     a poll opened from Home's "New questions" shelf          milestone_sent a "your poll reached N votes" alert sent
+//   draft_back     an unposted question came back in the ask card          draft_posted  ...and was then posted
+export const EVENTS = ['visitor', 'page_view', 'home_view', 'poll_view', 'shared_open', 'vote', 'shared_vote', 'share_open', 'whatsapp', 'copy_link', 'create_open', 'create_after_vote', 'poll_created', 'voter_created', 'guess', 'guess_skip', 'ask_posted', 'remix_posted', 'fresh_open', 'draft_back', 'draft_posted', 'milestone_sent'] as const;
 export type StepEvent = (typeof EVENTS)[number];
 /** The steps a page may report itself (the rest are counted by the server, where they cannot be faked). */
-export const CLIENT_EVENTS: readonly StepEvent[] = ['visitor', 'page_view', 'home_view', 'poll_view', 'shared_open', 'share_open', 'whatsapp', 'copy_link', 'create_open', 'create_after_vote'];
+export const CLIENT_EVENTS: readonly StepEvent[] = ['visitor', 'page_view', 'home_view', 'poll_view', 'shared_open', 'share_open', 'whatsapp', 'copy_link', 'create_open', 'create_after_vote', 'fresh_open', 'draft_back', 'draft_posted'];
 /** How many days the admin table shows. */
 export const STEP_DAYS = 7;
 

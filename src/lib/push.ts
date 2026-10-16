@@ -3,6 +3,7 @@ import webpush from 'web-push';
 import { schema, type Db } from '@/db';
 import { dict, isLang } from './i18n';
 import { MILESTONES } from './limits';
+import { countEvent } from './events';
 
 // "Tell me the result" (docs/DESIGN.md, "Result alerts"): opt-in, per poll, one alert when its result is in, then
 // nothing. Switched off until the owner sets the VAPID keys (docs/OWNER_TODO.md).
@@ -138,7 +139,10 @@ export async function sendMilestone(db: Db, pollId: string, total: number, send:
     const body = reached === MILESTONES[0] ? t.pushMilestone(reached) : t.pushMilestoneN(reached);
     const { gone, ok = true } = await send({ endpoint: r.endpoint, keys: { p256dh: r.p256dh, auth: r.auth } }, JSON.stringify({ title: r.title, body, url: `/p/${pollId}/manage` }));
     if (gone) await db.delete(pushSubs).where(eq(pushSubs.endpoint, r.endpoint));
-    else if (ok) sent++;
+    else if (ok) {
+      sent++;
+      await countEvent(db, 'milestone_sent');
+    }
   }
   if (reached === MILESTONES[MILESTONES.length - 1]) await db.delete(pushMilestones).where(eq(pushMilestones.pollId, pollId));
   return sent;

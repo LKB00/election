@@ -103,3 +103,5 @@ export const NEW_HOURS = 24;
 export const NEW_VOTES_MAX = 5;
 /** How many of them Home shows. */
 export const FRESH_SHOW = 3;
+/** Rows per topic shelf and in "More polls" on Home (the full lists are one tap away), so Home stays short. */
+export const HOME_SHELF = 3;
