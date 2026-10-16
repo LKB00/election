@@ -9,7 +9,7 @@ import type { MakerView } from '@/lib/maker';
 import { apiMsg } from '@/lib/i18n';
 import { useLang, useT } from '@/lib/lang';
 import { keyBytes, PUBLIC_KEY } from './ResultAlert';
-import { DELETED_KEEP_DAYS, MAX_CHOICE, MAX_DETAILS, MAX_TITLE, QUIET_HOURS, RUNOFF_HOURS } from '@/lib/limits';
+import { DELETED_KEEP_DAYS, MILESTONES, MAX_CHOICE, MAX_DETAILS, MAX_TITLE, QUIET_HOURS, RUNOFF_HOURS } from '@/lib/limits';
 
 // The poll maker's controls (docs/DESIGN.md, "Poll maker tools"). Everything posts to /api/polls/<id>/manage, which
 // checks the profile again; the page refreshes after each change.
@@ -239,7 +239,7 @@ export function MilestoneAlert({ id, n }: { id: string; n: number }) {
     }
   }
   return state === 'on' ? (
-    <p className="small muted maker-alert-on" role="status"><Bell size={14} strokeWidth={2} aria-hidden /> {t.alertOn}</p>
+    <p className="small muted maker-alert-on" role="status"><Bell size={14} strokeWidth={2} aria-hidden /> {t.alertOn(MILESTONES.slice(0, 3).join(', '))}</p>
   ) : (
     <button type="button" className="al-row maker-row" onClick={turnOn} disabled={state === 'busy'}>
       <span className="al-row__disc" style={{ '--tone': 'var(--p-trust)' } as React.CSSProperties}><Bell size={20} strokeWidth={1.75} aria-hidden /></span>

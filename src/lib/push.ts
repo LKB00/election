@@ -1,13 +1,16 @@
-import { and, eq, gt, inArray, isNotNull, isNull, lte, or } from 'drizzle-orm';
+import { and, eq, gt, inArray, isNotNull, isNull, lt, lte, or } from 'drizzle-orm';
 import webpush from 'web-push';
 import { schema, type Db } from '@/db';
 import { dict, isLang } from './i18n';
+import { MILESTONES } from './limits';
 
 // "Tell me the result" (docs/DESIGN.md, "Result alerts"): opt-in, per poll, one alert when its result is in, then
 // nothing. Switched off until the owner sets the VAPID keys (docs/OWNER_TODO.md).
 const { pushSubs, pushWants, pushMilestones, polls } = schema;
-/** The maker's one "first votes are in" alert fires at this many votes. */
-export const MILESTONE = 10;
+/** The vote count this poll reaches next (10, 50, 100…), or null past the last one. */
+export const nextMilestone = (votes: number) => MILESTONES.find((m) => m > votes) ?? null;
+/** A vote may have just crossed a milestone (a little slack: two votes at once can jump past it). */
+export const nearMilestone = (votes: number) => MILESTONES.some((m) => votes >= m && votes <= m + Math.max(2, m / 10));
 
 export const pushEnabled = () => !!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && !!process.env.VAPID_PRIVATE_KEY;
 
@@ -111,21 +114,32 @@ export async function wantMilestone(db: Db, voterKey: string, sub: PushSub, poll
   await db.insert(pushMilestones).values({ pollId, endpoint: sub.endpoint }).onConflictDoNothing();
 }
 
-/** "Your first 10 votes are in": once, then the wish is gone. */
-export async function sendMilestone(db: Db, pollId: string, send: Sender = webSender): Promise<number> {
+/** "Your first 10 votes are in", then "Your poll reached 50 votes": each milestone once per phone; after the last one
+ *  the wish is gone. `total` is the poll's vote count now. */
+export async function sendMilestone(db: Db, pollId: string, total: number, send: Sender = webSender): Promise<number> {
+  const reached = MILESTONES.filter((m) => m <= total).pop();
+  if (!reached) return 0;
   const rows = await db
     .select({ endpoint: pushSubs.endpoint, p256dh: pushSubs.p256dh, auth: pushSubs.auth, lang: pushSubs.lang, title: polls.title })
     .from(pushMilestones)
     .innerJoin(pushSubs, eq(pushSubs.endpoint, pushMilestones.endpoint))
     .innerJoin(polls, eq(polls.id, pushMilestones.pollId))
-    .where(eq(pushMilestones.pollId, pollId));
+    .where(and(eq(pushMilestones.pollId, pollId), lt(pushMilestones.sentN, reached)));
   let sent = 0;
   for (const r of rows) {
     const t = dict[isLang(r.lang) ? r.lang : 'en'];
-    const { gone, ok = true } = await send({ endpoint: r.endpoint, keys: { p256dh: r.p256dh, auth: r.auth } }, JSON.stringify({ title: r.title, body: t.pushMilestone(MILESTONE), url: `/p/${pollId}/manage` }));
+    // Marked first, so two votes at once never send the same milestone twice.
+    const claimed = await db
+      .update(pushMilestones)
+      .set({ sentN: reached })
+      .where(and(eq(pushMilestones.pollId, pollId), eq(pushMilestones.endpoint, r.endpoint), lt(pushMilestones.sentN, reached)))
+      .returning({ e: pushMilestones.endpoint });
+    if (!claimed.length) continue;
+    const body = reached === MILESTONES[0] ? t.pushMilestone(reached) : t.pushMilestoneN(reached);
+    const { gone, ok = true } = await send({ endpoint: r.endpoint, keys: { p256dh: r.p256dh, auth: r.auth } }, JSON.stringify({ title: r.title, body, url: `/p/${pollId}/manage` }));
     if (gone) await db.delete(pushSubs).where(eq(pushSubs.endpoint, r.endpoint));
     else if (ok) sent++;
   }
-  await db.delete(pushMilestones).where(eq(pushMilestones.pollId, pollId));
+  if (reached === MILESTONES[MILESTONES.length - 1]) await db.delete(pushMilestones).where(eq(pushMilestones.pollId, pollId));
   return sent;
 }

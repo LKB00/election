@@ -68,6 +68,8 @@ export const polls = pgTable(
     circleId: text('circle_id'),
     // Kept out of every public list and search (a poll night's or a circle's polls).
     unlisted: boolean('unlisted').notNull().default(false),
+    // "Ask your own version": the public poll this one was inspired by.
+    remixOf: text('remix_of'),
     // "Post later": opens for votes (and shows in lists) at this time.
     startsAt: timestamp('starts_at', { withTimezone: true }),
     // Each voter sees the choices in their own order.
@@ -296,6 +298,8 @@ export const pushMilestones = pgTable(
   {
     pollId: text('poll_id').notNull().references(() => polls.id, { onDelete: 'cascade' }),
     endpoint: text('endpoint').notNull().references(() => pushSubs.endpoint, { onDelete: 'cascade' }),
+    // The biggest milestone this phone was already told about.
+    sentN: integer('sent_n').notNull().default(0),
   },
   (t) => [primaryKey({ columns: [t.pollId, t.endpoint] })],
 );

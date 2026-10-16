@@ -96,3 +96,10 @@ export const FILTER_MIN = 20;
 export const RECENT_VOTES_MIN = 10;
 /** "Popular today" in the ask card names a poll only from this many votes in the last day. */
 export const POPULAR_MIN = 10;
+/** A maker who asked is told when their poll reaches each of these vote counts (once each); the ask card says it too. */
+export const MILESTONES = [10, 50, 100, 500, 1000];
+/** "New: be the first to answer" on Home: public polls posted in the last NEW_HOURS with fewer than NEW_VOTES_MAX votes. */
+export const NEW_HOURS = 24;
+export const NEW_VOTES_MAX = 5;
+/** How many of them Home shows. */
+export const FRESH_SHOW = 3;

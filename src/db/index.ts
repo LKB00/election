@@ -271,6 +271,11 @@ ALTER TABLE polls ADD COLUMN IF NOT EXISTS circle_id text;
 -- Kept out of every public list and search (a poll night's or a circle's polls): only its link and its own page show it.
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS unlisted boolean NOT NULL DEFAULT false;
 CREATE INDEX IF NOT EXISTS polls_circle_idx ON polls (circle_id);
+-- "Ask your own version": the public poll this one was inspired by (its maker sees "3 people asked their own version").
+ALTER TABLE polls ADD COLUMN IF NOT EXISTS remix_of text;
+CREATE INDEX IF NOT EXISTS polls_remix_idx ON polls (remix_of);
+-- The biggest milestone (10, 50, 100…) this phone was already told about, so each one goes out once.
+ALTER TABLE push_milestones ADD COLUMN IF NOT EXISTS sent_n integer NOT NULL DEFAULT 0;
 `;
 
 const g = globalThis as unknown as { __db?: Promise<Db> };

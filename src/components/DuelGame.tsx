@@ -1493,7 +1493,7 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
           <li>
             {/* From a friend's link: "Ask them back" (they asked you; now send one to them), else a question of your own. */}
             {/* Else "Ask your own version": this question filled in on Create, to change a word and post (most interest is now). */}
-            <Link href={poll.friend.known ? '/create?back=1' : `/create?title=${encodeURIComponent(poll.title)}&topic=${poll.category}`} className="al-row" onClick={() => track('create_after_vote')}>
+            <Link href={poll.friend.known ? '/create?back=1' : `/create?title=${encodeURIComponent(poll.title)}&topic=${poll.category}&remix=${poll.id}`} className="al-row" onClick={() => track('create_after_vote')}>
               <span className="al-row__disc" style={{ '--tone': 'var(--lime-badge)' } as React.CSSProperties} aria-hidden><Plus size={20} strokeWidth={1.75} /></span>
               <span className="al-row__main">
                 <span className="al-row__title">{poll.friend.known ? t.askBackTitle : t.ownVersionTitle}</span>
