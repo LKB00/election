@@ -1,4 +1,4 @@
-import { LIST_FIRST } from '@/lib/limits';
+import { FILTER_MIN, LIST_FIRST } from '@/lib/limits';
 import { topicIcon, topicTone } from '@/lib/topicIcons';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation';
 import FollowTopic from '@/components/FollowTopic';
 import EmptyState from '@/components/EmptyState';
 import DuelTiles from '@/components/DuelTiles';
+import PollFilter, { parseShow, type Show } from '@/components/PollFilter';
 import { getDb } from '@/db';
 import { CATEGORIES } from '@/lib/categories';
 import { votedPollIds, listPolls } from '@/lib/polls';
@@ -25,8 +26,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 // A topic page ("Cricket duels"): one place for people who search for a topic, and a way to browse by interest.
 // P1: the tiles.
-export default async function Topic({ params }: Props) {
+export default async function Topic({ params, searchParams }: Props & { searchParams: Promise<{ show?: string | string[] }> }) {
   const { category } = await params;
+  const show = parseShow((await searchParams).show);
   if (!isCategory(category)) notFound();
   const db = await getDb();
   const t = await getT();
@@ -40,6 +42,9 @@ export default async function Topic({ params }: Props) {
   const toVote = polls.filter((p) => !p.closed && !voted.has(p.id));
   const done = polls.filter((p) => voted.has(p.id));
   const ended = polls.filter((p) => p.closed && !voted.has(p.id));
+  // Many polls: tabs instead of one long page; "To vote" is the default.
+  const filtered = polls.length > FILTER_MIN;
+  const on = (k: Show) => !filtered || show === k;
   return (
     <div className={'page page-wide' + (full ? ' polls-grid' : ' empty-page')}>
       {/* Computers only (election.css, "Desktop"): every topic in a left column, this one marked, like on Polls. */}
@@ -66,7 +71,8 @@ export default async function Topic({ params }: Props) {
         <p className="topic-follow"><FollowTopic topic={category} /> <span className="small muted">{t.followNote}</span></p>
       </header>
       {/* Same order as Polls: waiting for your vote, then the ones you voted on, then ended ones you missed. */}
-      {toVote.length > 0 || !full ? (
+      {filtered && <PollFilter base={`/topic/${category}`} show={show} t={t} counts={{ to: toVote.length, voted: done.length, ended: ended.length }} />}
+      {!on('to') ? null : toVote.length > 0 || !full ? (
         <section className="al-block">
           {(done.length > 0 || ended.length > 0) && <h2 className="al-block__title">{t.pollsToVote}<span className="al-block__aside">{t.pollsN(toVote.length)}</span></h2>}
           <DuelTiles from="polls" polls={toVote} votedIds={mine} topic={category} limit={LIST_FIRST} />
@@ -76,18 +82,19 @@ export default async function Topic({ params }: Props) {
           <EmptyState kind="list" title={t.allVotedTitle} line={t.allVotedLine} action={{ href: `/create?topic=${category}`, label: t.startDuel }} />
         </section>
       )}
-      {done.length > 0 && (
+      {on('voted') && done.length > 0 && (
         <section className="al-block">
           <h2 className="al-block__title">{t.pollsVoted}<span className="al-block__aside">{t.pollsN(done.length)}</span></h2>
           <DuelTiles from="polls" polls={done} votedIds={mine} noCreate limit={LIST_FIRST} />
         </section>
       )}
-      {ended.length > 0 && (
+      {on('ended') && ended.length > 0 && (
         <section className="al-block">
           <h2 className="al-block__title">{t.pollsEnded}<span className="al-block__aside">{t.pollsN(ended.length)}</span></h2>
           <DuelTiles from="polls" polls={ended} votedIds={mine} noCreate limit={LIST_FIRST} />
         </section>
       )}
+      {filtered && show !== 'to' && (show === 'voted' ? done : ended).length === 0 && <p className="small muted">{t.filterNone}</p>}
       </div>
     </div>
   );

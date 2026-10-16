@@ -1,10 +1,11 @@
-import { LIST_FIRST } from '@/lib/limits';
+import { FILTER_MIN, LIST_FIRST } from '@/lib/limits';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { topicIcon, topicTone } from '@/lib/topicIcons';
 import { Hash, Search } from 'lucide-react';
 import EmptyState from '@/components/EmptyState';
 import DuelTiles from '@/components/DuelTiles';
+import PollFilter, { parseShow, type Show } from '@/components/PollFilter';
 import { getDb } from '@/db';
 import { votedPollIds, listPolls, trendingPolls } from '@/lib/polls';
 import { readVoterId } from '@/lib/voter';
@@ -18,8 +19,9 @@ export async function generateMetadata(): Promise<Metadata> {
 
 // P1: the polls waiting for your vote (trending first); P2: the ones you voted on; P3: ended ones you missed. While
 // searching, only the matches (P1) show.
-export default async function Duels({ searchParams }: { searchParams: Promise<{ q?: string | string[] }> }) {
-  const raw = (await searchParams).q;
+export default async function Duels({ searchParams }: { searchParams: Promise<{ q?: string | string[]; show?: string | string[] }> }) {
+  const sp = await searchParams;
+  const raw = sp.q;
   const q = (Array.isArray(raw) ? raw[0] : raw ?? '').trim().slice(0, 60);
   const db = await getDb();
   const t = await getT();
@@ -37,6 +39,10 @@ export default async function Duels({ searchParams }: { searchParams: Promise<{ 
   const toVote = polls.filter((p) => !p.closed && !voted.has(p.id) && !trending.some((h) => h.id === p.id));
   const done = polls.filter((p) => voted.has(p.id));
   const ended = polls.filter((p) => p.closed && !voted.has(p.id));
+  // Many polls: tabs instead of one long page; "To vote" is the default.
+  const filtered = polls.length > FILTER_MIN;
+  const show = parseShow(sp.show);
+  const on = (k: Show) => !filtered || show === k;
   // No polls at all yet: only the empty state (search and topics would lead nowhere).
   const empty = !q && !polls.length;
   if (empty) {
@@ -93,39 +99,41 @@ export default async function Duels({ searchParams }: { searchParams: Promise<{ 
         </section>
       )}
       {!q && (<>
+      {filtered && <PollFilter base="/polls" show={show} t={t} counts={{ to: trending.length + toVote.length, voted: done.length, ended: ended.length }} />}
       {/* P1: open polls you have not voted on. The busiest of the last hour first ("Trending now"), then the rest. */}
-      {trending.length > 0 && (
+      {on('to') && trending.length > 0 && (
         <section className="al-block">
           <h2 className="al-block__title"><span className="live-dot al-block__live" aria-hidden />{t.trendingNow}<span className="al-block__aside">{t.pollsN(trending.length)}</span></h2>
           <DuelTiles from="polls" polls={trending} votedIds={mine} noCreate />
         </section>
       )}
-      {toVote.length > 0 && (
+      {on('to') && toVote.length > 0 && (
         <section className="al-block">
           <h2 className="al-block__title">{t.pollsToVote}<span className="al-block__aside">{t.pollsN(toVote.length)}</span></h2>
           <DuelTiles from="polls" polls={toVote} votedIds={mine} noCreate limit={LIST_FIRST} />
         </section>
       )}
       {/* Nothing left to vote on: say so, and the one next step (a poll of your own). */}
-      {trending.length === 0 && toVote.length === 0 && (
+      {on('to') && trending.length === 0 && toVote.length === 0 && (
         <section className="al-block">
           <EmptyState kind="list" title={t.allVotedTitle} line={t.allVotedLine} action={{ href: '/create', label: t.startDuel }} />
         </section>
       )}
       {/* P2: the polls you voted on (results, how they are going), a few at a time. */}
-      {done.length > 0 && (
+      {on('voted') && done.length > 0 && (
         <section className="al-block">
           <h2 className="al-block__title">{t.pollsVoted}<span className="al-block__aside">{t.pollsN(done.length)}</span></h2>
           <DuelTiles from="polls" polls={done} votedIds={mine} noCreate limit={LIST_FIRST} />
         </section>
       )}
       {/* P3: ended polls you missed (results only). */}
-      {ended.length > 0 && (
+      {on('ended') && ended.length > 0 && (
         <section className="al-block">
           <h2 className="al-block__title">{t.pollsEnded}<span className="al-block__aside">{t.pollsN(ended.length)}</span></h2>
           <DuelTiles from="polls" polls={ended} votedIds={mine} noCreate limit={LIST_FIRST} />
         </section>
       )}
+      {filtered && show !== 'to' && (show === 'voted' ? done : ended).length === 0 && <p className="small muted">{t.filterNone}</p>}
       </>)}
       </div>
     </div>

@@ -89,3 +89,6 @@ export const ROOM_MAX = 8;
 export const CIRCLE_NAME_MAX = 40;
 export const CIRCLE_MAX_MEMBERS = 50;
 export const CIRCLES_PER_PERSON = 10;
+/** Polls and topic pages: the "To vote · You voted · Ended" tabs appear only above this many polls (fewer read
+ *  fine as plain groups). */
+export const FILTER_MIN = 20;

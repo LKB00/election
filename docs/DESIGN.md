@@ -1600,3 +1600,4 @@ Polls page and topic pages, top to bottom, each poll once and a few at a time (`
 3. **You voted** (P2): polls you voted on (open or ended), with their ✓ Voted line.
 4. **Ended** (P3): ended polls you missed (results only).
 Search results stay one list.
+- **Many polls (more than `FILTER_MIN` = 20):** one switch on one line above the lists: **To vote · You voted · Ended**, each with its count; "To vote" (Trending + Waiting for your vote) is the default. Plain links (`?show=voted`, `?show=ended`), so each view has its own address. It is a quiet pill switch, not more chips, so it never reads as more topics. Fewer polls: the plain groups above, no switch. Same on topic pages.
