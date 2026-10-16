@@ -80,7 +80,7 @@ export default async function Topic({ params, searchParams }: Props & { searchPa
       ) : (
         <section className="al-block">
           <p className="lead all-voted">{t.allVotedTitle}</p>
-          <QuickAsk heading={t.askTurn} ideas={category === 'politics' ? [] : t.ideaSets[category] ?? []} category={category} />
+          <QuickAsk heading={t.askTurn} ideas={t.ideaSets[category] ?? []} category={category} />
         </section>
       )}
       {on('voted') && done.length > 0 && (

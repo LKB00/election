@@ -16,7 +16,7 @@ import { getDb } from '@/db';
 import { cookies } from 'next/headers';
 import { advanceDueBattles } from '@/lib/battles';
 import { FOLLOW_COOKIE, readFollowed } from '@/lib/follow';
-import { getTodaySet, recentVoteCount, rollDueSeries, listPolls, trendingPolls, voterCount } from '@/lib/polls';
+import { getTodaySet, recentVoteCount, topVotedTopic, rollDueSeries, listPolls, trendingPolls, voterCount } from '@/lib/polls';
 import { VIEWS_SHOW_MIN, VOTERS_SHOW_MIN } from '@/lib/limits';
 import { viewTotal } from '@/lib/events';
 import { dateLocale } from '@/lib/time';
@@ -48,7 +48,7 @@ export default async function Home() {
   // Today's set (the same few polls for everyone today, with an end), then more polls only if you ask for them.
   // The polls offered after today's set are fetched by the phone when the set is done (DuelGame), not here.
   const [deck, recent, trending] = await Promise.all([getTodaySet(db, voterId), listPolls(db, 40), trendingPolls(db, 4)]);
-  const [tonight, lang, voters, viewed, recentVotes] = await Promise.all([upcomingPacks(db), getLang(), voterCount(db), viewTotal(db), recentVoteCount(db)]);
+  const [tonight, lang, voters, viewed, recentVotes, votedTopic] = await Promise.all([upcomingPacks(db), getLang(), voterCount(db), viewTotal(db), recentVoteCount(db), topVotedTopic(db, voterId)]);
   // Every vote came with a page view too (views were counted later than votes), so never show fewer views than voters.
   const fmt = (n: number) => n.toLocaleString(dateLocale(lang));
   const views = Math.max(viewed, voters);
@@ -63,6 +63,7 @@ export default async function Home() {
   for (const p of recent) if (!p.closed && !shown.has(p.id) && p.category !== 'general') byTopic.set(p.category, [...(byTopic.get(p.category) ?? []), p]);
   // Topics this phone follows come first (with even one open poll), then the busiest others (two or more).
   const followed = readFollowed((await cookies()).get(FOLLOW_COOKIE)?.value);
+  const askTopic = votedTopic ?? followed[0] ?? 'general';
   const mineFirst = followed.filter((c) => byTopic.has(c)).map((c) => [c, byTopic.get(c)!] as const);
   const others = [...byTopic.entries()].filter(([c, ps]) => !followed.includes(c) && ps.length >= 2).sort((a, b) => b[1].length - a[1].length);
   const shelves = [...mineFirst, ...others]
@@ -98,8 +99,9 @@ export default async function Home() {
             </section>
           )}
           {/* P2, under the poll: "Ask anything" (owner, Oct 2026: "something which pushes them to create a poll"; every
-              poll comes from people). Ideas from a topic you follow, else everyday ones. */}
-          <QuickAsk ideas={t.ideaSets[followed[0] ?? 'general'] ?? t.ideaSets.general} category={followed[0] ?? 'general'} recentVotes={recentVotes} />
+              poll comes from people). Ideas from what you vote on most (owner: "depend on what they have done"), else
+              a topic you follow, else everyday ones. */}
+          <QuickAsk ideas={t.ideaSets[askTopic] ?? t.ideaSets.general} category={askTopic} recentVotes={recentVotes} />
         </div>
         {!empty && (
           <div className="home-rail">

@@ -35,10 +35,10 @@ import { shareMenu } from '@/lib/shareSheet';
 // cards, then "Next duel". Results stay hidden until you vote.
 // Ballot serial numbers, like the EVM and the VVPAT slip (1, 2, 3…). Keys A/B… still work too.
 const LETTERS = 'ABCDEFGHIJ';
-/** The topic that comes up most (ties: the first), never politics (ideas for it would be the site picking sides). */
+/** The topic that comes up most (ties: the first). Politics ideas are rivals from different parties. */
 const topTopic = (cats: string[]) => {
   const n = new Map<string, number>();
-  for (const c of cats) if (c !== 'politics') n.set(c, (n.get(c) ?? 0) + 1);
+  for (const c of cats) n.set(c, (n.get(c) ?? 0) + 1);
   return [...n.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'general';
 };
 const serial = (n: number) => String(n + 1);

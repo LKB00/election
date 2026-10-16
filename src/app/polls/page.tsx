@@ -40,9 +40,9 @@ export default async function Duels({ searchParams }: { searchParams: Promise<{ 
   const toVote = polls.filter((p) => !p.closed && !voted.has(p.id) && !trending.some((h) => h.id === p.id));
   const done = polls.filter((p) => voted.has(p.id));
   const ended = polls.filter((p) => p.closed && !voted.has(p.id));
-  // The topic you voted on most (not politics), for "Your turn" ideas.
+  // The topic you voted on most, for "Your turn" ideas (politics ones are rivals from different parties).
   const counts = new Map<string, number>();
-  for (const p of done) if (p.category !== 'politics') counts.set(p.category, (counts.get(p.category) ?? 0) + 1);
+  for (const p of done) counts.set(p.category, (counts.get(p.category) ?? 0) + 1);
   const topic = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'general';
   // Many polls: tabs instead of one long page; "To vote" is the default.
   const filtered = polls.length > FILTER_MIN;

@@ -788,6 +788,20 @@ export async function voteTotals(db: Db, ids: string[]): Promise<Record<string, 
   return Object.fromEntries(rows.map((r) => [r.id, r.total]));
 }
 
+/** The topic this voter votes in most (for "Ask anything" ideas that match what they care about); null before any vote. */
+export async function topVotedTopic(db: Db, voterId: string | null): Promise<string | null> {
+  if (!voterId) return null;
+  const [row] = await db
+    .select({ c: polls.category, n: sql<number>`count(*)::int` })
+    .from(votes)
+    .innerJoin(polls, eq(polls.id, votes.pollId))
+    .where(eq(votes.voterKey, voterId))
+    .groupBy(polls.category)
+    .orderBy(desc(sql`count(*)`))
+    .limit(1);
+  return row?.c ?? null;
+}
+
 /** Votes cast on the site in the last 24 hours, for "Ask anything": proof that questions here get answered. */
 export async function recentVoteCount(db: Db): Promise<number> {
   const [row] = await db.select({ n: sql<number>`count(*)::int` }).from(votes).where(sql`${votes.createdAt} > now() - interval '24 hours'`);

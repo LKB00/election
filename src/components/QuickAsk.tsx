@@ -125,7 +125,7 @@ export default function QuickAsk({ ideas = [], category = 'general', heading, si
           <div className="row wrap">
             {ideas.slice(0, 3).map((i) => (
               <button key={i.q} type="button" className="quick-ask__idea" onClick={() => (setText(i.q), setPicked(i))}>
-                <span aria-hidden>{i.c.map((c) => emojiFor(c)).filter(Boolean).slice(0, 2).join('') || '💬'}</span> {i.q}
+                <span aria-hidden>{i.c.map((c) => emojiFor(c)).filter(Boolean).slice(0, 2).join('') || (category === 'politics' ? '🗳️' : '💬')}</span> {i.q}
               </button>
             ))}
           </div>
