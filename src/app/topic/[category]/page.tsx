@@ -61,7 +61,7 @@ export default async function Topic({ params }: Props) {
         <p className="topic-follow"><FollowTopic topic={category} /> <span className="small muted">{t.followNote}</span></p>
       </header>
       <section className="al-block">
-        <DuelTiles polls={polls} votedIds={mine} topic={category} limit={LIST_FIRST} />
+        <DuelTiles from="polls" polls={polls} votedIds={mine} topic={category} limit={LIST_FIRST} />
       </section>
       </div>
     </div>

@@ -1588,3 +1588,7 @@ Sharing your own poll anywhere (its page, Home, the maker page) always sends the
 ## Two small fixes from the owner's screenshots (Oct 2026)
 - **Cloudflare's "Success!" box** (the anti-bot check) showed only when Cloudflare wanted a tap, then stayed on top of the page. Once the check passes it is hidden (`.human-check.is-done`).
 - **"with the 100%"** on the end-of-day card and the vote card read oddly. Now: "same as most people (100%)" / "same as 30% of people", and "100% picked the same as you." (three languages).
+
+## A poll opens in the section you came from (owner, Oct 2026: "whatever vote I have done should open here in Your votes, not Home")
+- A row on **Your votes** opens its poll with Your votes still lit, and Back goes to Your votes. A row on **Polls** or a topic page opens with Polls lit, and Back goes back there. Polls opened from Home, a shared link or "Next poll" belong to Home, as before. Your own poll (opened from You or the maker page) belongs to You.
+- How: those links add `?from=votes` / `?from=polls`. The page reads it once (`useFromSection`, `src/lib/ownNav.ts`), keeps it for this tab only if you refresh, and takes it out of the address, so a copied address is a clean link.

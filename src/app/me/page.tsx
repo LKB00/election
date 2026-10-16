@@ -85,7 +85,7 @@ export default async function MyVotes({ searchParams }: { searchParams: Promise<
               const ahead = ((v.standing.kind === 'leading' || v.standing.kind === 'won') && v.standing.name === v.pick) || (v.standing.kind === 'called' && v.standing.right);
               return (
                 <li key={v.pollId} style={{ '--row': n } as React.CSSProperties}>
-                  <Link href={`/p/${v.pollId}`} className="al-row">
+                  <Link href={`/p/${v.pollId}?from=votes`} className="al-row">
                     <span className="al-row__disc" style={{ '--tone': ahead ? 'var(--lime)' : 'var(--sand)' } as React.CSSProperties}>
                       {ahead ? <Check size={20} strokeWidth={2} aria-hidden /> : <Vote size={20} strokeWidth={1.75} aria-hidden />}
                     </span>

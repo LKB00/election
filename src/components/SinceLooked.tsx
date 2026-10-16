@@ -46,7 +46,7 @@ export default function SinceLooked({ votes }: { votes: MyVote[] }) {
       <ul className="al-listcard">
         {rows.map((r) => (
           <li key={r.id}>
-            <Link href={`/p/${r.id}`} className="al-row">
+            <Link href={`/p/${r.id}?from=votes`} className="al-row">
               <span className="al-row__main"><span className="al-row__title since-row">{r.text}</span></span>
               <ChevronRight size={18} strokeWidth={1.75} className="al-row__chevron" aria-hidden />
             </Link>

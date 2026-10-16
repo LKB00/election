@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { setLangCookie, useLang, useT } from '@/lib/lang';
 import { LANG_NAMES, LANG_SHORT, LANGS, type Lang } from '@/lib/i18n';
 import LogoMark from './LogoMark';
-import { useOwnPage } from '@/lib/ownNav';
+import { useFromSection, useOwnPage } from '@/lib/ownNav';
 
 // Set once you move from one page to another inside the site (the browser's "where you came from" only knows the page
 // you first arrived from, e.g. WhatsApp, so it used to send Back to Home after Polls → a poll).
@@ -24,6 +24,8 @@ export default function TopBar() {
   // Your own poll's page belongs under You too, with Back to its maker page (never Home).
   const own = useOwnPage();
   const ownHere = !!own && path === own.path;
+  // Opened from Your votes or Polls: that tab stays lit and Back goes there.
+  const fromSec = useFromSection(path);
   const backable = managing || ['/p/', '/pack/', '/b/', '/c/', '/topic/', '/u/'].some((x) => path.startsWith(x));
   const [fromSite, setFromSite] = useState(false);
   useEffect(() => {
@@ -35,14 +37,14 @@ export default function TopBar() {
       setFromSite(false);
     }
   }, [path]);
-  const back = !backable ? null : managing ? { to: '/you', name: t.you } : ownHere ? { to: own.back, name: own.kind === 'poll' ? t.backYourPoll : t.you } : fromSite ? { to: null, name: t.back } : { to: '/', name: t.home };
+  const back = !backable ? null : managing ? { to: '/you', name: t.you } : fromSec === 'votes' ? { to: '/me', name: t.myVotes } : fromSec === 'polls' ? (fromSite ? { to: null, name: t.duels } : { to: '/polls', name: t.duels }) : ownHere ? { to: own.back, name: own.kind === 'poll' ? t.backYourPoll : t.you } : fromSite ? { to: null, name: t.back } : { to: '/', name: t.home };
   // Create opens full screen (the "+" action, not a tab): a × takes you back to where you were.
   const creating = path.startsWith('/create');
   const close = () => (window.history.length > 1 ? router.back() : router.push('/'));
   // Which place you are in: the same rules as the phone's bottom bar (BottomNav.tsx).
-  const onHome = path === '/' || ((path.startsWith('/p/') || path.startsWith('/pack/')) && !managing && !ownHere);
-  const onPolls = path.startsWith('/polls') || path.startsWith('/topic/');
-  const onYou = path.startsWith('/you') || path.startsWith('/mine') || path.startsWith('/c/') || managing || ownHere;
+  const onHome = path === '/' || ((path.startsWith('/p/') || path.startsWith('/pack/')) && !managing && !ownHere && !fromSec);
+  const onPolls = path.startsWith('/polls') || path.startsWith('/topic/') || fromSec === 'polls';
+  const onYou = path.startsWith('/you') || path.startsWith('/mine') || path.startsWith('/c/') || managing || (ownHere && !fromSec);
   const tab = (to: string, label: string, Icon: typeof House, on: boolean) => (
     <Link href={to} className={on ? 'active' : ''} aria-current={on ? 'page' : undefined}>
       <Icon size={16} strokeWidth={on ? 2.25 : 1.75} aria-hidden /> {label}
@@ -77,7 +79,7 @@ export default function TopBar() {
         <nav className="topnav-links" aria-label={t.navMain}>
           {tab('/', t.home, House, onHome)}
           {tab('/polls', t.duels, ChartNoAxesColumn, onPolls)}
-          {tab('/me', t.myVotes, Vote, path === '/me')}
+          {tab('/me', t.myVotes, Vote, path === '/me' || fromSec === 'votes')}
         </nav>
         <div className="topnav-right">
           {!creating && (

@@ -77,7 +77,7 @@ export default async function Duels({ searchParams }: { searchParams: Promise<{ 
           {/* No matches: the empty picture says so; a heading above it would say it twice. */}
           {polls.length > 0 ? <h2 className="al-block__title">{t.searchFor(q)}<span className="al-block__aside">{t.pollsN(polls.length)}</span></h2> : <h2 className="sr-only">{t.searchFor(q)}</h2>}
           {polls.length > 0 ? (
-            <DuelTiles polls={polls} votedIds={mine} noCreate />
+            <DuelTiles from="polls" polls={polls} votedIds={mine} noCreate />
           ) : (
             <EmptyState kind="search" title={t.searchNoneTitle} line={t.searchNone} action={{ href: `/create?title=${encodeURIComponent(q)}`, label: t.searchAsk }} secondary={{ href: '/polls', label: t.searchClear }} />
           )}
@@ -89,14 +89,14 @@ export default async function Duels({ searchParams }: { searchParams: Promise<{ 
       {hot.length > 0 && (
         <section className="al-block">
           <h2 className="al-block__title"><span className="live-dot al-block__live" aria-hidden />{t.trendingNow}<span className="al-block__aside">{t.pollsN(hot.length)}</span></h2>
-          <DuelTiles polls={hot} votedIds={mine} noCreate />
+          <DuelTiles from="polls" polls={hot} votedIds={mine} noCreate />
         </section>
       )}
       {/* Hidden when every poll is already in Trending (it would say "no polls yet" right under them). */}
       {(rest.length > 0 || hot.length === 0) && <section className="al-block">
         {/* A heading only when something sits above; otherwise it would just repeat the page title. */}
         {hot.length > 0 && <h2 className="al-block__title">{t.allDuels}<span className="al-block__aside">{t.pollsN(rest.length)}</span></h2>}
-        <DuelTiles polls={rest} votedIds={mine} limit={LIST_FIRST} />
+        <DuelTiles from="polls" polls={rest} votedIds={mine} limit={LIST_FIRST} />
       </section>}
       </>)}
       </div>

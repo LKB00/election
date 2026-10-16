@@ -31,7 +31,7 @@ function repeatsTitle(p: PollSummary): boolean {
   return p.options.every((o) => title.includes(o.toLocaleLowerCase().trim()));
 }
 
-export default function DuelTiles({ polls, votedIds = [], noCreate = false, limit, topic }: { polls: PollSummary[]; votedIds?: string[]; noCreate?: boolean; limit?: number; /** Topic page: the empty state names it and Create starts in it. */ topic?: string }) {
+export default function DuelTiles({ polls, votedIds = [], noCreate = false, limit, topic, from }: { polls: PollSummary[]; votedIds?: string[]; noCreate?: boolean; limit?: number; /** Topic page: the empty state names it and Create starts in it. */ topic?: string; /** The section these rows sit in (Polls): the poll opens under that tab. */ from?: 'polls' }) {
   const t = useT();
   const [voted, setVoted] = useState<string[]>(votedIds);
   const [counts, setCounts] = useState<Record<string, number>>({});
@@ -102,7 +102,7 @@ export default function DuelTiles({ polls, votedIds = [], noCreate = false, limi
         const face = faces(p);
         return (
           <li key={p.id} style={{ '--row': n } as React.CSSProperties}>
-            <Link href={`/p/${p.id}`} className={'al-row' + (done || p.closed ? ' is-done' : '')}>
+            <Link href={`/p/${p.id}${from ? `?from=${from}` : ''}`} className={'al-row' + (done || p.closed ? ' is-done' : '')}>
               <span className={'al-row__disc' + (face ? ' is-faces' : '')} style={{ '--tone': TONES[n % TONES.length] } as React.CSSProperties} aria-hidden>
                 {face || <Icon size={20} strokeWidth={1.75} />}
               </span>
