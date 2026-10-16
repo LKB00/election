@@ -4,8 +4,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import FollowTopic from '@/components/FollowTopic';
-import EmptyState from '@/components/EmptyState';
 import DuelTiles from '@/components/DuelTiles';
+import QuickAsk from '@/components/QuickAsk';
 import PollFilter, { parseShow, type Show } from '@/components/PollFilter';
 import { getDb } from '@/db';
 import { CATEGORIES } from '@/lib/categories';
@@ -79,7 +79,8 @@ export default async function Topic({ params, searchParams }: Props & { searchPa
         </section>
       ) : (
         <section className="al-block">
-          <EmptyState kind="list" title={t.allVotedTitle} line={t.allVotedLine} action={{ href: `/create?topic=${category}`, label: t.startDuel }} />
+          <p className="lead all-voted">{t.allVotedTitle}</p>
+          <QuickAsk heading={t.askTurn} ideas={t.ideaSets[category] ?? []} category={category} />
         </section>
       )}
       {on('voted') && done.length > 0 && (
