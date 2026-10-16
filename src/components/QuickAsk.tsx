@@ -7,7 +7,7 @@ import { ArrowRight, TrendingUp } from 'lucide-react';
 import Spot from './Spot';
 import { apiMsg } from '@/lib/i18n';
 import { useLang, useT } from '@/lib/lang';
-import { choicesFromQuestion, emojiFor } from '@/lib/createHelp';
+import { choicesFromQuestion, choiceTopic, emojiFor } from '@/lib/createHelp';
 import { MAX_TITLE, MILESTONES, RECENT_VOTES_MIN } from '@/lib/limits';
 import { track } from '@/lib/track';
 import { rememberMyPoll } from './MyPolls';
@@ -18,6 +18,8 @@ type Idea = { q: string; c: string[] };
 type Today = { id: string; title: string; n: number; total?: number };
 /** An unfinished question stays on this phone (only here), so it is there next time. */
 const DRAFT = 'chunav-ask-draft';
+// Home can hold two ask cards (under the poll, and at the end of today's polls): count a returning question once.
+let draftCounted = false;
 
 // "Ask anything" (docs/DESIGN.md, "More people asking"): a question box right where people vote, so starting a poll
 // is one line, not a separate screen. Choices are read out of the question ("Chai or coffee?" → Chai / Coffee) and
@@ -50,12 +52,16 @@ export default function QuickAsk({ ideas = [], category = 'general', heading, si
   const reached = mine?.total ? MILESTONES.filter((m) => mine.total! >= m && mine.total! - mine.n < m).pop() : undefined;
   // "Finish your question?": what was typed and not posted comes back (kept on this phone only).
   const [draft, setDraft] = useState(false);
+  const draftUsed = useRef(false);
   useEffect(() => {
     try {
       const saved = localStorage.getItem(DRAFT);
       if (saved) {
         setText(saved);
         setDraft(true);
+        draftUsed.current = true;
+        if (!draftCounted) track('draft_back');
+        draftCounted = true;
       }
     } catch {}
   }, []);
@@ -68,6 +74,8 @@ export default function QuickAsk({ ideas = [], category = 'general', heading, si
   // An idea keeps its own choices (some list three names); typed questions are read for "A or B".
   const choices = picked && picked.q === title ? picked.c : choicesFromQuestion(title);
   const ready = title.length >= 3 && !!choices;
+  // No "or" in it: ready choices for what it is about ("Best Diwali sweet?" → Kaju katli, Gulab jamun…), one tap to use.
+  const suggested = !choices && title.length >= 3 ? t.choiceSets[choiceTopic(title) ?? ''] : undefined;
   const createHref = `/create${title ? `?title=${encodeURIComponent(title)}` : ''}`;
 
   function post() {
@@ -82,11 +90,12 @@ export default function QuickAsk({ ideas = [], category = 'general', heading, si
     const res = await fetch('/api/polls', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: title.endsWith('?') ? title : `${title}?`, options: choices, emojis: choices.map((c) => emojiFor(c) || ''), kind: 'choice', category }),
+      body: JSON.stringify({ via: 'ask', title: title.endsWith('?') ? title : `${title}?`, options: choices, emojis: choices.map((c) => emojiFor(c) || ''), kind: 'choice', category }),
     }).catch(() => null);
     const data = await res?.json().catch(() => null);
     if (res?.ok && data?.id) {
       rememberMyPoll(data.id, data.manageKey);
+      if (draftUsed.current) track('draft_posted');
       try {
         localStorage.removeItem(DRAFT);
       } catch {}
@@ -115,7 +124,7 @@ export default function QuickAsk({ ideas = [], category = 'general', heading, si
         </Link>
       )}
       <div className="quick-ask__head">
-        <span className="quick-ask__pic" aria-hidden><Spot kind="pen" size={60} /></span>
+        <span className="quick-ask__pic" aria-hidden><Spot kind="pen" size={46} /></span>
         <div>
           <h2 className="quick-ask__title">{heading ?? t.askTitle}</h2>
           {/* The truest proof first: a real poll that took off today, else today's vote count, else the plain promise. */}
@@ -158,7 +167,17 @@ export default function QuickAsk({ ideas = [], category = 'general', heading, si
           <span>{t.askChoices}</span> {choices.map((c) => <span key={c} className="quick-ask__choice">{emojiFor(c)} {c}</span>)}
         </p>
       )}
-      {title.length >= 3 && !ready && <p className="small">{t.askNoChoices}</p>}
+      {suggested ? (
+        <div className="quick-ask__ideas">
+          <span className="small">{t.askSuggest}</span>
+          <button type="button" className="quick-ask__idea quick-ask__suggest" onClick={() => setPicked({ q: title, c: suggested })}>
+            {suggested.map((c) => `${emojiFor(c) ? emojiFor(c) + ' ' : ''}${c}`).join(' · ')}
+          </button>
+          <span className="small">{t.askNoChoices}</span>
+        </div>
+      ) : (
+        title.length >= 3 && !ready && <p className="small">{t.askNoChoices}</p>
+      )}
       {/* Ideas the person can pick (never posted for them): only while the box is empty. */}
       {!title && ideas.length > 0 && (
         <div className="quick-ask__ideas">

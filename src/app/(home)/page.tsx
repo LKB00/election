@@ -17,7 +17,7 @@ import { cookies } from 'next/headers';
 import { advanceDueBattles } from '@/lib/battles';
 import { FOLLOW_COOKIE, readFollowed } from '@/lib/follow';
 import { freshPollIds, getTodaySet, myPollNews, popularToday, recentVoteCount, topVotedTopic, rollDueSeries, listPolls, trendingPolls, voterCount } from '@/lib/polls';
-import { FRESH_SHOW, VIEWS_SHOW_MIN, VOTERS_SHOW_MIN } from '@/lib/limits';
+import { FRESH_SHOW, HOME_SHELF, VIEWS_SHOW_MIN, VOTERS_SHOW_MIN } from '@/lib/limits';
 import { viewTotal } from '@/lib/events';
 import { dateLocale } from '@/lib/time';
 import { readVoterId } from '@/lib/voter';
@@ -48,7 +48,7 @@ export default async function Home() {
   await Promise.all([rollDueSeries(db).catch(() => 0), advanceDueBattles(db).catch(() => 0)]);
   // Today's set (the same few polls for everyone today, with an end), then more polls only if you ask for them.
   // The polls offered after today's set are fetched by the phone when the set is done (DuelGame), not here.
-  const [deck, recent, trending, user] = await Promise.all([getTodaySet(db, voterId), listPolls(db, 40), trendingPolls(db, 4), currentUser(db)]);
+  const [deck, recent, trending, user] = await Promise.all([getTodaySet(db, voterId), listPolls(db, 40), trendingPolls(db, HOME_SHELF), currentUser(db)]);
   // The ask card's proof: how your own poll did today, else one poll that took off today (never yours, never a name).
   const uid = user?.id ?? null;
   const [tonight, lang, voters, viewed, recentVotes, votedTopic, mineNews, popular, freshIds] = await Promise.all([upcomingPacks(db), getLang(), voterCount(db), viewTotal(db), recentVoteCount(db), topVotedTopic(db, voterId), myPollNews(db, uid), popularToday(db, uid), freshPollIds(db, voterId, uid)]);
@@ -73,9 +73,9 @@ export default async function Home() {
   const others = [...byTopic.entries()].filter(([c, ps]) => !followed.includes(c) && ps.length >= 2).sort((a, b) => b[1].length - a[1].length);
   const shelves = [...mineFirst, ...others]
     .slice(0, Math.max(2, mineFirst.length))
-    .map(([cat, ps]) => [cat, ps.slice(0, 4)] as const);
+    .map(([cat, ps]) => [cat, ps.slice(0, HOME_SHELF)] as const);
   const shelved = new Set([...shown, ...shelves.flatMap(([, ps]) => ps.map((p) => p.id))]);
-  const polls = recent.filter((p) => !shelved.has(p.id) && !p.closed).slice(0, 5);
+  const polls = recent.filter((p) => !shelved.has(p.id) && !p.closed).slice(0, HOME_SHELF);
 
   // Arogya Line's Today header: the date and a greeting. The size of the day ("4 left today") sits once, in today's
   // question label just below, where it updates as you vote (it used to be said twice).
@@ -127,7 +127,7 @@ export default async function Home() {
             {fresh.length > 0 && (
               <section className="al-block">
                 <h2 className="al-block__title">{t.freshTitle}<span className="al-block__aside">{t.freshLine}</span></h2>
-                <DuelTiles polls={fresh} votedIds={voted} noCreate />
+                <DuelTiles polls={fresh} votedIds={voted} noCreate step="fresh_open" />
               </section>
             )}
             {shelves.map(([cat, ps]) => (

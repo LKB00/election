@@ -37,6 +37,12 @@ export async function POST(req: Request) {
   const id = await createPoll(db, input, manageKey, undefined, user.id, { circleId });
   // The owner's step counter: a poll made, and whether its maker had voted before (a voter who became a maker).
   await countEvent(db, 'poll_created');
+  // Which of the "more people asking" paths it came from (the yellow Ask card, "Ask your own version").
+  if (body?.via === 'ask') await countEvent(db, 'ask_posted');
+  if (input.remixOf) {
+    const [made] = await db.select({ r: schema.polls.remixOf }).from(schema.polls).where(eq(schema.polls.id, id)).limit(1);
+    if (made?.r) await countEvent(db, 'remix_posted');
+  }
   const voter = await readVoterId();
   if (voter) {
     const [had] = await db.select({ id: schema.votes.id }).from(schema.votes).where(eq(schema.votes.voterKey, voter)).limit(1);

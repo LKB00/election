@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { track } from '@/lib/track';
 import { Check, ChevronRight } from 'lucide-react';
 import { topicIcon } from '@/lib/topicIcons';
 import EmptyState from './EmptyState';
@@ -31,7 +32,7 @@ function repeatsTitle(p: PollSummary): boolean {
   return p.options.every((o) => title.includes(o.toLocaleLowerCase().trim()));
 }
 
-export default function DuelTiles({ polls, votedIds = [], noCreate = false, limit, topic, from }: { polls: PollSummary[]; votedIds?: string[]; noCreate?: boolean; limit?: number; /** Topic page: the empty state names it and Create starts in it. */ topic?: string; /** The section these rows sit in (Polls): the poll opens under that tab. */ from?: 'polls' }) {
+export default function DuelTiles({ polls, votedIds = [], noCreate = false, limit, topic, from, step }: { polls: PollSummary[]; votedIds?: string[]; noCreate?: boolean; limit?: number; /** Topic page: the empty state names it and Create starts in it. */ topic?: string; /** The section these rows sit in (Polls): the poll opens under that tab. */ from?: 'polls'; /** Counted on the owner's step counter when a row is opened (Home's "New questions"). */ step?: 'fresh_open' }) {
   const t = useT();
   const [voted, setVoted] = useState<string[]>(votedIds);
   const [counts, setCounts] = useState<Record<string, number>>({});
@@ -102,7 +103,7 @@ export default function DuelTiles({ polls, votedIds = [], noCreate = false, limi
         const face = faces(p);
         return (
           <li key={p.id} style={{ '--row': n } as React.CSSProperties}>
-            <Link href={`/p/${p.id}${from ? `?from=${from}` : ''}`} className={'al-row' + (done || p.closed ? ' is-done' : '')}>
+            <Link href={`/p/${p.id}${from ? `?from=${from}` : ''}`} className={'al-row' + (done || p.closed ? ' is-done' : '')} onClick={step ? () => track(step) : undefined}>
               <span className={'al-row__disc' + (face ? ' is-faces' : '')} style={{ '--tone': TONES[n % TONES.length] } as React.CSSProperties} aria-hidden>
                 {face || <Icon size={20} strokeWidth={1.75} />}
               </span>
