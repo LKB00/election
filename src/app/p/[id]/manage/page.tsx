@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Clock, Eye } from 'lucide-react';
+import { Clock, Eye, Sparkles } from 'lucide-react';
 import { getDb } from '@/db';
 import { currentUser } from '@/lib/auth';
 import { makerView } from '@/lib/maker';
-import { getPoll, rollWeekly, tiedTop, weeklyTrend } from '@/lib/polls';
-import { MILESTONE } from '@/lib/push';
+import { getPoll, remixCount, rollWeekly, tiedTop, weeklyTrend } from '@/lib/polls';
+import { nextMilestone } from '@/lib/push';
 import { getLang, getT } from '@/lib/lang-server';
 import CreatedPanel from '@/components/CreatedPanel';
 import EmptyState from '@/components/EmptyState';
@@ -45,7 +45,8 @@ export default async function ManagePage({ params, searchParams }: { params: Pro
   const when = v.endsAt ? new Date(v.endsAt).toLocaleString(dateLocale(lang), { weekday: 'short', day: 'numeric', month: monthStyle(lang), hour: 'numeric', minute: '2-digit', timeZone: INDIA_TZ }) : '';
   const peak = Math.max(1, ...v.byHour);
   // Week by week (a weekly poll, or one asked again): newest first, totals only.
-  const weeks = await weeklyTrend(db, v.id);
+  // And how many people asked their own version of it ("Ask your own version" after voting).
+  const [weeks, remixes] = await Promise.all([weeklyTrend(db, v.id), remixCount(db, v.id)]);
   // An ended pick-one poll with a tie: the decider is the one thing to do (or open it, once made).
   const view = v.closed ? await getPoll(db, v.id, null, null, { noPrevious: true }) : null;
   const tied = view ? tiedTop(view) : [];
@@ -117,6 +118,8 @@ export default async function ManagePage({ params, searchParams }: { params: Pro
             )}
           </div>
         )}
+        {/* A reward that is not a number of votes: your question started others. Never their names. */}
+        {remixes > 0 && <p className="small duel-friend maker-remix"><Sparkles size={14} strokeWidth={2} aria-hidden /> {t.remixed(remixes)}</p>}
         {/* It's quiet: the Status picture is the next step (the link alone has stopped bringing votes). */}
         {v.quiet && <QuietHelp id={v.id} title={v.title} votes={v.votes} />}
         {/* Just made: the panel above is the share step (one share button, not two). */}
@@ -174,7 +177,7 @@ export default async function ManagePage({ params, searchParams }: { params: Pro
         <ul className="al-listcard">
           {v.canRepeat && <li><WeeklyRow id={v.id} on={v.repeatWeekly} /></li>}
           {v.canEdit && <li><FixTypo view={v} /></li>}
-          {!v.closed && v.votes < MILESTONE && <li><MilestoneAlert id={v.id} n={MILESTONE} /></li>}
+          {!v.closed && nextMilestone(v.votes) && <li><MilestoneAlert id={v.id} n={nextMilestone(v.votes)!} /></li>}
           <li><TvRow id={v.id} /></li>
           <li><PosterRow id={v.id} /></li>
           <li><AskAgainRow id={v.id} /></li>

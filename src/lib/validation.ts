@@ -70,6 +70,7 @@ export const createPollSchema = z.object({
   showMakerPick: z.boolean().default(false),
   // "Ask again": the earlier poll (made by the same person) this one repeats.
   previousId: z.string().regex(/^[\w-]{1,64}$/).optional(),
+  remixOf: z.string().regex(/^[\w-]{1,64}$/).optional(),
   // "Called it": about a real event that has not happened yet; the creator marks what happened later.
   calledIt: z.boolean().default(false),
   // A group poll: how many people are in the group (results open when they have all voted).

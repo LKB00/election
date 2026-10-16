@@ -58,7 +58,7 @@ const Row = ({ icon: Icon, name, note, value, on, open: isOpen, onClick, tone = 
 /** "Ask again": the earlier poll's question, choices and type, filled in (the new poll links back to it). */
 export type AskAgain = { id: string; title: string; options: string[]; emojis: string[]; kind: PollKind; calledIt: boolean; category: string; showMaker: boolean };
 
-export default function CreateForm({ initialTitle = '', initialTopic, signedIn = false, again, askBack = false, circle }: { initialTitle?: string; initialTopic?: string; signedIn?: boolean; again?: AskAgain; /** Came from "Ask them back" after voting on a friend's poll. */ askBack?: boolean; /** "Ask the circle": this poll goes to one circle only. */ circle?: { id: string; name: string; emoji: string } }) {
+export default function CreateForm({ initialTitle = '', initialTopic, signedIn = false, again, askBack = false, circle, remixOf }: { initialTitle?: string; initialTopic?: string; signedIn?: boolean; again?: AskAgain; /** Came from "Ask them back" after voting on a friend's poll. */ askBack?: boolean; /** "Ask the circle": this poll goes to one circle only. */ circle?: { id: string; name: string; emoji: string }; /** "Ask your own version": the poll that inspired this one (the server checks it). */ remixOf?: string }) {
   const router = useRouter();
   const t = useT();
   const lang = useLang();
@@ -374,6 +374,7 @@ export default function CreateForm({ initialTitle = '', initialTopic, signedIn =
         showMaker,
         showMakerPick: showMaker && makerPick && category !== 'politics',
         previousId: again?.id,
+        remixOf: circle ? undefined : remixOf,
         hideUntilVoted,
         revealIn: isGroup || calledIt ? 'now' : revealIn,
         allowChange,

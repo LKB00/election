@@ -16,11 +16,12 @@ import { getDb } from '@/db';
 import { cookies } from 'next/headers';
 import { advanceDueBattles } from '@/lib/battles';
 import { FOLLOW_COOKIE, readFollowed } from '@/lib/follow';
-import { getTodaySet, recentVoteCount, topVotedTopic, rollDueSeries, listPolls, trendingPolls, voterCount } from '@/lib/polls';
-import { VIEWS_SHOW_MIN, VOTERS_SHOW_MIN } from '@/lib/limits';
+import { freshPollIds, getTodaySet, myPollNews, popularToday, recentVoteCount, topVotedTopic, rollDueSeries, listPolls, trendingPolls, voterCount } from '@/lib/polls';
+import { FRESH_SHOW, VIEWS_SHOW_MIN, VOTERS_SHOW_MIN } from '@/lib/limits';
 import { viewTotal } from '@/lib/events';
 import { dateLocale } from '@/lib/time';
 import { readVoterId } from '@/lib/voter';
+import { currentUser } from '@/lib/auth';
 import { ogBase, siteImage } from '@/lib/og';
 import { getLang, getT, langAlternates } from '@/lib/lang-server';
 
@@ -47,8 +48,10 @@ export default async function Home() {
   await Promise.all([rollDueSeries(db).catch(() => 0), advanceDueBattles(db).catch(() => 0)]);
   // Today's set (the same few polls for everyone today, with an end), then more polls only if you ask for them.
   // The polls offered after today's set are fetched by the phone when the set is done (DuelGame), not here.
-  const [deck, recent, trending] = await Promise.all([getTodaySet(db, voterId), listPolls(db, 40), trendingPolls(db, 4)]);
-  const [tonight, lang, voters, viewed, recentVotes, votedTopic] = await Promise.all([upcomingPacks(db), getLang(), voterCount(db), viewTotal(db), recentVoteCount(db), topVotedTopic(db, voterId)]);
+  const [deck, recent, trending, user] = await Promise.all([getTodaySet(db, voterId), listPolls(db, 40), trendingPolls(db, 4), currentUser(db)]);
+  // The ask card's proof: how your own poll did today, else one poll that took off today (never yours, never a name).
+  const uid = user?.id ?? null;
+  const [tonight, lang, voters, viewed, recentVotes, votedTopic, mineNews, popular, freshIds] = await Promise.all([upcomingPacks(db), getLang(), voterCount(db), viewTotal(db), recentVoteCount(db), topVotedTopic(db, voterId), myPollNews(db, uid), popularToday(db, uid), freshPollIds(db, voterId, uid)]);
   // Every vote came with a page view too (views were counted later than votes), so never show fewer views than voters.
   const fmt = (n: number) => n.toLocaleString(dateLocale(lang));
   const views = Math.max(viewed, voters);
@@ -58,7 +61,9 @@ export default async function Home() {
   // Each poll shows once on Home: today's set first, then trending, topic shelves and "More polls" without repeats.
   const inDeck = new Set(deck.map((p) => p.id));
   const hot = trending.filter((p) => !inDeck.has(p.id));
-  const shown = new Set([...inDeck, ...hot.map((p) => p.id)]);
+  // New polls that have almost no votes yet (never yours, never one you voted on): a new maker's first votes.
+  const fresh = freshIds.map((id) => recent.find((p) => p.id === id)).filter((p): p is (typeof recent)[number] => !!p && !p.closed && !inDeck.has(p.id) && !hot.some((h) => h.id === p.id)).slice(0, FRESH_SHOW);
+  const shown = new Set([...inDeck, ...hot.map((p) => p.id), ...fresh.map((p) => p.id)]);
   const byTopic = new Map<string, typeof recent>();
   for (const p of recent) if (!p.closed && !shown.has(p.id) && p.category !== 'general') byTopic.set(p.category, [...(byTopic.get(p.category) ?? []), p]);
   // Topics this phone follows come first (with even one open poll), then the busiest others (two or more).
@@ -76,7 +81,7 @@ export default async function Home() {
   // question label just below, where it updates as you vote (it used to be said twice).
 
   // An empty site shows only its empty state: no greeting, no rules reminder (nothing to be kind about yet).
-  const empty = deck.length === 0 && !tonight.length && !hot.length && !shelves.length && !polls.length;
+  const empty = deck.length === 0 && !tonight.length && !hot.length && !fresh.length && !shelves.length && !polls.length;
   // The first time a phone opens Home (or the first time since a new onboarding version): the splash, then three short
   // cards. Decided on the phone (it remembers having seen them). Never on a shared poll link.
   return (
@@ -101,7 +106,7 @@ export default async function Home() {
           {/* P2, under the poll: "Ask anything" (owner, Oct 2026: "something which pushes them to create a poll"; every
               poll comes from people). Ideas from what you vote on most (owner: "depend on what they have done"), else
               a topic you follow, else everyday ones. */}
-          <QuickAsk ideas={t.ideaSets[askTopic] ?? t.ideaSets.general} category={askTopic} recentVotes={recentVotes} />
+          <QuickAsk ideas={t.ideaSets[askTopic] ?? t.ideaSets.general} category={askTopic} recentVotes={recentVotes} signedIn={!!user} mine={mineNews} popular={popular} />
         </div>
         {!empty && (
           <div className="home-rail">
@@ -116,6 +121,13 @@ export default async function Home() {
               <section className="al-block">
                 <h2 className="al-block__title"><span className="live-dot al-block__live" aria-hidden />{t.trendingNow}<span className="al-block__aside">{t.pollsN(hot.length)}</span></h2>
                 <DuelTiles polls={hot} votedIds={voted} noCreate />
+              </section>
+            )}
+            {/* P2: "New: be the first to answer". A poll with no votes looks dead to its maker; a few here fix that. */}
+            {fresh.length > 0 && (
+              <section className="al-block">
+                <h2 className="al-block__title">{t.freshTitle}<span className="al-block__aside">{t.freshLine}</span></h2>
+                <DuelTiles polls={fresh} votedIds={voted} noCreate />
               </section>
             )}
             {shelves.map(([cat, ps]) => (

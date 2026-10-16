@@ -1787,6 +1787,83 @@ describe('one line, poll night, your week and circles', () => {
     expect(week).toEqual({ votes: 4, made: 2, top: { id: a, title: 'Week poll one?', votes: 3 } });
   });
 
+  it('tells you how your poll did today, and names one public poll that took off (never unlisted, never yours)', async () => {
+    const { myPollNews, popularToday } = await import('@/lib/polls');
+    await db.insert(schema.users).values({ id: 'pop-maker', name: 'Pop Maker' }).onConflictDoNothing();
+    expect(await myPollNews(db, 'pop-maker')).toBeNull();
+    const pub = await createPoll(db, createPollSchema.parse({ title: 'Samosa or kachori?', options: ['Samosa', 'Kachori'] }), undefined, undefined, 'pop-maker');
+    const room = await createPoll(db, createPollSchema.parse({ title: 'Room only?', options: ['A', 'B'] }), undefined, undefined, 'someone-else', { unlisted: true });
+    const vp = (await getPoll(db, pub, null))!;
+    const vr = (await getPoll(db, room, null))!;
+    for (let k = 0; k < 60; k++) await castVote(db, pub, vp.options[k % 2].id, `pop-p${k}`);
+    for (let k = 0; k < 80; k++) await castVote(db, room, vr.options[0].id, `pop-r${k}`);
+    expect(await myPollNews(db, 'pop-maker')).toEqual({ id: pub, title: 'Samosa or kachori?', n: 60, total: 60 });
+    expect((await popularToday(db, null))?.id).toBe(pub);
+    // Your own poll is in your news, not in "popular today".
+    expect((await popularToday(db, 'pop-maker'))?.id).not.toBe(pub);
+    expect((await popularToday(db, 'pop-maker'))?.id).not.toBe(room);
+  });
+
+  it('lists new polls with almost no votes, never yours or ones you voted on', async () => {
+    const { freshPollIds } = await import('@/lib/polls');
+    await db.insert(schema.users).values({ id: 'fresh-maker', name: 'Fresh Maker' }).onConflictDoNothing();
+    const quiet = await createPoll(db, createPollSchema.parse({ title: 'Fresh quiet poll?', options: ['A', 'B'] }), undefined, undefined, 'fresh-maker');
+    const busy = await createPoll(db, createPollSchema.parse({ title: 'Fresh busy poll?', options: ['A', 'B'] }));
+    const room = await createPoll(db, createPollSchema.parse({ title: 'Fresh room poll?', options: ['A', 'B'] }), undefined, undefined, undefined, { unlisted: true });
+    const vb = (await getPoll(db, busy, null))!;
+    for (let k = 0; k < 5; k++) await castVote(db, busy, vb.options[0].id, `fr-b${k}`);
+    const ids = await freshPollIds(db, null, null, 500);
+    expect(ids).toContain(quiet);
+    expect(ids).not.toContain(busy);
+    expect(ids).not.toContain(room);
+    expect(await freshPollIds(db, null, 'fresh-maker', 500)).not.toContain(quiet);
+    const vq = (await getPoll(db, quiet, null))!;
+    await castVote(db, quiet, vq.options[0].id, 'fr-me');
+    expect(await freshPollIds(db, 'fr-me', null, 500)).not.toContain(quiet);
+    // Older than a day: not new any more.
+    await db.update(schema.polls).set({ createdAt: new Date(Date.now() - 30 * 3_600_000) }).where(eq(schema.polls.id, quiet));
+    expect(await freshPollIds(db, null, null, 500)).not.toContain(quiet);
+  });
+
+  it('remembers which public poll inspired a new one, and counts them for its maker', async () => {
+    const { remixCount } = await import('@/lib/polls');
+    await db.insert(schema.users).values([{ id: 'rx-a', name: 'Asha' }, { id: 'rx-b', name: 'Bilal' }]).onConflictDoNothing();
+    const orig = await createPoll(db, createPollSchema.parse({ title: 'Remix me?', options: ['A', 'B'] }), undefined, undefined, 'rx-a');
+    const room = await createPoll(db, createPollSchema.parse({ title: 'Room remix?', options: ['A', 'B'] }), undefined, undefined, 'rx-a', { unlisted: true });
+    const mine = await createPoll(db, createPollSchema.parse({ title: 'Remix me, mine?', options: ['A', 'B'], remixOf: orig }), undefined, undefined, 'rx-a');
+    const theirs = await createPoll(db, createPollSchema.parse({ title: 'Remix me, my way?', options: ['A', 'C'], remixOf: orig }), undefined, undefined, 'rx-b');
+    const fromRoom = await createPoll(db, createPollSchema.parse({ title: 'From a room?', options: ['A', 'B'], remixOf: room }), undefined, undefined, 'rx-b');
+    const read = async (id: string) => (await db.select({ r: schema.polls.remixOf }).from(schema.polls).where(eq(schema.polls.id, id)))[0].r;
+    expect(await read(theirs)).toBe(orig);
+    // Your own poll does not count as inspiring you, and a private room's poll is never linked.
+    expect(await read(mine)).toBeNull();
+    expect(await read(fromRoom)).toBeNull();
+    expect(await remixCount(db, orig)).toBe(1);
+    await db.update(schema.polls).set({ hidden: true }).where(eq(schema.polls.id, theirs));
+    expect(await remixCount(db, orig)).toBe(0);
+  });
+
+  it('tells the maker at 10, 50, 100 votes, each once', async () => {
+    const { sendMilestone, wantMilestone, nearMilestone, nextMilestone } = await import('@/lib/push');
+    expect(nextMilestone(0)).toBe(10);
+    expect(nextMilestone(10)).toBe(50);
+    expect(nextMilestone(1000)).toBeNull();
+    expect([9, 10, 12, 13, 50, 55, 56].map(nearMilestone)).toEqual([false, true, true, false, true, true, false]);
+    const pid = await createPoll(db, createPollSchema.parse({ title: 'Milestone poll?', options: ['A', 'B'] }));
+    const sub = { endpoint: 'https://push.example/ms1', keys: { p256dh: 'p', auth: 'a' } };
+    await wantMilestone(db, 'ms-voter', sub, pid, 'en');
+    const got: string[] = [];
+    const send = async (_s: unknown, payload: string) => (got.push(JSON.parse(payload).body), { gone: false, ok: true });
+    expect(await sendMilestone(db, pid, 5, send)).toBe(0);
+    expect(await sendMilestone(db, pid, 11, send)).toBe(1);
+    expect(await sendMilestone(db, pid, 12, send)).toBe(0);
+    expect(await sendMilestone(db, pid, 50, send)).toBe(1);
+    expect(got).toEqual(['Your first 10 votes are in. Tap to see how it’s going.', 'Your poll reached 50 votes. Tap to see how it’s going.']);
+    expect(await sendMilestone(db, pid, 1000, send)).toBe(1);
+    // After the last one the wish is gone.
+    expect(await db.select().from(schema.pushMilestones).where(eq(schema.pushMilestones.pollId, pid))).toEqual([]);
+  });
+
   it('keeps a circle\'s polls for its members, out of public lists', async () => {
     const { createCircle, getCircle, joinCircle, leaveCircle, myCircles, ownerAction } = await import('@/lib/circles');
     await db.insert(schema.users).values([{ id: 'circ-a', name: 'Asha' }, { id: 'circ-b', name: 'Bilal' }, { id: 'circ-c', name: 'Chetan' }]).onConflictDoNothing();

@@ -8,7 +8,7 @@ import { sameKey } from './same';
 import { schema, type Db } from '@/db';
 import { createPollSchema, type CreatePollInput } from './validation';
 import { hasBlockedWord, namesPolitics } from './moderation';
-import { TAKE_MAX, TAKES_LOAD, TAKE_REPORTS_HIDE, GROUP_DEFAULT_DAYS, IDEAS_HOURS, RUNOFF_HOURS, JOIN_CODE_DIGITS, MAX_CHOICES, MIN_CHOICES, WEEKLY_TREND_WEEKS, REVEAL_MINUTES, MAX_OTHER, OTHER_MIN_PEOPLE, OTHER_TOP } from './limits';
+import { TAKE_MAX, POPULAR_MIN, NEW_HOURS, NEW_VOTES_MAX, TAKES_LOAD, TAKE_REPORTS_HIDE, GROUP_DEFAULT_DAYS, IDEAS_HOURS, RUNOFF_HOURS, JOIN_CODE_DIGITS, MAX_CHOICES, MIN_CHOICES, WEEKLY_TREND_WEEKS, REVEAL_MINUTES, MAX_OTHER, OTHER_MIN_PEOPLE, OTHER_TOP } from './limits';
 import { sealedUntil as silenceUntil } from './silence';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { isAdminKey } from './admin';
@@ -162,6 +162,18 @@ async function ownsPoll(db: Db, id: string, ownerId: string): Promise<boolean> {
   return !!p && p.ownerId === ownerId;
 }
 
+/** A poll someone may say inspired theirs: public (listed, not a group poll, not hidden) and not their own. */
+async function remixable(db: Db, id: string, ownerId?: string): Promise<boolean> {
+  const [p] = await db.select({ ownerId: polls.ownerId }).from(polls).where(and(eq(polls.id, id), eq(polls.hidden, false), eq(polls.unlisted, false), isNull(polls.groupSize))).limit(1);
+  return !!p && (!ownerId || p.ownerId !== ownerId);
+}
+
+/** "3 people asked their own version" (the maker's page): public polls inspired by this one. */
+export async function remixCount(db: Db, id: string): Promise<number> {
+  const [row] = await db.select({ n: sql<number>`count(*)::int` }).from(polls).where(and(eq(polls.remixOf, id), eq(polls.hidden, false)));
+  return row?.n ?? 0;
+}
+
 /** `manageKey`: the creator's private key (kept on their phone); only its hash is stored. */
 /** Voting needs time after the ideas: an end that falls inside the ideas time moves to a day after it. */
 const endsAfterIdeas = (ends: Date | null, ideas: Date | null) => (ends && ideas && ends.getTime() < ideas.getTime() + 3600_000 ? new Date(ideas.getTime() + 86400_000) : ends);
@@ -197,6 +209,8 @@ export async function createPoll(db: Db, raw: CreatePollInput, manageKey?: strin
     showMaker: input.showMaker && !!ownerId,
     // Only with the maker's name on it, and never on politics (a maker's vote there is nobody else's business).
     showMakerPick: input.showMakerPick && input.showMaker && !!ownerId && input.category !== 'politics',
+    // Only a public poll by someone else counts as the one that inspired this (never a private room's or circle's).
+    remixOf: input.remixOf && !place.unlisted && !place.circleId && !input.groupSize && (await remixable(tx as unknown as Db, input.remixOf, ownerId)) ? input.remixOf : null,
     previousId: input.previousId && ownerId && (await ownsPoll(tx as unknown as Db, input.previousId, ownerId)) ? input.previousId : null,
     electionMode: input.electionMode,
     kind: input.kind,
@@ -806,6 +820,63 @@ export async function topVotedTopic(db: Db, voterId: string | null): Promise<str
 export async function recentVoteCount(db: Db): Promise<number> {
   const [row] = await db.select({ n: sql<number>`count(*)::int` }).from(votes).where(sql`${votes.createdAt} > now() - interval '24 hours'`);
   return row?.n ?? 0;
+}
+
+/** "Your poll got 12 new votes" (Home's ask card): the signed-in person's poll with the most votes in the last day. */
+export async function myPollNews(db: Db, userId: string | null): Promise<{ id: string; title: string; n: number; total: number } | null> {
+  if (!userId) return null;
+  const [row] = await db
+    .select({ id: polls.id, title: polls.title, n: sql<number>`count(*)::int`, total: sql<number>`(select count(*)::int from votes v2 where v2.poll_id = ${polls.id})` })
+    .from(votes)
+    .innerJoin(polls, eq(polls.id, votes.pollId))
+    .where(and(eq(polls.ownerId, userId), eq(polls.hidden, false), sql`${votes.createdAt} > now() - interval '24 hours'`))
+    .groupBy(polls.id, polls.title)
+    .orderBy(desc(sql`count(*)`))
+    .limit(1);
+  return row && row.n > 0 ? row : null;
+}
+
+/** "Popular today" (Home's ask card): one public poll that took off in the last day, never your own, never a name. */
+export async function popularToday(db: Db, userId: string | null): Promise<{ id: string; title: string; n: number } | null> {
+  const [row] = await db
+    .select({ id: polls.id, title: polls.title, n: sql<number>`count(*)::int` })
+    .from(votes)
+    .innerJoin(polls, eq(polls.id, votes.pollId))
+    .where(
+      and(
+        eq(polls.hidden, false),
+        eq(polls.unlisted, false),
+        isNull(polls.groupSize),
+        userId ? sql`${polls.ownerId} is distinct from ${userId}` : undefined,
+        sql`${votes.createdAt} > now() - interval '24 hours'`,
+      ),
+    )
+    .groupBy(polls.id, polls.title)
+    .orderBy(desc(sql`count(*)`))
+    .limit(1);
+  return row && row.n >= POPULAR_MIN ? row : null;
+}
+
+/** "New: be the first to answer" (Home): public polls posted lately that have almost no votes yet, newest first; never
+ *  one this phone voted on, never your own. A new maker's first votes come from people already here. */
+export async function freshPollIds(db: Db, voterId: string | null, userId: string | null, limit = 12): Promise<string[]> {
+  const rows = await db
+    .select({ id: polls.id })
+    .from(polls)
+    .where(
+      and(
+        eq(polls.hidden, false),
+        eq(polls.unlisted, false),
+        isNull(polls.groupSize),
+        sql`${polls.createdAt} > now() - make_interval(hours => ${NEW_HOURS})`,
+        sql`(select count(*) from votes v where v.poll_id = ${polls.id}) < ${NEW_VOTES_MAX}`,
+        voterId ? sql`not exists (select 1 from votes v where v.poll_id = ${polls.id} and v.voter_key = ${voterId})` : undefined,
+        userId ? sql`${polls.ownerId} is distinct from ${userId}` : undefined,
+      ),
+    )
+    .orderBy(desc(polls.createdAt))
+    .limit(limit);
+  return rows.map((r) => r.id);
 }
 
 /** How many different people (voter numbers) have voted on the site, for Home's "N people have voted here". */
