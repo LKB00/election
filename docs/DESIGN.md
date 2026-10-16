@@ -1592,3 +1592,11 @@ Sharing your own poll anywhere (its page, Home, the maker page) always sends the
 ## A poll opens in the section you came from (owner, Oct 2026: "whatever vote I have done should open here in Your votes, not Home")
 - A row on **Your votes** opens its poll with Your votes still lit, and Back goes to Your votes. A row on **Polls** or a topic page opens with Polls lit, and Back goes back there. Polls opened from Home, a shared link or "Next poll" belong to Home, as before. Your own poll (opened from You or the maker page) belongs to You.
 - How: those links add `?from=votes` / `?from=polls`. The page reads it once (`useFromSection`, `src/lib/ownNav.ts`), keeps it for this tab only if you refresh, and takes it out of the address, so a copied address is a clean link.
+
+## Polls grouped by what you can still do (owner, Oct 2026: "if I have voted, there should be meaningful segregation")
+Polls page and topic pages, top to bottom, each poll once and a few at a time (`LIST_FIRST`, then "Show N more"):
+1. **Trending now** (P1): the busiest open polls of the last hour that you have **not** voted on (at most 3).
+2. **Waiting for your vote** (P1): every other open poll you have not voted on. When there are none: "You've voted on every open poll" with Start a poll.
+3. **You voted** (P2): polls you voted on (open or ended), with their ✓ Voted line.
+4. **Ended** (P3): ended polls you missed (results only).
+Search results stay one list.

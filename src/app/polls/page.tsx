@@ -16,7 +16,8 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getT()).duels, alternates: await langAlternates('/polls') };
 }
 
-// P1: browse the tiles (trending first). While searching, only the matches (P1) show.
+// P1: the polls waiting for your vote (trending first); P2: the ones you voted on; P3: ended ones you missed. While
+// searching, only the matches (P1) show.
 export default async function Duels({ searchParams }: { searchParams: Promise<{ q?: string | string[] }> }) {
   const raw = (await searchParams).q;
   const q = (Array.isArray(raw) ? raw[0] : raw ?? '').trim().slice(0, 60);
@@ -26,9 +27,16 @@ export default async function Duels({ searchParams }: { searchParams: Promise<{ 
   const [polls, mine, hot] = await Promise.all([
     listPolls(db, 60, { q }),
     votedPollIds(db, voterId),
-    q ? Promise.resolve([]) : trendingPolls(db, 3),
+    q ? Promise.resolve([]) : trendingPolls(db, 6),
   ]);
-  const rest = polls.filter((p) => !hot.some((h) => h.id === p.id));
+  // Sorted by what you can still do (owner, Oct 2026: "if I have voted there should be meaningful segregation"):
+  // open polls waiting for your vote first (trending ones on top), then the ones you voted on, then ended ones you
+  // missed. Each poll shows once.
+  const voted = new Set(mine);
+  const trending = hot.filter((p) => !voted.has(p.id) && !p.closed).slice(0, 3);
+  const toVote = polls.filter((p) => !p.closed && !voted.has(p.id) && !trending.some((h) => h.id === p.id));
+  const done = polls.filter((p) => voted.has(p.id));
+  const ended = polls.filter((p) => p.closed && !voted.has(p.id));
   // No polls at all yet: only the empty state (search and topics would lead nowhere).
   const empty = !q && !polls.length;
   if (empty) {
@@ -85,19 +93,39 @@ export default async function Duels({ searchParams }: { searchParams: Promise<{ 
         </section>
       )}
       {!q && (<>
-      {/* P2: the duels with the most votes in the last hour, like TV's "hot seats". Not repeated in the list below. */}
-      {hot.length > 0 && (
+      {/* P1: open polls you have not voted on. The busiest of the last hour first ("Trending now"), then the rest. */}
+      {trending.length > 0 && (
         <section className="al-block">
-          <h2 className="al-block__title"><span className="live-dot al-block__live" aria-hidden />{t.trendingNow}<span className="al-block__aside">{t.pollsN(hot.length)}</span></h2>
-          <DuelTiles from="polls" polls={hot} votedIds={mine} noCreate />
+          <h2 className="al-block__title"><span className="live-dot al-block__live" aria-hidden />{t.trendingNow}<span className="al-block__aside">{t.pollsN(trending.length)}</span></h2>
+          <DuelTiles from="polls" polls={trending} votedIds={mine} noCreate />
         </section>
       )}
-      {/* Hidden when every poll is already in Trending (it would say "no polls yet" right under them). */}
-      {(rest.length > 0 || hot.length === 0) && <section className="al-block">
-        {/* A heading only when something sits above; otherwise it would just repeat the page title. */}
-        {hot.length > 0 && <h2 className="al-block__title">{t.allDuels}<span className="al-block__aside">{t.pollsN(rest.length)}</span></h2>}
-        <DuelTiles from="polls" polls={rest} votedIds={mine} limit={LIST_FIRST} />
-      </section>}
+      {toVote.length > 0 && (
+        <section className="al-block">
+          <h2 className="al-block__title">{t.pollsToVote}<span className="al-block__aside">{t.pollsN(toVote.length)}</span></h2>
+          <DuelTiles from="polls" polls={toVote} votedIds={mine} noCreate limit={LIST_FIRST} />
+        </section>
+      )}
+      {/* Nothing left to vote on: say so, and the one next step (a poll of your own). */}
+      {trending.length === 0 && toVote.length === 0 && (
+        <section className="al-block">
+          <EmptyState kind="list" title={t.allVotedTitle} line={t.allVotedLine} action={{ href: '/create', label: t.startDuel }} />
+        </section>
+      )}
+      {/* P2: the polls you voted on (results, how they are going), a few at a time. */}
+      {done.length > 0 && (
+        <section className="al-block">
+          <h2 className="al-block__title">{t.pollsVoted}<span className="al-block__aside">{t.pollsN(done.length)}</span></h2>
+          <DuelTiles from="polls" polls={done} votedIds={mine} noCreate limit={LIST_FIRST} />
+        </section>
+      )}
+      {/* P3: ended polls you missed (results only). */}
+      {ended.length > 0 && (
+        <section className="al-block">
+          <h2 className="al-block__title">{t.pollsEnded}<span className="al-block__aside">{t.pollsN(ended.length)}</span></h2>
+          <DuelTiles from="polls" polls={ended} votedIds={mine} noCreate limit={LIST_FIRST} />
+        </section>
+      )}
       </>)}
       </div>
     </div>

@@ -4,6 +4,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import FollowTopic from '@/components/FollowTopic';
+import EmptyState from '@/components/EmptyState';
 import DuelTiles from '@/components/DuelTiles';
 import { getDb } from '@/db';
 import { CATEGORIES } from '@/lib/categories';
@@ -35,6 +36,10 @@ export default async function Topic({ params }: Props) {
     votedPollIds(db, voterId),
   ]);
   const full = polls.length > 0;
+  const voted = new Set(mine);
+  const toVote = polls.filter((p) => !p.closed && !voted.has(p.id));
+  const done = polls.filter((p) => voted.has(p.id));
+  const ended = polls.filter((p) => p.closed && !voted.has(p.id));
   return (
     <div className={'page page-wide' + (full ? ' polls-grid' : ' empty-page')}>
       {/* Computers only (election.css, "Desktop"): every topic in a left column, this one marked, like on Polls. */}
@@ -60,9 +65,29 @@ export default async function Topic({ params }: Props) {
         {/* P3: put this topic first on Home (this phone only). */}
         <p className="topic-follow"><FollowTopic topic={category} /> <span className="small muted">{t.followNote}</span></p>
       </header>
-      <section className="al-block">
-        <DuelTiles from="polls" polls={polls} votedIds={mine} topic={category} limit={LIST_FIRST} />
-      </section>
+      {/* Same order as Polls: waiting for your vote, then the ones you voted on, then ended ones you missed. */}
+      {toVote.length > 0 || !full ? (
+        <section className="al-block">
+          {(done.length > 0 || ended.length > 0) && <h2 className="al-block__title">{t.pollsToVote}<span className="al-block__aside">{t.pollsN(toVote.length)}</span></h2>}
+          <DuelTiles from="polls" polls={toVote} votedIds={mine} topic={category} limit={LIST_FIRST} />
+        </section>
+      ) : (
+        <section className="al-block">
+          <EmptyState kind="list" title={t.allVotedTitle} line={t.allVotedLine} action={{ href: `/create?topic=${category}`, label: t.startDuel }} />
+        </section>
+      )}
+      {done.length > 0 && (
+        <section className="al-block">
+          <h2 className="al-block__title">{t.pollsVoted}<span className="al-block__aside">{t.pollsN(done.length)}</span></h2>
+          <DuelTiles from="polls" polls={done} votedIds={mine} noCreate limit={LIST_FIRST} />
+        </section>
+      )}
+      {ended.length > 0 && (
+        <section className="al-block">
+          <h2 className="al-block__title">{t.pollsEnded}<span className="al-block__aside">{t.pollsN(ended.length)}</span></h2>
+          <DuelTiles from="polls" polls={ended} votedIds={mine} noCreate limit={LIST_FIRST} />
+        </section>
+      )}
       </div>
     </div>
   );
