@@ -3,7 +3,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, TrendingUp } from 'lucide-react';
 import Spot from './Spot';
 import { apiMsg } from '@/lib/i18n';
 import { useLang, useT } from '@/lib/lang';
@@ -15,12 +15,13 @@ import { rememberMyPoll } from './MyPolls';
 const SignInSheet = dynamic(() => import('./SignIn'), { ssr: false });
 
 type Idea = { q: string; c: string[] };
+type Today = { id: string; title: string; n: number };
 
 // "Ask anything" (docs/DESIGN.md, "More people asking"): a question box right where people vote, so starting a poll
 // is one line, not a separate screen. Choices are read out of the question ("Chai or coffee?" → Chai / Coffee) and
 // shown before posting; a question without them goes on to Create with the words filled in. Ideas (the person picks
 // one) fill the box. Posting needs a profile, asked for only at Post. The poll is theirs; the site never posts one.
-export default function QuickAsk({ ideas = [], category = 'general', heading, signedIn, recentVotes = 0 }: { ideas?: Idea[]; category?: string; /** "Your turn: ask something" when someone ran out of polls. */ heading?: string; signedIn?: boolean; /** Votes on the site in the last day: proof that questions here get answered. */ recentVotes?: number }) {
+export default function QuickAsk({ ideas = [], category = 'general', heading, signedIn, recentVotes = 0, mine, popular }: { ideas?: Idea[]; category?: string; /** "Your turn: ask something" when someone ran out of polls. */ heading?: string; signedIn?: boolean; /** Votes on the site in the last day: proof that questions here get answered. */ recentVotes?: number; /** Your own poll's new votes today (Home, signed in). */ mine?: Today | null; /** One public poll that took off today. */ popular?: Today | null }) {
   const t = useT();
   const lang = useLang();
   const router = useRouter();
@@ -78,11 +79,25 @@ export default function QuickAsk({ ideas = [], category = 'general', heading, si
   return (
     <section className="quick-ask" aria-label={heading ?? t.askTitle}>
       {/* Brand yellow (yours to ask), a picture, the promise in big words, and proof that people answer here. */}
+      {/* Yours (yellow = you): how your own poll did today, one tap to its page. A reason to ask another. */}
+      {mine && (
+        <Link href={`/p/${mine.id}/manage`} className="quick-ask__mine">
+          <TrendingUp size={18} strokeWidth={2} aria-hidden />
+          <span className="quick-ask__mine-text">
+            <strong>{t.askMine(mine.n)}</strong>
+            <span className="small">“{mine.title}”</span>
+          </span>
+          <ArrowRight size={16} strokeWidth={2} aria-hidden />
+        </Link>
+      )}
       <div className="quick-ask__head">
         <span className="quick-ask__pic" aria-hidden><Spot kind="pen" size={60} /></span>
         <div>
           <h2 className="quick-ask__title">{heading ?? t.askTitle}</h2>
-          <p className="quick-ask__line">{recentVotes >= RECENT_VOTES_MIN ? t.askProof(recentVotes) : t.askEasy}</p>
+          {/* The truest proof first: a real poll that took off today, else today's vote count, else the plain promise. */}
+          <p className="quick-ask__line">
+            {popular ? <Link href={`/p/${popular.id}`} className="quick-ask__popular">{t.askPopular(popular.title, popular.n)}</Link> : recentVotes >= RECENT_VOTES_MIN ? t.askProof(recentVotes) : t.askEasy}
+          </p>
         </div>
       </div>
       <form

@@ -94,3 +94,5 @@ export const CIRCLES_PER_PERSON = 10;
 export const FILTER_MIN = 20;
 /** "Ask anything" shows "N votes here in the last day" only from this many (a small number would put people off). */
 export const RECENT_VOTES_MIN = 10;
+/** "Popular today" in the ask card names a poll only from this many votes in the last day. */
+export const POPULAR_MIN = 10;

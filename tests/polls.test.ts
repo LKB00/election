@@ -1787,6 +1787,23 @@ describe('one line, poll night, your week and circles', () => {
     expect(week).toEqual({ votes: 4, made: 2, top: { id: a, title: 'Week poll one?', votes: 3 } });
   });
 
+  it('tells you how your poll did today, and names one public poll that took off (never unlisted, never yours)', async () => {
+    const { myPollNews, popularToday } = await import('@/lib/polls');
+    await db.insert(schema.users).values({ id: 'pop-maker', name: 'Pop Maker' }).onConflictDoNothing();
+    expect(await myPollNews(db, 'pop-maker')).toBeNull();
+    const pub = await createPoll(db, createPollSchema.parse({ title: 'Samosa or kachori?', options: ['Samosa', 'Kachori'] }), undefined, undefined, 'pop-maker');
+    const room = await createPoll(db, createPollSchema.parse({ title: 'Room only?', options: ['A', 'B'] }), undefined, undefined, 'someone-else', { unlisted: true });
+    const vp = (await getPoll(db, pub, null))!;
+    const vr = (await getPoll(db, room, null))!;
+    for (let k = 0; k < 60; k++) await castVote(db, pub, vp.options[k % 2].id, `pop-p${k}`);
+    for (let k = 0; k < 80; k++) await castVote(db, room, vr.options[0].id, `pop-r${k}`);
+    expect(await myPollNews(db, 'pop-maker')).toEqual({ id: pub, title: 'Samosa or kachori?', n: 60 });
+    expect((await popularToday(db, null))?.id).toBe(pub);
+    // Your own poll is in your news, not in "popular today".
+    expect((await popularToday(db, 'pop-maker'))?.id).not.toBe(pub);
+    expect((await popularToday(db, 'pop-maker'))?.id).not.toBe(room);
+  });
+
   it('keeps a circle\'s polls for its members, out of public lists', async () => {
     const { createCircle, getCircle, joinCircle, leaveCircle, myCircles, ownerAction } = await import('@/lib/circles');
     await db.insert(schema.users).values([{ id: 'circ-a', name: 'Asha' }, { id: 'circ-b', name: 'Bilal' }, { id: 'circ-c', name: 'Chetan' }]).onConflictDoNothing();
