@@ -20,6 +20,7 @@ import { humanToken, prepareHumanCheck } from '@/lib/turnstile-client';
 import { sideEmoji, sideOf, type Side } from '@/lib/sides';
 import { useLang, useT } from '@/lib/lang';
 import Takes from './Takes';
+import QuickAsk from './QuickAsk';
 import { apiMsg, reasonLabel, type Dict, type Lang } from '@/lib/i18n';
 import { faceLabels } from '@/lib/labels';
 import { manageKeyFor } from './MyPolls';
@@ -34,6 +35,12 @@ import { shareMenu } from '@/lib/shareSheet';
 // cards, then "Next duel". Results stay hidden until you vote.
 // Ballot serial numbers, like the EVM and the VVPAT slip (1, 2, 3…). Keys A/B… still work too.
 const LETTERS = 'ABCDEFGHIJ';
+/** The topic that comes up most (ties: the first), never politics (ideas for it would be the site picking sides). */
+const topTopic = (cats: string[]) => {
+  const n = new Map<string, number>();
+  for (const c of cats) if (c !== 'politics') n.set(c, (n.get(c) ?? 0) + 1);
+  return [...n.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'general';
+};
 const serial = (n: number) => String(n + 1);
 // Hindi written in Devanagari on an English page: tell screen readers, so it is read with Hindi rules.
 const hindiText = (s: string) => (/[\u0900-\u097F]/.test(s) ? 'hi' : undefined);
@@ -848,7 +855,8 @@ export default function DuelGame({ deck: initialDeck, start, via, daily = false,
             <Link href="/polls" className="btn btn-ghost btn-lg">{t.morePolls} <ArrowRight size={14} strokeWidth={1.75} aria-hidden /></Link>
           )}
         </div>
-        <p className="small"><Link href="/create" className="text-link"><Plus size={13} strokeWidth={1.75} aria-hidden /> {t.startOwn}</Link></p>
+        {/* Out of polls is the moment to ask one (owner, Oct 2026): ideas from the topic you voted on most today. */}
+        <QuickAsk heading={t.askTurn} ideas={t.ideaSets[topTopic(rows.map((r) => r.p.category))] ?? t.ideaSets.general} category={topTopic(rows.map((r) => r.p.category))} />
         <InstallInvite />
       </div>
     );

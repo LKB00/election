@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import DuelGame from '@/components/DuelGame';
 import EmptyState from '@/components/EmptyState';
+import QuickAsk from '@/components/QuickAsk';
 import Onboarding from '@/components/Onboarding';
 import PeopleCount from '@/components/PeopleCount';
 import Step from '@/components/Step';
@@ -93,9 +94,12 @@ export default async function Home() {
           {/* Empty: nothing open today (a new site, or a quiet day). */}
           {deck.length === 0 && (
             <section className={empty ? 'empty-page' : 'block'}>
-              <EmptyState kind="invite" title={t.homeEmptyTitle} line={t.homeEmptyLine} action={{ href: '/create', label: t.startDuel }} />
+              <EmptyState kind="invite" title={t.homeEmptyTitle} line={t.homeEmptyLine} />
             </section>
           )}
+          {/* P2, under the poll: "Ask anything" (owner, Oct 2026: "something which pushes them to create a poll"; every
+              poll comes from people). Ideas from a topic you follow, else everyday ones. */}
+          <QuickAsk ideas={t.ideaSets[followed[0] ?? 'general'] ?? t.ideaSets.general} category={followed[0] ?? 'general'} />
         </div>
         {!empty && (
           <div className="home-rail">

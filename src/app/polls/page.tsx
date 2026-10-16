@@ -5,6 +5,7 @@ import { topicIcon, topicTone } from '@/lib/topicIcons';
 import { Hash, Search } from 'lucide-react';
 import EmptyState from '@/components/EmptyState';
 import DuelTiles from '@/components/DuelTiles';
+import QuickAsk from '@/components/QuickAsk';
 import PollFilter, { parseShow, type Show } from '@/components/PollFilter';
 import { getDb } from '@/db';
 import { votedPollIds, listPolls, trendingPolls } from '@/lib/polls';
@@ -39,6 +40,10 @@ export default async function Duels({ searchParams }: { searchParams: Promise<{ 
   const toVote = polls.filter((p) => !p.closed && !voted.has(p.id) && !trending.some((h) => h.id === p.id));
   const done = polls.filter((p) => voted.has(p.id));
   const ended = polls.filter((p) => p.closed && !voted.has(p.id));
+  // The topic you voted on most (not politics), for "Your turn" ideas.
+  const counts = new Map<string, number>();
+  for (const p of done) if (p.category !== 'politics') counts.set(p.category, (counts.get(p.category) ?? 0) + 1);
+  const topic = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'general';
   // Many polls: tabs instead of one long page; "To vote" is the default.
   const filtered = polls.length > FILTER_MIN;
   const show = parseShow(sp.show);
@@ -116,7 +121,9 @@ export default async function Duels({ searchParams }: { searchParams: Promise<{ 
       {/* Nothing left to vote on: say so, and the one next step (a poll of your own). */}
       {on('to') && trending.length === 0 && toVote.length === 0 && (
         <section className="al-block">
-          <EmptyState kind="list" title={t.allVotedTitle} line={t.allVotedLine} action={{ href: '/create', label: t.startDuel }} />
+          <p className="lead all-voted">{t.allVotedTitle}</p>
+          {/* Out of polls: the moment to ask one, with ideas from the topic you voted on most. */}
+          <QuickAsk heading={t.askTurn} ideas={t.ideaSets[topic] ?? t.ideaSets.general} category={topic} />
         </section>
       )}
       {/* P2: the polls you voted on (results, how they are going), a few at a time. */}

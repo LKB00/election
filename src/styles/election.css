@@ -1427,3 +1427,18 @@ button.al-row.maker-delete, button.al-row.profile-row { width: 100%; border: 0; 
 .poll-filter .chip { border-color: transparent; background: transparent; white-space: nowrap; min-height: 36px; padding: 0 12px; }
 .poll-filter .chip.chip-on { background: var(--card); border-color: var(--line); color: var(--ink); font-weight: 600; }
 .poll-filter__n { font-variant-numeric: tabular-nums; opacity: 0.7; margin-left: 4px; }
+
+/* "Ask anything" (docs/DESIGN.md, "More people asking"): one line to start a poll, right where people vote. */
+.quick-ask { display: flex; flex-direction: column; gap: 10px; padding: 18px; border: 1px solid var(--line); border-radius: 18px; background: var(--card); }
+.quick-ask__title { margin: 0; font-size: 18px; font-weight: 700; }
+.quick-ask__form { display: flex; gap: 8px; }
+.quick-ask__form .input { flex: 1 1 auto; min-width: 0; }
+.quick-ask__form .btn { flex: 0 0 auto; }
+.quick-ask__choices { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; }
+.quick-ask__ideas { display: flex; flex-direction: column; gap: 6px; }
+.quick-ask__ideas .chip { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.quick-ask__more { align-self: flex-start; }
+.home-main .quick-ask, .polls-main .quick-ask { margin-top: 20px; }
+.tot-over .quick-ask { width: 100%; max-width: 520px; text-align: left; }
+/* Home: once today's set is done, its end screen has the "Your turn" box; the one under it would repeat it. */
+.home-main:has(.tot-over .quick-ask) > .quick-ask { display: none; }
